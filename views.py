@@ -154,22 +154,39 @@ def view_mail():
     # Construction de la requête avec restrictions selon le rôle
     query = Courrier.query
     
-    # Appliquer les restrictions selon le rôle
-    if current_user.role == 'super_admin':
-        # Super admin voit tout
+    # Appliquer les restrictions selon les permissions
+    if current_user.has_permission('read_all_mail'):
+        # Peut voir tous les courriers
         pass
-    elif current_user.role == 'admin':
-        # Admin voit les courriers de son département
+    elif current_user.has_permission('read_department_mail'):
+        # Peut voir les courriers de son département
         if current_user.departement_id:
             query = query.join(User, Courrier.utilisateur_id == User.id).filter(
                 User.departement_id == current_user.departement_id
             )
         else:
-            # Si admin n'a pas de département assigné, ne voir que ses propres courriers
+            # Si pas de département assigné, ne voir que ses propres courriers
             query = query.filter(Courrier.utilisateur_id == current_user.id)
-    else:
-        # Utilisateur normal voit seulement ses propres courriers
+    elif current_user.has_permission('read_own_mail'):
+        # Peut voir seulement ses propres courriers
         query = query.filter(Courrier.utilisateur_id == current_user.id)
+    else:
+        # Fallback sur l'ancien système si pas de permissions spécifiques
+        if current_user.role == 'super_admin':
+            # Super admin voit tout
+            pass
+        elif current_user.role == 'admin':
+            # Admin voit les courriers de son département
+            if current_user.departement_id:
+                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                    User.departement_id == current_user.departement_id
+                )
+            else:
+                # Si admin n'a pas de département assigné, ne voir que ses propres courriers
+                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        else:
+            # Utilisateur normal voit seulement ses propres courriers
+            query = query.filter(Courrier.utilisateur_id == current_user.id)
     
     # Recherche textuelle
     if search:
@@ -816,6 +833,21 @@ def manage_roles():
             'name': 'Supprimer courriers',
             'description': 'Supprimer définitivement des courriers',
             'category': 'Courrier'
+        },
+        'read_all_mail': {
+            'name': 'Lire tous les courriers',
+            'description': 'Accès complet à tous les courriers du système',
+            'category': 'Accès Courrier'
+        },
+        'read_department_mail': {
+            'name': 'Lire courriers du département',
+            'description': 'Accès aux courriers du département uniquement',
+            'category': 'Accès Courrier'
+        },
+        'read_own_mail': {
+            'name': 'Lire ses propres courriers',
+            'description': 'Accès uniquement aux courriers enregistrés par soi-même',
+            'category': 'Accès Courrier'
         }
     }
     
@@ -888,7 +920,10 @@ def add_role():
         'view_mail': 'Consulter courriers',
         'search_mail': 'Rechercher courriers',
         'export_data': 'Exporter données',
-        'delete_mail': 'Supprimer courriers'
+        'delete_mail': 'Supprimer courriers',
+        'read_all_mail': 'Lire tous les courriers',
+        'read_department_mail': 'Lire courriers du département',
+        'read_own_mail': 'Lire ses propres courriers'
     }
     
     couleurs_disponibles = [
@@ -964,7 +999,10 @@ def edit_role(role_id):
         'view_mail': 'Consulter courriers',
         'search_mail': 'Rechercher courriers',
         'export_data': 'Exporter données',
-        'delete_mail': 'Supprimer courriers'
+        'delete_mail': 'Supprimer courriers',
+        'read_all_mail': 'Lire tous les courriers',
+        'read_department_mail': 'Lire courriers du département',
+        'read_own_mail': 'Lire ses propres courriers'
     }
     
     couleurs_disponibles = [

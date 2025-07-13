@@ -76,10 +76,16 @@ class User(UserMixin, db.Model):
     
     def has_permission(self, permission):
         """Vérifie si l'utilisateur a une permission spécifique"""
+        # Obtenir le rôle de l'utilisateur
+        role = Role.query.filter_by(nom=self.role).first()
+        if role:
+            return role.has_permission(permission)
+        
+        # Fallback sur l'ancien système si pas de rôle en base
         permissions = {
-            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'manage_departments', 'view_all', 'edit_all'],
-            'admin': ['manage_statuses', 'view_department', 'edit_department'],
-            'user': ['view_own', 'edit_own']
+            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'manage_departments', 'view_all', 'edit_all', 'read_all_mail'],
+            'admin': ['manage_statuses', 'view_department', 'edit_department', 'read_department_mail'],
+            'user': ['view_own', 'edit_own', 'read_own_mail']
         }
         return permission in permissions.get(self.role, [])
     
@@ -97,14 +103,29 @@ class User(UserMixin, db.Model):
     
     def can_view_courrier(self, courrier):
         """Vérifie si l'utilisateur peut voir ce courrier"""
-        if self.role == 'super_admin':
+        # Vérifier les permissions spécifiques aux courriers
+        if self.has_permission('read_all_mail'):
             return True
-        elif self.role == 'admin':
-            # Admin peut voir les courriers de son département
+        elif self.has_permission('read_department_mail'):
+            # Peut voir les courriers de son département
+            if self.departement_id is None:
+                return courrier.utilisateur_id == self.id
             return self.departement_id == courrier.utilisateur_enregistrement.departement_id
-        else:
-            # Utilisateur peut voir seulement ses propres courriers
+        elif self.has_permission('read_own_mail'):
+            # Peut voir seulement ses propres courriers
             return courrier.utilisateur_id == self.id
+        else:
+            # Fallback sur l'ancien système si pas de permissions spécifiques
+            if self.role == 'super_admin':
+                return True
+            elif self.role == 'admin':
+                # Admin peut voir les courriers de son département
+                if self.departement_id is None:
+                    return courrier.utilisateur_id == self.id
+                return self.departement_id == courrier.utilisateur_enregistrement.departement_id
+            else:
+                # Utilisateur peut voir seulement ses propres courriers
+                return courrier.utilisateur_id == self.id
     
     def get_profile_photo_url(self):
         """Retourne l'URL de la photo de profil ou une image par défaut"""
@@ -349,16 +370,16 @@ class RolePermission(db.Model):
                 'manage_users', 'manage_roles', 'manage_system_settings', 
                 'view_all_logs', 'manage_statuses', 'manage_departments',
                 'register_mail', 'view_mail', 'search_mail', 'export_data', 
-                'delete_mail', 'view_all', 'edit_all'
+                'delete_mail', 'view_all', 'edit_all', 'read_all_mail'
             ],
             'admin': [
                 'manage_statuses', 'register_mail', 'view_mail', 
                 'search_mail', 'export_data', 'manage_system_settings',
-                'view_department', 'edit_department'
+                'view_department', 'edit_department', 'read_department_mail'
             ],
             'user': [
                 'register_mail', 'view_mail', 'search_mail', 'export_data',
-                'view_own', 'edit_own'
+                'view_own', 'edit_own', 'read_own_mail'
             ]
         }
         
