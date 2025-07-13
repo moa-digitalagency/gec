@@ -322,7 +322,7 @@ def generate_format_preview(format_string):
 @login_required
 def change_status(id):
     courrier = Courrier.query.get_or_404(id)
-    new_status = request.form.get('status')
+    new_status = request.form.get('nouveau_statut')
     
     if new_status:
         old_status = courrier.statut

@@ -214,31 +214,33 @@
                 </h2>
             </div>
             <div class="p-6">
-                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div class="flex-shrink-0">
-                        {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
-                            <i class="fas fa-image text-3xl text-green-600"></i>
-                        {% elif courrier.fichier_type == 'application/pdf' %}
-                            <i class="fas fa-file-pdf text-3xl text-red-600"></i>
-                        {% else %}
-                            <i class="fas fa-file text-3xl text-gray-600"></i>
-                        {% endif %}
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <p class="text-lg font-medium text-gray-900">{{ courrier.fichier_nom }}</p>
-                        <p class="text-sm text-gray-500">{{ courrier.fichier_type or 'Type inconnu' }}</p>
-                    </div>
-                    <div class="ml-4 space-x-2">
-                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                            <i class="fas fa-download mr-2"></i>
-                            Télécharger
-                        </a>
-                        <a href="{{ url_for('view_file', id=courrier.id) }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                            <i class="fas fa-eye mr-2"></i>
-                            Voir le fichier
-                        </a>
+                <div class="bg-green-50 rounded-lg border border-green-200 p-4">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
+                                <i class="fas fa-image text-3xl text-green-600"></i>
+                            {% elif courrier.fichier_type == 'application/pdf' %}
+                                <i class="fas fa-file-pdf text-3xl text-red-600"></i>
+                            {% else %}
+                                <i class="fas fa-file text-3xl text-gray-600"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-lg font-medium text-gray-900 break-all">{{ courrier.fichier_nom }}</p>
+                            <p class="text-sm text-gray-500 mb-3">{{ courrier.fichier_type or 'Type inconnu' }}</p>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                                   class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
+                                    <i class="fas fa-download mr-2"></i>
+                                    Télécharger
+                                </a>
+                                <a href="{{ url_for('view_file', id=courrier.id) }}" 
+                                   class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    Voir le fichier
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
