@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite, ParametresSysteme
+from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf
 
 @app.route('/')
@@ -180,10 +180,12 @@ def view_mail():
             query = query.order_by(order_column.asc())
     
     # Pagination
-    courriers = query.paginate(page=page, per_page=per_page, error_out=False)
+    courriers_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+    courriers = courriers_paginated.items
     
     return render_template('view_mail.html', 
                          courriers=courriers,
+                         pagination=courriers_paginated,
                          search=search,
                          date_from=date_from,
                          date_to=date_to,
@@ -199,9 +201,12 @@ def search():
 @login_required
 def mail_detail(id):
     courrier = Courrier.query.get_or_404(id)
+    statuts_disponibles = StatutCourrier.get_statuts_actifs()
     log_activity(current_user.id, "CONSULTATION_COURRIER", 
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
-    return render_template('mail_detail.html', courrier=courrier)
+    return render_template('mail_detail.html', 
+                          courrier=courrier,
+                          statuts_disponibles=statuts_disponibles)
 
 @app.route('/export_pdf/<int:id>')
 @login_required
@@ -312,6 +317,107 @@ def generate_format_preview(format_string):
         preview = re.sub(r'\{random:\d+\}', random_num, preview, count=1)
     
     return preview
+
+@app.route('/change_status/<int:id>', methods=['POST'])
+@login_required
+def change_status(id):
+    courrier = Courrier.query.get_or_404(id)
+    new_status = request.form.get('status')
+    
+    if new_status:
+        old_status = courrier.statut
+        courrier.statut = new_status
+        courrier.modifie_par_id = current_user.id
+        
+        try:
+            db.session.commit()
+            log_activity(current_user.id, "CHANGEMENT_STATUT", 
+                        f"Statut du courrier {courrier.numero_accuse_reception} changé de {old_status} à {new_status}", courrier.id)
+            flash(f'Statut mis à jour vers "{new_status}"', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la mise à jour: {str(e)}', 'error')
+    
+    return redirect(url_for('mail_detail', id=id))
+
+@app.route('/view_file/<int:id>')
+@login_required
+def view_file(id):
+    courrier = Courrier.query.get_or_404(id)
+    if courrier.fichier_chemin and os.path.exists(courrier.fichier_chemin):
+        log_activity(current_user.id, "VISUALISATION_FICHIER", 
+                    f"Visualisation du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
+        return send_file(courrier.fichier_chemin, as_attachment=False)
+    else:
+        flash('Fichier non trouvé.', 'error')
+        return redirect(url_for('mail_detail', id=id))
+
+@app.route('/manage_statuses', methods=['GET', 'POST'])
+@login_required
+def manage_statuses():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add':
+            nom = request.form.get('nom', '').strip().upper()
+            description = request.form.get('description', '').strip()
+            couleur = request.form.get('couleur', 'bg-gray-100 text-gray-800')
+            ordre = int(request.form.get('ordre', 0))
+            
+            if nom:
+                existing = StatutCourrier.query.filter_by(nom=nom).first()
+                if not existing:
+                    statut = StatutCourrier(
+                        nom=nom,
+                        description=description,
+                        couleur=couleur,
+                        ordre=ordre
+                    )
+                    db.session.add(statut)
+                    db.session.commit()
+                    flash(f'Statut "{nom}" ajouté avec succès!', 'success')
+                else:
+                    flash(f'Le statut "{nom}" existe déjà.', 'error')
+        
+        elif action == 'update':
+            statut_id = request.form.get('statut_id')
+            statut = StatutCourrier.query.get(statut_id)
+            if statut:
+                statut.description = request.form.get('description', '').strip()
+                statut.couleur = request.form.get('couleur', 'bg-gray-100 text-gray-800')
+                statut.ordre = int(request.form.get('ordre', 0))
+                statut.actif = request.form.get('actif') == 'on'
+                db.session.commit()
+                flash(f'Statut "{statut.nom}" mis à jour!', 'success')
+        
+        elif action == 'delete':
+            statut_id = request.form.get('statut_id')
+            statut = StatutCourrier.query.get(statut_id)
+            if statut:
+                # Vérifier s'il y a des courriers avec ce statut
+                courriers_count = Courrier.query.filter_by(statut=statut.nom).count()
+                if courriers_count > 0:
+                    flash(f'Impossible de supprimer le statut "{statut.nom}": {courriers_count} courrier(s) l\'utilisent encore.', 'error')
+                else:
+                    db.session.delete(statut)
+                    db.session.commit()
+                    flash(f'Statut "{statut.nom}" supprimé!', 'success')
+    
+    statuts = StatutCourrier.query.order_by(StatutCourrier.ordre).all()
+    couleurs_disponibles = [
+        ('bg-blue-100 text-blue-800', 'Bleu'),
+        ('bg-green-100 text-green-800', 'Vert'),
+        ('bg-yellow-100 text-yellow-800', 'Jaune'),
+        ('bg-red-100 text-red-800', 'Rouge'),
+        ('bg-purple-100 text-purple-800', 'Violet'),
+        ('bg-gray-100 text-gray-800', 'Gris'),
+        ('bg-indigo-100 text-indigo-800', 'Indigo'),
+        ('bg-pink-100 text-pink-800', 'Rose')
+    ]
+    
+    return render_template('manage_statuses.html', 
+                          statuts=statuts,
+                          couleurs_disponibles=couleurs_disponibles)
 
 @app.errorhandler(404)
 def not_found_error(error):

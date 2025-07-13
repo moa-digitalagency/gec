@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     actif = db.Column(db.Boolean, default=True)
     
     # Relations
-    courriers = db.relationship('Courrier', backref='utilisateur_enregistrement', lazy=True)
+    courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
 
 class Courrier(db.Model):
@@ -26,9 +26,13 @@ class Courrier(db.Model):
     fichier_nom = db.Column(db.String(255), nullable=True)
     fichier_chemin = db.Column(db.String(500), nullable=True)
     fichier_type = db.Column(db.String(50), nullable=True)
+    statut = db.Column(db.String(50), nullable=False, default='RECU')
+    date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='courriers_modifies')
     
     def __repr__(self):
         return f'<Courrier {self.numero_accuse_reception}>'
@@ -36,6 +40,18 @@ class Courrier(db.Model):
     @property
     def reference_display(self):
         return self.numero_reference if self.numero_reference else "Non référencé"
+    
+    @property
+    def statut_color(self):
+        """Retourne la couleur associée au statut"""
+        colors = {
+            'RECU': 'bg-blue-100 text-blue-800',
+            'EN_COURS': 'bg-yellow-100 text-yellow-800',
+            'TRAITE': 'bg-green-100 text-green-800',
+            'ARCHIVE': 'bg-gray-100 text-gray-800',
+            'URGENT': 'bg-red-100 text-red-800'
+        }
+        return colors.get(self.statut, 'bg-gray-100 text-gray-800')
 
 class LogActivite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,3 +94,43 @@ class ParametresSysteme(db.Model):
             db.session.add(parametres)
             db.session.commit()
         return parametres
+
+class StatutCourrier(db.Model):
+    """Statuts possibles pour les courriers"""
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200), nullable=True)
+    couleur = db.Column(db.String(50), nullable=False, default='bg-gray-100 text-gray-800')
+    actif = db.Column(db.Boolean, default=True)
+    ordre = db.Column(db.Integer, default=0)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<StatutCourrier {self.nom}>'
+    
+    @staticmethod
+    def get_statuts_actifs():
+        """Récupère la liste des statuts actifs triés par ordre"""
+        return StatutCourrier.query.filter_by(actif=True).order_by(StatutCourrier.ordre).all()
+    
+    @staticmethod
+    def init_default_statuts():
+        """Initialise les statuts par défaut"""
+        statuts_default = [
+            {'nom': 'RECU', 'description': 'Courrier reçu', 'couleur': 'bg-blue-100 text-blue-800', 'ordre': 1},
+            {'nom': 'EN_COURS', 'description': 'En cours de traitement', 'couleur': 'bg-yellow-100 text-yellow-800', 'ordre': 2},
+            {'nom': 'TRAITE', 'description': 'Traité', 'couleur': 'bg-green-100 text-green-800', 'ordre': 3},
+            {'nom': 'ARCHIVE', 'description': 'Archivé', 'couleur': 'bg-gray-100 text-gray-800', 'ordre': 4},
+            {'nom': 'URGENT', 'description': 'Urgent', 'couleur': 'bg-red-100 text-red-800', 'ordre': 0}
+        ]
+        
+        for statut_data in statuts_default:
+            existing = StatutCourrier.query.filter_by(nom=statut_data['nom']).first()
+            if not existing:
+                statut = StatutCourrier(**statut_data)
+                db.session.add(statut)
+        
+        try:
+            db.session.commit()
+        except:
+            db.session.rollback()

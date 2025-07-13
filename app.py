@@ -65,7 +65,11 @@ with app.app_context():
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
-    logging.info("System parameters initialized")
+    
+    # Initialize default statuses
+    models.StatutCourrier.init_default_statuts()
+    
+    logging.info("System parameters and statuses initialized")
 
 @login_manager.user_loader
 def load_user(user_id):
