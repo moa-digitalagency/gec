@@ -1,0 +1,193 @@
+{% extends "new_base.html" %}
+
+{% block title %}Ajouter un Rôle - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex items-center mb-4">
+        <a href="{{ url_for('manage_roles') }}" 
+           class="text-rdc-blue hover:text-rdc-green mr-4">
+            <i class="fas fa-arrow-left text-xl"></i>
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-plus-circle mr-3 text-rdc-blue"></i>
+            Ajouter un Nouveau Rôle
+        </h1>
+    </div>
+    <p class="text-gray-600">Créer un nouveau rôle avec des permissions personnalisées</p>
+</div>
+
+<div class="max-w-4xl mx-auto">
+    <form method="POST" class="bg-white shadow-rdc rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Informations du Rôle</h2>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Nom du rôle -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-1 text-rdc-blue"></i>
+                        Nom du rôle (identifiant)
+                    </label>
+                    <input type="text" 
+                           id="nom" 
+                           name="nom" 
+                           required
+                           placeholder="ex: gestionnaire"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                    <p class="text-xs text-gray-500 mt-1">Utilisé comme identifiant unique (minuscules, sans espaces)</p>
+                </div>
+                
+                <div>
+                    <label for="nom_affichage" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-eye mr-1 text-rdc-green"></i>
+                        Nom d'affichage
+                    </label>
+                    <input type="text" 
+                           id="nom_affichage" 
+                           name="nom_affichage" 
+                           required
+                           placeholder="ex: Gestionnaire"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                    <p class="text-xs text-gray-500 mt-1">Nom affiché dans l'interface</p>
+                </div>
+            </div>
+            
+            <!-- Description -->
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-align-left mr-1 text-rdc-yellow"></i>
+                    Description
+                </label>
+                <textarea id="description" 
+                          name="description" 
+                          rows="3"
+                          placeholder="Description des responsabilités et du scope de ce rôle..."
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"></textarea>
+            </div>
+            
+            <!-- Apparence -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="couleur" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-palette mr-1 text-rdc-red"></i>
+                        Couleur du badge
+                    </label>
+                    <select id="couleur" 
+                            name="couleur"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        {% for value, name in couleurs_disponibles %}
+                        <option value="{{ value }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="icone" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-icons mr-1 text-rdc-blue"></i>
+                        Icône
+                    </label>
+                    <select id="icone" 
+                            name="icone"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="fas fa-user">👤 Utilisateur</option>
+                        <option value="fas fa-user-tie">👔 Professionnel</option>
+                        <option value="fas fa-user-graduate">🎓 Spécialiste</option>
+                        <option value="fas fa-user-cog">⚙️ Gestionnaire</option>
+                        <option value="fas fa-briefcase">💼 Manager</option>
+                        <option value="fas fa-clipboard-list">📋 Superviseur</option>
+                        <option value="fas fa-chart-line">📈 Analyste</option>
+                        <option value="fas fa-key">🗝️ Responsable</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Permissions -->
+        <div class="px-6 py-4 border-t border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-shield-alt mr-2 text-rdc-blue"></i>
+                Permissions
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for perm_key, perm_name in all_permissions.items() %}
+                <div class="flex items-start">
+                    <input type="checkbox" 
+                           id="perm_{{ perm_key }}" 
+                           name="permissions" 
+                           value="{{ perm_key }}"
+                           class="mt-1 h-4 w-4 text-rdc-blue border-gray-300 rounded focus:ring-rdc-blue">
+                    <label for="perm_{{ perm_key }}" 
+                           class="ml-3 text-sm text-gray-700 cursor-pointer">
+                        {{ perm_name }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p class="text-sm text-blue-700">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Sélectionnez les permissions que ce rôle doit avoir. Les utilisateurs avec ce rôle pourront effectuer uniquement les actions autorisées.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-4">
+            <a href="{{ url_for('manage_roles') }}" 
+               class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="px-4 py-2 border border-transparent rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                <i class="fas fa-save mr-2"></i>
+                Créer le Rôle
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-génération du nom identifiant à partir du nom d'affichage
+document.getElementById('nom_affichage').addEventListener('input', function() {
+    const nomAffichage = this.value;
+    const nomId = nomAffichage.toLowerCase()
+                               .replace(/[àáâãäå]/g, 'a')
+                               .replace(/[èéêë]/g, 'e')
+                               .replace(/[ìíîï]/g, 'i')
+                               .replace(/[òóôõö]/g, 'o')
+                               .replace(/[ùúûü]/g, 'u')
+                               .replace(/[ç]/g, 'c')
+                               .replace(/[^a-z0-9]/g, '_')
+                               .replace(/_+/g, '_')
+                               .replace(/^_|_$/g, '');
+    document.getElementById('nom').value = nomId;
+});
+
+// Sélectionner/désélectionner toutes les permissions
+function toggleAllPermissions() {
+    const checkboxes = document.querySelectorAll('input[name="permissions"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+}
+
+// Ajouter un bouton pour sélectionner/désélectionner tout
+document.addEventListener('DOMContentLoaded', function() {
+    const permissionsTitle = document.querySelector('h3');
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.className = 'text-sm text-rdc-blue hover:text-rdc-green ml-4';
+    toggleButton.innerHTML = '<i class="fas fa-check-square mr-1"></i>Tout sélectionner';
+    toggleButton.onclick = toggleAllPermissions;
+    permissionsTitle.appendChild(toggleButton);
+});
+</script>
+{% endblock %}

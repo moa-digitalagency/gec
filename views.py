@@ -653,42 +653,22 @@ def manage_roles():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
-    # Définition des rôles et leurs permissions
-    roles_permissions = {
-        'super_admin': {
-            'name': 'Super Administrateur',
-            'description': 'Accès complet au système avec toutes les permissions',
-            'permissions': [
-                'manage_users', 'manage_roles', 'manage_system_settings', 
-                'view_all_logs', 'manage_statuses', 'register_mail', 
-                'view_mail', 'search_mail', 'export_data', 'delete_mail'
-            ],
-            'color': 'bg-yellow-100 text-yellow-800',
-            'icon': 'fas fa-crown',
-            'count': User.query.filter_by(role='super_admin').count()
-        },
-        'admin': {
-            'name': 'Administrateur',
-            'description': 'Gestion des utilisateurs et configuration système limitée',
-            'permissions': [
-                'manage_statuses', 'register_mail', 'view_mail', 
-                'search_mail', 'export_data', 'manage_system_settings'
-            ],
-            'color': 'bg-blue-100 text-blue-800',
-            'icon': 'fas fa-shield-alt',
-            'count': User.query.filter_by(role='admin').count()
-        },
-        'user': {
-            'name': 'Utilisateur',
-            'description': 'Accès de base pour enregistrer et consulter les courriers',
-            'permissions': [
-                'register_mail', 'view_mail', 'search_mail', 'export_data'
-            ],
-            'color': 'bg-gray-100 text-gray-800',
-            'icon': 'fas fa-user',
-            'count': User.query.filter_by(role='user').count()
+    # Récupérer les rôles depuis la base de données
+    roles = Role.query.order_by(Role.date_creation).all()
+    
+    # Préparer les données des rôles avec leurs permissions
+    roles_data = {}
+    for role in roles:
+        roles_data[role.nom] = {
+            'id': role.id,
+            'name': role.nom_affichage,
+            'description': role.description,
+            'permissions': role.get_permissions_list(),
+            'color': role.couleur,
+            'icon': role.icone,
+            'modifiable': role.modifiable,
+            'count': User.query.filter_by(role=role.nom).count()
         }
-    }
     
     # Définition de toutes les permissions disponibles
     all_permissions = {
@@ -745,28 +725,200 @@ def manage_roles():
     }
     
     return render_template('manage_roles.html',
-                         roles_permissions=roles_permissions,
-                         all_permissions=all_permissions)
+                         roles_permissions=roles_data,
+                         all_permissions=all_permissions,
+                         roles=roles)
 
-@app.route('/update_role_permissions', methods=['POST'])
+@app.route('/add_role', methods=['GET', 'POST'])
 @login_required
-def update_role_permissions():
-    """Mettre à jour les permissions d'un rôle"""
+def add_role():
+    """Ajouter un nouveau rôle"""
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
-    role = request.form.get('role')
-    if role not in ['admin', 'user']:  # On ne peut pas modifier les permissions super_admin
-        flash('Rôle invalide.', 'error')
+    if request.method == 'POST':
+        nom = request.form['nom'].strip().lower().replace(' ', '_')
+        nom_affichage = request.form['nom_affichage'].strip()
+        description = request.form['description'].strip()
+        couleur = request.form['couleur']
+        icone = request.form['icone']
+        permissions = request.form.getlist('permissions')
+        
+        # Vérifier que le rôle n'existe pas déjà
+        if Role.query.filter_by(nom=nom).first():
+            flash('Ce nom de rôle existe déjà.', 'error')
+            return redirect(url_for('add_role'))
+        
+        try:
+            # Créer le nouveau rôle
+            nouveau_role = Role(
+                nom=nom,
+                nom_affichage=nom_affichage,
+                description=description,
+                couleur=couleur,
+                icone=icone,
+                cree_par_id=current_user.id
+            )
+            db.session.add(nouveau_role)
+            db.session.flush()  # Pour obtenir l'ID
+            
+            # Ajouter les permissions
+            for perm in permissions:
+                role_permission = RolePermission(
+                    role_id=nouveau_role.id,
+                    permission_nom=perm,
+                    accorde_par_id=current_user.id
+                )
+                db.session.add(role_permission)
+            
+            db.session.commit()
+            log_activity(current_user.id, "CREATION_ROLE", 
+                        f"Création du rôle {nom_affichage}")
+            flash(f'Rôle "{nom_affichage}" créé avec succès!', 'success')
+            return redirect(url_for('manage_roles'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la création du rôle: {str(e)}', 'error')
+    
+    # Définir les permissions disponibles
+    all_permissions = {
+        'manage_users': 'Gérer les utilisateurs',
+        'manage_roles': 'Gérer les rôles',
+        'manage_system_settings': 'Paramètres système',
+        'view_all_logs': 'Consulter les logs',
+        'manage_statuses': 'Gérer les statuts',
+        'register_mail': 'Enregistrer courriers',
+        'view_mail': 'Consulter courriers',
+        'search_mail': 'Rechercher courriers',
+        'export_data': 'Exporter données',
+        'delete_mail': 'Supprimer courriers'
+    }
+    
+    couleurs_disponibles = [
+        ('bg-blue-100 text-blue-800', 'Bleu'),
+        ('bg-green-100 text-green-800', 'Vert'),
+        ('bg-yellow-100 text-yellow-800', 'Jaune'),
+        ('bg-red-100 text-red-800', 'Rouge'),
+        ('bg-purple-100 text-purple-800', 'Violet'),
+        ('bg-gray-100 text-gray-800', 'Gris'),
+        ('bg-indigo-100 text-indigo-800', 'Indigo'),
+        ('bg-pink-100 text-pink-800', 'Rose')
+    ]
+    
+    return render_template('add_role.html',
+                         all_permissions=all_permissions,
+                         couleurs_disponibles=couleurs_disponibles)
+
+@app.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+def edit_role(role_id):
+    """Modifier un rôle existant"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    role = Role.query.get_or_404(role_id)
+    
+    # Vérifier si le rôle est modifiable
+    if not role.modifiable:
+        flash('Ce rôle système ne peut pas être modifié.', 'error')
         return redirect(url_for('manage_roles'))
     
-    # Cette fonctionnalité nécessiterait une table de permissions en base
-    # Pour l'instant, on affiche juste un message d'information
-    flash('Cette fonctionnalité sera implémentée dans une future version. Les permissions sont actuellement définies dans le code.', 'info')
+    if request.method == 'POST':
+        role.nom_affichage = request.form['nom_affichage'].strip()
+        role.description = request.form['description'].strip()
+        role.couleur = request.form['couleur']
+        role.icone = request.form['icone']
+        role.actif = 'actif' in request.form
+        
+        permissions = request.form.getlist('permissions')
+        
+        try:
+            # Supprimer les anciennes permissions
+            RolePermission.query.filter_by(role_id=role.id).delete()
+            
+            # Ajouter les nouvelles permissions
+            for perm in permissions:
+                role_permission = RolePermission(
+                    role_id=role.id,
+                    permission_nom=perm,
+                    accorde_par_id=current_user.id
+                )
+                db.session.add(role_permission)
+            
+            db.session.commit()
+            log_activity(current_user.id, "MODIFICATION_ROLE", 
+                        f"Modification du rôle {role.nom_affichage}")
+            flash(f'Rôle "{role.nom_affichage}" modifié avec succès!', 'success')
+            return redirect(url_for('manage_roles'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la modification: {str(e)}', 'error')
     
-    log_activity(current_user.id, "CONSULTATION_ROLES", 
-                f"Tentative de modification des permissions du rôle {role}")
+    # Définir les permissions disponibles
+    all_permissions = {
+        'manage_users': 'Gérer les utilisateurs',
+        'manage_roles': 'Gérer les rôles',
+        'manage_system_settings': 'Paramètres système',
+        'view_all_logs': 'Consulter les logs',
+        'manage_statuses': 'Gérer les statuts',
+        'register_mail': 'Enregistrer courriers',
+        'view_mail': 'Consulter courriers',
+        'search_mail': 'Rechercher courriers',
+        'export_data': 'Exporter données',
+        'delete_mail': 'Supprimer courriers'
+    }
+    
+    couleurs_disponibles = [
+        ('bg-blue-100 text-blue-800', 'Bleu'),
+        ('bg-green-100 text-green-800', 'Vert'),
+        ('bg-yellow-100 text-yellow-800', 'Jaune'),
+        ('bg-red-100 text-red-800', 'Rouge'),
+        ('bg-purple-100 text-purple-800', 'Violet'),
+        ('bg-gray-100 text-gray-800', 'Gris'),
+        ('bg-indigo-100 text-indigo-800', 'Indigo'),
+        ('bg-pink-100 text-pink-800', 'Rose')
+    ]
+    
+    return render_template('edit_role.html',
+                         role=role,
+                         all_permissions=all_permissions,
+                         couleurs_disponibles=couleurs_disponibles)
+
+@app.route('/delete_role/<int:role_id>', methods=['POST'])
+@login_required
+def delete_role(role_id):
+    """Supprimer un rôle"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    role = Role.query.get_or_404(role_id)
+    
+    # Vérifier si le rôle est modifiable
+    if not role.modifiable:
+        flash('Ce rôle système ne peut pas être supprimé.', 'error')
+        return redirect(url_for('manage_roles'))
+    
+    # Vérifier s'il y a des utilisateurs avec ce rôle
+    users_count = User.query.filter_by(role=role.nom).count()
+    if users_count > 0:
+        flash(f'Impossible de supprimer le rôle "{role.nom_affichage}": {users_count} utilisateur(s) l\'utilisent encore.', 'error')
+        return redirect(url_for('manage_roles'))
+    
+    try:
+        nom_role = role.nom_affichage
+        db.session.delete(role)
+        db.session.commit()
+        log_activity(current_user.id, "SUPPRESSION_ROLE", 
+                    f"Suppression du rôle {nom_role}")
+        flash(f'Rôle "{nom_role}" supprimé avec succès!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la suppression: {str(e)}', 'error')
     
     return redirect(url_for('manage_roles'))
 

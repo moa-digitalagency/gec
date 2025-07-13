@@ -4,12 +4,19 @@
 
 {% block content %}
 <!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-user-shield mr-3 text-rdc-blue"></i>
-        Gestion des Rôles et Permissions
-    </h1>
-    <p class="mt-2 text-gray-600">Configuration des rôles utilisateur et de leurs permissions</p>
+<div class="mb-8 flex justify-between items-start">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-user-shield mr-3 text-rdc-blue"></i>
+            Gestion des Rôles et Permissions
+        </h1>
+        <p class="mt-2 text-gray-600">Configuration des rôles utilisateur et de leurs permissions</p>
+    </div>
+    <a href="{{ url_for('add_role') }}" 
+       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+        <i class="fas fa-plus mr-2"></i>
+        Nouveau Rôle
+    </a>
 </div>
 
 <!-- Roles Overview Cards -->
@@ -27,11 +34,17 @@
                         <p class="text-sm text-gray-500">{{ role_data.count }} utilisateur(s)</p>
                     </div>
                 </div>
-                {% if role_key != 'super_admin' %}
-                <button onclick="showRoleModal('{{ role_key }}')" 
-                        class="text-rdc-blue hover:text-rdc-green transition-colors">
-                    <i class="fas fa-edit"></i>
-                </button>
+                {% if role_data.modifiable %}
+                <div class="flex space-x-2">
+                    <a href="{{ url_for('edit_role', role_id=role_data.id) }}" 
+                       class="text-rdc-blue hover:text-rdc-green transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button onclick="confirmDeleteRole('{{ role_data.id }}', '{{ role_data.name }}')"
+                            class="text-red-500 hover:text-red-700 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -201,9 +214,48 @@
     </div>
 </div>
 
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Confirmer la suppression</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Êtes-vous sûr de vouloir supprimer le rôle "<span id="roleNameToDelete"></span>" ?
+                Cette action est irréversible.
+            </p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeDeleteModal()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                    Annuler
+                </button>
+                <form id="deleteForm" method="POST" class="inline">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-function showRoleModal(roleKey) {
-    alert('Fonctionnalité en développement : modification des permissions du rôle ' + roleKey);
+function confirmDeleteRole(roleId, roleName) {
+    document.getElementById('roleNameToDelete').textContent = roleName;
+    document.getElementById('deleteForm').action = '/delete_role/' + roleId;
+    document.getElementById('deleteModal').classList.remove('hidden');
 }
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+
+// Fermer le modal en cliquant à l'extérieur
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
 </script>
 {% endblock %}
