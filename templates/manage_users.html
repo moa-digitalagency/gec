@@ -43,16 +43,19 @@
                         Email
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Matricule
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Fonction
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Département
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rôle
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Langue
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Statut
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Créé le
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -65,11 +68,17 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-rdc-blue flex items-center justify-center">
-                                    <span class="text-white font-medium text-sm">
-                                        {{ user.nom_complet[:2].upper() }}
-                                    </span>
-                                </div>
+                                {% if user.photo_profile %}
+                                    <img src="{{ user.get_profile_photo_url() }}" 
+                                         alt="Photo de {{ user.nom_complet }}" 
+                                         class="h-10 w-10 rounded-full object-cover">
+                                {% else %}
+                                    <div class="h-10 w-10 rounded-full bg-rdc-blue flex items-center justify-center">
+                                        <span class="text-white font-medium text-sm">
+                                            {{ user.nom_complet[:2].upper() }}
+                                        </span>
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="ml-4">
                                 <div class="text-sm font-medium text-gray-900">{{ user.nom_complet }}</div>
@@ -79,6 +88,33 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {{ user.email }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {% if user.matricule %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <i class="fas fa-id-badge mr-1"></i>{{ user.matricule }}
+                            </span>
+                        {% else %}
+                            <span class="text-gray-400">Non défini</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if user.fonction %}
+                            <span class="inline-flex items-center">
+                                <i class="fas fa-briefcase mr-1 text-gray-400"></i>{{ user.fonction }}
+                            </span>
+                        {% else %}
+                            <span class="text-gray-400">Non défini</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if user.departement %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <i class="fas fa-building mr-1"></i>{{ user.departement.nom }}
+                            </span>
+                        {% else %}
+                            <span class="text-gray-400">Aucun</span>
+                        {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         {% if user.role == 'super_admin' %}
@@ -95,15 +131,6 @@
                             </span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {% if user.langue == 'fr' %}
-                            🇫🇷 Français
-                        {% elif user.langue == 'en' %}
-                            🇺🇸 English
-                        {% else %}
-                            {{ user.langue }}
-                        {% endif %}
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         {% if user.actif %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -114,9 +141,6 @@
                                 <i class="fas fa-ban mr-1"></i>Inactif
                             </span>
                         {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ user.date_creation.strftime('%d/%m/%Y') if user.date_creation else 'N/A' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex items-center space-x-2">

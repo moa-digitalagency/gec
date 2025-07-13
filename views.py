@@ -477,7 +477,8 @@ def manage_users():
         return redirect(url_for('dashboard'))
     
     users = User.query.order_by(User.date_creation.desc()).all()
-    return render_template('manage_users.html', users=users, 
+    departements = Departement.get_departements_actifs()
+    return render_template('manage_users.html', users=users, departements=departements,
                          available_languages=get_available_languages())
 
 @app.route('/add_user', methods=['GET', 'POST'])
@@ -495,6 +496,9 @@ def add_user():
         password = request.form['password']
         role = request.form['role']
         langue = request.form['langue']
+        matricule = request.form.get('matricule', '').strip()
+        fonction = request.form.get('fonction', '').strip()
+        departement_id = request.form.get('departement_id') or None
         
         # Vérifier que l'utilisateur n'existe pas déjà
         if User.query.filter_by(username=username).first():
@@ -505,6 +509,11 @@ def add_user():
             flash('Cette adresse email existe déjà.', 'error')
             return redirect(url_for('add_user'))
         
+        # Vérifier l'unicité du matricule si fourni
+        if matricule and User.query.filter_by(matricule=matricule).first():
+            flash('Ce matricule existe déjà.', 'error')
+            return redirect(url_for('add_user'))
+        
         # Créer le nouvel utilisateur
         new_user = User(
             username=username,
@@ -513,10 +522,30 @@ def add_user():
             password_hash=generate_password_hash(password),
             role=role,
             langue=langue,
+            matricule=matricule if matricule else None,
+            fonction=fonction if fonction else None,
+            departement_id=departement_id,
             actif=True
         )
         
         db.session.add(new_user)
+        db.session.flush()  # Pour obtenir l'ID du nouvel utilisateur
+        
+        # Gestion de l'upload de photo de profil
+        file = request.files.get('photo_profile')
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            ext = filename.rsplit('.', 1)[1].lower()
+            filename = f"profile_{new_user.id}_{timestamp}.{ext}"
+            
+            profile_folder = os.path.join('uploads', 'profiles')
+            os.makedirs(profile_folder, exist_ok=True)
+            filepath = os.path.join(profile_folder, filename)
+            file.save(filepath)
+            
+            new_user.photo_profile = filename
+        
         db.session.commit()
         
         log_activity(current_user.id, "CREATION_UTILISATEUR", 
@@ -524,8 +553,10 @@ def add_user():
         flash(f'Utilisateur {username} créé avec succès!', 'success')
         return redirect(url_for('manage_users'))
     
+    departements = Departement.get_departements_actifs()
     return render_template('add_user.html', 
-                         available_languages=get_available_languages())
+                         available_languages=get_available_languages(),
+                         departements=departements)
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -543,12 +574,43 @@ def edit_user(user_id):
         user.nom_complet = request.form['nom_complet']
         user.role = request.form['role']
         user.langue = request.form['langue']
+        user.matricule = request.form.get('matricule', '').strip() or None
+        user.fonction = request.form.get('fonction', '').strip() or None
+        user.departement_id = request.form.get('departement_id') or None
         user.actif = 'actif' in request.form
+        
+        # Vérifier l'unicité du matricule si fourni
+        if user.matricule:
+            existing_user = User.query.filter(User.matricule == user.matricule, User.id != user.id).first()
+            if existing_user:
+                flash('Ce matricule existe déjà.', 'error')
+                return redirect(url_for('edit_user', user_id=user.id))
         
         # Mise à jour du mot de passe si fourni
         password = request.form.get('password')
         if password:
             user.password_hash = generate_password_hash(password)
+        
+        # Gestion de l'upload de photo de profil
+        file = request.files.get('photo_profile')
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            ext = filename.rsplit('.', 1)[1].lower()
+            filename = f"profile_{user.id}_{timestamp}.{ext}"
+            
+            profile_folder = os.path.join('uploads', 'profiles')
+            os.makedirs(profile_folder, exist_ok=True)
+            filepath = os.path.join(profile_folder, filename)
+            file.save(filepath)
+            
+            # Supprimer l'ancienne photo si elle existe
+            if user.photo_profile:
+                old_file = os.path.join(profile_folder, user.photo_profile)
+                if os.path.exists(old_file):
+                    os.remove(old_file)
+            
+            user.photo_profile = filename
         
         db.session.commit()
         
@@ -557,8 +619,10 @@ def edit_user(user_id):
         flash(f'Utilisateur {user.username} modifié avec succès!', 'success')
         return redirect(url_for('manage_users'))
     
+    departements = Departement.get_departements_actifs()
     return render_template('edit_user.html', user=user, 
-                         available_languages=get_available_languages())
+                         available_languages=get_available_languages(),
+                         departements=departements)
 
 @app.route('/delete_user/<int:user_id>', methods=['POST'])
 @login_required

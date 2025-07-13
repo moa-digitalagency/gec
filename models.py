@@ -66,6 +66,8 @@ class User(UserMixin, db.Model):
     langue = db.Column(db.String(5), nullable=False, default='fr')
     photo_profile = db.Column(db.String(255), nullable=True)  # Chemin vers la photo de profil
     departement_id = db.Column(db.Integer, db.ForeignKey('departement.id'), nullable=True)
+    matricule = db.Column(db.String(50), nullable=True)  # Matricule de l'employé
+    fonction = db.Column(db.String(200), nullable=True)  # Fonction/poste de l'employé
     
     # Relations
     courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
