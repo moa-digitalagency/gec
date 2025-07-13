@@ -139,6 +139,7 @@ def view_mail():
     search = request.args.get('search', '')
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
+    statut = request.args.get('statut', '')
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
@@ -156,6 +157,10 @@ def view_mail():
             )
         )
     
+    # Filtre par statut
+    if statut:
+        query = query.filter(Courrier.statut == statut)
+    
     # Filtres par date
     if date_from:
         try:
@@ -172,7 +177,7 @@ def view_mail():
             pass
     
     # Tri
-    if sort_by in ['date_enregistrement', 'numero_accuse_reception', 'expediteur', 'objet']:
+    if sort_by in ['date_enregistrement', 'numero_accuse_reception', 'expediteur', 'objet', 'statut']:
         order_column = getattr(Courrier, sort_by)
         if sort_order == 'desc':
             query = query.order_by(order_column.desc())
@@ -189,6 +194,7 @@ def view_mail():
                          search=search,
                          date_from=date_from,
                          date_to=date_to,
+                         statut=statut,
                          sort_by=sort_by,
                          sort_order=sort_order)
 
