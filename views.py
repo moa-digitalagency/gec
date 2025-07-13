@@ -183,7 +183,7 @@ def view_mail():
     courriers_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
     courriers = courriers_paginated.items
     
-    return render_template('view_mail.html', 
+    return render_template('view_mail_new.html', 
                          courriers=courriers,
                          pagination=courriers_paginated,
                          search=search,
@@ -204,7 +204,7 @@ def mail_detail(id):
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     log_activity(current_user.id, "CONSULTATION_COURRIER", 
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
-    return render_template('mail_detail.html', 
+    return render_template('mail_detail_new.html', 
                           courrier=courrier,
                           statuts_disponibles=statuts_disponibles)
 
