@@ -153,41 +153,7 @@
             </div>
         </div>
         
-        <!-- File Attachment -->
-        {% if courrier.fichier_nom %}
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
-                    Pièce Jointe
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div class="flex-shrink-0">
-                        {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
-                            <i class="fas fa-image text-3xl text-green-600"></i>
-                        {% elif courrier.fichier_type == 'application/pdf' %}
-                            <i class="fas fa-file-pdf text-3xl text-red-600"></i>
-                        {% else %}
-                            <i class="fas fa-file text-3xl text-gray-600"></i>
-                        {% endif %}
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <p class="text-lg font-medium text-gray-900">{{ courrier.fichier_nom }}</p>
-                        <p class="text-sm text-gray-500">{{ courrier.fichier_type or 'Type inconnu' }}</p>
-                    </div>
-                    <div class="ml-4">
-                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                            <i class="fas fa-download mr-2"></i>
-                            Télécharger
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
     </div>
     
     <!-- Sidebar -->
@@ -240,6 +206,42 @@
                 </div>
             </div>
         </div>
+        
+        <!-- File Attachment -->
+        {% if courrier.fichier_nom %}
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
+                    Pièce Jointe
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div class="flex-shrink-0">
+                        {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
+                            <i class="fas fa-image text-3xl text-green-600"></i>
+                        {% elif courrier.fichier_type == 'application/pdf' %}
+                            <i class="fas fa-file-pdf text-3xl text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-file text-3xl text-gray-600"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-lg font-medium text-gray-900">{{ courrier.fichier_nom }}</p>
+                        <p class="text-sm text-gray-500">{{ courrier.fichier_type or 'Type inconnu' }}</p>
+                    </div>
+                    <div class="ml-4">
+                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-download mr-2"></i>
+                            Télécharger
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Statistics -->
         <div class="bg-white shadow-rdc rounded-xl">
