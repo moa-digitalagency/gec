@@ -132,40 +132,95 @@
                 </div>
             </div>
             
-            <!-- Mobile menu -->
+            <!-- Mobile menu with improved structure -->
             <div class="md:hidden hidden" id="mobile-menu">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="{{ url_for('dashboard') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-tachometer-alt mr-1"></i>Tableau de Bord
-                    </a>
-                    <a href="{{ url_for('register_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-plus-circle mr-1"></i>Enregistrer Courrier
-                    </a>
-                    <a href="{{ url_for('view_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-list mr-1"></i>Consulter Courriers
-                    </a>
-                    <a href="{{ url_for('search') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-search mr-1"></i>Recherche
-                    </a>
-                    <a href="{{ url_for('settings') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-cog mr-1"></i>Configuration Système
-                    </a>
-                    <a href="{{ url_for('manage_statuses') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-tags mr-1"></i>Gérer les Statuts
-                    </a>
-                    {% if current_user.can_manage_users() %}
-                    <a href="{{ url_for('manage_users') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-users mr-1"></i>Gérer les Utilisateurs
-                    </a>
-                    {% endif %}
-                    <!-- Language Selection Mobile -->
-                    <div class="border-t border-rdc-green mt-2 pt-2">
-                        <div class="text-white text-sm px-3 py-1 font-medium">Langue / Language</div>
-                        <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium {% if get_current_language() == 'fr' %}bg-rdc-green{% endif %}">
-                            🇫🇷 Français
+                <div class="px-2 pt-2 pb-3 space-y-1 bg-rdc-blue border-t border-rdc-green">
+                    <!-- Main Navigation -->
+                    <div class="space-y-1">
+                        <a href="{{ url_for('dashboard') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
+                            <i class="fas fa-tachometer-alt mr-3 w-5 text-center"></i>
+                            {{ t('nav.dashboard') if t else 'Tableau de Bord' }}
                         </a>
-                        <a href="{{ url_for('set_user_language', lang_code='en') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium {% if get_current_language() == 'en' %}bg-rdc-green{% endif %}">
-                            🇺🇸 English
+                        <a href="{{ url_for('register_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
+                            <i class="fas fa-plus-circle mr-3 w-5 text-center"></i>
+                            {{ t('nav.register_mail') if t else 'Enregistrer Courrier' }}
+                        </a>
+                        <a href="{{ url_for('view_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
+                            <i class="fas fa-list mr-3 w-5 text-center"></i>
+                            {{ t('nav.view_mail') if t else 'Consulter Courriers' }}
+                        </a>
+                        <a href="{{ url_for('search') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
+                            <i class="fas fa-search mr-3 w-5 text-center"></i>
+                            {{ t('nav.search') if t else 'Recherche Avancée' }}
+                        </a>
+                    </div>
+                    
+                    <!-- Settings Section -->
+                    <div class="border-t border-rdc-green mt-3 pt-3">
+                        <div class="text-white text-xs px-3 py-1 font-medium opacity-70 uppercase tracking-wider">
+                            {{ t('nav.settings') if t else 'Paramètres' }}
+                        </div>
+                        <a href="{{ url_for('settings') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                            <i class="fas fa-cog mr-3 w-5 text-center"></i>
+                            {{ t('nav.system_config') if t else 'Configuration Système' }}
+                        </a>
+                        <a href="{{ url_for('manage_statuses') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                            <i class="fas fa-tags mr-3 w-5 text-center"></i>
+                            {{ t('nav.manage_statuses') if t else 'Gérer les Statuts' }}
+                        </a>
+                        {% if current_user.can_manage_users() %}
+                        <a href="{{ url_for('manage_users') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                            <i class="fas fa-users mr-3 w-5 text-center"></i>
+                            {{ t('nav.manage_users') if t else 'Gérer les Utilisateurs' }}
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Language Selection Mobile -->
+                    <div class="border-t border-rdc-green mt-3 pt-3">
+                        <div class="text-white text-xs px-3 py-1 font-medium opacity-70 uppercase tracking-wider">
+                            Langue / Language
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 px-3 py-2">
+                            <a href="{{ url_for('set_user_language', lang_code='fr') }}" 
+                               class="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors {% if get_current_language() == 'fr' %}bg-rdc-green text-white{% else %}bg-white bg-opacity-20 text-white hover:bg-opacity-30{% endif %}">
+                                🇫🇷 FR
+                            </a>
+                            <a href="{{ url_for('set_user_language', lang_code='en') }}" 
+                               class="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors {% if get_current_language() == 'en' %}bg-rdc-green text-white{% else %}bg-white bg-opacity-20 text-white hover:bg-opacity-30{% endif %}">
+                                🇺🇸 EN
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- User Info Section -->
+                    <div class="border-t border-rdc-green mt-3 pt-3">
+                        <div class="flex items-center px-3 py-2">
+                            <div class="flex-shrink-0">
+                                <div class="h-8 w-8 rounded-full bg-rdc-green flex items-center justify-center">
+                                    <span class="text-white text-xs font-bold">
+                                        {{ current_user.nom_complet[:2].upper() }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="ml-3 flex-1 min-w-0">
+                                <div class="text-white text-sm font-medium truncate">
+                                    {{ current_user.nom_complet }}
+                                </div>
+                                <div class="text-rdc-yellow text-xs">
+                                    {% if current_user.role == 'super_admin' %}
+                                        <i class="fas fa-crown mr-1"></i>Super Admin
+                                    {% elif current_user.role == 'admin' %}
+                                        <i class="fas fa-user-shield mr-1"></i>Admin
+                                    {% else %}
+                                        <i class="fas fa-user mr-1"></i>Utilisateur
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="text-white hover:bg-red-600 block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                            <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>
+                            {{ t('nav.logout') if t else 'Déconnexion' }}
                         </a>
                     </div>
                 </div>
@@ -228,25 +283,96 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     
     <script>
-        // Mobile menu toggle
-        document.getElementById('mobile-menu-button')?.addEventListener('click', function() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        });
-        
-        // User dropdown toggle
-        document.getElementById('user-menu')?.addEventListener('click', function() {
-            const dropdown = document.getElementById('user-dropdown');
-            dropdown.classList.toggle('hidden');
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const userMenu = document.getElementById('user-menu');
-            const dropdown = document.getElementById('user-dropdown');
-            if (userMenu && dropdown && !userMenu.contains(event.target)) {
-                dropdown.classList.add('hidden');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('GEC Mines Application Initialized');
+            
+            // Mobile menu toggle with enhanced functionality
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', function() {
+                    const isHidden = mobileMenu.classList.contains('hidden');
+                    if (isHidden) {
+                        mobileMenu.classList.remove('hidden');
+                        mobileMenu.style.display = 'block';
+                        // Change hamburger to X
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-times';
+                        }
+                    } else {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.style.display = 'none';
+                        // Change X back to hamburger
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-bars';
+                        }
+                    }
+                });
+                
+                // Close mobile menu when clicking menu links
+                const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+                mobileMenuLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.style.display = 'none';
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-bars';
+                        }
+                    });
+                });
             }
+            
+            // User dropdown toggle with improved UX
+            const userMenuButton = document.getElementById('user-menu');
+            const userDropdown = document.getElementById('user-dropdown');
+            
+            if (userMenuButton && userDropdown) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Auto-dismiss alerts
+            const dismissBtns = document.querySelectorAll('.dismiss-alert');
+            dismissBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const alert = this.closest('.mb-4');
+                    if (alert) {
+                        alert.style.opacity = '0';
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Handle window resize to close mobile menu
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) { // md breakpoint
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.style.display = 'none';
+                        const mobileMenuButton = document.getElementById('mobile-menu-button');
+                        const icon = mobileMenuButton?.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-bars';
+                        }
+                    }
+                }
+            });
         });
         
         // Dismiss alerts
@@ -263,6 +389,96 @@
             });
         }, 5000);
     </script>
+    
+    <style>
+        /* Enhanced responsive design for mobile navigation */
+        #mobile-menu {
+            position: relative;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+        
+        /* Smooth transitions for alerts */
+        .mb-4 {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Improve mobile touch targets */
+        @media (max-width: 768px) {
+            .text-base {
+                font-size: 1.1rem;
+                line-height: 1.5;
+            }
+            
+            button, a {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+            
+            /* Better spacing for mobile menu */
+            #mobile-menu .space-y-1 > * + * {
+                margin-top: 0.5rem;
+            }
+            
+            /* Responsive language selector */
+            .grid-cols-2 a {
+                padding: 0.75rem;
+                justify-content: center;
+                font-weight: 500;
+            }
+        }
+        
+        /* Language selector hover effects */
+        .group:hover .opacity-0 {
+            opacity: 1;
+        }
+        
+        .group:hover .invisible {
+            visibility: visible;
+        }
+        
+        /* Enhanced responsive design */
+        @media (max-width: 640px) {
+            .max-w-7xl {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            /* Stack language buttons on very small screens */
+            .grid-cols-2 {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            /* Better mobile menu spacing */
+            #mobile-menu .px-3 {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+        
+        /* User info section styling */
+        .text-rdc-yellow {
+            color: #FFD700;
+        }
+        
+        /* Mobile menu animation */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        #mobile-menu.show {
+            animation: slideDown 0.3s ease-out;
+        }
+    </style>
     
     {% block scripts %}{% endblock %}
 </body>
