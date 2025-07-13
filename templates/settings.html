@@ -1,0 +1,315 @@
+{% extends "new_base.html" %}
+
+{% block title %}Paramètres Système - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-cogs mr-3 text-rdc-blue"></i>
+        Paramètres du Système
+    </h1>
+    <p class="mt-2 text-gray-600">Configurez l'apparence et le comportement du système GEC</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Settings Form -->
+    <div class="lg:col-span-2">
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-sliders-h mr-2 text-rdc-blue"></i>
+                    Configuration Générale
+                </h2>
+            </div>
+            <div class="p-6">
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    <!-- Software Name -->
+                    <div>
+                        <label for="nom_logiciel" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tag mr-1 text-rdc-blue"></i>
+                            Nom du Logiciel
+                        </label>
+                        <input type="text" 
+                               id="nom_logiciel" 
+                               name="nom_logiciel" 
+                               value="{{ parametres.nom_logiciel }}"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                               placeholder="Nom affiché dans l'interface">
+                        <p class="mt-1 text-sm text-gray-500">Ce nom apparaîtra dans la barre de navigation et les documents générés</p>
+                    </div>
+                    
+                    <!-- Logo Upload -->
+                    <div>
+                        <label for="logo" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-image mr-1 text-rdc-blue"></i>
+                            Logo de l'Organisation
+                        </label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors">
+                            <div class="space-y-1 text-center">
+                                {% if parametres.logo_url %}
+                                <div class="mb-4">
+                                    <img src="{{ parametres.logo_url }}" alt="Logo actuel" class="h-16 w-auto mx-auto">
+                                    <p class="text-sm text-gray-500 mt-2">Logo actuel</p>
+                                </div>
+                                {% else %}
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                {% endif %}
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
+                                        <span>{{ 'Changer le logo' if parametres.logo_url else 'Télécharger un logo' }}</span>
+                                        <input id="logo" 
+                                               name="logo" 
+                                               type="file" 
+                                               class="sr-only" 
+                                               accept=".png,.jpg,.jpeg,.svg">
+                                    </label>
+                                    <p class="pl-1">ou glisser-déposer</p>
+                                </div>
+                                <p class="text-xs text-gray-500">
+                                    PNG, JPG, JPEG, SVG jusqu'à 2MB
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Receipt Number Format -->
+                    <div>
+                        <label for="format_numero_accuse" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-receipt mr-1 text-rdc-blue"></i>
+                            Format du Numéro d'Accusé de Réception
+                        </label>
+                        <input type="text" 
+                               id="format_numero_accuse" 
+                               name="format_numero_accuse" 
+                               value="{{ parametres.format_numero_accuse }}"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue font-mono"
+                               placeholder="GEC-{year}-{counter:05d}">
+                        <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-sm text-gray-700 mb-2"><strong>Variables disponibles :</strong></p>
+                            <ul class="text-xs text-gray-600 space-y-1">
+                                <li><code class="bg-white px-1 rounded">{year}</code> - Année courante (ex: 2025)</li>
+                                <li><code class="bg-white px-1 rounded">{month}</code> - Mois courant (ex: 01)</li>
+                                <li><code class="bg-white px-1 rounded">{day}</code> - Jour courant (ex: 15)</li>
+                                <li><code class="bg-white px-1 rounded">{counter:05d}</code> - Compteur avec zéros (ex: 00001)</li>
+                                <li><code class="bg-white px-1 rounded">{random:4}</code> - Nombre aléatoire à 4 chiffres</li>
+                            </ul>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-600">
+                                <strong>Aperçu :</strong> 
+                                <span id="preview-format" class="font-mono bg-gray-100 px-2 py-1 rounded">{{ format_preview }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Organization Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-phone mr-1 text-rdc-green"></i>
+                                Téléphone
+                            </label>
+                            <input type="tel" 
+                                   id="telephone" 
+                                   name="telephone" 
+                                   value="{{ parametres.telephone or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                   placeholder="+243 XX XXX XXXX">
+                        </div>
+                        
+                        <div>
+                            <label for="email_contact" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-1 text-rdc-green"></i>
+                                Email de Contact
+                            </label>
+                            <input type="email" 
+                                   id="email_contact" 
+                                   name="email_contact" 
+                                   value="{{ parametres.email_contact or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                   placeholder="contact@mines.gouv.cd">
+                        </div>
+                    </div>
+                    
+                    <!-- Address -->
+                    <div>
+                        <label for="adresse_organisme" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-map-marker-alt mr-1 text-rdc-green"></i>
+                            Adresse de l'Organisme
+                        </label>
+                        <textarea id="adresse_organisme" 
+                                  name="adresse_organisme" 
+                                  rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                  placeholder="Adresse complète de l'organisme">{{ parametres.adresse_organisme or '' }}</textarea>
+                    </div>
+                    
+                    <!-- Submit Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-3 pt-6">
+                        <button type="submit" 
+                                class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer les Paramètres
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" 
+                           class="flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
+                            <i class="fas fa-times mr-2"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Current Settings -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
+                    Configuration Actuelle
+                </h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-tag mr-2 text-rdc-green"></i>
+                        Nom actuel
+                    </div>
+                    <div class="text-sm text-gray-600">{{ parametres.nom_logiciel }}</div>
+                </div>
+                
+                <div>
+                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-calendar mr-2 text-rdc-green"></i>
+                        Dernière modification
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        {% if parametres.date_modification %}
+                            {{ parametres.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                        {% else %}
+                            Jamais modifié
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-user mr-2 text-rdc-green"></i>
+                        Modifié par
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        {% if parametres.modifie_par %}
+                            {{ parametres.modifie_par.nom_complet }}
+                        {% else %}
+                            Système
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-question-circle mr-2 text-rdc-blue"></i>
+                    Aide
+                </h3>
+            </div>
+            <div class="p-6">
+                <ul class="space-y-3 text-sm text-gray-600">
+                    <li class="flex items-start">
+                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
+                        Le nom du logiciel apparaît dans la navigation et les documents
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
+                        Le logo recommandé est de 64x64 pixels pour un affichage optimal
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
+                        Le format du numéro d'accusé affecte tous les nouveaux courriers
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
+                        Les informations de contact apparaissent dans les PDF exportés
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Preview format updates
+document.getElementById('format_numero_accuse').addEventListener('input', function() {
+    updateFormatPreview(this.value);
+});
+
+function updateFormatPreview(format) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const counter = 1;
+    const random = Math.floor(Math.random() * 9000) + 1000;
+    
+    let preview = format
+        .replace('{year}', year)
+        .replace('{month}', month)
+        .replace('{day}', day)
+        .replace('{counter:05d}', String(counter).padStart(5, '0'))
+        .replace('{counter}', counter)
+        .replace('{random:4}', random);
+    
+    document.getElementById('preview-format').textContent = preview;
+}
+
+// File upload preview
+document.getElementById('logo').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Check file size
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Erreur: Le fichier est trop volumineux (max 2MB)');
+            e.target.value = '';
+            return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.querySelector('.space-y-1.text-center');
+            preview.innerHTML = `
+                <div class="mb-4">
+                    <img src="${e.target.result}" alt="Aperçu du logo" class="h-16 w-auto mx-auto">
+                    <p class="text-sm text-gray-500 mt-2">Nouveau logo (aperçu)</p>
+                </div>
+                <div class="flex text-sm text-gray-600">
+                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
+                        <span>Changer le fichier</span>
+                        <input id="logo" name="logo" type="file" class="sr-only" accept=".png,.jpg,.jpeg,.svg">
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500">PNG, JPG, JPEG, SVG jusqu'à 2MB</p>
+            `;
+            
+            // Re-attach event listener to new input
+            document.getElementById('logo').addEventListener('change', arguments.callee);
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Initialize format preview
+updateFormatPreview(document.getElementById('format_numero_accuse').value);
+</script>
+{% endblock %}

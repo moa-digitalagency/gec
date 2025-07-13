@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite
+from models import User, Courrier, LogActivite, ParametresSysteme
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf
 
 @app.route('/')
@@ -230,6 +230,88 @@ def download_file(id):
     else:
         flash('Fichier non trouvé.', 'error')
         return redirect(url_for('mail_detail', id=id))
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    parametres = ParametresSysteme.get_parametres()
+    
+    if request.method == 'POST':
+        # Mise à jour des paramètres
+        parametres.nom_logiciel = request.form['nom_logiciel']
+        parametres.format_numero_accuse = request.form['format_numero_accuse']
+        parametres.telephone = request.form.get('telephone', '').strip() or None
+        parametres.email_contact = request.form.get('email_contact', '').strip() or None
+        parametres.adresse_organisme = request.form.get('adresse_organisme', '').strip() or None
+        parametres.modifie_par_id = current_user.id
+        
+        # Gestion du logo
+        if 'logo' in request.files:
+            logo = request.files['logo']
+            if logo and logo.filename and allowed_file(logo.filename):
+                filename = secure_filename(logo.filename)
+                # Créer un nom unique pour le logo
+                logo_filename = f"logo_{uuid.uuid4().hex[:8]}_{filename}"
+                logo_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_filename)
+                
+                try:
+                    logo.save(logo_path)
+                    parametres.logo_url = f'/uploads/{logo_filename}'
+                    flash('Logo téléchargé avec succès!', 'success')
+                except Exception as e:
+                    flash(f'Erreur lors du téléchargement du logo: {str(e)}', 'error')
+        
+        try:
+            db.session.commit()
+            log_activity(current_user.id, "MODIFICATION_PARAMETRES", 
+                        f"Mise à jour des paramètres système par {current_user.username}")
+            flash('Paramètres sauvegardés avec succès!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
+        
+        return redirect(url_for('settings'))
+    
+    # Générer un aperçu du format
+    format_preview = generate_format_preview(parametres.format_numero_accuse)
+    
+    return render_template('settings.html', 
+                          parametres=parametres,
+                          format_preview=format_preview)
+
+def generate_format_preview(format_string):
+    """Génère un aperçu du format de numéro d'accusé"""
+    import re
+    from datetime import datetime
+    
+    now = datetime.now()
+    preview = format_string
+    
+    # Remplacer les variables
+    preview = preview.replace('{year}', str(now.year))
+    preview = preview.replace('{month}', f"{now.month:02d}")
+    preview = preview.replace('{day}', f"{now.day:02d}")
+    
+    # Traiter les compteurs avec format
+    counter_pattern = r'\{counter:(\d+)d\}'
+    matches = re.findall(counter_pattern, preview)
+    for match in matches:
+        width = int(match)
+        formatted_counter = f"{1:0{width}d}"
+        preview = re.sub(r'\{counter:\d+d\}', formatted_counter, preview, count=1)
+    
+    # Compteur simple
+    preview = preview.replace('{counter}', '1')
+    
+    # Nombre aléatoire
+    random_pattern = r'\{random:(\d+)\}'
+    matches = re.findall(random_pattern, preview)
+    for match in matches:
+        width = int(match)
+        random_num = '1' * width  # Utiliser 1111 pour l'aperçu
+        preview = re.sub(r'\{random:\d+\}', random_num, preview, count=1)
+    
+    return preview
 
 @app.errorhandler(404)
 def not_found_error(error):

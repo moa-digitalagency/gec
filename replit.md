@@ -8,6 +8,7 @@ This is a Flask-based web application for managing mail correspondence at GEC (S
 
 Preferred communication style: Simple, everyday language.
 Design preferences: Clean, corporate design using Democratic Republic of Congo colors (blue, yellow, red, green) with Tailwind CSS.
+Dashboard design: User confirmed perfect and should not be changed ("le design est parfait, le tableau de board j'adore ne change sauf").
 
 ## System Architecture
 
@@ -40,6 +41,7 @@ Design preferences: Clean, corporate design using Democratic Republic of Congo c
 - **User**: User authentication and profile management
 - **Courrier**: Mail correspondence tracking with metadata
 - **LogActivite**: Activity logging for audit trails
+- **ParametresSysteme**: System configuration (logo, software name, receipt number format)
 
 ### Views (views.py)
 - Authentication routes (login/logout)
@@ -47,6 +49,7 @@ Design preferences: Clean, corporate design using Democratic Republic of Congo c
 - Mail registration and viewing
 - Search functionality
 - File handling and exports
+- Settings management with customizable parameters
 
 ### Utilities (utils.py)
 - File validation and handling
@@ -101,3 +104,17 @@ Design preferences: Clean, corporate design using Democratic Republic of Congo c
 - Development server runs on host 0.0.0.0:5000
 
 The application is designed for easy deployment on cloud platforms with minimal configuration changes needed for production environments.
+
+## Recent Changes (July 13, 2025)
+
+✓ Complete design overhaul using Tailwind CSS with DRC national colors
+✓ Optimized all pages (view_mail, search, mail_detail) with consistent design structure
+✓ Added ParametresSysteme model for system configuration
+✓ Implemented settings page for customizing:
+  - Software name and logo
+  - Receipt number format with variables
+  - Organization contact information
+✓ Enhanced receipt number generation with configurable format
+✓ Updated navigation to include settings access
+✓ Improved responsive design and accessibility
+✓ Maintained backward compatibility with existing data

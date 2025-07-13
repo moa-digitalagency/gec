@@ -50,3 +50,31 @@ class LogActivite(db.Model):
     
     def __repr__(self):
         return f'<LogActivite {self.action} by {self.utilisateur.username}>'
+
+class ParametresSysteme(db.Model):
+    """Paramètres de configuration du système"""
+    id = db.Column(db.Integer, primary_key=True)
+    nom_logiciel = db.Column(db.String(100), nullable=False, default="GEC - Mines RDC")
+    logo_url = db.Column(db.String(500), nullable=True)
+    format_numero_accuse = db.Column(db.String(50), nullable=False, default="GEC-{year}-{counter:05d}")
+    adresse_organisme = db.Column(db.Text, nullable=True)
+    telephone = db.Column(db.String(20), nullable=True)
+    email_contact = db.Column(db.String(120), nullable=True)
+    date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Clé étrangère pour tracer qui a modifié
+    modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    modifie_par = db.relationship('User', backref='parametres_modifies')
+    
+    def __repr__(self):
+        return f'<ParametresSysteme {self.nom_logiciel}>'
+    
+    @staticmethod
+    def get_parametres():
+        """Récupère les paramètres système ou crée des valeurs par défaut"""
+        parametres = ParametresSysteme.query.first()
+        if not parametres:
+            parametres = ParametresSysteme()
+            db.session.add(parametres)
+            db.session.commit()
+        return parametres

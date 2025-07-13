@@ -25,6 +25,8 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
 
 # Configure upload settings
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -60,6 +62,10 @@ with app.app_context():
         db.session.add(admin_user)
         db.session.commit()
         logging.info("Default admin user created (username: admin, password: admin123)")
+    
+    # Initialize system parameters
+    parametres = models.ParametresSysteme.get_parametres()
+    logging.info("System parameters initialized")
 
 @login_manager.user_loader
 def load_user(user_id):

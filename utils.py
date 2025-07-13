@@ -19,11 +19,56 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def generate_accuse_reception():
-    """Générer un numéro d'accusé de réception unique"""
-    year = datetime.now().year
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    unique_id = str(uuid.uuid4())[:8].upper()
-    return f"GEC-{year}-{timestamp}-{unique_id}"
+    """Générer un numéro d'accusé de réception unique selon le format configuré"""
+    import re
+    
+    # Import dynamique pour éviter les dépendances circulaires
+    from models import ParametresSysteme, Courrier
+    
+    # Récupérer le format configuré
+    try:
+        parametres = ParametresSysteme.get_parametres()
+        format_string = parametres.format_numero_accuse
+    except:
+        # Fallback si les paramètres ne sont pas disponibles
+        format_string = "GEC-{year}-{counter:05d}"
+    
+    now = datetime.now()
+    
+    # Remplacer les variables de base
+    numero = format_string.replace('{year}', str(now.year))
+    numero = numero.replace('{month}', f"{now.month:02d}")
+    numero = numero.replace('{day}', f"{now.day:02d}")
+    
+    # Calculer le compteur pour l'année en cours
+    try:
+        count = Courrier.query.filter(
+            Courrier.date_enregistrement >= datetime(now.year, 1, 1)
+        ).count() + 1
+    except:
+        count = 1
+    
+    # Traiter les compteurs avec format
+    counter_pattern = r'\{counter:(\d+)d\}'
+    matches = re.findall(counter_pattern, numero)
+    for match in matches:
+        width = int(match)
+        formatted_counter = f"{count:0{width}d}"
+        numero = re.sub(r'\{counter:\d+d\}', formatted_counter, numero, count=1)
+    
+    # Compteur simple
+    numero = numero.replace('{counter}', str(count))
+    
+    # Nombre aléatoire
+    import random
+    random_pattern = r'\{random:(\d+)\}'
+    matches = re.findall(random_pattern, numero)
+    for match in matches:
+        width = int(match)
+        random_num = random.randint(10**(width-1), 10**width-1)
+        numero = re.sub(r'\{random:\d+\}', str(random_num), numero, count=1)
+    
+    return numero
 
 def log_activity(user_id, action, description, courrier_id=None):
     """Enregistrer une activité dans les logs"""
