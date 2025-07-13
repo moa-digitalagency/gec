@@ -108,8 +108,15 @@ class User(UserMixin, db.Model):
     
     def get_profile_photo_url(self):
         """Retourne l'URL de la photo de profil ou une image par défaut"""
-        if self.photo_profile and os.path.exists(os.path.join('uploads/profiles', self.photo_profile)):
-            return f'/static/uploads/profiles/{self.photo_profile}'
+        if self.photo_profile:
+            # Essayer d'abord le dossier uploads/profiles
+            profile_path = os.path.join('uploads/profiles', self.photo_profile)
+            if os.path.exists(profile_path):
+                return f'/static/uploads/profiles/{self.photo_profile}'
+            # Sinon essayer le dossier static/uploads/profiles  
+            static_path = os.path.join('static/uploads/profiles', self.photo_profile)
+            if os.path.exists(static_path):
+                return f'/static/uploads/profiles/{self.photo_profile}'
         return '/static/images/default-profile.svg'
 
 class Courrier(db.Model):

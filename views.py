@@ -539,7 +539,8 @@ def add_user():
             ext = filename.rsplit('.', 1)[1].lower()
             filename = f"profile_{new_user.id}_{timestamp}.{ext}"
             
-            profile_folder = os.path.join('uploads', 'profiles')
+            # Créer le dossier dans static pour que Flask puisse servir les fichiers
+            profile_folder = os.path.join('static', 'uploads', 'profiles')
             os.makedirs(profile_folder, exist_ok=True)
             filepath = os.path.join(profile_folder, filename)
             file.save(filepath)
@@ -599,7 +600,8 @@ def edit_user(user_id):
             ext = filename.rsplit('.', 1)[1].lower()
             filename = f"profile_{user.id}_{timestamp}.{ext}"
             
-            profile_folder = os.path.join('uploads', 'profiles')
+            # Créer le dossier dans static pour que Flask puisse servir les fichiers
+            profile_folder = os.path.join('static', 'uploads', 'profiles')
             os.makedirs(profile_folder, exist_ok=True)
             filepath = os.path.join(profile_folder, filename)
             file.save(filepath)
