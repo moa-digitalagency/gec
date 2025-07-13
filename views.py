@@ -10,7 +10,7 @@ import logging
 
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, get_current_language, set_language, t, get_available_languages
 
 @app.route('/')
 def index():
@@ -418,6 +418,141 @@ def manage_statuses():
     return render_template('manage_statuses.html', 
                           statuts=statuts,
                           couleurs_disponibles=couleurs_disponibles)
+
+@app.route('/set_language/<lang_code>')
+def set_user_language(lang_code):
+    """Changer la langue de l'interface"""
+    if set_language(lang_code):
+        if current_user.is_authenticated:
+            # Sauvegarder la préférence dans le profil utilisateur
+            current_user.langue = lang_code
+            db.session.commit()
+    
+    # Rediriger vers la page précédente ou le dashboard
+    return redirect(request.referrer or url_for('dashboard'))
+
+@app.route('/manage_users')
+@login_required
+def manage_users():
+    """Gestion des utilisateurs - accessible uniquement aux super admins"""
+    if not current_user.can_manage_users():
+        flash('Accès refusé. Seuls les super administrateurs peuvent gérer les utilisateurs.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    users = User.query.order_by(User.date_creation.desc()).all()
+    return render_template('manage_users.html', users=users, 
+                         available_languages=get_available_languages())
+
+@app.route('/add_user', methods=['GET', 'POST'])
+@login_required  
+def add_user():
+    """Ajouter un nouvel utilisateur"""
+    if not current_user.can_manage_users():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        nom_complet = request.form['nom_complet']
+        password = request.form['password']
+        role = request.form['role']
+        langue = request.form['langue']
+        
+        # Vérifier que l'utilisateur n'existe pas déjà
+        if User.query.filter_by(username=username).first():
+            flash('Ce nom d\'utilisateur existe déjà.', 'error')
+            return redirect(url_for('add_user'))
+        
+        if User.query.filter_by(email=email).first():
+            flash('Cette adresse email existe déjà.', 'error')
+            return redirect(url_for('add_user'))
+        
+        # Créer le nouvel utilisateur
+        new_user = User(
+            username=username,
+            email=email,
+            nom_complet=nom_complet,
+            password_hash=generate_password_hash(password),
+            role=role,
+            langue=langue,
+            actif=True
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        log_activity(current_user.id, "CREATION_UTILISATEUR", 
+                    f"Création de l'utilisateur {username} avec le rôle {role}")
+        flash(f'Utilisateur {username} créé avec succès!', 'success')
+        return redirect(url_for('manage_users'))
+    
+    return render_template('add_user.html', 
+                         available_languages=get_available_languages())
+
+@app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    """Modifier un utilisateur"""
+    if not current_user.can_manage_users():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.email = request.form['email']
+        user.nom_complet = request.form['nom_complet']
+        user.role = request.form['role']
+        user.langue = request.form['langue']
+        user.actif = 'actif' in request.form
+        
+        # Mise à jour du mot de passe si fourni
+        password = request.form.get('password')
+        if password:
+            user.password_hash = generate_password_hash(password)
+        
+        db.session.commit()
+        
+        log_activity(current_user.id, "MODIFICATION_UTILISATEUR", 
+                    f"Modification de l'utilisateur {user.username}")
+        flash(f'Utilisateur {user.username} modifié avec succès!', 'success')
+        return redirect(url_for('manage_users'))
+    
+    return render_template('edit_user.html', user=user, 
+                         available_languages=get_available_languages())
+
+@app.route('/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    """Supprimer un utilisateur"""
+    if not current_user.can_manage_users():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Empêcher la suppression de son propre compte
+    if user.id == current_user.id:
+        flash('Vous ne pouvez pas supprimer votre propre compte.', 'error')
+        return redirect(url_for('manage_users'))
+    
+    # Empêcher la suppression du dernier super admin
+    if user.role == 'super_admin':
+        super_admins = User.query.filter_by(role='super_admin').count()
+        if super_admins <= 1:
+            flash('Impossible de supprimer le dernier super administrateur.', 'error')
+            return redirect(url_for('manage_users'))
+    
+    username = user.username
+    db.session.delete(user)
+    db.session.commit()
+    
+    log_activity(current_user.id, "SUPPRESSION_UTILISATEUR", 
+                f"Suppression de l'utilisateur {username}")
+    flash(f'Utilisateur {username} supprimé avec succès!', 'success')
+    return redirect(url_for('manage_users'))
 
 @app.errorhandler(404)
 def not_found_error(error):

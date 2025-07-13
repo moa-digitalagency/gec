@@ -69,13 +69,40 @@
                             <i class="fas fa-cogs mr-1"></i>Paramètres
                             <i class="fas fa-chevron-down ml-1"></i>
                         </button>
-                        <div class="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute right-0 w-56 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-1">
                                 <a href="{{ url_for('settings') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-cog mr-2"></i>Configuration Système
                                 </a>
                                 <a href="{{ url_for('manage_statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-tags mr-2"></i>Gérer les Statuts
+                                </a>
+                                {% if current_user.can_manage_users() %}
+                                <a href="{{ url_for('manage_users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-users mr-2"></i>Gérer les Utilisateurs
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Language Selector -->
+                    <div class="relative group">
+                        <button class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                            {% if get_current_language() == 'fr' %}
+                                🇫🇷 FR
+                            {% else %}
+                                🇺🇸 EN
+                            {% endif %}
+                            <i class="fas fa-chevron-down ml-1"></i>
+                        </button>
+                        <div class="absolute right-0 w-40 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <div class="py-1">
+                                <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
+                                    🇫🇷 Français
+                                </a>
+                                <a href="{{ url_for('set_user_language', lang_code='en') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
+                                    🇺🇸 English
                                 </a>
                             </div>
                         </div>
@@ -126,6 +153,21 @@
                     <a href="{{ url_for('manage_statuses') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
                         <i class="fas fa-tags mr-1"></i>Gérer les Statuts
                     </a>
+                    {% if current_user.can_manage_users() %}
+                    <a href="{{ url_for('manage_users') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-users mr-1"></i>Gérer les Utilisateurs
+                    </a>
+                    {% endif %}
+                    <!-- Language Selection Mobile -->
+                    <div class="border-t border-rdc-green mt-2 pt-2">
+                        <div class="text-white text-sm px-3 py-1 font-medium">Langue / Language</div>
+                        <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium {% if get_current_language() == 'fr' %}bg-rdc-green{% endif %}">
+                            🇫🇷 Français
+                        </a>
+                        <a href="{{ url_for('set_user_language', lang_code='en') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium {% if get_current_language() == 'en' %}bg-rdc-green{% endif %}">
+                            🇺🇸 English
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

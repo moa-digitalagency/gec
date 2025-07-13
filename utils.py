@@ -1,7 +1,8 @@
 import os
 import uuid
+import json
 from datetime import datetime
-from flask import request
+from flask import request, session
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -12,6 +13,77 @@ from app import db
 from models import LogActivite
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}
+
+# Languages disponibles
+AVAILABLE_LANGUAGES = {
+    'fr': {'name': 'Français', 'flag': '🇫🇷'},
+    'en': {'name': 'English', 'flag': '🇺🇸'}
+}
+
+def get_available_languages():
+    """Retourne la liste des langues disponibles"""
+    languages = {}
+    lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+    
+    if os.path.exists(lang_dir):
+        for filename in os.listdir(lang_dir):
+            if filename.endswith('.json'):
+                lang_code = filename[:-5]  # Remove .json
+                if lang_code in AVAILABLE_LANGUAGES:
+                    languages[lang_code] = AVAILABLE_LANGUAGES[lang_code]
+    
+    return languages
+
+def get_current_language():
+    """Obtient la langue actuelle depuis la session ou les préférences utilisateur"""
+    if 'language' in session:
+        return session['language']
+    return 'fr'
+
+def set_language(lang_code):
+    """Définit la langue dans la session"""
+    if lang_code in get_available_languages():
+        session['language'] = lang_code
+        return True
+    return False
+
+def load_translations(lang_code='fr'):
+    """Charge les traductions pour une langue donnée"""
+    lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+    lang_file = os.path.join(lang_dir, f'{lang_code}.json')
+    
+    if not os.path.exists(lang_file):
+        lang_file = os.path.join(lang_dir, 'fr.json')
+    
+    try:
+        with open(lang_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def t(key, lang_code=None, **kwargs):
+    """Fonction de traduction"""
+    if lang_code is None:
+        lang_code = get_current_language()
+    
+    translations = load_translations(lang_code)
+    
+    keys = key.split('.')
+    value = translations
+    
+    for k in keys:
+        if isinstance(value, dict) and k in value:
+            value = value[k]
+        else:
+            return key
+    
+    if kwargs and isinstance(value, str):
+        try:
+            return value.format(**kwargs)
+        except (KeyError, ValueError):
+            return value
+    
+    return value
 
 def allowed_file(filename):
     """Vérifier si l'extension du fichier est autorisée"""

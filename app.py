@@ -49,6 +49,8 @@ with app.app_context():
     # Create all tables
     db.create_all()
     
+    # Initialize language support - will be done in views.py
+    
     # Create default admin user if none exists
     from werkzeug.security import generate_password_hash
     admin_user = models.User.query.filter_by(username='admin').first()
@@ -57,11 +59,13 @@ with app.app_context():
             username='admin',
             email='admin@mines.gov.cd',
             nom_complet='Administrateur Système',
-            password_hash=generate_password_hash('admin123')
+            password_hash=generate_password_hash('admin123'),
+            role='super_admin',
+            langue='fr'
         )
         db.session.add(admin_user)
         db.session.commit()
-        logging.info("Default admin user created (username: admin, password: admin123)")
+        logging.info("Default super admin user created (username: admin, password: admin123)")
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
@@ -75,6 +79,16 @@ with app.app_context():
 def load_user(user_id):
     from models import User
     return User.query.get(int(user_id))
+
+# Add language functions to template context
+@app.context_processor
+def inject_language_functions():
+    from utils import get_current_language, get_available_languages, t
+    return {
+        'get_current_language': get_current_language,
+        'get_available_languages': get_available_languages,
+        't': t
+    }
 
 # Import views
 import views

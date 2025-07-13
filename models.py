@@ -11,10 +11,33 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     actif = db.Column(db.Boolean, default=True)
+    role = db.Column(db.String(20), nullable=False, default='user')
+    langue = db.Column(db.String(5), nullable=False, default='fr')
     
     # Relations
     courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
+    
+    def has_permission(self, permission):
+        """Vérifie si l'utilisateur a une permission spécifique"""
+        permissions = {
+            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'view_all', 'edit_all'],
+            'admin': ['manage_statuses', 'view_all', 'edit_all'],
+            'user': ['view_own', 'edit_own']
+        }
+        return permission in permissions.get(self.role, [])
+    
+    def is_super_admin(self):
+        """Vérifie si l'utilisateur est super administrateur"""
+        return self.role == 'super_admin'
+    
+    def is_admin(self):
+        """Vérifie si l'utilisateur est administrateur"""
+        return self.role in ['super_admin', 'admin']
+    
+    def can_manage_users(self):
+        """Vérifie si l'utilisateur peut gérer les utilisateurs"""
+        return self.role == 'super_admin'
 
 class Courrier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
