@@ -1184,6 +1184,68 @@ def profile_photo(filename):
     profile_folder = os.path.join('uploads', 'profiles')
     return send_file(os.path.join(profile_folder, filename))
 
+@app.route('/profile')
+@login_required
+def profile():
+    """Afficher le profil de l'utilisateur actuel"""
+    return render_template('profile.html', user=current_user, 
+                         available_languages=get_available_languages())
+
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Modifier le profil de l'utilisateur actuel"""
+    if request.method == 'POST':
+        # Mise à jour des informations de base
+        current_user.nom_complet = request.form['nom_complet']
+        current_user.email = request.form['email']
+        current_user.langue = request.form['langue']
+        current_user.matricule = request.form.get('matricule', '')
+        current_user.fonction = request.form.get('fonction', '')
+        current_user.departement_id = request.form.get('departement_id') or None
+        
+        # Mise à jour du mot de passe si fourni
+        password = request.form.get('password')
+        if password:
+            current_user.password_hash = generate_password_hash(password)
+        
+        # Gestion de l'upload de photo de profil
+        file = request.files.get('photo_profile')
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            ext = filename.rsplit('.', 1)[1].lower()
+            filename = f"profile_{current_user.id}_{timestamp}.{ext}"
+            
+            # Créer le dossier dans static pour que Flask puisse servir les fichiers
+            profile_folder = os.path.join('static', 'uploads', 'profiles')
+            os.makedirs(profile_folder, exist_ok=True)
+            filepath = os.path.join(profile_folder, filename)
+            file.save(filepath)
+            
+            # Supprimer l'ancienne photo si elle existe
+            if current_user.photo_profile:
+                old_file = os.path.join(profile_folder, current_user.photo_profile)
+                if os.path.exists(old_file):
+                    os.remove(old_file)
+            
+            current_user.photo_profile = filename
+        
+        try:
+            db.session.commit()
+            log_activity(current_user.id, "MODIFICATION_PROFIL", f"Profil modifié par {current_user.username}")
+            flash('Profil mis à jour avec succès!', 'success')
+            return redirect(url_for('profile'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la mise à jour du profil: {str(e)}', 'error')
+    
+    # Récupérer les départements pour le formulaire
+    departements = Departement.get_departements_actifs()
+    return render_template('edit_profile.html', user=current_user, 
+                         departements=departements,
+                         available_languages=get_available_languages())
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('base.html'), 404

@@ -218,17 +218,41 @@
                 </div>
                 {% endif %}
                 
-                <!-- Prévisualisation nouvelle photo -->
+                <!-- Prévisualisation et crop -->
                 <div id="image-preview-container" class="mb-4 hidden">
-                    <div class="relative inline-block">
-                        <img id="image-preview" class="w-32 h-32 object-cover rounded-full border-4 border-rdc-blue shadow-lg">
-                        <button type="button" 
-                                onclick="removeImagePreview()" 
-                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
+                    <div class="space-y-4">
+                        <!-- Zone de crop -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <canvas id="crop-canvas" class="border border-gray-300 rounded max-w-full"></canvas>
+                        </div>
+                        
+                        <!-- Contrôles de crop -->
+                        <div class="flex items-center space-x-4">
+                            <button type="button" 
+                                    onclick="applyCrop()" 
+                                    class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-crop mr-2"></i>Recadrer
+                            </button>
+                            <button type="button" 
+                                    onclick="resetCrop()" 
+                                    class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
+                                <i class="fas fa-undo mr-2"></i>Réinitialiser
+                            </button>
+                            <button type="button" 
+                                    onclick="removeImagePreview()" 
+                                    class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
+                                <i class="fas fa-times mr-2"></i>Supprimer
+                            </button>
+                        </div>
+                        
+                        <!-- Prévisualisation finale -->
+                        <div class="text-center">
+                            <div class="inline-block">
+                                <img id="final-preview" class="w-32 h-32 object-cover rounded-full border-4 border-rdc-blue shadow-lg">
+                                <p class="text-sm text-gray-600 mt-2">Nouvelle photo (prévisualisation)</p>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-600 mt-2">Nouvelle photo (prévisualisation)</p>
                 </div>
                 
                 <!-- Input file avec style personnalisé -->
@@ -287,25 +311,23 @@
     </form>
 </div>
 
-<!-- JavaScript pour la prévisualisation d'image -->
+<!-- JavaScript pour la prévisualisation et le crop d'image -->
 <script>
+let originalImage = null;
+let croppedImage = null;
+let canvas = null;
+let ctx = null;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let cropArea = { x: 0, y: 0, width: 200, height: 200 };
+
 function previewImage(input) {
     const file = input.files[0];
-    const preview = document.getElementById('image-preview');
     const container = document.getElementById('image-preview-container');
     const fileName = document.getElementById('file-name');
     
     if (file) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            container.classList.remove('hidden');
-        };
-        
-        reader.readAsDataURL(file);
-        fileName.textContent = file.name;
-        
         // Validation de la taille
         const maxSize = 5 * 1024 * 1024; // 5MB
         if (file.size > maxSize) {
@@ -321,20 +343,196 @@ function previewImage(input) {
             removeImagePreview();
             return;
         }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            originalImage = new Image();
+            originalImage.onload = function() {
+                setupCropCanvas();
+                container.classList.remove('hidden');
+            };
+            originalImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        fileName.textContent = file.name;
+    }
+}
+
+function setupCropCanvas() {
+    canvas = document.getElementById('crop-canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Redimensionner l'image pour le canvas
+    const maxWidth = 400;
+    const maxHeight = 400;
+    let { width, height } = originalImage;
+    
+    if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width *= ratio;
+        height *= ratio;
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Initialiser la zone de crop au centre
+    cropArea = {
+        x: (width - 200) / 2,
+        y: (height - 200) / 2,
+        width: 200,
+        height: 200
+    };
+    
+    drawCanvas();
+    setupCropEvents();
+}
+
+function drawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Dessiner l'image
+    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+    
+    // Dessiner l'overlay sombre
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Effacer la zone de crop
+    ctx.clearRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+    
+    // Redessiner l'image dans la zone de crop
+    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+    
+    // Dessiner le cadre de crop
+    ctx.strokeStyle = '#003087';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+    
+    // Dessiner les coins pour le redimensionnement
+    ctx.fillStyle = '#003087';
+    const cornerSize = 8;
+    ctx.fillRect(cropArea.x - cornerSize/2, cropArea.y - cornerSize/2, cornerSize, cornerSize);
+    ctx.fillRect(cropArea.x + cropArea.width - cornerSize/2, cropArea.y - cornerSize/2, cornerSize, cornerSize);
+    ctx.fillRect(cropArea.x - cornerSize/2, cropArea.y + cropArea.height - cornerSize/2, cornerSize, cornerSize);
+    ctx.fillRect(cropArea.x + cropArea.width - cornerSize/2, cropArea.y + cropArea.height - cornerSize/2, cornerSize, cornerSize);
+}
+
+function setupCropEvents() {
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.style.cursor = 'crosshair';
+}
+
+function handleMouseDown(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
+        y >= cropArea.y && y <= cropArea.y + cropArea.height) {
+        isDragging = true;
+        startX = x - cropArea.x;
+        startY = y - cropArea.y;
+        canvas.style.cursor = 'move';
+    }
+}
+
+function handleMouseMove(e) {
+    if (!isDragging) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    cropArea.x = Math.max(0, Math.min(canvas.width - cropArea.width, x - startX));
+    cropArea.y = Math.max(0, Math.min(canvas.height - cropArea.height, y - startY));
+    
+    drawCanvas();
+}
+
+function handleMouseUp() {
+    isDragging = false;
+    canvas.style.cursor = 'crosshair';
+}
+
+function applyCrop() {
+    if (!originalImage) return;
+    
+    // Calculer les proportions pour l'image originale
+    const scaleX = originalImage.width / canvas.width;
+    const scaleY = originalImage.height / canvas.height;
+    
+    // Créer un canvas temporaire pour le crop
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = cropArea.width * scaleX;
+    tempCanvas.height = cropArea.height * scaleY;
+    
+    // Extraire la zone croppée
+    tempCtx.drawImage(
+        originalImage,
+        cropArea.x * scaleX, cropArea.y * scaleY,
+        cropArea.width * scaleX, cropArea.height * scaleY,
+        0, 0,
+        tempCanvas.width, tempCanvas.height
+    );
+    
+    // Afficher la prévisualisation finale
+    const finalPreview = document.getElementById('final-preview');
+    finalPreview.src = tempCanvas.toDataURL('image/jpeg', 0.8);
+    
+    // Stocker l'image croppée
+    croppedImage = tempCanvas.toDataURL('image/jpeg', 0.8);
+}
+
+function resetCrop() {
+    if (originalImage) {
+        setupCropCanvas();
+        document.getElementById('final-preview').src = '';
+        croppedImage = null;
     }
 }
 
 function removeImagePreview() {
-    const preview = document.getElementById('image-preview');
     const container = document.getElementById('image-preview-container');
     const input = document.getElementById('photo_profile');
     const fileName = document.getElementById('file-name');
+    const finalPreview = document.getElementById('final-preview');
     
-    preview.src = '';
     container.classList.add('hidden');
     input.value = '';
     fileName.textContent = '';
+    finalPreview.src = '';
+    originalImage = null;
+    croppedImage = null;
+    canvas = null;
+    ctx = null;
 }
+
+// Ajouter l'image croppée au formulaire avant soumission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        if (croppedImage) {
+            // Convertir l'image croppée en Blob et l'ajouter au FormData
+            const byteCharacters = atob(croppedImage.split(',')[1]);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/jpeg' });
+            
+            // Remplacer le fichier original par l'image croppée
+            const fileInput = document.getElementById('photo_profile');
+            const dt = new DataTransfer();
+            dt.items.add(new File([blob], 'cropped_image.jpg', { type: 'image/jpeg' }));
+            fileInput.files = dt.files;
+        }
+    });
+});
 
 // Drag and drop functionality
 document.addEventListener('DOMContentLoaded', function() {

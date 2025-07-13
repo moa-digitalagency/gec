@@ -83,9 +83,15 @@
                     <div class="relative">
                         <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu">
                             <div class="h-6 w-6 rounded-full bg-rdc-green flex items-center justify-center mr-2">
-                                <span class="text-white text-xs font-bold">
-                                    {{ current_user.nom_complet[:2].upper() }}
-                                </span>
+                                {% if current_user.photo_profile %}
+                                    <img src="{{ current_user.get_profile_photo_url() }}" 
+                                         alt="Photo de {{ current_user.nom_complet }}" 
+                                         class="h-6 w-6 rounded-full object-cover">
+                                {% else %}
+                                    <span class="text-white text-xs font-bold">
+                                        {{ current_user.nom_complet[:2].upper() }}
+                                    </span>
+                                {% endif %}
                             </div>
                             <span class="hidden md:inline">{{ current_user.nom_complet }}</span>
                             <span class="md:hidden">
@@ -112,6 +118,13 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user-circle mr-2"></i>Voir mon profil
+                            </a>
+                            <a href="{{ url_for('edit_profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user-edit mr-2"></i>Modifier mon profil
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
                             <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
                             </a>
