@@ -341,6 +341,47 @@
                     closeMenu();
                 }
             });
+            
+            // User dropdown functionality
+            const userMenuButton = document.getElementById('user-menu');
+            const userDropdown = document.getElementById('user-dropdown');
+            let isUserDropdownOpen = false;
+            
+            if (userMenuButton && userDropdown) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (isUserDropdownOpen) {
+                        userDropdown.classList.add('hidden');
+                        isUserDropdownOpen = false;
+                    } else {
+                        userDropdown.classList.remove('hidden');
+                        isUserDropdownOpen = true;
+                    }
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    if (isUserDropdownOpen) {
+                        userDropdown.classList.add('hidden');
+                        isUserDropdownOpen = false;
+                    }
+                });
+                
+                // Prevent dropdown from closing when clicking inside it
+                userDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Close dropdown with Escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && isUserDropdownOpen) {
+                        userDropdown.classList.add('hidden');
+                        isUserDropdownOpen = false;
+                    }
+                });
+            }
         });
     </script>
     
