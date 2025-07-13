@@ -120,28 +120,56 @@
                 </div>
             </div>
             
-            <!-- Menu universel avec structure améliorée (affiché sur tous les appareils) -->
-            <div class="hidden" id="mobile-menu" style="background-color: #003087; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; box-shadow: 0 10px 25px -3px rgba(0, 48, 135, 0.3);">
-                <div class="px-2 pt-2 pb-3 space-y-1" style="background-color: #003087; border-top: 2px solid #009639;">
-                    <!-- Main Navigation -->
-                    <div class="space-y-1">
-                        <a href="{{ url_for('dashboard') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
-                            <i class="fas fa-tachometer-alt mr-3 w-5 text-center"></i>
-                            {{ t('nav.dashboard') if t else 'Tableau de Bord' }}
-                        </a>
-                        <a href="{{ url_for('register_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
-                            <i class="fas fa-plus-circle mr-3 w-5 text-center"></i>
-                            {{ t('nav.register_mail') if t else 'Enregistrer Courrier' }}
-                        </a>
-                        <a href="{{ url_for('view_mail') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
-                            <i class="fas fa-list mr-3 w-5 text-center"></i>
-                            {{ t('nav.view_mail') if t else 'Consulter Courriers' }}
-                        </a>
-                        <a href="{{ url_for('search') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-base font-medium transition-colors flex items-center">
-                            <i class="fas fa-search mr-3 w-5 text-center"></i>
-                            {{ t('nav.search') if t else 'Recherche Avancée' }}
-                        </a>
+            <!-- Menu universel SIMPLE qui fonctionne -->
+            <div id="mobile-menu" style="display: none; background-color: #003087; border-top: 2px solid #009639; padding: 1rem;">
+                <!-- Navigation principale -->
+                <div style="margin-bottom: 1rem;">
+                    <a href="{{ url_for('dashboard') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-tachometer-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Tableau de Bord
+                    </a>
+                    <a href="{{ url_for('register_mail') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-plus-circle" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Enregistrer Courrier
+                    </a>
+                    <a href="{{ url_for('view_mail') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-list" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Consulter Courriers
+                    </a>
+                    <a href="{{ url_for('search') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-search" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Recherche Avancée
+                    </a>
+                </div>
+                
+                <!-- Paramètres -->
+                <div style="border-top: 1px solid #009639; padding-top: 1rem; margin-bottom: 1rem;">
+                    <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Paramètres
                     </div>
+                    <a href="{{ url_for('settings') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-cog" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Configuration Système
+                    </a>
+                    <a href="{{ url_for('manage_statuses') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-tags" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Gérer les Statuts
+                    </a>
+                    {% if current_user.can_manage_users() %}
+                    <a href="{{ url_for('manage_users') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        <i class="fas fa-users" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Gérer les Utilisateurs
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Déconnexion -->
+                <div style="border-top: 1px solid #009639; padding-top: 1rem;">
+                    <a href="{{ url_for('logout') }}" style="color: white; display: block; padding: 0.5rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none; background-color: #dc2626;" onmouseover="this.style.backgroundColor='#b91c1c'" onmouseout="this.style.backgroundColor='#dc2626'">
+                        <i class="fas fa-sign-out-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                        Déconnexion
+                    </a>
+                </div>
                     
                     <!-- Settings Section -->
                     <div class="border-t border-rdc-green mt-3 pt-3">
@@ -301,16 +329,9 @@
             
             function openMenu() {
                 if (!mobileMenu) return;
-                console.log('Opening menu - before:', mobileMenu.classList.toString());
-                mobileMenu.classList.remove('hidden');
+                console.log('Opening menu - SIMPLE VERSION');
                 mobileMenu.style.display = 'block';
-                mobileMenu.style.visibility = 'visible';
-                mobileMenu.style.opacity = '1';
-                mobileMenu.style.position = window.innerWidth <= 768 ? 'fixed' : 'absolute';
-                mobileMenu.style.top = window.innerWidth <= 768 ? '64px' : '100%';
-                mobileMenu.style.backgroundColor = '#003087';
-                mobileMenu.style.zIndex = '1000';
-                console.log('Opening menu - after:', mobileMenu.classList.toString(), 'Display:', mobileMenu.style.display);
+                console.log('Menu should be visible now');
                 
                 // Change hamburger to X
                 const icon = mobileMenuButton?.querySelector('i');
@@ -332,10 +353,8 @@
             
             function closeMenu() {
                 if (!mobileMenu) return;
-                console.log('Closing menu - before:', mobileMenu.classList.toString());
-                mobileMenu.classList.add('hidden');
+                console.log('Closing menu - SIMPLE VERSION');
                 mobileMenu.style.display = 'none';
-                console.log('Closing menu - after:', mobileMenu.classList.toString());
                 
                 // Change X back to hamburger
                 const icon = mobileMenuButton?.querySelector('i');
@@ -356,12 +375,12 @@
                 mobileMenuButton.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Menu button clicked');
-                    const isHidden = mobileMenu.classList.contains('hidden');
-                    if (isHidden) {
-                        openMenu();
-                    } else {
+                    console.log('Menu button clicked - SIMPLE VERSION');
+                    const isVisible = mobileMenu.style.display === 'block';
+                    if (isVisible) {
                         closeMenu();
+                    } else {
+                        openMenu();
                     }
                 });
                 
