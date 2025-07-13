@@ -121,7 +121,7 @@
             </div>
             
             <!-- Menu universel avec structure améliorée (affiché sur tous les appareils) -->
-            <div class="hidden" id="mobile-menu">
+            <div class="hidden bg-rdc-blue" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1 bg-rdc-blue border-t border-rdc-green">
                     <!-- Main Navigation -->
                     <div class="space-y-1">
@@ -279,6 +279,14 @@
             const mobileMenu = document.getElementById('mobile-menu');
             let overlay = null;
             
+            console.log('Menu elements found:', {
+                button: !!mobileMenuButton,
+                menu: !!mobileMenu,
+                menuExists: mobileMenu !== null,
+                menuClasses: mobileMenu?.className,
+                menuDisplay: mobileMenu?.style.display
+            });
+            
             function createOverlay() {
                 if (!overlay) {
                     overlay = document.createElement('div');
@@ -293,9 +301,12 @@
             
             function openMenu() {
                 if (!mobileMenu) return;
-                console.log('Opening menu');
+                console.log('Opening menu - before:', mobileMenu.classList.toString());
                 mobileMenu.classList.remove('hidden');
                 mobileMenu.style.display = 'block';
+                mobileMenu.style.visibility = 'visible';
+                mobileMenu.style.opacity = '1';
+                console.log('Opening menu - after:', mobileMenu.classList.toString());
                 
                 // Change hamburger to X
                 const icon = mobileMenuButton?.querySelector('i');
@@ -317,9 +328,12 @@
             
             function closeMenu() {
                 if (!mobileMenu) return;
-                console.log('Closing menu');
+                console.log('Closing menu - before:', mobileMenu.classList.toString());
                 mobileMenu.classList.add('hidden');
                 mobileMenu.style.display = 'none';
+                mobileMenu.style.visibility = 'hidden';
+                mobileMenu.style.opacity = '0';
+                console.log('Closing menu - after:', mobileMenu.classList.toString());
                 
                 // Change X back to hamburger
                 const icon = mobileMenuButton?.querySelector('i');
@@ -468,6 +482,16 @@
         }
         
         /* Menu adaptatif selon la taille d'écran */
+        #mobile-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background-color: #003087;
+            box-shadow: 0 10px 25px -3px rgba(0, 48, 135, 0.3);
+        }
+        
         @media (max-width: 768px) {
             #mobile-menu {
                 position: fixed;
@@ -475,22 +499,21 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                z-index: 100;
                 overflow-y: auto;
             }
         }
         
         @media (min-width: 769px) {
             #mobile-menu {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
                 max-height: 80vh;
                 overflow-y: auto;
                 border-radius: 0 0 0.5rem 0.5rem;
-                box-shadow: 0 10px 25px -3px rgba(0, 48, 135, 0.1);
             }
+        }
+        
+        /* Ensure menu is visible when shown */
+        #mobile-menu:not(.hidden) {
+            display: block !important;
         }
         
         /* Language selector hover effects */
