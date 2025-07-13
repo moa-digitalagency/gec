@@ -257,6 +257,22 @@
                 return overlay;
             }
             
+            // Close menu when clicking on links
+            if (mobileMenu) {
+                const menuLinks = mobileMenu.querySelectorAll('a');
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        console.log('Menu link clicked:', this.href);
+                        // Close menu when link is clicked
+                        mobileMenu.style.display = 'none';
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) icon.className = 'fas fa-bars';
+                        console.log('Menu closed after link click');
+                        // Let the link navigate normally
+                    });
+                });
+            }
+            
             // Click outside to close menu
             document.addEventListener('click', function(e) {
                 if (mobileMenu && mobileMenu.style.display === 'block') {
