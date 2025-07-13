@@ -192,36 +192,50 @@
     
     <!-- Sidebar -->
     <div class="space-y-6">
-        <!-- Actions Rapides - Style horizontal -->
+        <!-- Actions Rapides - Style Dashboard -->
         <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-tools mr-2 text-rdc-blue"></i>
+                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
                     Actions Rapides
                 </h3>
-                <div class="flex items-center space-x-2">
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
                     <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
-                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-red hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-file-pdf mr-2"></i>
-                        PDF
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-red rounded-lg hover:bg-red-50 transition-colors group w-full">
+                        <i class="fas fa-file-pdf text-2xl text-rdc-red mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Exporter PDF</p>
+                            <p class="text-sm text-gray-500">Générer le PDF du courrier</p>
+                        </div>
                     </a>
                     
                     <a href="{{ url_for('register_mail') }}" 
-                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-plus mr-2"></i>
-                        Nouveau
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
+                        <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Nouveau Courrier</p>
+                            <p class="text-sm text-gray-500">Enregistrer un courrier</p>
+                        </div>
                     </a>
                     
                     <a href="{{ url_for('search') }}" 
-                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-search mr-2"></i>
-                        Recherche
+                       class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group w-full">
+                        <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Recherche</p>
+                            <p class="text-sm text-gray-500">Recherche avancée</p>
+                        </div>
                     </a>
                     
                     <a href="{{ url_for('view_mail') }}" 
-                       class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <i class="fas fa-list mr-2"></i>
-                        Retour
+                       class="flex items-center p-4 border-2 border-dashed border-gray-400 rounded-lg hover:bg-gray-50 transition-colors group w-full">
+                        <i class="fas fa-list text-2xl text-gray-400 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Retour à la Liste</p>
+                            <p class="text-sm text-gray-500">Voir tous les courriers</p>
+                        </div>
                     </a>
                 </div>
             </div>
