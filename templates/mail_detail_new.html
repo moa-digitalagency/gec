@@ -153,6 +153,97 @@
             </div>
         </div>
         
+        <!-- Status Section -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-flag mr-2 text-rdc-blue"></i>
+                    Statut du Courrier
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm font-medium text-gray-700">Statut actuel :</span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ courrier.statut_color() }}">
+                            {{ courrier.statut }}
+                        </span>
+                    </div>
+                    <button onclick="toggleStatusForm()" 
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-edit mr-2"></i>
+                        Modifier
+                    </button>
+                </div>
+                
+                <!-- Status Change Form -->
+                <div id="statusForm" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                    <form method="POST" action="{{ url_for('change_status', id=courrier.id) }}">
+                        <div class="flex items-center space-x-4">
+                            <select name="nouveau_statut" required
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                                {% for statut in statuts_disponibles %}
+                                <option value="{{ statut.nom }}" {% if statut.nom == courrier.statut %}selected{% endif %}>
+                                    {{ statut.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
+                                <i class="fas fa-check mr-2"></i>
+                                Confirmer
+                            </button>
+                            <button type="button" onclick="toggleStatusForm()"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-times mr-2"></i>
+                                Annuler
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- File Attachment -->
+        {% if courrier.fichier_nom %}
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
+                    Pièce Jointe
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div class="flex-shrink-0">
+                        {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
+                            <i class="fas fa-image text-3xl text-green-600"></i>
+                        {% elif courrier.fichier_type == 'application/pdf' %}
+                            <i class="fas fa-file-pdf text-3xl text-red-600"></i>
+                        {% else %}
+                            <i class="fas fa-file text-3xl text-gray-600"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-lg font-medium text-gray-900">{{ courrier.fichier_nom }}</p>
+                        <p class="text-sm text-gray-500">{{ courrier.fichier_type or 'Type inconnu' }}</p>
+                    </div>
+                    <div class="ml-4 space-x-2">
+                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-download mr-2"></i>
+                            Télécharger
+                        </a>
+                        <a href="{{ url_for('view_file', id=courrier.id) }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-eye mr-2"></i>
+                            Voir le fichier
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
     
@@ -205,43 +296,7 @@
                     </a>
                 </div>
             </div>
-        </div>
-        
-        <!-- File Attachment -->
-        {% if courrier.fichier_nom %}
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
-                    Pièce Jointe
-                </h3>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                    <div class="flex-shrink-0">
-                        {% if courrier.fichier_type and courrier.fichier_type.startswith('image/') %}
-                            <i class="fas fa-image text-3xl text-green-600"></i>
-                        {% elif courrier.fichier_type == 'application/pdf' %}
-                            <i class="fas fa-file-pdf text-3xl text-red-600"></i>
-                        {% else %}
-                            <i class="fas fa-file text-3xl text-gray-600"></i>
-                        {% endif %}
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <p class="text-lg font-medium text-gray-900">{{ courrier.fichier_nom }}</p>
-                        <p class="text-sm text-gray-500">{{ courrier.fichier_type or 'Type inconnu' }}</p>
-                    </div>
-                    <div class="ml-4">
-                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                            <i class="fas fa-download mr-2"></i>
-                            Télécharger
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
         
         <!-- Statistics -->
         <div class="bg-white shadow-rdc rounded-xl">
@@ -293,5 +348,11 @@ document.addEventListener('DOMContentLoaded', function() {
         daysElement.textContent = diffDays;
     }
 });
+
+// Toggle status form
+function toggleStatusForm() {
+    const form = document.getElementById('statusForm');
+    form.classList.toggle('hidden');
+}
 </script>
 {% endblock %}
