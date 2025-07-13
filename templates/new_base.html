@@ -50,90 +50,78 @@
                     </a>
                 </div>
                 
-                <div class="hidden md:flex items-center space-x-1">
-                    <a href="{{ url_for('dashboard') }}" class="text-white hover:bg-rdc-green hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-tachometer-alt mr-1"></i>Tableau de Bord
-                    </a>
-                    <a href="{{ url_for('register_mail') }}" class="text-white hover:bg-rdc-green hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-plus-circle mr-1"></i>Enregistrer Courrier
-                    </a>
-                    <a href="{{ url_for('view_mail') }}" class="text-white hover:bg-rdc-green hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-list mr-1"></i>Consulter Courriers
-                    </a>
-                    <a href="{{ url_for('search') }}" class="text-white hover:bg-rdc-green hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-search mr-1"></i>Recherche
-                    </a>
-                    <!-- Dropdown for Settings -->
-                    <div class="relative group">
-                        <button class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
-                            <i class="fas fa-cogs mr-1"></i>Paramètres
-                            <i class="fas fa-chevron-down ml-1"></i>
-                        </button>
-                        <div class="absolute right-0 w-56 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            <div class="py-1">
-                                <a href="{{ url_for('settings') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-cog mr-2"></i>Configuration Système
-                                </a>
-                                <a href="{{ url_for('manage_statuses') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-tags mr-2"></i>Gérer les Statuts
-                                </a>
-                                {% if current_user.can_manage_users() %}
-                                <a href="{{ url_for('manage_users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-users mr-2"></i>Gérer les Utilisateurs
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+                <!-- Menu hamburger universel (desktop, tablette, mobile) -->
+                <div class="flex items-center space-x-3">
+                    <!-- Bouton menu principal -->
+                    <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="mobile-menu-button">
+                        <i class="fas fa-bars mr-2"></i>
+                        <span class="hidden sm:inline">Menu</span>
+                    </button>
                     
-                    <!-- Language Selector -->
+                    <!-- Sélecteur de langue compact -->
                     <div class="relative group">
-                        <button class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
+                        <button class="text-white hover:bg-rdc-green px-2 py-2 rounded-md text-xs font-medium transition-colors flex items-center">
                             {% if get_current_language() == 'fr' %}
-                                🇫🇷 FR
+                                🇫🇷 <span class="hidden lg:inline ml-1">FR</span>
                             {% else %}
-                                🇺🇸 EN
+                                🇺🇸 <span class="hidden lg:inline ml-1">EN</span>
                             {% endif %}
-                            <i class="fas fa-chevron-down ml-1"></i>
                         </button>
-                        <div class="absolute right-0 w-40 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute right-0 w-36 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-1">
-                                <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
+                                <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
                                     🇫🇷 Français
                                 </a>
-                                <a href="{{ url_for('set_user_language', lang_code='en') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
+                                <a href="{{ url_for('set_user_language', lang_code='en') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
                                     🇺🇸 English
                                 </a>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="flex items-center">
+                    
+                    <!-- Profil utilisateur -->
                     <div class="relative">
-                        <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center" id="user-menu">
-                            <i class="fas fa-user mr-1"></i>
-                            {{ current_user.nom_complet }}
+                        <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu">
+                            <div class="h-6 w-6 rounded-full bg-rdc-green flex items-center justify-center mr-2">
+                                <span class="text-white text-xs font-bold">
+                                    {{ current_user.nom_complet[:2].upper() }}
+                                </span>
+                            </div>
+                            <span class="hidden md:inline">{{ current_user.nom_complet }}</span>
+                            <span class="md:hidden">
+                                {% if current_user.role == 'super_admin' %}
+                                    <i class="fas fa-crown text-rdc-yellow"></i>
+                                {% elif current_user.role == 'admin' %}
+                                    <i class="fas fa-user-shield"></i>
+                                {% else %}
+                                    <i class="fas fa-user"></i>
+                                {% endif %}
+                            </span>
                             <i class="fas fa-chevron-down ml-1"></i>
                         </button>
                         <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden" id="user-dropdown">
+                            <div class="px-4 py-2 border-b border-gray-200">
+                                <div class="text-sm font-medium text-gray-900">{{ current_user.nom_complet }}</div>
+                                <div class="text-xs text-gray-500">
+                                    {% if current_user.role == 'super_admin' %}
+                                        <i class="fas fa-crown mr-1 text-yellow-500"></i>Super Admin
+                                    {% elif current_user.role == 'admin' %}
+                                        <i class="fas fa-user-shield mr-1 text-blue-500"></i>Admin
+                                    {% else %}
+                                        <i class="fas fa-user mr-1 text-gray-500"></i>Utilisateur
+                                    {% endif %}
+                                </div>
+                            </div>
                             <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-1"></i>Déconnexion
+                                <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
                             </a>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Mobile menu button -->
-                <div class="md:hidden flex items-center">
-                    <button type="button" class="text-white hover:bg-rdc-green px-2 py-2 rounded-md" id="mobile-menu-button">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
             </div>
             
-            <!-- Mobile menu with improved structure -->
-            <div class="md:hidden hidden" id="mobile-menu">
+            <!-- Menu universel avec structure améliorée (affiché sur tous les appareils) -->
+            <div class="hidden" id="mobile-menu">
                 <div class="px-2 pt-2 pb-3 space-y-1 bg-rdc-blue border-t border-rdc-green">
                     <!-- Main Navigation -->
                     <div class="space-y-1">
@@ -286,43 +274,87 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('GEC Mines Application Initialized');
             
-            // Mobile menu toggle with enhanced functionality
+            // Menu universel avec overlay pour desktop
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
+            let overlay = null;
+            
+            function createOverlay() {
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-40';
+                    overlay.style.display = 'none';
+                    document.body.appendChild(overlay);
+                    
+                    overlay.addEventListener('click', closeMenu);
+                }
+                return overlay;
+            }
+            
+            function openMenu() {
+                mobileMenu.classList.remove('hidden');
+                mobileMenu.style.display = 'block';
+                
+                // Change hamburger to X
+                const icon = mobileMenuButton.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-times';
+                }
+                
+                // Show overlay on mobile
+                if (window.innerWidth <= 768) {
+                    const overlay = createOverlay();
+                    overlay.style.display = 'block';
+                }
+                
+                // Prevent body scroll on mobile
+                if (window.innerWidth <= 768) {
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+            
+            function closeMenu() {
+                mobileMenu.classList.add('hidden');
+                mobileMenu.style.display = 'none';
+                
+                // Change X back to hamburger
+                const icon = mobileMenuButton.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-bars';
+                }
+                
+                // Hide overlay
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+                
+                // Restore body scroll
+                document.body.style.overflow = '';
+            }
             
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function() {
                     const isHidden = mobileMenu.classList.contains('hidden');
                     if (isHidden) {
-                        mobileMenu.classList.remove('hidden');
-                        mobileMenu.style.display = 'block';
-                        // Change hamburger to X
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-times';
-                        }
+                        openMenu();
                     } else {
-                        mobileMenu.classList.add('hidden');
-                        mobileMenu.style.display = 'none';
-                        // Change X back to hamburger
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-bars';
-                        }
+                        closeMenu();
                     }
                 });
                 
-                // Close mobile menu when clicking menu links
+                // Close menu when clicking menu links
                 const mobileMenuLinks = mobileMenu.querySelectorAll('a');
                 mobileMenuLinks.forEach(link => {
                     link.addEventListener('click', function() {
-                        mobileMenu.classList.add('hidden');
-                        mobileMenu.style.display = 'none';
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-bars';
-                        }
+                        closeMenu();
                     });
+                });
+                
+                // Close menu on escape key
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+                        closeMenu();
+                    }
                 });
             }
             
@@ -358,18 +390,19 @@
                 });
             });
             
-            // Handle window resize to close mobile menu
+            // Handle window resize to close menu and adjust overlay
             window.addEventListener('resize', function() {
-                if (window.innerWidth >= 768) { // md breakpoint
-                    const mobileMenu = document.getElementById('mobile-menu');
-                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                        mobileMenu.classList.add('hidden');
-                        mobileMenu.style.display = 'none';
-                        const mobileMenuButton = document.getElementById('mobile-menu-button');
-                        const icon = mobileMenuButton?.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fas fa-bars';
+                if (!mobileMenu.classList.contains('hidden')) {
+                    // Update overlay visibility based on screen size
+                    if (window.innerWidth <= 768) {
+                        const overlay = createOverlay();
+                        overlay.style.display = 'block';
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        if (overlay) {
+                            overlay.style.display = 'none';
                         }
+                        document.body.style.overflow = '';
                     }
                 }
             });
@@ -403,29 +436,53 @@
             transition: opacity 0.3s ease;
         }
         
-        /* Improve mobile touch targets */
+        /* Improve touch targets pour tous les appareils */
+        .text-base {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        button, a {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Better spacing for universal menu */
+        #mobile-menu .space-y-1 > * + * {
+            margin-top: 0.5rem;
+        }
+        
+        /* Responsive language selector */
+        .grid-cols-2 a {
+            padding: 0.75rem;
+            justify-content: center;
+            font-weight: 500;
+        }
+        
+        /* Menu adaptatif selon la taille d'écran */
         @media (max-width: 768px) {
-            .text-base {
-                font-size: 1.1rem;
-                line-height: 1.5;
+            #mobile-menu {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 100;
+                overflow-y: auto;
             }
-            
-            button, a {
-                min-height: 44px;
-                display: flex;
-                align-items: center;
-            }
-            
-            /* Better spacing for mobile menu */
-            #mobile-menu .space-y-1 > * + * {
-                margin-top: 0.5rem;
-            }
-            
-            /* Responsive language selector */
-            .grid-cols-2 a {
-                padding: 0.75rem;
-                justify-content: center;
-                font-weight: 500;
+        }
+        
+        @media (min-width: 769px) {
+            #mobile-menu {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                max-height: 80vh;
+                overflow-y: auto;
+                border-radius: 0 0 0.5rem 0.5rem;
+                box-shadow: 0 10px 25px -3px rgba(0, 48, 135, 0.1);
             }
         }
         
