@@ -247,189 +247,95 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('GEC Mines Application Initialized');
             
-            // Menu universel avec overlay pour desktop
+            // Variables globales pour le menu
+            let menuOverlay = null;
+            let isMenuOpen = false;
+            
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            let overlay = null;
             
-            console.log('Menu elements found:', {
-                button: !!mobileMenuButton,
-                menu: !!mobileMenu,
-                menuExists: mobileMenu !== null,
-                menuClasses: mobileMenu?.className,
-                menuDisplay: mobileMenu?.style.display
-            });
+            console.log('Menu elements:', { button: !!mobileMenuButton, menu: !!mobileMenu });
             
-            // Fermer le menu avec Escape
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && mobileMenu && window.getComputedStyle(mobileMenu).right === '0px') {
-                    mobileMenu.style.right = '-320px';
-                    const icon = mobileMenuButton.querySelector('i');
-                    if (icon) icon.className = 'fas fa-bars';
-                    setTimeout(() => {
-                        if (overlay) overlay.style.display = 'none';
-                        document.body.style.overflow = '';
-                    }, 300);
+            function openMenu() {
+                if (!mobileMenu || isMenuOpen) return;
+                
+                console.log('Opening menu');
+                isMenuOpen = true;
+                
+                // Create overlay
+                if (!menuOverlay) {
+                    menuOverlay = document.createElement('div');
+                    menuOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none;';
+                    document.body.appendChild(menuOverlay);
+                    
+                    menuOverlay.addEventListener('click', closeMenu);
                 }
-            });
-            
-            // Close menu when clicking on links
-            if (mobileMenu) {
-                const menuLinks = mobileMenu.querySelectorAll('a');
-                menuLinks.forEach(link => {
-                    link.addEventListener('click', function(e) {
-                        console.log('Menu link clicked:', this.href);
-                        // Close menu when link is clicked
-                        mobileMenu.style.right = '-320px';
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) icon.className = 'fas fa-bars';
-                        console.log('Menu closed after link click');
-                        
-                        // Hide overlay after animation
-                        setTimeout(() => {
-                            if (overlay) overlay.style.display = 'none';
-                            document.body.style.overflow = '';
-                        }, 300);
-                        // Let the link navigate normally
-                    });
-                });
+                
+                // Show overlay and prevent body scroll
+                menuOverlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                
+                // Animate menu in
+                mobileMenu.style.right = '0px';
+                
+                // Change icon to X
+                const icon = mobileMenuButton?.querySelector('i');
+                if (icon) icon.className = 'fas fa-times';
             }
             
-            // Variables globales
-            let overlay = null;
+            function closeMenu() {
+                if (!mobileMenu || !isMenuOpen) return;
+                
+                console.log('Closing menu');
+                isMenuOpen = false;
+                
+                // Animate menu out
+                mobileMenu.style.right = '-320px';
+                
+                // Change icon back to hamburger
+                const icon = mobileMenuButton?.querySelector('i');
+                if (icon) icon.className = 'fas fa-bars';
+                
+                // Hide overlay and restore body scroll after animation
+                setTimeout(() => {
+                    if (menuOverlay) menuOverlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }, 300);
+            }
             
-            if (mobileMenuButton && mobileMenu) {
+            // Button click handler
+            if (mobileMenuButton) {
                 mobileMenuButton.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Menu button clicked - UNIFIED VERSION');
+                    console.log('Menu button clicked, current state:', isMenuOpen ? 'open' : 'closed');
                     
-                    // Check if menu is currently visible (right: 0 means visible)
-                    const currentRight = window.getComputedStyle(mobileMenu).right;
-                    const isVisible = currentRight === '0px';
-                    console.log('Menu currently visible:', isVisible);
-                    
-                    if (isVisible) {
-                        // Close menu with slide animation
-                        mobileMenu.style.right = '-320px';
-                        // Change icon back to hamburger
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) icon.className = 'fas fa-bars';
-                        console.log('Menu closing with slide animation');
-                        
-                        // Hide overlay after animation
-                        setTimeout(() => {
-                            if (overlay) overlay.style.display = 'none';
-                            document.body.style.overflow = '';
-                        }, 300);
+                    if (isMenuOpen) {
+                        closeMenu();
                     } else {
-                        // Show overlay first
-                        if (!overlay) {
-                            overlay = document.createElement('div');
-                            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;';
-                            document.body.appendChild(overlay);
-                            overlay.addEventListener('click', function() {
-                                // Close menu when clicking overlay
-                                mobileMenu.style.right = '-320px';
-                                const icon = mobileMenuButton.querySelector('i');
-                                if (icon) icon.className = 'fas fa-bars';
-                                setTimeout(() => {
-                                    overlay.style.display = 'none';
-                                    document.body.style.overflow = '';
-                                }, 300);
-                            });
-                        }
-                        overlay.style.display = 'block';
-                        document.body.style.overflow = 'hidden';
-                        
-                        // Open menu with slide animation
-                        mobileMenu.style.right = '0';
-                        // Change icon to X
-                        const icon = mobileMenuButton.querySelector('i');
-                        if (icon) icon.className = 'fas fa-times';
-                        console.log('Menu opening with slide animation');
+                        openMenu();
                     }
                 });
-                
-                // Close menu when clicking menu links
-                const mobileMenuLinks = mobileMenu.querySelectorAll('a');
-                mobileMenuLinks.forEach(link => {
+            }
+            
+            // Close menu when clicking links
+            if (mobileMenu) {
+                const menuLinks = mobileMenu.querySelectorAll('a');
+                menuLinks.forEach(link => {
                     link.addEventListener('click', function() {
+                        console.log('Menu link clicked:', this.href);
                         closeMenu();
                     });
                 });
-                
-                // Close menu on escape key
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
-                        closeMenu();
-                    }
-                });
             }
             
-            // User dropdown toggle with improved UX
-            const userMenuButton = document.getElementById('user-menu');
-            const userDropdown = document.getElementById('user-dropdown');
-            
-            if (userMenuButton && userDropdown) {
-                userMenuButton.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    userDropdown.classList.toggle('hidden');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
-                        userDropdown.classList.add('hidden');
-                    }
-                });
-            }
-            
-            // Auto-dismiss alerts
-            const dismissBtns = document.querySelectorAll('.dismiss-alert');
-            dismissBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const alert = this.closest('.mb-4');
-                    if (alert) {
-                        alert.style.opacity = '0';
-                        setTimeout(() => {
-                            alert.style.display = 'none';
-                        }, 300);
-                    }
-                });
-            });
-            
-            // Handle window resize to close menu and adjust overlay
-            window.addEventListener('resize', function() {
-                if (!mobileMenu.classList.contains('hidden')) {
-                    // Update overlay visibility based on screen size
-                    if (window.innerWidth <= 768) {
-                        const overlay = createOverlay();
-                        overlay.style.display = 'block';
-                        document.body.style.overflow = 'hidden';
-                    } else {
-                        if (overlay) {
-                            overlay.style.display = 'none';
-                        }
-                        document.body.style.overflow = '';
-                    }
+            // Close menu with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isMenuOpen) {
+                    closeMenu();
                 }
             });
         });
-        
-        // Dismiss alerts
-        document.querySelectorAll('.dismiss-alert').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('.mb-4').remove();
-            });
-        });
-        
-        // Auto-dismiss alerts after 5 seconds
-        setTimeout(() => {
-            document.querySelectorAll('.dismiss-alert').forEach(button => {
-                button.click();
-            });
-        }, 5000);
     </script>
     
     <style>
