@@ -40,9 +40,9 @@
     <p class="mt-2 text-gray-600">Informations complètes du courrier {{ courrier.numero_accuse_reception }}</p>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
     <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="lg:col-span-3 space-y-6">
         <!-- Basic Information -->
         <div class="bg-white shadow-rdc rounded-xl">
             <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
@@ -262,54 +262,95 @@
         {% endif %}
     </div>
     
-    <!-- Sidebar -->
+    <!-- Sidebar - Actions rapides et statistiques -->
     <div class="space-y-6">
-        <!-- Quick Actions -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-tools mr-2 text-rdc-blue"></i>
+        <!-- Quick Actions Card -->
+        <div class="bg-white shadow-rdc rounded-xl border-l-4 border-rdc-blue">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
                     Actions Rapides
                 </h3>
             </div>
-            <div class="p-6 space-y-3">
+            <div class="p-4 space-y-2">
                 <button onclick="openStatusModal()" 
-                        class="w-full flex items-center p-3 border-2 border-dashed border-rdc-yellow rounded-lg hover:bg-yellow-50 transition-colors group">
-                    <i class="fas fa-flag text-xl text-rdc-yellow mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div class="text-left">
-                        <p class="font-medium text-gray-900">Changer le Statut</p>
-                        <p class="text-sm text-gray-500">Mettre à jour l'état du courrier</p>
-                    </div>
+                        class="w-full flex items-center p-2 text-left rounded-lg hover:bg-yellow-50 transition-colors group">
+                    <i class="fas fa-flag text-rdc-yellow mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Changer Statut</span>
                 </button>
                 
                 <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-rdc-red rounded-lg hover:bg-red-50 transition-colors group">
-                    <i class="fas fa-file-pdf text-xl text-rdc-red mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Exporter en PDF</p>
-                        <p class="text-sm text-gray-500">Fiche complète du courrier</p>
-                    </div>
+                   class="w-full flex items-center p-2 text-left rounded-lg hover:bg-red-50 transition-colors group">
+                    <i class="fas fa-file-pdf text-rdc-red mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Exporter PDF</span>
                 </a>
                 
+                {% if courrier.fichier_nom %}
+                <a href="{{ url_for('view_file', id=courrier.id) }}" 
+                   target="_blank"
+                   class="w-full flex items-center p-2 text-left rounded-lg hover:bg-blue-50 transition-colors group">
+                    <i class="fas fa-eye text-rdc-blue mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Voir Fichier</span>
+                </a>
+                {% endif %}
+                
+                <hr class="my-2">
+                
                 <a href="{{ url_for('view_mail') }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <i class="fas fa-list text-xl text-gray-600 mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Retour à la Liste</p>
-                        <p class="text-sm text-gray-500">Tous les courriers</p>
-                    </div>
+                   class="w-full flex items-center p-2 text-left rounded-lg hover:bg-gray-50 transition-colors group">
+                    <i class="fas fa-list text-gray-600 mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Retour Liste</span>
                 </a>
                 
                 <a href="{{ url_for('register_mail') }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group">
-                    <i class="fas fa-plus text-xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Nouveau Courrier</p>
-                        <p class="text-sm text-gray-500">Enregistrer un nouveau</p>
-                    </div>
+                   class="w-full flex items-center p-2 text-left rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="fas fa-plus text-rdc-green mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Nouveau Courrier</span>
                 </a>
             </div>
         </div>
+        
+        <!-- Statistics Card -->
+        <div class="bg-white shadow-rdc rounded-xl border-l-4 border-rdc-green">
+            <div class="px-4 py-3 border-b border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-chart-line mr-2 text-rdc-green"></i>
+                    Statistiques
+                </h3>
+            </div>
+            <div class="p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-500">Enregistré il y a</span>
+                    <span class="text-sm font-medium text-gray-900" data-days-since>
+                        -- jours
+                    </span>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-500">Statut actuel</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ courrier.statut_color }}">
+                        {{ courrier.statut }}
+                    </span>
+                </div>
+                
+                {% if courrier.modifie_par %}
+                <div class="text-xs text-gray-500 pt-2 border-t">
+                    Modifié par {{ courrier.modifie_par.nom_complet }}<br>
+                    le {{ courrier.date_modification_statut.strftime('%d/%m/%Y') }}
+                </div>
+                {% endif %}
+                
+                {% if courrier.fichier_nom %}
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-500">Fichier joint</span>
+                    <span class="text-xs font-medium text-green-600">
+                        <i class="fas fa-check-circle mr-1"></i>Oui
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         
         <!-- Statistics -->
         <div class="bg-white shadow-rdc rounded-xl">
