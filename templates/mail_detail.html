@@ -125,12 +125,16 @@
                             Date d'Enregistrement
                         </div>
                         <div class="p-3 bg-gray-50 rounded-lg">
+                            {% if courrier.date_enregistrement %}
                             <p class="text-gray-900 font-medium">
                                 {{ courrier.date_enregistrement.strftime('%A %d %B %Y') }}
                             </p>
                             <p class="text-sm text-gray-500">
                                 à {{ courrier.date_enregistrement.strftime('%H:%M') }}
                             </p>
+                            {% else %}
+                            <p class="text-gray-500 italic">Date non disponible</p>
+                            {% endif %}
                         </div>
                     </div>
                     

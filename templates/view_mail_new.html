@@ -12,108 +12,113 @@
     <p class="mt-2 text-gray-600">Parcourez et filtrez tous les courriers enregistrés</p>
 </div>
 
-<!-- Filters Card -->
-<div class="bg-white shadow-rdc rounded-xl mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-filter mr-2 text-rdc-blue"></i>
-            Filtres et Recherche
-        </h2>
-    </div>
-    <div class="p-6">
-        <form method="GET" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Search Input -->
-                <div class="lg:col-span-3">
-                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-search mr-1 text-rdc-blue"></i>
-                        Recherche Textuelle
-                    </label>
-                    <input type="text" 
-                           id="search" 
-                           name="search" 
-                           value="{{ search }}" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                           placeholder="N° accusé, référence, objet, expéditeur...">
-                </div>
-                
-                <!-- Date From -->
-                <div>
-                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                        Date Début
-                    </label>
-                    <input type="date" 
-                           id="date_from" 
-                           name="date_from" 
-                           value="{{ date_from }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- Date To -->
-                <div>
-                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                        Date Fin
-                    </label>
-                    <input type="date" 
-                           id="date_to" 
-                           name="date_to" 
-                           value="{{ date_to }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- Sort By -->
-                <div>
-                    <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-sort mr-1 text-rdc-yellow"></i>
-                        Trier par
-                    </label>
-                    <select id="sort_by" 
-                            name="sort_by"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <option value="date_enregistrement" {% if sort_by == 'date_enregistrement' %}selected{% endif %}>Date</option>
-                        <option value="numero_accuse_reception" {% if sort_by == 'numero_accuse_reception' %}selected{% endif %}>N° Accusé</option>
-                        <option value="expediteur" {% if sort_by == 'expediteur' %}selected{% endif %}>Expéditeur</option>
-                        <option value="objet" {% if sort_by == 'objet' %}selected{% endif %}>Objet</option>
-                    </select>
-                </div>
-                
-                <!-- Sort Order (hidden but in the same row) -->
-                <div class="hidden">
-                    <select id="sort_order" name="sort_order">
-                        <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Décroissant</option>
-                        <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Croissant</option>
-                    </select>
-                </div>
+<!-- Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content - Informations Principales -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Filters Card -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-filter mr-2 text-rdc-blue"></i>
+                    Informations Principales
+                </h2>
             </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button type="submit" 
-                        class="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                    <i class="fas fa-search mr-2"></i>
-                    Filtrer
-                </button>
-                <a href="{{ url_for('view_mail') }}" 
-                   class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Réinitialiser
-                </a>
-                <!-- Quick toggle for sort order -->
-                <button type="button" 
-                        onclick="toggleSortOrder()"
-                        class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-sort-amount-{{ 'down' if sort_order == 'desc' else 'up' }} mr-2"></i>
-                    {{ 'Plus récent' if sort_order == 'desc' else 'Plus ancien' }} d'abord
-                </button>
+            <div class="p-6">
+                <form method="GET" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Search Input -->
+                        <div class="md:col-span-2">
+                            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-search mr-1 text-rdc-blue"></i>
+                                Recherche Textuelle
+                            </label>
+                            <input type="text" 
+                                   id="search" 
+                                   name="search" 
+                                   value="{{ search }}" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                   placeholder="N° accusé, référence, objet, expéditeur...">
+                        </div>
+                        
+                        <!-- Date From -->
+                        <div>
+                            <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar mr-1 text-rdc-green"></i>
+                                Date Début
+                            </label>
+                            <input type="date" 
+                                   id="date_from" 
+                                   name="date_from" 
+                                   value="{{ date_from }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        </div>
+                        
+                        <!-- Date To -->
+                        <div>
+                            <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar mr-1 text-rdc-green"></i>
+                                Date Fin
+                            </label>
+                            <input type="date" 
+                                   id="date_to" 
+                                   name="date_to" 
+                                   value="{{ date_to }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        </div>
+                        
+                        <!-- Sort By -->
+                        <div>
+                            <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-sort mr-1 text-rdc-yellow"></i>
+                                Trier par
+                            </label>
+                            <select id="sort_by" 
+                                    name="sort_by"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                                <option value="date_enregistrement" {% if sort_by == 'date_enregistrement' %}selected{% endif %}>Date</option>
+                                <option value="numero_accuse_reception" {% if sort_by == 'numero_accuse_reception' %}selected{% endif %}>N° Accusé</option>
+                                <option value="expediteur" {% if sort_by == 'expediteur' %}selected{% endif %}>Expéditeur</option>
+                                <option value="objet" {% if sort_by == 'objet' %}selected{% endif %}>Objet</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Sort Order Toggle -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-sort-amount-{{ 'down' if sort_order == 'desc' else 'up' }} mr-1 text-rdc-yellow"></i>
+                                Ordre de tri
+                            </label>
+                            <button type="button" 
+                                    onclick="toggleSortOrder()"
+                                    class="w-full px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                                {{ 'Plus récent' if sort_order == 'desc' else 'Plus ancien' }} d'abord
+                            </button>
+                        </div>
+                        
+                        <!-- Hidden Sort Order -->
+                        <input type="hidden" id="sort_order" name="sort_order" value="{{ sort_order }}">
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="submit" 
+                                class="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-search mr-2"></i>
+                            Filtrer
+                        </button>
+                        <a href="{{ url_for('view_mail') }}" 
+                           class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-times mr-2"></i>
+                            Réinitialiser
+                        </a>
+                    </div>
+                </form>
             </div>
-        </form>
-    </div>
-</div>
+        </div>
 
-<!-- Results -->
-<div class="bg-white shadow-rdc rounded-xl">
+        <!-- Results -->
+        <div class="bg-white shadow-rdc rounded-xl">
     <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-gray-900 flex items-center">
@@ -230,6 +235,59 @@
             </a>
         </div>
         {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sidebar - Actions Rapides -->
+    <div class="space-y-6">
+        <!-- Actions Rapides -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
+                    Actions Rapides
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 gap-4">
+                    <a href="{{ url_for('register_mail') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group">
+                        <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Nouveau Courrier</p>
+                            <p class="text-sm text-gray-500">Enregistrer un courrier</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('view_mail') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-green rounded-lg hover:bg-green-50 transition-colors group">
+                        <i class="fas fa-list text-2xl text-rdc-green mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Consulter</p>
+                            <p class="text-sm text-gray-500">Voir tous les courriers</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('search') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group">
+                        <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Recherche</p>
+                            <p class="text-sm text-gray-500">Recherche avancée</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-purple-500 rounded-lg hover:bg-purple-50 transition-colors group">
+                        <i class="fas fa-clock text-2xl text-purple-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Récents</p>
+                            <p class="text-sm text-gray-500">Derniers courriers</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
