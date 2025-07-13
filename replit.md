@@ -7,6 +7,7 @@ This is a Flask-based web application for managing mail correspondence at GEC (S
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design preferences: Clean, corporate design using Democratic Republic of Congo colors (blue, yellow, red, green) with Tailwind CSS.
 
 ## System Architecture
 
@@ -20,10 +21,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Template Engine**: Jinja2 (Flask's default)
-- **CSS Framework**: Bootstrap 5.3.0
+- **CSS Framework**: Tailwind CSS (replaced Bootstrap for cleaner corporate design)
 - **Icons**: Font Awesome 6.0.0
 - **Tables**: DataTables 1.13.6 for enhanced table functionality
 - **JavaScript**: Vanilla JS with jQuery for DataTables integration
+- **Design System**: Democratic Republic of Congo colors (RDC blue: #003087, yellow: #FFD700, red: #CE1126, green: #009639)
 
 ### Security Features
 - Password hashing using Werkzeug's security utilities
@@ -64,7 +66,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Frontend Libraries (CDN)
-- Bootstrap 5.3.0 (CSS framework)
+- Tailwind CSS (utility-first CSS framework)
 - Font Awesome 6.0.0 (icons)
 - DataTables 1.13.6 (enhanced tables)
 - jQuery (required for DataTables)
