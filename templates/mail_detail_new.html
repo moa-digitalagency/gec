@@ -192,41 +192,38 @@
     
     <!-- Sidebar -->
     <div class="space-y-6">
-        <!-- Quick Actions -->
+        <!-- Actions Rapides - Style horizontal -->
         <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h3 class="text-lg font-medium text-gray-900 flex items-center">
                     <i class="fas fa-tools mr-2 text-rdc-blue"></i>
                     Actions Rapides
                 </h3>
-            </div>
-            <div class="p-6 space-y-3">
-                <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-rdc-red rounded-lg hover:bg-red-50 transition-colors group">
-                    <i class="fas fa-file-pdf text-xl text-rdc-red mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Exporter en PDF</p>
-                        <p class="text-sm text-gray-500">Fiche complète du courrier</p>
-                    </div>
-                </a>
-                
-                <a href="{{ url_for('view_mail') }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group">
-                    <i class="fas fa-list text-xl text-gray-600 mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Retour à la Liste</p>
-                        <p class="text-sm text-gray-500">Tous les courriers</p>
-                    </div>
-                </a>
-                
-                <a href="{{ url_for('register_mail') }}" 
-                   class="w-full flex items-center p-3 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group">
-                    <i class="fas fa-plus text-xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                    <div>
-                        <p class="font-medium text-gray-900">Nouveau Courrier</p>
-                        <p class="text-sm text-gray-500">Enregistrer un nouveau</p>
-                    </div>
-                </a>
+                <div class="flex items-center space-x-2">
+                    <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
+                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-red hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        PDF
+                    </a>
+                    
+                    <a href="{{ url_for('register_mail') }}" 
+                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nouveau
+                    </a>
+                    
+                    <a href="{{ url_for('search') }}" 
+                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-search mr-2"></i>
+                        Recherche
+                    </a>
+                    
+                    <a href="{{ url_for('view_mail') }}" 
+                       class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-list mr-2"></i>
+                        Retour
+                    </a>
+                </div>
             </div>
         </div>
         

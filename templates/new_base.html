@@ -292,11 +292,13 @@
             }
             
             function openMenu() {
+                if (!mobileMenu) return;
+                console.log('Opening menu');
                 mobileMenu.classList.remove('hidden');
                 mobileMenu.style.display = 'block';
                 
                 // Change hamburger to X
-                const icon = mobileMenuButton.querySelector('i');
+                const icon = mobileMenuButton?.querySelector('i');
                 if (icon) {
                     icon.className = 'fas fa-times';
                 }
@@ -314,11 +316,13 @@
             }
             
             function closeMenu() {
+                if (!mobileMenu) return;
+                console.log('Closing menu');
                 mobileMenu.classList.add('hidden');
                 mobileMenu.style.display = 'none';
                 
                 // Change X back to hamburger
-                const icon = mobileMenuButton.querySelector('i');
+                const icon = mobileMenuButton?.querySelector('i');
                 if (icon) {
                     icon.className = 'fas fa-bars';
                 }
@@ -333,7 +337,10 @@
             }
             
             if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', function() {
+                mobileMenuButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Menu button clicked');
                     const isHidden = mobileMenu.classList.contains('hidden');
                     if (isHidden) {
                         openMenu();
