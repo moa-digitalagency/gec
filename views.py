@@ -9,7 +9,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission
+from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, get_current_language, set_language, t, get_available_languages
 
 @app.route('/')
@@ -133,7 +133,9 @@ def register_mail():
     
     # Récupérer les statuts disponibles pour le formulaire
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
-    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+    # Récupérer les départements pour le formulaire
+    departements = Departement.get_departements_actifs()
+    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, departements=departements)
 
 @app.route('/view_mail')
 @login_required
@@ -149,8 +151,25 @@ def view_mail():
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
-    # Construction de la requête
+    # Construction de la requête avec restrictions selon le rôle
     query = Courrier.query
+    
+    # Appliquer les restrictions selon le rôle
+    if current_user.role == 'super_admin':
+        # Super admin voit tout
+        pass
+    elif current_user.role == 'admin':
+        # Admin voit les courriers de son département
+        if current_user.departement_id:
+            query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                User.departement_id == current_user.departement_id
+            )
+        else:
+            # Si admin n'a pas de département assigné, ne voir que ses propres courriers
+            query = query.filter(Courrier.utilisateur_id == current_user.id)
+    else:
+        # Utilisateur normal voit seulement ses propres courriers
+        query = query.filter(Courrier.utilisateur_id == current_user.id)
     
     # Recherche textuelle
     if search:
@@ -213,6 +232,12 @@ def search():
 @login_required
 def mail_detail(id):
     courrier = Courrier.query.get_or_404(id)
+    
+    # Vérifier les permissions d'accès au courrier
+    if not current_user.can_view_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de consulter ce courrier.', 'error')
+        return redirect(url_for('view_mail'))
+    
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     log_activity(current_user.id, "CONSULTATION_COURRIER", 
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
@@ -925,6 +950,99 @@ def delete_role(role_id):
         flash(f'Erreur lors de la suppression: {str(e)}', 'error')
     
     return redirect(url_for('manage_roles'))
+
+@app.route('/manage_departments')
+@login_required
+def manage_departments():
+    """Gestion des départements - accessible uniquement aux super admins"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    departements = Departement.query.order_by(Departement.nom).all()
+    return render_template('manage_departments.html', departements=departements)
+
+@app.route('/add_department', methods=['GET', 'POST'])
+@login_required
+def add_department():
+    """Ajouter un nouveau département"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        nom = request.form['nom'].strip()
+        code = request.form['code'].strip().upper()
+        description = request.form['description'].strip()
+        chef_departement_id = request.form.get('chef_departement_id') or None
+        
+        try:
+            nouveau_departement = Departement(
+                nom=nom,
+                code=code,
+                description=description,
+                chef_departement_id=chef_departement_id
+            )
+            db.session.add(nouveau_departement)
+            db.session.commit()
+            
+            log_activity(current_user.id, "CREATION_DEPARTEMENT", 
+                        f"Création du département {nom}")
+            flash(f'Département "{nom}" créé avec succès!', 'success')
+            return redirect(url_for('manage_departments'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la création: {str(e)}', 'error')
+    
+    users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
+    return render_template('add_department.html', users=users)
+
+@app.route('/upload_profile_photo', methods=['POST'])
+@login_required
+def upload_profile_photo():
+    """Upload d'une photo de profil"""
+    if 'photo' not in request.files:
+        flash('Aucun fichier sélectionné.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    file = request.files['photo']
+    if file.filename == '':
+        flash('Aucun fichier sélectionné.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        ext = filename.rsplit('.', 1)[1].lower()
+        filename = f"profile_{current_user.id}_{timestamp}.{ext}"
+        
+        profile_folder = os.path.join('uploads', 'profiles')
+        os.makedirs(profile_folder, exist_ok=True)
+        filepath = os.path.join(profile_folder, filename)
+        file.save(filepath)
+        
+        if current_user.photo_profile:
+            old_file = os.path.join(profile_folder, current_user.photo_profile)
+            if os.path.exists(old_file):
+                os.remove(old_file)
+        
+        current_user.photo_profile = filename
+        db.session.commit()
+        
+        log_activity(current_user.id, "UPLOAD_PHOTO_PROFIL", 
+                    "Upload d'une nouvelle photo de profil")
+        flash('Photo de profil mise à jour avec succès!', 'success')
+    else:
+        flash('Type de fichier non autorisé.', 'error')
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/static/uploads/profiles/<filename>')
+def profile_photo(filename):
+    """Servir les photos de profil"""
+    profile_folder = os.path.join('uploads', 'profiles')
+    return send_file(os.path.join(profile_folder, filename))
 
 @app.errorhandler(404)
 def not_found_error(error):

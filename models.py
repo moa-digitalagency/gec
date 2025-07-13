@@ -2,6 +2,57 @@ from app import db
 from flask_login import UserMixin
 from datetime import datetime
 import uuid
+import os
+
+class Departement(db.Model):
+    """Modèle pour les départements"""
+    __tablename__ = 'departement'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    code = db.Column(db.String(10), unique=True, nullable=False)  # Code département (ex: RH, IT, FIN)
+    chef_departement_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    actif = db.Column(db.Boolean, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relations
+    chef_departement = db.relationship('User', foreign_keys=[chef_departement_id], backref='departement_chef', post_update=True)
+    
+    def __repr__(self):
+        return f'<Departement {self.nom}>'
+    
+    @staticmethod
+    def get_departements_actifs():
+        """Récupère la liste des départements actifs"""
+        return Departement.query.filter_by(actif=True).order_by(Departement.nom).all()
+    
+    @staticmethod
+    def init_default_departments():
+        """Initialise les départements par défaut"""
+        from app import db
+        
+        # Vérifier si des départements existent déjà
+        if Departement.query.count() > 0:
+            return
+        
+        departements_defaut = [
+            {'nom': 'Administration Générale', 'code': 'ADM', 'description': 'Administration générale et ressources humaines'},
+            {'nom': 'Département Juridique', 'code': 'JUR', 'description': 'Affaires juridiques et contentieux'},
+            {'nom': 'Département Technique', 'code': 'TECH', 'description': 'Études techniques et supervision'},
+            {'nom': 'Département Financier', 'code': 'FIN', 'description': 'Gestion financière et comptabilité'},
+            {'nom': 'Secrétariat Général', 'code': 'SG', 'description': 'Secrétariat général et courrier'},
+        ]
+        
+        for dept_data in departements_defaut:
+            departement = Departement(**dept_data)
+            db.session.add(departement)
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erreur lors de l'initialisation des départements: {e}")
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -13,16 +64,19 @@ class User(UserMixin, db.Model):
     actif = db.Column(db.Boolean, default=True)
     role = db.Column(db.String(20), nullable=False, default='user')
     langue = db.Column(db.String(5), nullable=False, default='fr')
+    photo_profile = db.Column(db.String(255), nullable=True)  # Chemin vers la photo de profil
+    departement_id = db.Column(db.Integer, db.ForeignKey('departement.id'), nullable=True)
     
     # Relations
     courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
+    departement = db.relationship('Departement', foreign_keys=[departement_id], backref='utilisateurs', lazy=True)
     
     def has_permission(self, permission):
         """Vérifie si l'utilisateur a une permission spécifique"""
         permissions = {
-            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'view_all', 'edit_all'],
-            'admin': ['manage_statuses', 'view_all', 'edit_all'],
+            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'manage_departments', 'view_all', 'edit_all'],
+            'admin': ['manage_statuses', 'view_department', 'edit_department'],
             'user': ['view_own', 'edit_own']
         }
         return permission in permissions.get(self.role, [])
@@ -38,6 +92,23 @@ class User(UserMixin, db.Model):
     def can_manage_users(self):
         """Vérifie si l'utilisateur peut gérer les utilisateurs"""
         return self.role == 'super_admin'
+    
+    def can_view_courrier(self, courrier):
+        """Vérifie si l'utilisateur peut voir ce courrier"""
+        if self.role == 'super_admin':
+            return True
+        elif self.role == 'admin':
+            # Admin peut voir les courriers de son département
+            return self.departement_id == courrier.utilisateur_enregistrement.departement_id
+        else:
+            # Utilisateur peut voir seulement ses propres courriers
+            return courrier.utilisateur_id == self.id
+    
+    def get_profile_photo_url(self):
+        """Retourne l'URL de la photo de profil ou une image par défaut"""
+        if self.photo_profile and os.path.exists(os.path.join('uploads/profiles', self.photo_profile)):
+            return f'/static/uploads/profiles/{self.photo_profile}'
+        return '/static/images/default-profile.svg'
 
 class Courrier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -267,15 +338,18 @@ class RolePermission(db.Model):
         permissions_defaut = {
             'super_admin': [
                 'manage_users', 'manage_roles', 'manage_system_settings', 
-                'view_all_logs', 'manage_statuses', 'register_mail', 
-                'view_mail', 'search_mail', 'export_data', 'delete_mail'
+                'view_all_logs', 'manage_statuses', 'manage_departments',
+                'register_mail', 'view_mail', 'search_mail', 'export_data', 
+                'delete_mail', 'view_all', 'edit_all'
             ],
             'admin': [
                 'manage_statuses', 'register_mail', 'view_mail', 
-                'search_mail', 'export_data', 'manage_system_settings'
+                'search_mail', 'export_data', 'manage_system_settings',
+                'view_department', 'edit_department'
             ],
             'user': [
-                'register_mail', 'view_mail', 'search_mail', 'export_data'
+                'register_mail', 'view_mail', 'search_mail', 'export_data',
+                'view_own', 'edit_own'
             ]
         }
         
@@ -299,3 +373,4 @@ def init_default_data():
     StatutCourrier.init_default_statuts()
     Role.init_default_roles()
     RolePermission.init_default_permissions()
+    Departement.init_default_departments()

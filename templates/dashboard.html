@@ -49,11 +49,22 @@
         <div class="bg-gradient-to-r from-rdc-blue to-rdc-green px-6 py-4">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-user text-2xl text-rdc-yellow"></i>
+                    {% if current_user.photo_profile %}
+                        <img src="{{ current_user.get_profile_photo_url() }}" 
+                             alt="Photo" 
+                             class="h-12 w-12 rounded-full border-2 border-white">
+                    {% else %}
+                        <div class="h-12 w-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+                            <i class="fas fa-user text-2xl text-white"></i>
+                        </div>
+                    {% endif %}
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-blue-100">Utilisateur</p>
                     <p class="text-lg font-bold text-white">{{ current_user.nom_complet }}</p>
+                    {% if current_user.departement %}
+                        <p class="text-xs text-blue-200">{{ current_user.departement.nom }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -1,0 +1,146 @@
+{% extends "new_base.html" %}
+
+{% block title %}Gestion des Départements - {{ t('app_name') }}{% endblock %}
+
+{% block content %}
+<!-- En-tête avec bouton d'ajout -->
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-building mr-3 text-rdc-blue"></i>
+            Gestion des Départements
+        </h1>
+        <p class="text-gray-600 mt-2">Gérez les départements et assignez les chefs de département</p>
+    </div>
+    <div class="flex space-x-3">
+        <a href="{{ url_for('add_department') }}" 
+           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            Nouveau Département
+        </a>
+    </div>
+</div>
+
+<!-- Liste des départements -->
+<div class="bg-white shadow-rdc rounded-xl">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-list mr-2 text-rdc-blue"></i>
+            Départements ({{ departements|length }})
+        </h2>
+    </div>
+    <div class="p-6">
+        {% if departements %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Département
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Code
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Chef de Département
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Utilisateurs
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Statut
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for dept in departements %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-rdc-blue bg-opacity-10 flex items-center justify-center mr-3">
+                                    <i class="fas fa-building text-rdc-blue"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ dept.nom }}</div>
+                                    <div class="text-xs text-gray-500">{{ dept.description or 'Aucune description' }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ dept.code }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if dept.chef_departement %}
+                                <div class="flex items-center">
+                                    <img src="{{ dept.chef_departement.get_profile_photo_url() }}" 
+                                         alt="Photo" 
+                                         class="h-8 w-8 rounded-full mr-2">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ dept.chef_departement.nom_complet }}</div>
+                                        <div class="text-xs text-gray-500">{{ dept.chef_departement.email }}</div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400 italic">Non assigné</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ dept.utilisateurs|length }} utilisateur{{ 's' if dept.utilisateurs|length > 1 else '' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if dept.actif %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Actif
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Inactif
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('edit_department', dept_id=dept.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if dept.utilisateurs|length == 0 %}
+                                <form method="POST" action="{{ url_for('delete_department', dept_id=dept.id) }}" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce département ?')" 
+                                      class="inline">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-building text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun département</h3>
+            <p class="text-gray-500 mb-6">Commencez par créer votre premier département.</p>
+            <a href="{{ url_for('add_department') }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                <i class="fas fa-plus mr-2"></i>
+                Créer un département
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
