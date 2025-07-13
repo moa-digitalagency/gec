@@ -71,10 +71,12 @@ def register_mail():
         numero_reference = request.form.get('numero_reference', '').strip()
         objet = request.form['objet'].strip()
         expediteur = request.form['expediteur'].strip()
+        statut = request.form.get('statut', 'RECU')
         
         if not objet or not expediteur:
             flash('L\'objet et l\'expéditeur sont obligatoires.', 'error')
-            return render_template('register_mail.html')
+            statuts_disponibles = StatutCourrier.get_statuts_actifs()
+            return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
         
         # Génération du numéro d'accusé de réception
         numero_accuse = generate_accuse_reception()
@@ -97,7 +99,8 @@ def register_mail():
                 fichier_type = filename.rsplit('.', 1)[1].lower()
             else:
                 flash('Type de fichier non autorisé. Utilisez PDF, JPG, PNG ou TIFF.', 'error')
-                return render_template('register_mail.html')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
         
         # Création du courrier
         courrier = Courrier(
@@ -105,6 +108,7 @@ def register_mail():
             numero_reference=numero_reference if numero_reference else None,
             objet=objet,
             expediteur=expediteur,
+            statut=statut,
             fichier_nom=fichier_nom,
             fichier_chemin=fichier_chemin,
             fichier_type=fichier_type,
@@ -127,7 +131,9 @@ def register_mail():
             logging.error(f"Erreur lors de l'enregistrement: {e}")
             flash('Erreur lors de l\'enregistrement du courrier.', 'error')
     
-    return render_template('register_mail.html')
+    # Récupérer les statuts disponibles pour le formulaire
+    statuts_disponibles = StatutCourrier.get_statuts_actifs()
+    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
 
 @app.route('/view_mail')
 @login_required
