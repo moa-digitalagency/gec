@@ -170,76 +170,6 @@
                         Déconnexion
                     </a>
                 </div>
-                    
-                    <!-- Settings Section -->
-                    <div class="border-t border-rdc-green mt-3 pt-3">
-                        <div class="text-white text-xs px-3 py-1 font-medium opacity-70 uppercase tracking-wider">
-                            {{ t('nav.settings') if t else 'Paramètres' }}
-                        </div>
-                        <a href="{{ url_for('settings') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
-                            <i class="fas fa-cog mr-3 w-5 text-center"></i>
-                            {{ t('nav.system_config') if t else 'Configuration Système' }}
-                        </a>
-                        <a href="{{ url_for('manage_statuses') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
-                            <i class="fas fa-tags mr-3 w-5 text-center"></i>
-                            {{ t('nav.manage_statuses') if t else 'Gérer les Statuts' }}
-                        </a>
-                        {% if current_user.can_manage_users() %}
-                        <a href="{{ url_for('manage_users') }}" class="text-white hover:bg-rdc-green block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
-                            <i class="fas fa-users mr-3 w-5 text-center"></i>
-                            {{ t('nav.manage_users') if t else 'Gérer les Utilisateurs' }}
-                        </a>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Language Selection Mobile -->
-                    <div class="border-t border-rdc-green mt-3 pt-3">
-                        <div class="text-white text-xs px-3 py-1 font-medium opacity-70 uppercase tracking-wider">
-                            Langue / Language
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 px-3 py-2">
-                            <a href="{{ url_for('set_user_language', lang_code='fr') }}" 
-                               class="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors {% if get_current_language() == 'fr' %}bg-rdc-green text-white{% else %}bg-white bg-opacity-20 text-white hover:bg-opacity-30{% endif %}">
-                                🇫🇷 FR
-                            </a>
-                            <a href="{{ url_for('set_user_language', lang_code='en') }}" 
-                               class="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors {% if get_current_language() == 'en' %}bg-rdc-green text-white{% else %}bg-white bg-opacity-20 text-white hover:bg-opacity-30{% endif %}">
-                                🇺🇸 EN
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <!-- User Info Section -->
-                    <div class="border-t border-rdc-green mt-3 pt-3">
-                        <div class="flex items-center px-3 py-2">
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-rdc-green flex items-center justify-center">
-                                    <span class="text-white text-xs font-bold">
-                                        {{ current_user.nom_complet[:2].upper() }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="ml-3 flex-1 min-w-0">
-                                <div class="text-white text-sm font-medium truncate">
-                                    {{ current_user.nom_complet }}
-                                </div>
-                                <div class="text-rdc-yellow text-xs">
-                                    {% if current_user.role == 'super_admin' %}
-                                        <i class="fas fa-crown mr-1"></i>Super Admin
-                                    {% elif current_user.role == 'admin' %}
-                                        <i class="fas fa-user-shield mr-1"></i>Admin
-                                    {% else %}
-                                        <i class="fas fa-user mr-1"></i>Utilisateur
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <a href="{{ url_for('logout') }}" class="text-white hover:bg-red-600 block px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
-                            <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>
-                            {{ t('nav.logout') if t else 'Déconnexion' }}
-                        </a>
-                    </div>
-                </div>
             </div>
         </div>
     </nav>
@@ -327,60 +257,43 @@
                 return overlay;
             }
             
-            function openMenu() {
-                if (!mobileMenu) return;
-                console.log('Opening menu - SIMPLE VERSION');
-                mobileMenu.style.display = 'block';
-                console.log('Menu should be visible now');
-                
-                // Change hamburger to X
-                const icon = mobileMenuButton?.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-times';
+            // Click outside to close menu
+            document.addEventListener('click', function(e) {
+                if (mobileMenu && mobileMenu.style.display === 'block') {
+                    // If click is outside menu and button, close menu
+                    if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+                        mobileMenu.style.display = 'none';
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) icon.className = 'fas fa-bars';
+                        console.log('Menu closed by outside click');
+                    }
                 }
-                
-                // Show overlay on mobile
-                if (window.innerWidth <= 768) {
-                    const overlay = createOverlay();
-                    overlay.style.display = 'block';
-                }
-                
-                // Prevent body scroll on mobile
-                if (window.innerWidth <= 768) {
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-            
-            function closeMenu() {
-                if (!mobileMenu) return;
-                console.log('Closing menu - SIMPLE VERSION');
-                mobileMenu.style.display = 'none';
-                
-                // Change X back to hamburger
-                const icon = mobileMenuButton?.querySelector('i');
-                if (icon) {
-                    icon.className = 'fas fa-bars';
-                }
-                
-                // Hide overlay
-                if (overlay) {
-                    overlay.style.display = 'none';
-                }
-                
-                // Restore body scroll
-                document.body.style.overflow = '';
-            }
+            });
             
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Menu button clicked - SIMPLE VERSION');
+                    console.log('Menu button clicked - UNIFIED VERSION');
+                    
+                    // Check if menu is currently visible
                     const isVisible = mobileMenu.style.display === 'block';
+                    console.log('Menu currently visible:', isVisible);
+                    
                     if (isVisible) {
-                        closeMenu();
+                        // Close menu
+                        mobileMenu.style.display = 'none';
+                        // Change icon back to hamburger
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) icon.className = 'fas fa-bars';
+                        console.log('Menu closed');
                     } else {
-                        openMenu();
+                        // Open menu
+                        mobileMenu.style.display = 'block';
+                        // Change icon to X
+                        const icon = mobileMenuButton.querySelector('i');
+                        if (icon) icon.className = 'fas fa-times';
+                        console.log('Menu opened');
                     }
                 });
                 
