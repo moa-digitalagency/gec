@@ -124,7 +124,7 @@
             <div id="mobile-menu" style="
                 position: fixed; 
                 top: 0; 
-                right: -100%; 
+                right: -320px; 
                 width: 320px; 
                 height: 100vh; 
                 background-color: #003087; 
@@ -135,6 +135,7 @@
                 transition: right 0.3s ease-in-out;
                 overflow-y: auto;
                 box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
+                display: block;
             ">
                 <!-- Navigation principale -->
                 <div style="margin-bottom: 1rem;">
@@ -261,8 +262,8 @@
             
             // Fermer le menu avec Escape
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && mobileMenu && (mobileMenu.style.right === '0px' || mobileMenu.style.right === '0')) {
-                    mobileMenu.style.right = '-100%';
+                if (e.key === 'Escape' && mobileMenu && window.getComputedStyle(mobileMenu).right === '0px') {
+                    mobileMenu.style.right = '-320px';
                     const icon = mobileMenuButton.querySelector('i');
                     if (icon) icon.className = 'fas fa-bars';
                     setTimeout(() => {
@@ -279,7 +280,7 @@
                     link.addEventListener('click', function(e) {
                         console.log('Menu link clicked:', this.href);
                         // Close menu when link is clicked
-                        mobileMenu.style.right = '-100%';
+                        mobileMenu.style.right = '-320px';
                         const icon = mobileMenuButton.querySelector('i');
                         if (icon) icon.className = 'fas fa-bars';
                         console.log('Menu closed after link click');
@@ -304,12 +305,13 @@
                     console.log('Menu button clicked - UNIFIED VERSION');
                     
                     // Check if menu is currently visible (right: 0 means visible)
-                    const isVisible = mobileMenu.style.right === '0px' || mobileMenu.style.right === '0';
+                    const currentRight = window.getComputedStyle(mobileMenu).right;
+                    const isVisible = currentRight === '0px';
                     console.log('Menu currently visible:', isVisible);
                     
                     if (isVisible) {
                         // Close menu with slide animation
-                        mobileMenu.style.right = '-100%';
+                        mobileMenu.style.right = '-320px';
                         // Change icon back to hamburger
                         const icon = mobileMenuButton.querySelector('i');
                         if (icon) icon.className = 'fas fa-bars';
@@ -328,7 +330,7 @@
                             document.body.appendChild(overlay);
                             overlay.addEventListener('click', function() {
                                 // Close menu when clicking overlay
-                                mobileMenu.style.right = '-100%';
+                                mobileMenu.style.right = '-320px';
                                 const icon = mobileMenuButton.querySelector('i');
                                 if (icon) icon.className = 'fas fa-bars';
                                 setTimeout(() => {
