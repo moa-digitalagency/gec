@@ -645,6 +645,131 @@ def view_logs():
                          actions_list=actions_list,
                          users_list=users_list)
 
+@app.route('/manage_roles')
+@login_required
+def manage_roles():
+    """Gestion des rôles et permissions - accessible uniquement aux super admins"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Définition des rôles et leurs permissions
+    roles_permissions = {
+        'super_admin': {
+            'name': 'Super Administrateur',
+            'description': 'Accès complet au système avec toutes les permissions',
+            'permissions': [
+                'manage_users', 'manage_roles', 'manage_system_settings', 
+                'view_all_logs', 'manage_statuses', 'register_mail', 
+                'view_mail', 'search_mail', 'export_data', 'delete_mail'
+            ],
+            'color': 'bg-yellow-100 text-yellow-800',
+            'icon': 'fas fa-crown',
+            'count': User.query.filter_by(role='super_admin').count()
+        },
+        'admin': {
+            'name': 'Administrateur',
+            'description': 'Gestion des utilisateurs et configuration système limitée',
+            'permissions': [
+                'manage_statuses', 'register_mail', 'view_mail', 
+                'search_mail', 'export_data', 'manage_system_settings'
+            ],
+            'color': 'bg-blue-100 text-blue-800',
+            'icon': 'fas fa-shield-alt',
+            'count': User.query.filter_by(role='admin').count()
+        },
+        'user': {
+            'name': 'Utilisateur',
+            'description': 'Accès de base pour enregistrer et consulter les courriers',
+            'permissions': [
+                'register_mail', 'view_mail', 'search_mail', 'export_data'
+            ],
+            'color': 'bg-gray-100 text-gray-800',
+            'icon': 'fas fa-user',
+            'count': User.query.filter_by(role='user').count()
+        }
+    }
+    
+    # Définition de toutes les permissions disponibles
+    all_permissions = {
+        'manage_users': {
+            'name': 'Gérer les utilisateurs',
+            'description': 'Créer, modifier et supprimer des comptes utilisateur',
+            'category': 'Administration'
+        },
+        'manage_roles': {
+            'name': 'Gérer les rôles',
+            'description': 'Modifier les permissions des rôles utilisateur',
+            'category': 'Administration'
+        },
+        'manage_system_settings': {
+            'name': 'Paramètres système',
+            'description': 'Configurer les paramètres généraux du système',
+            'category': 'Configuration'
+        },
+        'view_all_logs': {
+            'name': 'Consulter les logs',
+            'description': 'Accéder aux journaux d\'activité du système',
+            'category': 'Surveillance'
+        },
+        'manage_statuses': {
+            'name': 'Gérer les statuts',
+            'description': 'Créer et modifier les statuts de courrier',
+            'category': 'Configuration'
+        },
+        'register_mail': {
+            'name': 'Enregistrer courriers',
+            'description': 'Créer de nouveaux enregistrements de courrier',
+            'category': 'Courrier'
+        },
+        'view_mail': {
+            'name': 'Consulter courriers',
+            'description': 'Voir et accéder aux courriers enregistrés',
+            'category': 'Courrier'
+        },
+        'search_mail': {
+            'name': 'Rechercher courriers',
+            'description': 'Effectuer des recherches dans les courriers',
+            'category': 'Courrier'
+        },
+        'export_data': {
+            'name': 'Exporter données',
+            'description': 'Exporter les courriers en PDF et autres formats',
+            'category': 'Courrier'
+        },
+        'delete_mail': {
+            'name': 'Supprimer courriers',
+            'description': 'Supprimer définitivement des courriers',
+            'category': 'Courrier'
+        }
+    }
+    
+    return render_template('manage_roles.html',
+                         roles_permissions=roles_permissions,
+                         all_permissions=all_permissions)
+
+@app.route('/update_role_permissions', methods=['POST'])
+@login_required
+def update_role_permissions():
+    """Mettre à jour les permissions d'un rôle"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    role = request.form.get('role')
+    if role not in ['admin', 'user']:  # On ne peut pas modifier les permissions super_admin
+        flash('Rôle invalide.', 'error')
+        return redirect(url_for('manage_roles'))
+    
+    # Cette fonctionnalité nécessiterait une table de permissions en base
+    # Pour l'instant, on affiche juste un message d'information
+    flash('Cette fonctionnalité sera implémentée dans une future version. Les permissions sont actuellement définies dans le code.', 'info')
+    
+    log_activity(current_user.id, "CONSULTATION_ROLES", 
+                f"Tentative de modification des permissions du rôle {role}")
+    
+    return redirect(url_for('manage_roles'))
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('base.html'), 404
