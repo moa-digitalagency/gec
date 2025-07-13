@@ -165,3 +165,17 @@ The application is designed for easy deployment on cloud platforms with minimal 
 ✓ New permissions category "Accès Courrier" added to role management interface
 ✓ Permission system with fallback to legacy role-based access
 ✓ Complete integration with existing department-based access control
+
+### System Configuration Enhancement (July 13, 2025)
+✓ Added configurable footer text in system settings (excludes encrypted copyright)
+✓ Implemented encrypted copyright storage with base64 encoding
+✓ Added PDF export configuration parameters:
+  - Configurable PDF logo (separate from main logo)
+  - Configurable PDF title (default: "Ministère des Mines")
+  - Configurable PDF subtitle (default: "Secrétariat Général")
+✓ Updated settings page with new configuration sections
+✓ Modified PDF export to use system-configured parameters
+✓ Enhanced footer template to display configurable text + encrypted copyright
+✓ Added context processor to inject system parameters in all templates
+✓ Database migration completed for new configuration columns
+✓ Copyright protection: "© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC" encrypted in database

@@ -51,6 +51,16 @@ with app.app_context():
     
     # Initialize language support - will be done in views.py
     
+    # Context processor pour les paramètres système
+    @app.context_processor
+    def inject_parametres():
+        """Injecte les paramètres système dans tous les templates"""
+        try:
+            parametres = models.ParametresSysteme.get_parametres()
+            return {'parametres': parametres}
+        except:
+            return {'parametres': None}
+    
     # Create default admin user if none exists
     from werkzeug.security import generate_password_hash
     admin_user = models.User.query.filter_by(username='admin').first()

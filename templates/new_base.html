@@ -266,8 +266,19 @@
                 <i class="fas fa-flag mr-2 text-rdc-yellow"></i>
                 <span class="font-semibold">République Démocratique du Congo</span>
             </div>
-            <p class="text-gray-300 text-sm">
-                &copy; 2025 Secrétariat Général des Mines - Système GEC
+            <!-- Texte footer configurable -->
+            {% if parametres and parametres.texte_footer %}
+            <p class="text-gray-300 text-sm mb-2">
+                {{ parametres.texte_footer }}
+            </p>
+            {% endif %}
+            <!-- Copyright protégé -->
+            <p class="text-gray-400 text-xs">
+                {% if parametres %}
+                    {{ parametres.get_copyright_decrypte() }}
+                {% else %}
+                    © 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC
+                {% endif %}
             </p>
         </div>
     </footer>

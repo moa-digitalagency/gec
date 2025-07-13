@@ -200,6 +200,16 @@ class ParametresSysteme(db.Model):
     adresse_organisme = db.Column(db.Text, nullable=True)
     telephone = db.Column(db.String(20), nullable=True)
     email_contact = db.Column(db.String(120), nullable=True)
+    
+    # Paramètres footer
+    texte_footer = db.Column(db.Text, nullable=True, default="Système de Gestion Électronique du Courrier")
+    copyright_crypte = db.Column(db.String(500), nullable=False, default="")  # Copyright crypté
+    
+    # Paramètres PDF
+    logo_pdf = db.Column(db.String(500), nullable=True)  # Logo spécifique pour PDF
+    titre_pdf = db.Column(db.String(200), nullable=True, default="Ministère des Mines")
+    sous_titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
+    
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié
@@ -209,13 +219,35 @@ class ParametresSysteme(db.Model):
     def __repr__(self):
         return f'<ParametresSysteme {self.nom_logiciel}>'
     
+    def get_copyright_decrypte(self):
+        """Décrypte et retourne le copyright"""
+        import base64
+        try:
+            if self.copyright_crypte:
+                return base64.b64decode(self.copyright_crypte.encode()).decode('utf-8')
+            else:
+                return "© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC"
+        except:
+            return "© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC"
+    
+    def set_copyright_crypte(self, copyright_text):
+        """Crypte et sauvegarde le copyright"""
+        import base64
+        self.copyright_crypte = base64.b64encode(copyright_text.encode()).decode('utf-8')
+    
     @staticmethod
     def get_parametres():
         """Récupère les paramètres système ou crée des valeurs par défaut"""
         parametres = ParametresSysteme.query.first()
         if not parametres:
             parametres = ParametresSysteme()
+            # Initialiser le copyright crypté par défaut
+            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC")
             db.session.add(parametres)
+            db.session.commit()
+        elif not parametres.copyright_crypte:
+            # Si pas de copyright crypté, l'initialiser
+            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC")
             db.session.commit()
         return parametres
 

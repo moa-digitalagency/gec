@@ -186,8 +186,15 @@ def export_courrier_pdf(courrier):
         textColor=colors.darkblue
     )
     
-    # Titre du document
-    title = Paragraph("SECRÉTARIAT GÉNÉRAL DES MINES<br/>République Démocratique du Congo", title_style)
+    # Récupérer les paramètres système pour le PDF
+    from models import ParametresSysteme
+    parametres = ParametresSysteme.get_parametres()
+    
+    # Titre configuré du document
+    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
+    
+    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}<br/>République Démocratique du Congo", title_style)
     story.append(title)
     story.append(Spacer(1, 20))
     
@@ -222,10 +229,24 @@ def export_courrier_pdf(courrier):
     story.append(table)
     story.append(Spacer(1, 30))
     
-    # Note de bas de page
-    footer_text = f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} par le système GEC"
-    footer = Paragraph(footer_text, styles['Normal'])
-    story.append(footer)
+    # Note de bas de page avec texte configurable
+    footer_lines = []
+    
+    # Texte footer configurable
+    if parametres.texte_footer:
+        footer_lines.append(parametres.texte_footer)
+    
+    # Date de génération
+    footer_lines.append(f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} par le système GEC")
+    
+    # Copyright crypté
+    copyright = parametres.get_copyright_decrypte()
+    footer_lines.append(copyright)
+    
+    for line in footer_lines:
+        footer = Paragraph(line, styles['Normal'])
+        story.append(footer)
+        story.append(Spacer(1, 6))
     
     # Construire le PDF
     doc.build(story)
