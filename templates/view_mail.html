@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Consulter Courriers - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-list me-2"></i>
+            Consulter les Courriers
+        </h1>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Filtres et Recherche
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="GET">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="search" class="form-label">Recherche Textuelle</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="N° accusé, référence, objet, expéditeur...">
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <label for="date_from" class="form-label">Date Début</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <label for="date_to" class="form-label">Date Fin</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <label for="sort_by" class="form-label">Trier par</label>
+                            <select class="form-select" id="sort_by" name="sort_by">
+                                <option value="date_enregistrement" {% if sort_by == 'date_enregistrement' %}selected{% endif %}>Date</option>
+                                <option value="numero_accuse_reception" {% if sort_by == 'numero_accuse_reception' %}selected{% endif %}>N° Accusé</option>
+                                <option value="expediteur" {% if sort_by == 'expediteur' %}selected{% endif %}>Expéditeur</option>
+                                <option value="objet" {% if sort_by == 'objet' %}selected{% endif %}>Objet</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <label for="sort_order" class="form-label">Ordre</label>
+                            <select class="form-select" id="sort_order" name="sort_order">
+                                <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Décroissant</option>
+                                <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Croissant</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>
+                            Filtrer
+                        </button>
+                        <a href="{{ url_for('view_mail') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>
+                            Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Résultats -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Liste des Courriers
+                    {% if courriers.items %}
+                        <span class="badge bg-primary ms-2">{{ courriers.total }} résultat(s)</span>
+                    {% endif %}
+                </h6>
+                
+                <a href="{{ url_for('register_mail') }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus me-1"></i>
+                    Nouveau Courrier
+                </a>
+            </div>
+            <div class="card-body">
+                {% if courriers.items %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="courriersTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>N° Accusé</th>
+                                <th>Référence</th>
+                                <th>Expéditeur</th>
+                                <th>Objet</th>
+                                <th>Date</th>
+                                <th>Fichier</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for courrier in courriers.items %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ courrier.numero_accuse_reception }}</span>
+                                </td>
+                                <td>
+                                    {% if courrier.numero_reference %}
+                                        <span class="badge bg-secondary">{{ courrier.numero_reference }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Non référencé</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ courrier.expediteur }}</td>
+                                <td>
+                                    <span title="{{ courrier.objet }}">
+                                        {{ courrier.objet[:60] }}{% if courrier.objet|length > 60 %}...{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    {% if courrier.fichier_nom %}
+                                        <i class="fas fa-paperclip text-success" title="{{ courrier.fichier_nom }}"></i>
+                                    {% else %}
+                                        <i class="fas fa-minus text-muted" title="Aucun fichier"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
+                                           class="btn btn-outline-primary" title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
+                                           class="btn btn-outline-success" title="Export PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        {% if courrier.fichier_nom %}
+                                        <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                                           class="btn btn-outline-info" title="Télécharger fichier">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if courriers.pages > 1 %}
+                <nav aria-label="Navigation des pages">
+                    <ul class="pagination justify-content-center">
+                        {% if courriers.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_mail', page=courriers.prev_num, search=search, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">
+                                Précédent
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in courriers.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != courriers.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('view_mail', page=page_num, search=search, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if courriers.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('view_mail', page=courriers.next_num, search=search, date_from=date_from, date_to=date_to, sort_by=sort_by, sort_order=sort_order) }}">
+                                Suivant
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun courrier trouvé</h5>
+                    <p class="text-muted">
+                        {% if search or date_from or date_to %}
+                            Essayez de modifier vos critères de recherche.
+                        {% else %}
+                            Aucun courrier enregistré pour le moment.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('register_mail') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        Enregistrer un courrier
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

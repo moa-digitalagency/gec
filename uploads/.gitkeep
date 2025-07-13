@@ -1,0 +1,2 @@
+# This file ensures the uploads directory is created
+# Files uploaded through the application will be stored here

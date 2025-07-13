@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-mail-bulk me-2"></i>
+                    Système GEC
+                </h4>
+                <p class="mb-0 small">Secrétariat Général des Mines</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i>Nom d'utilisateur
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-1"></i>Mot de passe
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt me-1"></i>Se connecter
+                    </button>
+                </form>
+                
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        Utilisateur par défaut: <strong>admin</strong> / <strong>admin123</strong>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

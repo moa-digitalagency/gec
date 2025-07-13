@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Recherche Avancée - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-search me-2"></i>
+            Recherche Avancée
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Critères de Recherche
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('view_mail') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="search" class="form-label">
+                                <i class="fas fa-search me-1"></i>
+                                Recherche Textuelle Globale
+                            </label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Recherche dans tous les champs...">
+                            <div class="form-text">
+                                Recherche dans: N° accusé, référence, objet, expéditeur
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="expediteur_search" class="form-label">
+                                <i class="fas fa-user me-1"></i>
+                                Expéditeur Spécifique
+                            </label>
+                            <input type="text" class="form-control" id="expediteur_search" 
+                                   placeholder="Nom de l'expéditeur...">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date_from" class="form-label">
+                                <i class="fas fa-calendar me-1"></i>
+                                Date de Début
+                            </label>
+                            <input type="date" class="form-control" id="date_from" name="date_from">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="date_to" class="form-label">
+                                <i class="fas fa-calendar me-1"></i>
+                                Date de Fin
+                            </label>
+                            <input type="date" class="form-control" id="date_to" name="date_to">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sort_by" class="form-label">
+                                <i class="fas fa-sort me-1"></i>
+                                Trier par
+                            </label>
+                            <select class="form-select" id="sort_by" name="sort_by">
+                                <option value="date_enregistrement">Date d'enregistrement</option>
+                                <option value="numero_accuse_reception">Numéro d'accusé</option>
+                                <option value="expediteur">Expéditeur</option>
+                                <option value="objet">Objet</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="sort_order" class="form-label">
+                                <i class="fas fa-sort-amount-down me-1"></i>
+                                Ordre de Tri
+                            </label>
+                            <select class="form-select" id="sort_order" name="sort_order">
+                                <option value="desc">Plus récent en premier</option>
+                                <option value="asc">Plus ancien en premier</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="resetForm()">
+                            <i class="fas fa-undo me-1"></i>
+                            Réinitialiser
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>
+                            Lancer la Recherche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Conseils de Recherche
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <strong>Recherche globale:</strong> Recherche dans tous les champs texte
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <strong>Filtres par date:</strong> Affinez par période
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <strong>Tri personnalisé:</strong> Organisez selon vos besoins
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <strong>Résultats paginés:</strong> Navigation facile
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-rocket me-2"></i>
+                    Recherches Rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-clock me-1"></i>
+                        Courriers Récents
+                    </a>
+                    <a href="{{ url_for('view_mail', date_from=moment().format('YYYY-MM-DD')) }}" 
+                       class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        Courriers d'Aujourd'hui
+                    </a>
+                    <a href="{{ url_for('view_mail', date_from=moment().subtract(7, 'days').format('YYYY-MM-DD')) }}" 
+                       class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-calendar-week me-1"></i>
+                        7 Derniers Jours
+                    </a>
+                    <a href="{{ url_for('view_mail') }}" 
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-list me-1"></i>
+                        Tous les Courriers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function resetForm() {
+    document.querySelector('form').reset();
+}
+
+// Définir la date d'aujourd'hui par défaut pour les recherches rapides
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Vous pouvez utiliser ces variables si nécessaire
+    const todayFormatted = today;
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

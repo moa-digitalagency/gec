@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Tableau de Bord
+        </h1>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_courriers }}</h4>
+                        <p class="card-text">Total Courriers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-mail-bulk fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ courriers_today }}</h4>
+                        <p class="card-text">Aujourd'hui</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar-day fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ current_user.nom_complet }}</h4>
+                        <p class="card-text">Utilisateur Connecté</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions Rapides -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Actions Rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('register_mail') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-plus-circle me-1"></i>
+                            Nouveau Courrier
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('view_mail') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-list me-1"></i>
+                            Consulter Courriers
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('search') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-search me-1"></i>
+                            Recherche Avancée
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('view_mail') }}?sort_by=date_enregistrement&sort_order=desc" class="btn btn-outline-success w-100">
+                            <i class="fas fa-clock me-1"></i>
+                            Derniers Courriers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Derniers Courriers -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Derniers Courriers Enregistrés
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_courriers %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>N° Accusé</th>
+                                <th>Référence</th>
+                                <th>Expéditeur</th>
+                                <th>Objet</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for courrier in recent_courriers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ courrier.numero_accuse_reception }}</span>
+                                </td>
+                                <td>{{ courrier.reference_display }}</td>
+                                <td>{{ courrier.expediteur }}</td>
+                                <td>{{ courrier.objet[:50] }}{% if courrier.objet|length > 50 %}...{% endif %}</td>
+                                <td>{{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('mail_detail', id=courrier.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun courrier enregistré pour le moment.</p>
+                    <a href="{{ url_for('register_mail') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        Enregistrer le premier courrier
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

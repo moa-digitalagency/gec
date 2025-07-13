@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Enregistrer Courrier - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-plus-circle me-2"></i>
+            Enregistrer un Nouveau Courrier
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Informations du Courrier
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="numero_reference" class="form-label">
+                                <i class="fas fa-hashtag me-1"></i>
+                                Numéro de Référence
+                            </label>
+                            <input type="text" class="form-control" id="numero_reference" name="numero_reference" 
+                                   placeholder="Optionnel - Si non renseigné: Non référencé">
+                            <div class="form-text">Laissez vide si aucun numéro de référence</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="expediteur" class="form-label">
+                                <i class="fas fa-user me-1"></i>
+                                Expéditeur <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="expediteur" name="expediteur" required 
+                                   placeholder="Nom de l'expéditeur">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="objet" class="form-label">
+                            <i class="fas fa-file-alt me-1"></i>
+                            Objet de la Lettre <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="objet" name="objet" rows="3" required 
+                                  placeholder="Décrivez l'objet de la lettre"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fichier" class="form-label">
+                            <i class="fas fa-paperclip me-1"></i>
+                            Pièce Jointe
+                        </label>
+                        <input type="file" class="form-control" id="fichier" name="fichier" 
+                               accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
+                        <div class="form-text">
+                            Formats acceptés: PDF, JPG, PNG, TIFF (Max: 16MB)
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            Enregistrer le Courrier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informations Automatiques
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <strong><i class="fas fa-calendar me-1"></i> Date d'enregistrement:</strong><br>
+                        <span class="text-muted">{{ moment().format('DD/MM/YYYY HH:mm') }}</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong><i class="fas fa-user me-1"></i> Enregistré par:</strong><br>
+                        <span class="text-muted">{{ current_user.nom_complet }}</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong><i class="fas fa-receipt me-1"></i> N° d'accusé:</strong><br>
+                        <span class="text-muted">Généré automatiquement</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Aide
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul class="list-unstyled">
+                        <li>• Les champs marqués d'un * sont obligatoires</li>
+                        <li>• Le numéro d'accusé de réception sera généré automatiquement</li>
+                        <li>• Les fichiers sont stockés de manière sécurisée</li>
+                        <li>• Vous pouvez enregistrer un courrier sans pièce jointe</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Affichage de l'heure actuelle
+function updateCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR');
+    const timeElements = document.querySelectorAll('.current-time');
+    timeElements.forEach(el => el.textContent = timeString);
+}
+
+// Mettre à jour l'heure toutes les secondes
+setInterval(updateCurrentTime, 1000);
+updateCurrentTime();
+</script>
+{% endblock %}

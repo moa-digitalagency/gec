@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Détails Courrier {{ courrier.numero_accuse_reception }} - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Accueil</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('view_mail') }}">Courriers</a></li>
+                <li class="breadcrumb-item active">{{ courrier.numero_accuse_reception }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-mail-bulk me-2"></i>
+                    Détails du Courrier
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">
+                            <i class="fas fa-receipt me-1"></i>
+                            Numéro d'Accusé de Réception
+                        </h6>
+                        <div class="p-2 bg-light rounded">
+                            <span class="badge bg-primary fs-6">{{ courrier.numero_accuse_reception }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">
+                            <i class="fas fa-hashtag me-1"></i>
+                            Numéro de Référence
+                        </h6>
+                        <div class="p-2 bg-light rounded">
+                            {% if courrier.numero_reference %}
+                                <span class="badge bg-secondary">{{ courrier.numero_reference }}</span>
+                            {% else %}
+                                <span class="text-muted">Non référencé</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-user me-1"></i>
+                        Expéditeur
+                    </h6>
+                    <div class="p-2 bg-light rounded">
+                        {{ courrier.expediteur }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-file-alt me-1"></i>
+                        Objet de la Lettre
+                    </h6>
+                    <div class="p-3 bg-light rounded">
+                        {{ courrier.objet }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">
+                            <i class="fas fa-calendar me-1"></i>
+                            Date d'Enregistrement
+                        </h6>
+                        <div class="p-2 bg-light rounded">
+                            {{ courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M') }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-primary">
+                            <i class="fas fa-user-check me-1"></i>
+                            Enregistré par
+                        </h6>
+                        <div class="p-2 bg-light rounded">
+                            {{ courrier.utilisateur_enregistrement.nom_complet }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if courrier.fichier_nom %}
+                <div class="mb-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-paperclip me-1"></i>
+                        Pièce Jointe
+                    </h6>
+                    <div class="p-2 bg-light rounded d-flex align-items-center">
+                        <div class="me-3">
+                            {% if courrier.fichier_type == 'pdf' %}
+                                <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                            {% elif courrier.fichier_type in ['jpg', 'jpeg', 'png'] %}
+                                <i class="fas fa-file-image fa-2x text-success"></i>
+                            {% else %}
+                                <i class="fas fa-file fa-2x text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>{{ courrier.fichier_nom }}</strong><br>
+                            <small class="text-muted">Type: {{ courrier.fichier_type.upper() }}</small>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-download me-1"></i>
+                                Télécharger
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <h6 class="text-primary">
+                        <i class="fas fa-paperclip me-1"></i>
+                        Pièce Jointe
+                    </h6>
+                    <div class="p-2 bg-light rounded text-muted">
+                        <i class="fas fa-times-circle me-1"></i>
+                        Aucune pièce jointe
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
+                       class="btn btn-success">
+                        <i class="fas fa-file-pdf me-1"></i>
+                        Exporter en PDF
+                    </a>
+                    
+                    {% if courrier.fichier_nom %}
+                    <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                       class="btn btn-info">
+                        <i class="fas fa-download me-1"></i>
+                        Télécharger Fichier
+                    </a>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <a href="{{ url_for('view_mail') }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-1"></i>
+                        Retour à la Liste
+                    </a>
+                    
+                    <a href="{{ url_for('register_mail') }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-plus-circle me-1"></i>
+                        Nouveau Courrier
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informations Système
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul class="list-unstyled">
+                        <li><strong>ID Courrier:</strong> {{ courrier.id }}</li>
+                        <li><strong>Utilisateur ID:</strong> {{ courrier.utilisateur_id }}</li>
+                        {% if courrier.fichier_chemin %}
+                        <li><strong>Chemin Fichier:</strong><br>
+                            <code class="small">{{ courrier.fichier_chemin }}</code>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </small>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    Sécurité & Traçabilité
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    Ce courrier a été enregistré de manière sécurisée dans le système GEC. 
+                    Toutes les actions sur ce document sont journalisées et traçables.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Copier le numéro d'accusé dans le presse-papier
+function copyAccuseNumber() {
+    const accuseNumber = "{{ courrier.numero_accuse_reception }}";
+    navigator.clipboard.writeText(accuseNumber).then(function() {
+        // Optionnel: Afficher une notification
+        console.log('Numéro d\'accusé copié: ' + accuseNumber);
+    });
+}
+
+// Ajouter un event listener au badge d'accusé
+document.addEventListener('DOMContentLoaded', function() {
+    const accuseBadge = document.querySelector('.badge.bg-primary');
+    if (accuseBadge) {
+        accuseBadge.style.cursor = 'pointer';
+        accuseBadge.title = 'Cliquer pour copier';
+        accuseBadge.addEventListener('click', copyAccuseNumber);
+    }
+});
+</script>
+{% endblock %}
