@@ -154,3 +154,14 @@ The application is designed for easy deployment on cloud platforms with minimal 
 ✓ Super admin only access to logs and role management
 ✓ Status selection capability added to mail registration form
 ✓ Complete permission-based access control throughout application
+
+### Mail Access Permissions System (July 13, 2025)
+✓ Three-tier mail access control system implemented:
+  - read_all_mail: Complete access to all mail in the system (Super Admin)
+  - read_department_mail: Access to department mail only (Admin)
+  - read_own_mail: Access to personal registered mail only (User)
+✓ Updated User.has_permission() method to use role-based permissions
+✓ Enhanced mail filtering in view_mail route with new permission checks
+✓ New permissions category "Accès Courrier" added to role management interface
+✓ Permission system with fallback to legacy role-based access
+✓ Complete integration with existing department-based access control
