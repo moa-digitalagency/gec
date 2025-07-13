@@ -36,7 +36,7 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
                                placeholder="Recherche dans tous les champs...">
                         <p class="mt-1 text-sm text-gray-500">
-                            Recherche dans: N° accusé, référence, objet, expéditeur
+                            Recherche dans: N° accusé, référence, objet, expéditeur, statut
                         </p>
                     </div>
                     
@@ -77,6 +77,27 @@
                         </div>
                     </div>
                     
+                    <!-- Status Filter -->
+                    <div>
+                        <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-flag mr-1 text-rdc-blue"></i>
+                            Filtrer par Statut
+                        </label>
+                        <select id="statut" 
+                                name="statut"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">Tous les statuts</option>
+                            <option value="RECU">Reçu</option>
+                            <option value="EN_COURS">En cours</option>
+                            <option value="TRAITE">Traité</option>
+                            <option value="ARCHIVE">Archivé</option>
+                            <option value="URGENT">Urgent</option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Filtrez les courriers selon leur statut de traitement
+                        </p>
+                    </div>
+                    
                     <!-- Sort Options -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -91,6 +112,7 @@
                                 <option value="numero_accuse_reception">Numéro d'accusé</option>
                                 <option value="expediteur">Expéditeur</option>
                                 <option value="objet">Objet</option>
+                                <option value="statut">Statut</option>
                             </select>
                         </div>
                         
@@ -144,6 +166,24 @@
                     <div>
                         <p class="font-medium text-gray-900">Courriers Récents</p>
                         <p class="text-sm text-gray-500">Derniers enregistrements</p>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('view_mail', statut='URGENT') }}" 
+                   class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-exclamation-triangle text-rdc-red mr-3"></i>
+                    <div>
+                        <p class="font-medium text-gray-900">Courriers Urgents</p>
+                        <p class="text-sm text-gray-500">Statut urgent</p>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('view_mail', statut='EN_COURS') }}" 
+                   class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-spinner text-rdc-yellow mr-3"></i>
+                    <div>
+                        <p class="font-medium text-gray-900">En Cours</p>
+                        <p class="text-sm text-gray-500">Courriers en traitement</p>
                     </div>
                 </a>
                 
