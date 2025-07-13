@@ -127,7 +127,7 @@
                         </td>
                         {% for role_key in ['super_admin', 'admin', 'user'] %}
                         <td class="px-6 py-4 text-center">
-                            {% if perm_key in roles_permissions[role_key].permissions %}
+                            {% if role_key in roles_permissions and perm_key in roles_permissions[role_key].permissions %}
                                 <i class="fas fa-check-circle text-green-500 text-lg"></i>
                             {% else %}
                                 <i class="fas fa-times-circle text-red-300 text-lg"></i>
@@ -150,7 +150,8 @@
                 <i class="fas fa-users text-blue-500"></i>
             </div>
             <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions['super_admin'].count + roles_permissions['admin'].count + roles_permissions['user'].count }}</div>
+                {% set total_users = (roles_permissions.get('super_admin', {}).get('count', 0) + roles_permissions.get('admin', {}).get('count', 0) + roles_permissions.get('user', {}).get('count', 0)) %}
+                <div class="text-2xl font-bold text-gray-900">{{ total_users }}</div>
                 <div class="text-xs text-gray-500">Total utilisateurs</div>
             </div>
         </div>
@@ -162,7 +163,7 @@
                 <i class="fas fa-crown text-yellow-500"></i>
             </div>
             <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions['super_admin'].count }}</div>
+                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('super_admin', {}).get('count', 0) }}</div>
                 <div class="text-xs text-gray-500">Super Admins</div>
             </div>
         </div>
@@ -174,7 +175,7 @@
                 <i class="fas fa-shield-alt text-green-500"></i>
             </div>
             <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions['admin'].count }}</div>
+                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('admin', {}).get('count', 0) }}</div>
                 <div class="text-xs text-gray-500">Administrateurs</div>
             </div>
         </div>
@@ -186,7 +187,7 @@
                 <i class="fas fa-user text-gray-500"></i>
             </div>
             <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions['user'].count }}</div>
+                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('user', {}).get('count', 0) }}</div>
                 <div class="text-xs text-gray-500">Utilisateurs</div>
             </div>
         </div>

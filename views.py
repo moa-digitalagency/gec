@@ -653,6 +653,10 @@ def manage_roles():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
+    # S'assurer que les données par défaut sont initialisées
+    from models import init_default_data
+    init_default_data()
+    
     # Récupérer les rôles depuis la base de données
     roles = Role.query.order_by(Role.date_creation).all()
     
