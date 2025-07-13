@@ -998,6 +998,80 @@ def add_department():
     users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
     return render_template('add_department.html', users=users)
 
+@app.route('/edit_department/<int:dept_id>', methods=['GET', 'POST'])
+@login_required
+def edit_department(dept_id):
+    """Modifier un département"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    departement = Departement.query.get_or_404(dept_id)
+    
+    if request.method == 'POST':
+        nom = request.form['nom'].strip()
+        code = request.form['code'].strip().upper()
+        
+        # Vérifier les doublons (sauf pour ce département)
+        if Departement.query.filter(Departement.nom == nom, Departement.id != dept_id).first():
+            flash('Ce nom de département existe déjà.', 'error')
+            return redirect(url_for('edit_department', dept_id=dept_id))
+        
+        if Departement.query.filter(Departement.code == code, Departement.id != dept_id).first():
+            flash('Ce code de département existe déjà.', 'error')
+            return redirect(url_for('edit_department', dept_id=dept_id))
+        
+        try:
+            departement.nom = nom
+            departement.code = code
+            departement.description = request.form['description'].strip()
+            departement.chef_departement_id = request.form.get('chef_departement_id') or None
+            departement.actif = 'actif' in request.form
+            
+            db.session.commit()
+            log_activity(current_user.id, "MODIFICATION_DEPARTEMENT", 
+                        f"Modification du département {nom}")
+            flash(f'Département "{nom}" modifié avec succès!', 'success')
+            return redirect(url_for('manage_departments'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la modification: {str(e)}', 'error')
+    
+    users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
+    return render_template('edit_department.html', departement=departement, users=users)
+
+@app.route('/delete_department/<int:dept_id>', methods=['POST'])
+@login_required
+def delete_department(dept_id):
+    """Supprimer un département"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    departement = Departement.query.get_or_404(dept_id)
+    
+    # Vérifier si des utilisateurs sont assignés à ce département
+    users_count = User.query.filter_by(departement_id=dept_id).count()
+    if users_count > 0:
+        flash(f'Impossible de supprimer ce département. {users_count} utilisateur(s) y sont assignés.', 'error')
+        return redirect(url_for('manage_departments'))
+    
+    try:
+        nom = departement.nom
+        db.session.delete(departement)
+        db.session.commit()
+        
+        log_activity(current_user.id, "SUPPRESSION_DEPARTEMENT", 
+                    f"Suppression du département {nom}")
+        flash(f'Département "{nom}" supprimé avec succès!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erreur lors de la suppression: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_departments'))
+
 @app.route('/upload_profile_photo', methods=['POST'])
 @login_required
 def upload_profile_photo():
