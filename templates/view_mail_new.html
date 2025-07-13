@@ -187,7 +187,11 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}
+                            {% if courrier.date_enregistrement %}
+                                {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                <span class="text-gray-400 italic">Date non disponible</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if courrier.fichier_nom %}
