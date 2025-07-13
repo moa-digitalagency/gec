@@ -566,6 +566,85 @@ def delete_user(user_id):
     flash(f'Utilisateur {username} supprimé avec succès!', 'success')
     return redirect(url_for('manage_users'))
 
+@app.route('/logs')
+@login_required
+def view_logs():
+    """Consulter les logs d'activité - accessible uniquement aux super admins"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Filtres
+    search = request.args.get('search', '')
+    action_filter = request.args.get('action', '')
+    user_filter = request.args.get('user_id', '', type=str)
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    # Construction de la requête
+    query = LogActivite.query.join(User).order_by(LogActivite.date_action.desc())
+    
+    # Filtre de recherche textuelle
+    if search:
+        query = query.filter(
+            db.or_(
+                LogActivite.action.contains(search),
+                LogActivite.description.contains(search),
+                User.username.contains(search),
+                User.nom_complet.contains(search)
+            )
+        )
+    
+    # Filtre par action
+    if action_filter:
+        query = query.filter(LogActivite.action == action_filter)
+    
+    # Filtre par utilisateur
+    if user_filter:
+        query = query.filter(LogActivite.utilisateur_id == user_filter)
+    
+    # Filtres par date
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(LogActivite.date_action >= date_from_obj)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            # Ajouter 23:59:59 pour inclure toute la journée
+            date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+            query = query.filter(LogActivite.date_action <= date_to_obj)
+        except ValueError:
+            pass
+    
+    # Pagination
+    logs_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+    logs = logs_paginated.items
+    
+    # Obtenir les actions uniques pour le filtre
+    actions_distinctes = db.session.query(LogActivite.action).distinct().order_by(LogActivite.action).all()
+    actions_list = [action[0] for action in actions_distinctes]
+    
+    # Obtenir les utilisateurs pour le filtre
+    users_list = User.query.order_by(User.username).all()
+    
+    return render_template('logs.html',
+                         logs=logs,
+                         pagination=logs_paginated,
+                         search=search,
+                         action_filter=action_filter,
+                         user_filter=user_filter,
+                         date_from=date_from,
+                         date_to=date_to,
+                         actions_list=actions_list,
+                         users_list=users_list)
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('base.html'), 404

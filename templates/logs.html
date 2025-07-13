@@ -1,0 +1,286 @@
+{% extends "new_base.html" %}
+
+{% block title %}Logs d'Activité - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-history mr-3 text-rdc-blue"></i>
+        Logs d'Activité
+    </h1>
+    <p class="mt-2 text-gray-600">Consultation de toutes les activités des utilisateurs</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Filters Sidebar -->
+    <div class="lg:col-span-1">
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-filter mr-2 text-rdc-blue"></i>
+                    Filtres
+                </h2>
+            </div>
+            <div class="p-6">
+                <form method="GET" action="{{ url_for('view_logs') }}" class="space-y-4">
+                    <!-- Search -->
+                    <div>
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-search mr-1 text-rdc-blue"></i>
+                            Recherche
+                        </label>
+                        <input type="text" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                               placeholder="Action, description, utilisateur...">
+                    </div>
+                    
+                    <!-- Action Filter -->
+                    <div>
+                        <label for="action" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tasks mr-1 text-rdc-green"></i>
+                            Type d'action
+                        </label>
+                        <select id="action" 
+                                name="action"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">Toutes les actions</option>
+                            {% for action in actions_list %}
+                                <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>
+                                    {{ action.replace('_', ' ').title() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- User Filter -->
+                    <div>
+                        <label for="user_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-1 text-rdc-yellow"></i>
+                            Utilisateur
+                        </label>
+                        <select id="user_id" 
+                                name="user_id"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">Tous les utilisateurs</option>
+                            {% for user in users_list %}
+                                <option value="{{ user.id }}" {% if user_filter == user.id|string %}selected{% endif %}>
+                                    {{ user.nom_complet }} ({{ user.username }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Date Range -->
+                    <div>
+                        <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar mr-1 text-rdc-red"></i>
+                            Date de début
+                        </label>
+                        <input type="date" 
+                               id="date_from" 
+                               name="date_from"
+                               value="{{ date_from }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                    </div>
+                    
+                    <div>
+                        <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar mr-1 text-rdc-red"></i>
+                            Date de fin
+                        </label>
+                        <input type="date" 
+                               id="date_to" 
+                               name="date_to"
+                               value="{{ date_to }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                    </div>
+                    
+                    <!-- Buttons -->
+                    <div class="flex flex-col gap-2 pt-4">
+                        <button type="submit" 
+                                class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>
+                            Filtrer
+                        </button>
+                        <a href="{{ url_for('view_logs') }}" 
+                           class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-eraser mr-2"></i>
+                            Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="lg:col-span-3">
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-list mr-2 text-rdc-blue"></i>
+                    Journal des Activités
+                </h2>
+                <div class="text-sm text-gray-500">
+                    {{ pagination.total }} entrée(s) trouvée(s)
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date & Heure
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Utilisateur
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Action
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Description
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                IP
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for log in logs %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if log.date_action %}
+                                    <div class="font-medium">{{ log.date_action.strftime('%d/%m/%Y') }}</div>
+                                    <div class="text-gray-500">{{ log.date_action.strftime('%H:%M:%S') }}</div>
+                                {% else %}
+                                    <span class="text-gray-400 italic">Date non disponible</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-8 w-8 rounded-full bg-rdc-blue flex items-center justify-center mr-3">
+                                        <span class="text-white text-xs font-bold">
+                                            {{ log.utilisateur.nom_complet[:2].upper() if log.utilisateur.nom_complet else log.utilisateur.username[:2].upper() }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ log.utilisateur.nom_complet or log.utilisateur.username }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {% if log.utilisateur.role == 'super_admin' %}
+                                                <i class="fas fa-crown text-yellow-500 mr-1"></i>Super Admin
+                                            {% elif log.utilisateur.role == 'admin' %}
+                                                <i class="fas fa-shield-alt text-blue-500 mr-1"></i>Admin
+                                            {% else %}
+                                                <i class="fas fa-user text-gray-500 mr-1"></i>Utilisateur
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% set action_class = 'bg-gray-100 text-gray-800' %}
+                                {% if 'CONNEXION' in log.action %}
+                                    {% set action_class = 'bg-green-100 text-green-800' %}
+                                {% elif 'CREATION' in log.action or 'ENREGISTREMENT' in log.action %}
+                                    {% set action_class = 'bg-blue-100 text-blue-800' %}
+                                {% elif 'MODIFICATION' in log.action or 'CHANGEMENT' in log.action %}
+                                    {% set action_class = 'bg-yellow-100 text-yellow-800' %}
+                                {% elif 'SUPPRESSION' in log.action %}
+                                    {% set action_class = 'bg-red-100 text-red-800' %}
+                                {% elif 'CONSULTATION' in log.action %}
+                                    {% set action_class = 'bg-purple-100 text-purple-800' %}
+                                {% elif 'EXPORT' in log.action %}
+                                    {% set action_class = 'bg-indigo-100 text-indigo-800' %}
+                                {% endif %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ action_class }}">
+                                    {{ log.action.replace('_', ' ') }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div class="max-w-xs truncate" title="{{ log.description }}">
+                                    {{ log.description or 'Aucune description' }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ log.ip_address or 'N/A' }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
+                                <p class="text-lg font-medium">Aucun log trouvé</p>
+                                <p class="text-sm">Aucune activité ne correspond aux critères de recherche.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Affichage de {{ pagination.per_page * (pagination.page - 1) + 1 }} à {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} sur {{ pagination.total }} entrées
+                    </div>
+                    <nav aria-label="Pagination">
+                        <ul class="inline-flex items-center space-x-1">
+                            {% if pagination.has_prev %}
+                                <li>
+                                    <a href="{{ url_for('view_logs', page=pagination.prev_num, search=search, action=action_filter, user_id=user_filter, date_from=date_from, date_to=date_to) }}" 
+                                       class="px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 hover:text-gray-700">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != pagination.page %}
+                                        <li>
+                                            <a href="{{ url_for('view_logs', page=page_num, search=search, action=action_filter, user_id=user_filter, date_from=date_from, date_to=date_to) }}" 
+                                               class="px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li>
+                                            <span class="px-3 py-2 text-sm leading-tight text-white bg-rdc-blue border border-rdc-blue">
+                                                {{ page_num }}
+                                            </span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li>
+                                        <span class="px-3 py-2 text-sm leading-tight text-gray-500">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                                <li>
+                                    <a href="{{ url_for('view_logs', page=pagination.next_num, search=search, action=action_filter, user_id=user_filter, date_from=date_from, date_to=date_to) }}" 
+                                       class="px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 hover:text-gray-700">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
