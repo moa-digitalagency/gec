@@ -169,7 +169,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}
+                            {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') if courrier.date_enregistrement else 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
