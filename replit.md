@@ -205,3 +205,22 @@ The application is designed for easy deployment on cloud platforms with minimal 
 ✓ Created INSTALL_VPS_EN.md: Complete VPS installation guide in English
 ✓ Updated README.md and DOCUMENTATION.md with backup features and installation references
 ✓ All guides include step-by-step instructions, troubleshooting, and security considerations
+
+### Drafting Date Feature Integration (July 14, 2025)
+✓ Added date_redaction field to Courrier model and PostgreSQL database
+✓ Integrated drafting date field in mail registration form (optional)
+✓ Updated mail list view with separate columns for drafting and registration dates
+✓ Added drafting date filters (from/to) in search interface
+✓ Enhanced mail detail view to display drafting date prominently
+✓ Updated PDF exports (individual and list) to include drafting date
+✓ Complete integration across registration, viewing, filtering, and export workflows
+✓ System now tracks both letter drafting date and system registration date
+
+### Documentation Reorganization and Database Setup (July 14, 2025)
+✓ Created comprehensive docs/ folder with all documentation
+✓ Created README_FR.md and README_EN.md with complete project overviews
+✓ Created DATABASE_SETUP_FR.md and DATABASE_SETUP_EN.md with SQL scripts
+✓ Created init_database.sql and init_data.sql for easy database setup
+✓ Created init_database.py script for automated database initialization
+✓ Updated installation guides for both cPanel and VPS in French and English
+✓ Complete documentation package ready for deployment and maintenance
