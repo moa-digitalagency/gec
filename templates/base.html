@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GEC - Secrétariat Général des Mines{% endblock %}</title>
+    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Mines' }}{% endblock %}</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +36,7 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('dashboard') }}">
                 <i class="fas fa-mail-bulk me-2"></i>
-                GEC - Mines RDC
+                {{ parametres.nom_logiciel if parametres else 'GEC - Mines RDC' }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

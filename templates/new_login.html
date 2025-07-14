@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Connexion - GEC Mines{% endblock %}
+{% block title %}Connexion - {{ parametres.nom_logiciel if parametres else 'GEC Mines' }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-rdc-blue to-rdc-green py-12 px-4 sm:px-6 lg:px-8">
@@ -11,8 +11,8 @@
                 <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center mb-4">
                     <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900">Système GEC</h2>
-                <p class="mt-2 text-sm text-gray-600">Secrétariat Général des Mines</p>
+                <h2 class="text-2xl font-bold text-gray-900">{{ parametres.nom_logiciel if parametres else 'Système GEC' }}</h2>
+                <p class="mt-2 text-sm text-gray-600">{{ parametres.sous_titre_pdf if parametres else 'Secrétariat Général des Mines' }}</p>
                 <p class="text-xs text-gray-500">République Démocratique du Congo</p>
             </div>
             
