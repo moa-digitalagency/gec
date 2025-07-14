@@ -204,32 +204,19 @@ def export_courrier_pdf(courrier):
     story.append(subtitle)
     story.append(Spacer(1, 20))
     
-    # Tableau des métadonnées
+    # Tableau des métadonnées - Dans le même ordre que la page de détail
     data = [
         ['N° d\'Accusé de Réception:', courrier.numero_accuse_reception],
-        ['Type de Courrier:', courrier.get_type_display()],
-        ['N° de Référence:', courrier.reference_display],
+        ['Type de Courrier:', courrier.type_courrier],
+        ['N° de Référence:', courrier.numero_reference if courrier.numero_reference else 'Non référencé'],
+        [courrier.get_label_contact() + ':', courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié'],
         ['Objet:', courrier.objet],
-    ]
-    
-    # Ajouter la date de rédaction si elle existe
-    if courrier.date_redaction:
-        data.append(['Date de Rédaction:', courrier.date_redaction.strftime('%d/%m/%Y')])
-    else:
-        data.append(['Date de Rédaction:', 'Non renseignée'])
-    
-    # Ajouter expéditeur ou destinataire selon le type
-    if courrier.type_courrier == 'ENTRANT':
-        data.append(['Expéditeur:', courrier.expediteur or 'Non spécifié'])
-    else:
-        data.append(['Destinataire:', courrier.destinataire or 'Non spécifié'])
-    
-    data.extend([
+        ['Date de Rédaction:', courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée'],
         ['Date d\'Enregistrement:', courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M')],
         ['Enregistré par:', courrier.utilisateur_enregistrement.nom_complet],
-        ['Statut:', courrier.statut.replace('_', ' ').title()],
+        ['Statut:', courrier.statut],
         ['Fichier Joint:', courrier.fichier_nom if courrier.fichier_nom else 'Aucun'],
-    ])
+    ]
     
     table = Table(data, colWidths=[2.5*inch, 4*inch])
     table.setStyle(TableStyle([
@@ -360,16 +347,19 @@ def export_mail_list_pdf(courriers, filters):
         story.append(no_data)
     else:
         # Créer le tableau des courriers
-        headers = ['N° Accusé', 'Type', 'Contact', 'Objet', 'Date Réd.', 'Date Enr.', 'Statut']
+        headers = ['N° Accusé', 'Type', 'Référence', 'Contact', 'Objet', 'Date Réd.', 'Date Enr.', 'Statut', 'Fichier']
         data = [headers]
         
         for courrier in courriers:
             # Contact principal selon le type
             contact = courrier.expediteur if courrier.type_courrier == 'ENTRANT' else courrier.destinataire
-            contact = contact[:25] + '...' if contact and len(contact) > 25 else contact or 'N/A'
+            contact = contact[:20] + '...' if contact and len(contact) > 20 else contact or 'N/A'
+            
+            # Référence
+            reference = courrier.numero_reference[:15] + '...' if courrier.numero_reference and len(courrier.numero_reference) > 15 else courrier.numero_reference or 'N/A'
             
             # Objet tronqué
-            objet = courrier.objet[:35] + '...' if len(courrier.objet) > 35 else courrier.objet
+            objet = courrier.objet[:30] + '...' if len(courrier.objet) > 30 else courrier.objet
             
             # Date de rédaction formatée
             date_redaction_str = courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'N/A'
@@ -381,21 +371,26 @@ def export_mail_list_pdf(courriers, filters):
             type_short = 'ENT' if courrier.type_courrier == 'ENTRANT' else 'SOR'
             
             # Statut formatté
-            statut = courrier.statut.replace('_', ' ')[:10]
+            statut = courrier.statut.replace('_', ' ')[:8]
+            
+            # Fichier joint
+            fichier = 'Oui' if courrier.fichier_nom else 'Non'
             
             row = [
                 courrier.numero_accuse_reception,
                 type_short,
+                reference,
                 contact,
                 objet,
                 date_redaction_str,
                 date_enr_str,
-                statut
+                statut,
+                fichier
             ]
             data.append(row)
         
         # Créer le tableau avec largeurs optimisées pour paysage
-        col_widths = [1.2*inch, 0.5*inch, 1.8*inch, 2.5*inch, 0.7*inch, 0.7*inch, 0.8*inch]
+        col_widths = [1.0*inch, 0.4*inch, 0.8*inch, 1.4*inch, 2.0*inch, 0.6*inch, 0.6*inch, 0.6*inch, 0.4*inch]
         table = Table(data, colWidths=col_widths, repeatRows=1)
         
         # Style du tableau
