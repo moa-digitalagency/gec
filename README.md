@@ -2,154 +2,100 @@
 
 ## Vue d'ensemble
 
-GEC (Gestion Électronique du Courrier) est un système complet de gestion documentaire développé spécifiquement pour le **Secrétariat Général des Mines de la République Démocratique du Congo**. Cette application web moderne permet la digitalisation complète du processus de traitement du courrier administratif avec des fonctionnalités avancées de suivi, archivage et reporting.
+GEC Mines est un système complet de gestion électronique du courrier développé pour le Secrétariat Général des Mines de la République Démocratique du Congo. Le système permet de gérer efficacement les courriers entrants et sortants avec un suivi complet et des capacités d'export avancées.
 
-## 🚀 Fonctionnalités principales
+## Fonctionnalités Principales
 
-### 📨 Gestion du Courrier
-- **Enregistrement bidirectionnel** : Courriers entrants et sortants
-- **Génération automatique** d'accusés de réception avec format personnalisable
-- **Upload de fichiers** multiples (PDF, images, documents)
-- **Métadonnées complètes** : expéditeur/destinataire, référence, objet, date
-- **Statuts dynamiques** : Reçu, En cours, Traité, Archivé, Urgent
+- **Gestion complète du courrier** : Enregistrement, suivi et archivage des courriers entrants/sortants
+- **Date de rédaction** : Suivi de la date de rédaction de la lettre en plus de la date d'enregistrement
+- **Authentification sécurisée** : Système de rôles (Super Admin, Admin, Utilisateur)
+- **Gestion des départements** : Organisation hiérarchique avec permissions granulaires
+- **Recherche avancée** : Filtres multiples incluant les dates de rédaction
+- **Export PDF** : Accusés de réception et listes formatées
+- **Sauvegarde/Restauration** : Système complet de backup
+- **Multilingue** : Interface en français et anglais
+- **Responsive** : Compatible mobile et desktop
 
-### 🔍 Recherche et filtrage
-- **Recherche textuelle** globale dans tous les champs
-- **Filtres avancés** par date, statut, type, expéditeur/destinataire
-- **Tri dynamique** par date, numéro, contact, objet
-- **Pagination intelligente** avec navigation rapide
+## Installation Rapide
 
-### 👥 Système de rôles et permissions
-- **3 niveaux hiérarchiques** : Super Admin, Admin, Utilisateur
-- **Permissions granulaires** : 
-  - `read_all_mail` : Accès complet (Super Admin)
-  - `read_department_mail` : Accès départemental (Admin)
-  - `read_own_mail` : Accès personnel (Utilisateur)
-- **Gestion des utilisateurs** : Création, édition, suppression
-- **Départements** : Organisation par structure administrative
-
-### 🌍 Multilingue
-- **Support natif** français/anglais
-- **Interface adaptative** selon la langue utilisateur
-- **Traductions complètes** de tous les éléments UI
-
-### 📊 Tableaux de bord et reporting
-- **Dashboard exécutif** avec métriques en temps réel
-- **Statistiques visuelles** : aujourd'hui, semaine, mois
-- **Logs d'activité** détaillés pour audit
-- **Export PDF** personnalisé avec en-têtes officiels
-
-### ⚙️ Configuration système
-- **Paramètres globaux** : nom logiciel, logos, coordonnées
-- **Format d'accusé** personnalisable avec variables dynamiques
-- **Branding** : logos PDF distincts, titres, sous-titres
-- **Footer** configurable avec copyright crypté
-- **Sauvegarde/Restauration** : Archives complètes système + base de données
-- **Gestion des sauvegardes** : Historique, téléchargement, restauration automatisée
-
-## 🛠 Architecture technique
-
-### Backend
-- **Framework** : Flask (Python)
-- **ORM** : SQLAlchemy avec PostgreSQL
-- **Authentification** : Flask-Login avec sessions sécurisées
-- **Sécurité** : Hachage Werkzeug, validation CSRF
-- **Génération PDF** : ReportLab avec templates personnalisés
-
-### Frontend
-- **Framework CSS** : Tailwind CSS avec thème RDC
-- **JavaScript** : Vanilla JS + jQuery pour DataTables
-- **Templates** : Jinja2 avec héritage modulaire
-- **Design System** : Couleurs nationales RDC (bleu #003087, jaune #FFD700, rouge #CE1126, vert #009639)
-- **Responsive** : Support mobile/tablette complet
-
-### Base de données
-- **Modèles principaux** :
-  - `User` : Utilisateurs et permissions
-  - `Courrier` : Documents avec métadonnées
-  - `Departement` : Structure organisationnelle
-  - `LogActivite` : Audit trail complet
-  - `ParametresSysteme` : Configuration globale
-  - `StatutCourrier` : États personnalisables
-  - `Role` : Système de rôles avancé
-
-## 🚀 Installation et déploiement
-
-### Prérequis
-- Python 3.8+
-- PostgreSQL
-- Node.js (pour outils de build optionnels)
-
-### Configuration rapide
 ```bash
-# Variables d'environnement
-DATABASE_URL=postgresql://user:pass@host:port/db
-SESSION_SECRET=your_secret_key
+# 1. Configurer la base de données
+export DATABASE_URL="postgresql://user:password@localhost/gec_mines"
+export SESSION_SECRET="your-secret-key"
 
-# Installation des dépendances
-pip install -r requirements.txt
+# 2. Initialiser automatiquement
+python init_database.py
 
-# Lancement
-python main.py
+# 3. Lancer l'application
+gunicorn --bind 0.0.0.0:5000 main:app
 ```
 
-### Guides d'installation détaillés
-- **cPanel** : Consultez `INSTALL_CPANEL_FR.md` (français) ou `INSTALL_CPANEL_EN.md` (anglais)
-- **VPS/Serveur dédié** : Consultez `INSTALL_VPS_FR.md` (français) ou `INSTALL_VPS_EN.md` (anglais)
-- **Déploiement rapide** : Consultez `QUICKSTART.md` pour mise en service immédiate
+## Connexion par Défaut
 
-### Utilisateur par défaut
-- **Login** : `admin`
+- **Nom d'utilisateur** : `admin`
 - **Mot de passe** : `admin123`
-- **Rôle** : Super Administrateur
 
-## 🎨 Interface utilisateur
+⚠️ **Important** : Changez le mot de passe administrateur après la première connexion.
 
-### Thème visuel
-L'interface utilise les **couleurs nationales de la RDC** pour une identité visuelle patriotique :
-- **Bleu RDC** (#003087) : Navigation, boutons primaires
-- **Jaune** (#FFD700) : Actions de recherche
-- **Rouge** (#CE1126) : Actions d'export, alertes
-- **Vert** (#009639) : Actions de validation, succès
+## Documentation Complète
 
-### Expérience utilisateur
-- **Navigation hamburger universelle** sur tous les écrans
-- **Actions rapides** contextuelles sur chaque page
-- **Feedback visuel** immédiat pour toutes les actions
-- **Messages flash** pour confirmations/erreurs
-- **Tooltips** informatifs sur les fonctions avancées
+📚 **Toute la documentation détaillée se trouve dans le dossier [`docs/`](docs/)**
 
-## 📈 Flux de travail type
+### Guides Principaux
+- **[Vue d'ensemble complète](docs/README_FR.md)** - Fonctionnalités détaillées
+- **[Guide de démarrage rapide](docs/QUICKSTART.md)** - Installation en 5 minutes
+- **[Index de documentation](docs/INDEX_DOCUMENTATION.md)** - Accès à tous les guides
 
-1. **Connexion** utilisateur avec gestion de session
-2. **Dashboard** : Vue d'ensemble des activités récentes
-3. **Enregistrement** : Upload de courrier avec métadonnées
-4. **Traitement** : Changement de statut et suivi
-5. **Recherche** : Filtrage et consultation historique
-6. **Export** : Génération de rapports PDF officiels
-7. **Administration** : Gestion des utilisateurs et paramètres
+### Installation
+- **[Installation cPanel](docs/INSTALL_CPANEL_FR.md)** - Hébergement partagé
+- **[Installation VPS](docs/INSTALL_VPS_FR.md)** - Serveur privé
+- **[Configuration base de données](docs/DATABASE_SETUP_FR.md)** - Scripts SQL
 
-## 🔒 Sécurité
+### Documentation Anglaise
+- **[Complete overview](docs/README_EN.md)** - Detailed features
+- **[cPanel installation](docs/INSTALL_CPANEL_EN.md)** - Shared hosting
+- **[VPS installation](docs/INSTALL_VPS_EN.md)** - Private server
+- **[Database setup](docs/DATABASE_SETUP_EN.md)** - SQL scripts
 
-- **Authentification** obligatoire sur toutes les routes
-- **Validation** côté serveur pour tous les inputs
-- **Permissions** vérifiées à chaque accès document
-- **Logs** complets pour traçabilité administrative
-- **Upload** sécurisé avec validation de type fichier
-- **Session** expirable avec protection CSRF
+## Technologies
 
-## 🌟 Points forts
+- **Backend** : Flask, SQLAlchemy, PostgreSQL
+- **Frontend** : Tailwind CSS, Font Awesome
+- **Sécurité** : Flask-Login, hash des mots de passe
+- **Export** : ReportLab pour PDF
+- **Déploiement** : Gunicorn, Nginx
 
-- **100% responsive** : Fonctionne parfaitement sur mobile
-- **Performance optimisée** : Pagination, cache, index DB
-- **Scalabilité** : Architecture modulaire extensible
-- **Maintenance** : Code documenté et structuré
-- **Conformité** : Respecte les standards administratifs RDC
+## Structure du Projet
 
-## 📞 Support
+```
+gec-mines/
+├── docs/                    # 📚 Documentation complète
+├── init_database.py        # 🔧 Script initialisation automatique
+├── main.py                 # 🚀 Point d'entrée application
+├── app.py                  # ⚙️ Configuration Flask
+├── models.py               # 🗄️ Modèles de données
+├── views.py                # 🌐 Routes et vues
+├── utils.py                # 🛠️ Fonctions utilitaires
+├── templates/              # 📄 Templates HTML
+├── static/                 # 🎨 Ressources statiques
+├── uploads/                # 📎 Fichiers téléchargés
+├── exports/                # 📊 Exports PDF
+├── backups/                # 💾 Sauvegardes système
+└── lang/                   # 🌍 Fichiers de traduction
+```
 
-Pour questions techniques ou demandes d'évolution, contactez l'équipe de développement via les canaux officiels du Secrétariat Général des Mines.
+## Support
+
+Pour une assistance technique :
+1. **Consultez la documentation** dans `docs/`
+2. **Vérifiez les logs** d'application
+3. **Contactez l'équipe** de développement
+
+## Licence
+
+© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC
 
 ---
 
-**© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC**
+**Version** : 2.1.0  
+**Dernière mise à jour** : Juillet 2025
