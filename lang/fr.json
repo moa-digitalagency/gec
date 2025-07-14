@@ -140,5 +140,32 @@
         "500": "Erreur interne du serveur",
         "access_denied": "Accès refusé",
         "insufficient_permissions": "Permissions insuffisantes"
+    },
+    "backup": {
+        "title": "Sauvegarde et Restauration",
+        "create_backup": "Créer une Sauvegarde",
+        "create_description": "Créez une archive complète du système incluant la base de données et tous les fichiers.",
+        "includes_database": "Base de données complète",
+        "includes_files": "Fichiers système",
+        "includes_uploads": "Fichiers téléchargés",
+        "includes_config": "Configuration système",
+        "create_now": "Créer Sauvegarde",
+        "confirm_create": "Êtes-vous sûr de vouloir créer une sauvegarde complète du système ?",
+        "restore_system": "Restaurer le Système",
+        "restore_description": "Restaurez le système depuis une archive de sauvegarde précédente.",
+        "restore_warning": "Cette opération remplacera toutes les données actuelles. Une sauvegarde de sécurité sera créée automatiquement.",
+        "select_backup_file": "Sélectionner le fichier de sauvegarde",
+        "restore_now": "Restaurer le Système",
+        "confirm_restore": "ATTENTION : Cette opération remplacera toutes les données actuelles. Êtes-vous absolument sûr de vouloir continuer ?",
+        "available_backups": "Sauvegardes Disponibles",
+        "filename": "Nom du fichier",
+        "date_created": "Date de création",
+        "size": "Taille",
+        "download": "Télécharger",
+        "backup_created": "Sauvegarde créée avec succès",
+        "backup_error": "Erreur lors de la création de la sauvegarde",
+        "restore_success": "Système restauré avec succès",
+        "restore_error": "Erreur lors de la restauration",
+        "no_backups": "Aucune sauvegarde disponible"
     }
 }

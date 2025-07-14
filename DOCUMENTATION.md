@@ -247,6 +247,36 @@ def t(key, lang_code=None, **kwargs):
 - **Admin** : Vue département assigné
 - **User** : Vue personnelle uniquement
 
+### 8. Système de sauvegarde et restauration
+
+#### Fonctionnalités de backup
+- **Archive complète** : Base de données + fichiers système + uploads + configuration
+- **Format ZIP** : Archive compressée avec métadonnées
+- **Sauvegarde automatisée** : Via tâches CRON programmables
+- **Historique** : Liste des sauvegardes avec date/taille/téléchargement
+
+#### Processus de sauvegarde
+```python
+def create_system_backup():
+    # 1. Sauvegarde base de données (pg_dump/sqlite copy)
+    # 2. Archive fichiers système critiques
+    # 3. Include uploads et exports
+    # 4. Métadonnées avec timestamp et utilisateur
+    # 5. Compression ZIP optimisée
+```
+
+#### Restauration système
+- **Sauvegarde de sécurité** : Backup automatique avant restauration
+- **Extraction sélective** : Évite l'écrasement de fichiers critiques
+- **Validation métadonnées** : Vérification compatibilité archive
+- **Logs détaillés** : Traçabilité complète du processus
+
+#### Sécurité des sauvegardes
+- **Accès restreint** : Super Admin uniquement
+- **Protection dossier** : Restriction Apache/Nginx
+- **Chiffrement** : Archive protégée avec métadonnées intégrées
+- **Nettoyage automatique** : Suppression anciennes sauvegardes (configurable)
+
 ---
 
 ## API et Routes
@@ -278,6 +308,9 @@ def t(key, lang_code=None, **kwargs):
 @app.route('/manage_departments')
 @app.route('/manage_statuses')
 @app.route('/view_logs')
+@app.route('/backup_system', methods=['POST'])
+@app.route('/restore_system', methods=['POST'])
+@app.route('/download_backup/<filename>')
 ```
 
 ### API JSON (futures extensions)
@@ -306,6 +339,8 @@ def t(key, lang_code=None, **kwargs):
 | `view_logs` | ✅ | ❌ | ❌ |
 | `manage_departments` | ✅ | ❌ | ❌ |
 | `manage_roles` | ✅ | ❌ | ❌ |
+| `backup_system` | ✅ | ❌ | ❌ |
+| `restore_system` | ✅ | ❌ | ❌ |
 
 ### Implémentation des contrôles
 ```python

@@ -44,6 +44,8 @@ GEC (Gestion Électronique du Courrier) est un système complet de gestion docum
 - **Format d'accusé** personnalisable avec variables dynamiques
 - **Branding** : logos PDF distincts, titres, sous-titres
 - **Footer** configurable avec copyright crypté
+- **Sauvegarde/Restauration** : Archives complètes système + base de données
+- **Gestion des sauvegardes** : Historique, téléchargement, restauration automatisée
 
 ## 🛠 Architecture technique
 
@@ -90,6 +92,11 @@ pip install -r requirements.txt
 # Lancement
 python main.py
 ```
+
+### Guides d'installation détaillés
+- **cPanel** : Consultez `INSTALL_CPANEL_FR.md` (français) ou `INSTALL_CPANEL_EN.md` (anglais)
+- **VPS/Serveur dédié** : Consultez `INSTALL_VPS_FR.md` (français) ou `INSTALL_VPS_EN.md` (anglais)
+- **Déploiement rapide** : Consultez `QUICKSTART.md` pour mise en service immédiate
 
 ### Utilisateur par défaut
 - **Login** : `admin`

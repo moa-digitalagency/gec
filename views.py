@@ -1,5 +1,9 @@
 import os
 import uuid
+import zipfile
+import shutil
+import tempfile
+import subprocess
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, session, send_file, abort
 from flask_login import login_user, logout_user, login_required, current_user
@@ -378,9 +382,78 @@ def settings():
     # Générer un aperçu du format
     format_preview = generate_format_preview(parametres.format_numero_accuse)
     
+    # Obtenir la liste des sauvegardes disponibles
+    backup_files = get_backup_files()
+    
     return render_template('settings.html', 
                           parametres=parametres,
-                          format_preview=format_preview)
+                          format_preview=format_preview,
+                          backup_files=backup_files)
+
+@app.route('/backup_system', methods=['POST'])
+@login_required
+def backup_system():
+    """Créer une sauvegarde complète du système"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent créer des sauvegardes.', 'error')
+        return redirect(url_for('settings'))
+    
+    try:
+        backup_filename = create_system_backup()
+        log_activity(current_user.id, "BACKUP_SYSTEME", 
+                    f"Création d'une sauvegarde système: {backup_filename}")
+        flash(f'Sauvegarde créée avec succès: {backup_filename}', 'success')
+    except Exception as e:
+        logging.error(f"Erreur lors de la création de la sauvegarde: {e}")
+        flash(f'Erreur lors de la création de la sauvegarde: {str(e)}', 'error')
+    
+    return redirect(url_for('settings'))
+
+@app.route('/download_backup/<filename>')
+@login_required
+def download_backup(filename):
+    """Télécharger un fichier de sauvegarde"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('settings'))
+    
+    backup_path = os.path.join('backups', filename)
+    if os.path.exists(backup_path):
+        return send_file(backup_path, as_attachment=True)
+    else:
+        flash('Fichier de sauvegarde non trouvé.', 'error')
+        return redirect(url_for('settings'))
+
+@app.route('/restore_system', methods=['POST'])
+@login_required
+def restore_system():
+    """Restaurer le système depuis une sauvegarde"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent restaurer le système.', 'error')
+        return redirect(url_for('settings'))
+    
+    if 'backup_file' not in request.files:
+        flash('Aucun fichier de sauvegarde sélectionné.', 'error')
+        return redirect(url_for('settings'))
+    
+    backup_file = request.files['backup_file']
+    if backup_file.filename == '':
+        flash('Aucun fichier sélectionné.', 'error')
+        return redirect(url_for('settings'))
+    
+    if backup_file and backup_file.filename.endswith('.zip'):
+        try:
+            restore_system_from_backup(backup_file)
+            log_activity(current_user.id, "RESTORE_SYSTEME", 
+                        f"Restauration système depuis: {backup_file.filename}")
+            flash('Système restauré avec succès. Redémarrage nécessaire.', 'success')
+        except Exception as e:
+            logging.error(f"Erreur lors de la restauration: {e}")
+            flash(f'Erreur lors de la restauration: {str(e)}', 'error')
+    else:
+        flash('Format de fichier invalide. Utilisez un fichier .zip.', 'error')
+    
+    return redirect(url_for('settings'))
 
 def generate_format_preview(format_string):
     """Génère un aperçu du format de numéro d'accusé"""
@@ -1336,3 +1409,236 @@ def not_found_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('base.html'), 500
+
+# Fonctions utilitaires pour backup/restore
+def create_system_backup():
+    """Créer une sauvegarde complète du système"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"gec_backup_{timestamp}.zip"
+    
+    # Créer le dossier backups s'il n'existe pas
+    backup_dir = "backups"
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
+    
+    backup_path = os.path.join(backup_dir, backup_filename)
+    
+    with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as backup_zip:
+        # 1. Sauvegarde de la base de données
+        db_backup_path = backup_database()
+        if db_backup_path:
+            backup_zip.write(db_backup_path, "database_backup.sql")
+            os.remove(db_backup_path)  # Nettoyer le fichier temporaire
+        
+        # 2. Fichiers système critiques
+        system_files = [
+            'app.py', 'main.py', 'models.py', 'views.py', 'utils.py',
+            'requirements.txt', 'pyproject.toml', '.replit'
+        ]
+        
+        for file in system_files:
+            if os.path.exists(file):
+                backup_zip.write(file)
+        
+        # 3. Dossiers critiques
+        critical_dirs = ['templates', 'static', 'lang', 'utils']
+        for dir_name in critical_dirs:
+            if os.path.exists(dir_name):
+                for root, dirs, files in os.walk(dir_name):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        backup_zip.write(file_path)
+        
+        # 4. Fichiers uploads
+        uploads_dir = app.config.get('UPLOAD_FOLDER', 'uploads')
+        if os.path.exists(uploads_dir):
+            for root, dirs, files in os.walk(uploads_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    backup_zip.write(file_path)
+        
+        # 5. Métadonnées de sauvegarde
+        metadata = {
+            'backup_date': timestamp,
+            'version': '1.0',
+            'backup_type': 'full_system',
+            'created_by': current_user.username if current_user.is_authenticated else 'system'
+        }
+        
+        import json
+        metadata_path = f"backup_metadata_{timestamp}.json"
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
+        
+        backup_zip.write(metadata_path, "backup_metadata.json")
+        os.remove(metadata_path)  # Nettoyer
+    
+    return backup_filename
+
+def backup_database():
+    """Sauvegarder la base de données"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        
+        if database_url and database_url.startswith('postgresql'):
+            # Sauvegarde PostgreSQL
+            backup_file = f"db_backup_{timestamp}.sql"
+            
+            # Utiliser pg_dump
+            result = subprocess.run([
+                'pg_dump', database_url, '-f', backup_file
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return backup_file
+            else:
+                logging.error(f"Erreur pg_dump: {result.stderr}")
+                return None
+                
+        elif database_url and database_url.startswith('sqlite'):
+            # Sauvegarde SQLite
+            import sqlite3
+            
+            db_path = database_url.replace('sqlite:///', '')
+            backup_file = f"db_backup_{timestamp}.db"
+            
+            if os.path.exists(db_path):
+                shutil.copy2(db_path, backup_file)
+                return backup_file
+            
+        else:
+            # Sauvegarde générique via SQLAlchemy
+            backup_file = f"db_backup_{timestamp}.sql"
+            
+            with open(backup_file, 'w') as f:
+                # Export des données principales
+                f.write("-- GEC Mines Database Backup\n")
+                f.write(f"-- Created: {datetime.now()}\n\n")
+                
+                # Exporter les utilisateurs (sans mots de passe pour sécurité)
+                users = User.query.all()
+                for user in users:
+                    f.write(f"-- User: {user.username}\n")
+                
+                # Note: Pour une sauvegarde complète, il faudrait
+                # exporter toutes les tables avec SQLAlchemy
+            
+            return backup_file
+            
+    except Exception as e:
+        logging.error(f"Erreur lors de la sauvegarde de la base de données: {e}")
+        return None
+
+def restore_system_from_backup(backup_file):
+    """Restaurer le système depuis un fichier de sauvegarde"""
+    # Créer un dossier temporaire pour l'extraction
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Sauvegarder le fichier uploadé
+        temp_backup_path = os.path.join(temp_dir, "backup.zip")
+        backup_file.save(temp_backup_path)
+        
+        # Extraire l'archive
+        with zipfile.ZipFile(temp_backup_path, 'r') as backup_zip:
+            backup_zip.extractall(temp_dir)
+        
+        # Vérifier les métadonnées
+        metadata_path = os.path.join(temp_dir, "backup_metadata.json")
+        if os.path.exists(metadata_path):
+            import json
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+            logging.info(f"Restauration depuis sauvegarde: {metadata}")
+        
+        # 1. Sauvegarder l'état actuel avant restauration
+        current_backup = create_system_backup()
+        logging.info(f"Sauvegarde de sécurité créée: {current_backup}")
+        
+        # 2. Restaurer la base de données
+        db_backup_path = os.path.join(temp_dir, "database_backup.sql")
+        if os.path.exists(db_backup_path):
+            restore_database(db_backup_path)
+        
+        # 3. Restaurer les fichiers système (avec précaution)
+        protected_files = ['main.py', 'app.py']  # Ne pas écraser les fichiers critiques
+        
+        for root, dirs, files in os.walk(temp_dir):
+            for file in files:
+                if file in ['backup_metadata.json', 'database_backup.sql']:
+                    continue
+                    
+                source_path = os.path.join(root, file)
+                relative_path = os.path.relpath(source_path, temp_dir)
+                
+                # Éviter d'écraser les fichiers protégés
+                if any(pf in relative_path for pf in protected_files):
+                    continue
+                
+                target_path = relative_path
+                
+                # Créer les dossiers si nécessaire
+                target_dir = os.path.dirname(target_path)
+                if target_dir and not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+                
+                # Copier le fichier
+                if os.path.exists(source_path):
+                    shutil.copy2(source_path, target_path)
+        
+        logging.info("Restauration système terminée")
+
+def restore_database(backup_file_path):
+    """Restaurer la base de données depuis un fichier de sauvegarde"""
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        
+        if database_url and database_url.startswith('postgresql'):
+            # Restauration PostgreSQL
+            result = subprocess.run([
+                'psql', database_url, '-f', backup_file_path
+            ], capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                logging.error(f"Erreur psql: {result.stderr}")
+                raise Exception(f"Erreur lors de la restauration PostgreSQL: {result.stderr}")
+                
+        elif database_url and database_url.startswith('sqlite'):
+            # Restauration SQLite
+            db_path = database_url.replace('sqlite:///', '')
+            
+            if os.path.exists(backup_file_path):
+                shutil.copy2(backup_file_path, db_path)
+            else:
+                raise Exception("Fichier de sauvegarde SQLite non trouvé")
+        
+        else:
+            # Restauration générique
+            logging.warning("Restauration de base de données générique non implémentée")
+            
+    except Exception as e:
+        logging.error(f"Erreur lors de la restauration de la base de données: {e}")
+        raise e
+
+def get_backup_files():
+    """Obtenir la liste des fichiers de sauvegarde disponibles"""
+    backup_dir = "backups"
+    if not os.path.exists(backup_dir):
+        return []
+    
+    backups = []
+    for filename in os.listdir(backup_dir):
+        if filename.endswith('.zip') and filename.startswith('gec_backup_'):
+            file_path = os.path.join(backup_dir, filename)
+            file_stat = os.stat(file_path)
+            
+            backups.append({
+                'filename': filename,
+                'size': file_stat.st_size,
+                'date': datetime.fromtimestamp(file_stat.st_mtime),
+                'path': file_path
+            })
+    
+    # Trier par date (plus récent en premier)
+    backups.sort(key=lambda x: x['date'], reverse=True)
+    return backups

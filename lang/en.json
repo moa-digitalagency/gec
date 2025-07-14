@@ -140,5 +140,32 @@
         "500": "Internal server error",
         "access_denied": "Access denied",
         "insufficient_permissions": "Insufficient permissions"
+    },
+    "backup": {
+        "title": "Backup and Restore",
+        "create_backup": "Create Backup",
+        "create_description": "Create a complete system archive including database and all files.",
+        "includes_database": "Complete database",
+        "includes_files": "System files",
+        "includes_uploads": "Uploaded files",
+        "includes_config": "System configuration",
+        "create_now": "Create Backup",
+        "confirm_create": "Are you sure you want to create a complete system backup?",
+        "restore_system": "Restore System",
+        "restore_description": "Restore the system from a previous backup archive.",
+        "restore_warning": "This operation will replace all current data. A safety backup will be created automatically.",
+        "select_backup_file": "Select backup file",
+        "restore_now": "Restore System",
+        "confirm_restore": "WARNING: This operation will replace all current data. Are you absolutely sure you want to continue?",
+        "available_backups": "Available Backups",
+        "filename": "Filename",
+        "date_created": "Date created",
+        "size": "Size",
+        "download": "Download",
+        "backup_created": "Backup created successfully",
+        "backup_error": "Error creating backup",
+        "restore_success": "System restored successfully",
+        "restore_error": "Error during restoration",
+        "no_backups": "No backups available"
     }
 }
