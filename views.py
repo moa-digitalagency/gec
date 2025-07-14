@@ -15,6 +15,7 @@ import logging
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
+from ocr_utils import extract_text_from_file, is_ocr_supported
 
 @app.route('/')
 def index():
@@ -149,6 +150,31 @@ def register_mail():
             db.session.add(courrier)
             db.session.commit()
             
+            # Effectuer l'OCR automatiquement si un fichier est présent
+            if fichier_chemin:
+                try:
+                    # Vérifier si le format est supporté pour l'OCR
+                    if is_ocr_supported(fichier_nom):
+                        logging.info(f"Démarrage OCR pour {fichier_nom}")
+                        ocr_result = extract_text_from_file(fichier_chemin)
+                        
+                        if ocr_result['success'] and ocr_result['text'].strip():
+                            courrier.texte_ocr = ocr_result['text']
+                            courrier.ocr_confiance = ocr_result['confidence']
+                            courrier.ocr_langue = ocr_result['language']
+                            courrier.ocr_traite = True
+                            
+                            db.session.commit()
+                            logging.info(f"OCR terminé avec succès. Texte extrait: {len(ocr_result['text'])} caractères")
+                        else:
+                            logging.warning(f"OCR échec: {ocr_result.get('error', 'Aucun texte extrait')}")
+                    else:
+                        logging.info(f"Format {fichier_nom} non supporté pour l'OCR")
+                        
+                except Exception as e:
+                    logging.error(f"Erreur lors de l'OCR automatique: {e}")
+                    # Ne pas faire échouer l'enregistrement pour une erreur OCR
+            
             # Log de l'activité
             log_activity(current_user.id, "ENREGISTREMENT_COURRIER", 
                         f"Enregistrement du courrier {numero_accuse}", courrier.id)
@@ -223,7 +249,7 @@ def view_mail():
     # Ajout du filtre pour type de courrier
     type_courrier = request.args.get('type_courrier', '')
     
-    # Recherche textuelle
+    # Recherche textuelle (inclut maintenant le texte OCR)
     if search:
         query = query.filter(
             or_(
@@ -231,7 +257,8 @@ def view_mail():
                 Courrier.numero_reference.contains(search),
                 Courrier.objet.contains(search),
                 Courrier.expediteur.contains(search),
-                Courrier.destinataire.contains(search)
+                Courrier.destinataire.contains(search),
+                Courrier.texte_ocr.contains(search)  # Recherche dans le texte OCR
             )
         )
     
@@ -1793,3 +1820,50 @@ def get_backup_files():
     # Trier par date (plus récent en premier)
     backups.sort(key=lambda x: x['date'], reverse=True)
     return backups
+
+@app.route('/ocr_courrier/<int:id>', methods=['POST'])
+@login_required
+def ocr_courrier(id):
+    """Effectuer l'OCR sur un courrier existant"""
+    courrier = Courrier.query.get_or_404(id)
+    
+    # Vérifier les permissions d'accès au courrier
+    if not current_user.can_view_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de modifier ce courrier.', 'error')
+        return redirect(url_for('view_mail'))
+    
+    if not courrier.fichier_chemin:
+        flash('Aucun fichier attaché à ce courrier.', 'error')
+        return redirect(url_for('mail_detail', id=id))
+    
+    try:
+        # Vérifier si le format est supporté pour l'OCR
+        if not is_ocr_supported(courrier.fichier_nom):
+            flash('Format de fichier non supporté pour l\'OCR.', 'error')
+            return redirect(url_for('mail_detail', id=id))
+        
+        logging.info(f"Démarrage OCR manuel pour {courrier.fichier_nom}")
+        ocr_result = extract_text_from_file(courrier.fichier_chemin)
+        
+        if ocr_result['success']:
+            courrier.texte_ocr = ocr_result['text']
+            courrier.ocr_confiance = ocr_result['confidence']
+            courrier.ocr_langue = ocr_result['language']
+            courrier.ocr_traite = True
+            
+            db.session.commit()
+            
+            # Log de l'activité
+            log_activity(current_user.id, "OCR_MANUEL", 
+                        f"OCR manuel effectué sur le courrier {courrier.numero_accuse_reception}. Texte extrait: {len(ocr_result['text'])} caractères", 
+                        courrier.id)
+            
+            flash(f'OCR terminé avec succès! {len(ocr_result["text"])} caractères extraits avec {ocr_result["confidence"]}% de confiance.', 'success')
+        else:
+            flash(f'Échec de l\'OCR: {ocr_result.get("error", "Aucun texte extrait")}', 'error')
+            
+    except Exception as e:
+        logging.error(f"Erreur lors de l'OCR manuel: {e}")
+        flash('Erreur lors du traitement OCR.', 'error')
+    
+    return redirect(url_for('mail_detail', id=id))

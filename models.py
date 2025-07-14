@@ -153,6 +153,11 @@ class Courrier(db.Model):
     fichier_nom = db.Column(db.String(255), nullable=True)
     fichier_chemin = db.Column(db.String(500), nullable=True)
     fichier_type = db.Column(db.String(50), nullable=True)
+    # Texte extrait par OCR
+    texte_ocr = db.Column(db.Text, nullable=True)
+    ocr_confiance = db.Column(db.Float, nullable=True)  # Score de confiance moyen
+    ocr_langue = db.Column(db.String(10), nullable=True)  # Langue détectée
+    ocr_traite = db.Column(db.Boolean, default=False)  # Si l'OCR a été effectué
     statut = db.Column(db.String(50), nullable=False, default='RECU')
     date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
