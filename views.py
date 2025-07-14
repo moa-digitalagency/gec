@@ -252,7 +252,7 @@ def view_mail():
     courriers_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
     courriers = courriers_paginated.items
     
-    return render_template('view_mail_new.html', 
+    return render_template('view_mail.html', 
                          courriers=courriers,
                          pagination=courriers_paginated,
                          search=search,

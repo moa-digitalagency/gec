@@ -12,8 +12,12 @@
     <p class="mt-2 text-gray-600">Parcourez et filtrez tous les courriers enregistrés</p>
 </div>
 
-<!-- Filters Card -->
-<div class="bg-white shadow-rdc rounded-xl mb-8">
+<!-- Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Filters Card -->
+        <div class="bg-white shadow-rdc rounded-xl">
     <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
             <i class="fas fa-filter mr-2 text-rdc-blue"></i>
@@ -124,11 +128,11 @@
                 </button>
             </div>
         </form>
+        </div>
     </div>
-</div>
 
-<!-- Results -->
-<div class="bg-white shadow-rdc rounded-xl">
+    <!-- Results -->
+    <div class="bg-white shadow-rdc rounded-xl">
     <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-gray-900 flex items-center">
@@ -266,6 +270,114 @@
             </a>
         </div>
         {% endif %}
+        </div>
+    </div>
+    </div>
+
+    <!-- Sidebar - Actions Rapides -->
+    <div class="lg:col-span-1 space-y-6">
+        <!-- Actions Rapides -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
+                    Actions Rapides
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <a href="{{ url_for('register_mail') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
+                        <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div class="text-left">
+                            <p class="font-medium text-gray-900">Nouveau Courrier</p>
+                            <p class="text-sm text-gray-500">Enregistrer un courrier</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('search') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group w-full">
+                        <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div class="text-left">
+                            <p class="font-medium text-gray-900">Recherche</p>
+                            <p class="text-sm text-gray-500">Recherche avancée</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('dashboard') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-rdc-green rounded-lg hover:bg-green-50 transition-colors group w-full">
+                        <i class="fas fa-home text-2xl text-rdc-green mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div class="text-left">
+                            <p class="font-medium text-gray-900">Dashboard</p>
+                            <p class="text-sm text-gray-500">Retour à l'accueil</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-purple-500 rounded-lg hover:bg-purple-50 transition-colors group w-full">
+                        <i class="fas fa-clock text-2xl text-purple-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div class="text-left">
+                            <p class="font-medium text-gray-900">Récents</p>
+                            <p class="text-sm text-gray-500">Derniers courriers</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-chart-bar mr-2 text-rdc-blue"></i>
+                    Statistiques
+                </h2>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    {% if courriers %}
+                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-list-ul text-rdc-blue mr-2"></i>
+                            <span class="text-sm font-medium text-gray-700">Total trouvé</span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rdc-blue text-white">
+                            {{ pagination.total if pagination else courriers|length }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="border-t pt-4">
+                        <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-filter mr-2 text-rdc-green"></i>
+                            Filtres rapides
+                        </h3>
+                        <div class="space-y-2">
+                            <a href="{{ url_for('view_mail') }}" 
+                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                <i class="fas fa-list mr-2"></i>
+                                Tous les courriers
+                            </a>
+                            <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
+                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                <i class="fas fa-clock mr-2"></i>
+                                Plus récents
+                            </a>
+                            <a href="{{ url_for('view_mail', statut='RECU') }}" 
+                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                <i class="fas fa-inbox mr-2"></i>
+                                Reçus
+                            </a>
+                            <a href="{{ url_for('view_mail', statut='EN_COURS') }}" 
+                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
+                                <i class="fas fa-spinner mr-2"></i>
+                                En cours
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
