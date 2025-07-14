@@ -263,6 +263,7 @@ def view_mail():
                          date_from=date_from,
                          date_to=date_to,
                          statut=statut,
+                         type_courrier=type_courrier,
                          sort_by=sort_by,
                          sort_order=sort_order)
 
@@ -302,6 +303,125 @@ def export_pdf(id):
         logging.error(f"Erreur lors de l'export PDF: {e}")
         flash('Erreur lors de l\'export PDF.', 'error')
         return redirect(url_for('mail_detail', id=id))
+
+@app.route('/export_mail_list')
+@login_required
+def export_mail_list():
+    """Export filtered mail list to PDF"""
+    try:
+        # Get the same filters as view_mail
+        search = request.args.get('search', '')
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+        statut = request.args.get('statut', '')
+        type_courrier = request.args.get('type_courrier', '')
+        sort_by = request.args.get('sort_by', 'date_enregistrement')
+        sort_order = request.args.get('sort_order', 'desc')
+        
+        # Build query with same logic as view_mail (without pagination)
+        query = Courrier.query
+        
+        # Apply permission restrictions
+        if current_user.has_permission('read_all_mail'):
+            pass
+        elif current_user.has_permission('read_department_mail'):
+            if current_user.departement_id:
+                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                    User.departement_id == current_user.departement_id
+                )
+            else:
+                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        elif current_user.has_permission('read_own_mail'):
+            query = query.filter(Courrier.utilisateur_id == current_user.id)
+        else:
+            # Fallback
+            if current_user.role == 'super_admin':
+                pass
+            elif current_user.role == 'admin':
+                if current_user.departement_id:
+                    query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                        User.departement_id == current_user.departement_id
+                    )
+                else:
+                    query = query.filter(Courrier.utilisateur_id == current_user.id)
+            else:
+                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        
+        # Apply filters
+        if search:
+            query = query.filter(
+                or_(
+                    Courrier.numero_accuse_reception.contains(search),
+                    Courrier.numero_reference.contains(search),
+                    Courrier.objet.contains(search),
+                    Courrier.expediteur.contains(search),
+                    Courrier.destinataire.contains(search)
+                )
+            )
+        
+        if type_courrier:
+            query = query.filter(Courrier.type_courrier == type_courrier)
+        
+        if statut:
+            query = query.filter(Courrier.statut == statut)
+        
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(Courrier.date_enregistrement >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(Courrier.date_enregistrement <= date_to_obj)
+            except ValueError:
+                pass
+        
+        # Apply sorting
+        if sort_by in ['date_enregistrement', 'numero_accuse_reception', 'expediteur', 'objet', 'statut']:
+            order_column = getattr(Courrier, sort_by)
+            if sort_order == 'desc':
+                query = query.order_by(order_column.desc())
+            else:
+                query = query.order_by(order_column.asc())
+        
+        # Get all results (no pagination for export)
+        courriers = query.all()
+        
+        # Generate PDF
+        pdf_path = export_mail_list_pdf(courriers, {
+            'search': search,
+            'date_from': date_from,
+            'date_to': date_to,
+            'statut': statut,
+            'type_courrier': type_courrier,
+            'sort_by': sort_by,
+            'sort_order': sort_order
+        })
+        
+        # Log activity
+        log_activity(current_user.id, "EXPORT_LISTE_PDF", 
+                    f"Export PDF de {len(courriers)} courriers")
+        
+        # Generate filename
+        filename_parts = ['liste_courriers']
+        if search:
+            filename_parts.append(f"recherche_{search[:20]}")
+        if type_courrier:
+            filename_parts.append(type_courrier.lower())
+        if date_from or date_to:
+            filename_parts.append("filtre_date")
+        filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M'))
+        filename = '_'.join(filename_parts) + '.pdf'
+        
+        return send_file(pdf_path, as_attachment=True, download_name=filename)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'export PDF de la liste: {e}")
+        flash('Erreur lors de l\'export PDF de la liste.', 'error')
+        return redirect(url_for('view_mail'))
 
 @app.route('/download_file/<int:id>')
 @login_required

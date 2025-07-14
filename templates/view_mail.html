@@ -139,12 +139,27 @@
                 <i class="fas fa-table mr-2 text-rdc-blue"></i>
                 Résultats de la Recherche
             </h2>
-            {% if courriers %}
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rdc-blue text-white">
-                {{ pagination.total }} courrier{{ 's' if pagination.total > 1 else '' }} trouvé{{ 's' if pagination.total > 1 else '' }}
-                {% if pagination.pages > 1 %} - Page {{ pagination.page }}/{{ pagination.pages }}{% endif %}
-            </span>
-            {% endif %}
+            <div class="flex items-center space-x-3">
+                {% if courriers %}
+                <!-- Export and Print Buttons -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="printMailList()" 
+                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-print mr-2"></i>
+                        {{ t('mail.print_list') }}
+                    </button>
+                    <a href="{{ url_for('export_mail_list', **request.args) }}" 
+                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        {{ t('mail.export_pdf_list') }}
+                    </a>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rdc-blue text-white">
+                    {{ pagination.total }} courrier{{ 's' if pagination.total > 1 else '' }} trouvé{{ 's' if pagination.total > 1 else '' }}
+                    {% if pagination.pages > 1 %} - Page {{ pagination.page }}/{{ pagination.pages }}{% endif %}
+                </span>
+                {% endif %}
+            </div>
         </div>
     </div>
     <div class="p-6">
@@ -177,7 +192,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Fichier
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">
                             Actions
                         </th>
                     </tr>
@@ -237,7 +252,7 @@
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
                             <div class="flex space-x-2">
                                 <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
                                    class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
@@ -383,6 +398,66 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+@media print {
+    /* Hide unnecessary elements when printing */
+    .no-print,
+    .lg\:col-span-1,
+    nav,
+    .pagination,
+    button,
+    .actions-column {
+        display: none !important;
+    }
+    
+    /* Make table full width */
+    .lg\:col-span-2 {
+        grid-column: span 3 / span 3;
+    }
+    
+    /* Adjust spacing */
+    body {
+        font-size: 12px;
+    }
+    
+    table {
+        font-size: 11px;
+    }
+    
+    .shadow-rdc,
+    .rounded-xl,
+    .border {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Print header */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+    }
+    
+    /* Ensure table fits */
+    table {
+        width: 100% !important;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        border: 1px solid #000 !important;
+        padding: 4px 6px !important;
+    }
+}
+
+/* Print header (hidden by default) */
+.print-header {
+    display: none;
+}
+</style>
+
 <script>
 // Toggle sort order
 function toggleSortOrder() {
@@ -394,6 +469,49 @@ function toggleSortOrder() {
     document.querySelector('form').submit();
 }
 
+// Print mail list function
+function printMailList() {
+    // Add print header
+    const printHeader = document.createElement('div');
+    printHeader.className = 'print-header';
+    printHeader.innerHTML = `
+        <h1>GEC Mines - Liste des Courriers</h1>
+        <p>Date d'impression: ${new Date().toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}</p>
+        {% if search %}
+        <p>Recherche: "{{ search }}"</p>
+        {% endif %}
+        {% if type_courrier %}
+        <p>Type: {{ 'Entrant' if type_courrier == 'ENTRANT' else 'Sortant' if type_courrier == 'SORTANT' else type_courrier }}</p>
+        {% endif %}
+        {% if date_from or date_to %}
+        <p>Période: {% if date_from %}du {{ date_from }}{% endif %}{% if date_to %} au {{ date_to }}{% endif %}</p>
+        {% endif %}
+        <p>Total: {{ pagination.total if pagination else courriers|length }} courrier(s)</p>
+    `;
+    
+    // Insert at beginning of main content
+    const mainContent = document.querySelector('.lg\\:col-span-2');
+    if (mainContent) {
+        mainContent.insertBefore(printHeader, mainContent.firstChild);
+    }
+    
+    // Print
+    window.print();
+    
+    // Remove print header after printing
+    setTimeout(() => {
+        if (printHeader.parentNode) {
+            printHeader.parentNode.removeChild(printHeader);
+        }
+    }, 1000);
+}
+
 // Initialize DataTables if available
 $(document).ready(function() {
     if (typeof $.fn.DataTable !== 'undefined' && $('#courriers-table').length) {
@@ -401,9 +519,12 @@ $(document).ready(function() {
             "language": {
                 "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json"
             },
-            "order": [[ 4, "desc" ]], // Sort by date column by default
+            "order": [[ 5, "desc" ]], // Sort by date column by default
             "pageLength": 25,
-            "responsive": true
+            "responsive": true,
+            "columnDefs": [
+                { "targets": -1, "orderable": false, "className": "actions-column" } // Make actions column non-sortable
+            ]
         });
     }
 });

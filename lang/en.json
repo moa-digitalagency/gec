@@ -167,5 +167,11 @@
         "restore_success": "System restored successfully",
         "restore_error": "Error during restoration",
         "no_backups": "No backups available"
+    },
+    "mail": {
+        "print_list": "Print list",
+        "export_pdf_list": "Export to PDF",
+        "list_exported": "List exported successfully",
+        "export_error": "Export error"
     }
 }

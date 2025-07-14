@@ -167,5 +167,11 @@
         "restore_success": "Système restauré avec succès",
         "restore_error": "Erreur lors de la restauration",
         "no_backups": "Aucune sauvegarde disponible"
+    },
+    "mail": {
+        "print_list": "Imprimer la liste",
+        "export_pdf_list": "Exporter en PDF",
+        "list_exported": "Liste exportée avec succès",
+        "export_error": "Erreur lors de l'export"
     }
 }

@@ -263,3 +263,167 @@ def export_courrier_pdf(courrier):
     doc.build(story)
     
     return pdf_path
+
+def export_mail_list_pdf(courriers, filters):
+    """Exporter une liste de courriers en PDF"""
+    # Créer le dossier exports s'il n'existe pas
+    exports_dir = 'exports'
+    os.makedirs(exports_dir, exist_ok=True)
+    
+    # Nom du fichier PDF
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"liste_courriers_{timestamp}.pdf"
+    pdf_path = os.path.join(exports_dir, filename)
+    
+    # Créer le document PDF en orientation paysage pour plus d'espace
+    from reportlab.lib.pagesizes import landscape, A4
+    doc = SimpleDocTemplate(pdf_path, pagesize=landscape(A4), 
+                          leftMargin=0.5*inch, rightMargin=0.5*inch,
+                          topMargin=0.5*inch, bottomMargin=0.5*inch)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Récupérer les paramètres système
+    from models import ParametresSysteme
+    parametres = ParametresSysteme.get_parametres()
+    
+    # Style personnalisé pour le titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=14,
+        spaceAfter=20,
+        alignment=1,  # Centré
+        textColor=colors.darkblue
+    )
+    
+    # En-tête
+    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
+    
+    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}<br/>République Démocratique du Congo", title_style)
+    story.append(title)
+    story.append(Spacer(1, 15))
+    
+    # Titre de la liste
+    liste_title = Paragraph("LISTE DES COURRIERS", styles['Heading2'])
+    story.append(liste_title)
+    story.append(Spacer(1, 10))
+    
+    # Informations sur les filtres appliqués
+    filter_info = []
+    if filters['search']:
+        filter_info.append(f"Recherche: {filters['search']}")
+    if filters['type_courrier']:
+        type_display = 'Entrant' if filters['type_courrier'] == 'ENTRANT' else 'Sortant'
+        filter_info.append(f"Type: {type_display}")
+    if filters['statut']:
+        filter_info.append(f"Statut: {filters['statut']}")
+    if filters['date_from'] or filters['date_to']:
+        period = "Période: "
+        if filters['date_from']:
+            period += f"du {filters['date_from']}"
+        if filters['date_to']:
+            period += f" au {filters['date_to']}"
+        filter_info.append(period)
+    
+    if filter_info:
+        filter_text = " | ".join(filter_info)
+        filter_para = Paragraph(f"Filtres appliqués: {filter_text}", styles['Normal'])
+        story.append(filter_para)
+        story.append(Spacer(1, 10))
+    
+    # Informations sur le rapport
+    count = len(courriers)
+    date_generation = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    info_para = Paragraph(f"Total: {count} courrier{'s' if count > 1 else ''} | Généré le: {date_generation}", styles['Normal'])
+    story.append(info_para)
+    story.append(Spacer(1, 15))
+    
+    if not courriers:
+        # Message si aucun courrier
+        no_data = Paragraph("Aucun courrier trouvé avec les critères spécifiés.", styles['Normal'])
+        story.append(no_data)
+    else:
+        # Créer le tableau des courriers
+        headers = ['N° Accusé', 'Type', 'Contact', 'Objet', 'Date', 'Statut']
+        data = [headers]
+        
+        for courrier in courriers:
+            # Contact principal selon le type
+            contact = courrier.expediteur if courrier.type_courrier == 'ENTRANT' else courrier.destinataire
+            contact = contact[:30] + '...' if contact and len(contact) > 30 else contact or 'N/A'
+            
+            # Objet tronqué
+            objet = courrier.objet[:40] + '...' if len(courrier.objet) > 40 else courrier.objet
+            
+            # Date formatée
+            date_str = courrier.date_enregistrement.strftime('%d/%m/%Y')
+            
+            # Type court
+            type_short = 'ENT' if courrier.type_courrier == 'ENTRANT' else 'SOR'
+            
+            # Statut formatté
+            statut = courrier.statut.replace('_', ' ')[:12]
+            
+            row = [
+                courrier.numero_accuse_reception,
+                type_short,
+                contact,
+                objet,
+                date_str,
+                statut
+            ]
+            data.append(row)
+        
+        # Créer le tableau avec largeurs optimisées pour paysage
+        col_widths = [1.3*inch, 0.6*inch, 2*inch, 3*inch, 0.8*inch, 1*inch]
+        table = Table(data, colWidths=col_widths, repeatRows=1)
+        
+        # Style du tableau
+        table.setStyle(TableStyle([
+            # En-tête
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            
+            # Corps du tableau
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+            ('TOPPADDING', (0, 1), (-1, -1), 4),
+            
+            # Bordures
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            
+            # Alternance de couleur pour les lignes
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ]))
+        
+        story.append(table)
+    
+    story.append(Spacer(1, 20))
+    
+    # Pied de page
+    footer_lines = []
+    
+    # Texte footer configurable
+    if parametres.texte_footer:
+        footer_lines.append(parametres.texte_footer)
+    
+    # Copyright crypté
+    copyright = parametres.get_copyright_decrypte()
+    footer_lines.append(copyright)
+    
+    for line in footer_lines:
+        footer = Paragraph(line, styles['Normal'])
+        story.append(footer)
+        story.append(Spacer(1, 4))
+    
+    # Construire le PDF
+    doc.build(story)
+    
+    return pdf_path
