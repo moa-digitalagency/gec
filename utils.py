@@ -190,6 +190,26 @@ def export_courrier_pdf(courrier):
     from models import ParametresSysteme
     parametres = ParametresSysteme.get_parametres()
     
+    # Ajouter le logo si configuré
+    if parametres.logo_pdf:
+        try:
+            from reportlab.lib.utils import ImageReader
+            # Convertir le chemin web en chemin système
+            logo_web_path = parametres.logo_pdf
+            if logo_web_path.startswith('/'):
+                logo_web_path = logo_web_path[1:]  # Retirer le / initial
+            logo_path = logo_web_path
+            
+            # Vérifier si le fichier existe
+            if os.path.exists(logo_path):
+                from reportlab.platypus import Image
+                logo = Image(logo_path, width=2*inch, height=1*inch)
+                logo.hAlign = 'CENTER'
+                story.append(logo)
+                story.append(Spacer(1, 10))
+        except Exception as e:
+            print(f"Erreur lors de l'ajout du logo: {e}")
+    
     # Titre configuré du document
     titre_pdf = parametres.titre_pdf or "Ministère des Mines"
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
@@ -292,6 +312,26 @@ def export_mail_list_pdf(courriers, filters):
     # Récupérer les paramètres système
     from models import ParametresSysteme
     parametres = ParametresSysteme.get_parametres()
+    
+    # Ajouter le logo si configuré
+    if parametres.logo_pdf:
+        try:
+            from reportlab.lib.utils import ImageReader
+            # Convertir le chemin web en chemin système
+            logo_web_path = parametres.logo_pdf
+            if logo_web_path.startswith('/'):
+                logo_web_path = logo_web_path[1:]  # Retirer le / initial
+            logo_path = logo_web_path
+            
+            # Vérifier si le fichier existe
+            if os.path.exists(logo_path):
+                from reportlab.platypus import Image
+                logo = Image(logo_path, width=2*inch, height=1*inch)
+                logo.hAlign = 'CENTER'
+                story.append(logo)
+                story.append(Spacer(1, 10))
+        except Exception as e:
+            print(f"Erreur lors de l'ajout du logo: {e}")
     
     # Style personnalisé pour le titre
     title_style = ParagraphStyle(
