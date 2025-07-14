@@ -212,6 +212,12 @@ def export_courrier_pdf(courrier):
         ['Objet:', courrier.objet],
     ]
     
+    # Ajouter la date de rédaction si elle existe
+    if courrier.date_redaction:
+        data.append(['Date de Rédaction:', courrier.date_redaction.strftime('%d/%m/%Y')])
+    else:
+        data.append(['Date de Rédaction:', 'Non renseignée'])
+    
     # Ajouter expéditeur ou destinataire selon le type
     if courrier.type_courrier == 'ENTRANT':
         data.append(['Expéditeur:', courrier.expediteur or 'Non spécifié'])
@@ -320,12 +326,20 @@ def export_mail_list_pdf(courriers, filters):
     if filters['statut']:
         filter_info.append(f"Statut: {filters['statut']}")
     if filters['date_from'] or filters['date_to']:
-        period = "Période: "
+        period = "Période Enr.: "
         if filters['date_from']:
             period += f"du {filters['date_from']}"
         if filters['date_to']:
             period += f" au {filters['date_to']}"
         filter_info.append(period)
+    
+    if filters.get('date_redaction_from') or filters.get('date_redaction_to'):
+        period_red = "Période Réd.: "
+        if filters.get('date_redaction_from'):
+            period_red += f"du {filters['date_redaction_from']}"
+        if filters.get('date_redaction_to'):
+            period_red += f" au {filters['date_redaction_to']}"
+        filter_info.append(period_red)
     
     if filter_info:
         filter_text = " | ".join(filter_info)
@@ -346,38 +360,42 @@ def export_mail_list_pdf(courriers, filters):
         story.append(no_data)
     else:
         # Créer le tableau des courriers
-        headers = ['N° Accusé', 'Type', 'Contact', 'Objet', 'Date', 'Statut']
+        headers = ['N° Accusé', 'Type', 'Contact', 'Objet', 'Date Réd.', 'Date Enr.', 'Statut']
         data = [headers]
         
         for courrier in courriers:
             # Contact principal selon le type
             contact = courrier.expediteur if courrier.type_courrier == 'ENTRANT' else courrier.destinataire
-            contact = contact[:30] + '...' if contact and len(contact) > 30 else contact or 'N/A'
+            contact = contact[:25] + '...' if contact and len(contact) > 25 else contact or 'N/A'
             
             # Objet tronqué
-            objet = courrier.objet[:40] + '...' if len(courrier.objet) > 40 else courrier.objet
+            objet = courrier.objet[:35] + '...' if len(courrier.objet) > 35 else courrier.objet
             
-            # Date formatée
-            date_str = courrier.date_enregistrement.strftime('%d/%m/%Y')
+            # Date de rédaction formatée
+            date_redaction_str = courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'N/A'
+            
+            # Date d'enregistrement formatée
+            date_enr_str = courrier.date_enregistrement.strftime('%d/%m/%Y')
             
             # Type court
             type_short = 'ENT' if courrier.type_courrier == 'ENTRANT' else 'SOR'
             
             # Statut formatté
-            statut = courrier.statut.replace('_', ' ')[:12]
+            statut = courrier.statut.replace('_', ' ')[:10]
             
             row = [
                 courrier.numero_accuse_reception,
                 type_short,
                 contact,
                 objet,
-                date_str,
+                date_redaction_str,
+                date_enr_str,
                 statut
             ]
             data.append(row)
         
         # Créer le tableau avec largeurs optimisées pour paysage
-        col_widths = [1.3*inch, 0.6*inch, 2*inch, 3*inch, 0.8*inch, 1*inch]
+        col_widths = [1.2*inch, 0.5*inch, 1.8*inch, 2.5*inch, 0.7*inch, 0.7*inch, 0.8*inch]
         table = Table(data, colWidths=col_widths, repeatRows=1)
         
         # Style du tableau

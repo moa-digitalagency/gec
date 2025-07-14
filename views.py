@@ -76,6 +76,17 @@ def register_mail():
         objet = request.form['objet'].strip()
         type_courrier = request.form.get('type_courrier', 'ENTRANT')
         statut = request.form.get('statut', 'RECU')
+        date_redaction_str = request.form.get('date_redaction', '')
+        
+        # Traitement de la date de rédaction
+        date_redaction = None
+        if date_redaction_str:
+            try:
+                date_redaction = datetime.strptime(date_redaction_str, '%Y-%m-%d').date()
+            except ValueError:
+                flash('Format de date de rédaction invalide.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
         
         # Traiter expéditeur/destinataire selon le type
         expediteur = None
@@ -126,6 +137,7 @@ def register_mail():
             type_courrier=type_courrier,
             expediteur=expediteur,
             destinataire=destinataire,
+            date_redaction=date_redaction,
             statut=statut,
             fichier_nom=fichier_nom,
             fichier_chemin=fichier_chemin,
@@ -165,6 +177,8 @@ def view_mail():
     search = request.args.get('search', '')
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
+    date_redaction_from = request.args.get('date_redaction_from', '')
+    date_redaction_to = request.args.get('date_redaction_to', '')
     statut = request.args.get('statut', '')
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
@@ -244,6 +258,21 @@ def view_mail():
         except ValueError:
             pass
     
+    # Filtres par date de rédaction
+    if date_redaction_from:
+        try:
+            date_redaction_from_obj = datetime.strptime(date_redaction_from, '%Y-%m-%d').date()
+            query = query.filter(Courrier.date_redaction >= date_redaction_from_obj)
+        except ValueError:
+            pass
+    
+    if date_redaction_to:
+        try:
+            date_redaction_to_obj = datetime.strptime(date_redaction_to, '%Y-%m-%d').date()
+            query = query.filter(Courrier.date_redaction <= date_redaction_to_obj)
+        except ValueError:
+            pass
+    
     # Tri
     if sort_by in ['date_enregistrement', 'numero_accuse_reception', 'expediteur', 'objet', 'statut']:
         order_column = getattr(Courrier, sort_by)
@@ -262,6 +291,8 @@ def view_mail():
                          search=search,
                          date_from=date_from,
                          date_to=date_to,
+                         date_redaction_from=date_redaction_from,
+                         date_redaction_to=date_redaction_to,
                          statut=statut,
                          type_courrier=type_courrier,
                          sort_by=sort_by,

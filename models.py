@@ -148,6 +148,7 @@ class Courrier(db.Model):
     type_courrier = db.Column(db.String(20), nullable=False, default='ENTRANT')  # ENTRANT ou SORTANT
     expediteur = db.Column(db.String(200), nullable=True)  # Pour courrier entrant
     destinataire = db.Column(db.String(200), nullable=True)  # Pour courrier sortant
+    date_redaction = db.Column(db.Date, nullable=True)  # Date de rédaction de la lettre
     date_enregistrement = db.Column(db.DateTime, default=datetime.utcnow)
     fichier_nom = db.Column(db.String(255), nullable=True)
     fichier_chemin = db.Column(db.String(500), nullable=True)
