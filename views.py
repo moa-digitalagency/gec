@@ -14,7 +14,7 @@ import logging
 
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, get_current_language, set_language, t, get_available_languages
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
 
 @app.route('/')
 def index():
