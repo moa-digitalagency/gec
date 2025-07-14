@@ -209,7 +209,25 @@ def export_courrier_pdf(courrier):
     
     if logo_path:
         try:
-            logo = Image(logo_path, width=1.5*inch, height=1*inch)
+            # Charger l'image pour obtenir ses dimensions originales
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(logo_path)
+            original_width, original_height = pil_img.size
+            
+            # Calculer les dimensions en préservant le ratio
+            max_width = 1.5*inch
+            max_height = 1*inch
+            
+            # Calculer le ratio de redimensionnement
+            width_ratio = max_width / original_width
+            height_ratio = max_height / original_height
+            ratio = min(width_ratio, height_ratio)
+            
+            # Nouvelles dimensions préservant le ratio
+            new_width = original_width * ratio
+            new_height = original_height * ratio
+            
+            logo = Image(logo_path, width=new_width, height=new_height)
             logo.hAlign = 'CENTER'
             story.append(logo)
             story.append(Spacer(1, 10))
@@ -325,7 +343,25 @@ def export_mail_list_pdf(courriers, filters):
     
     if logo_path:
         try:
-            logo = Image(logo_path, width=1.2*inch, height=0.8*inch)
+            # Charger l'image pour obtenir ses dimensions originales
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(logo_path)
+            original_width, original_height = pil_img.size
+            
+            # Calculer les dimensions en préservant le ratio (plus petit pour liste)
+            max_width = 1.2*inch
+            max_height = 0.8*inch
+            
+            # Calculer le ratio de redimensionnement
+            width_ratio = max_width / original_width
+            height_ratio = max_height / original_height
+            ratio = min(width_ratio, height_ratio)
+            
+            # Nouvelles dimensions préservant le ratio
+            new_width = original_width * ratio
+            new_height = original_height * ratio
+            
+            logo = Image(logo_path, width=new_width, height=new_height)
             logo.hAlign = 'CENTER'
             story.append(logo)
             story.append(Spacer(1, 8))
