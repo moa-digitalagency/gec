@@ -1490,6 +1490,16 @@ def profile_photo(filename):
     profile_folder = os.path.join('uploads', 'profiles')
     return send_file(os.path.join(profile_folder, filename))
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Servir les fichiers uploadés (logos, etc.)"""
+    try:
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        return send_from_directory(upload_folder, filename)
+    except Exception as e:
+        logging.error(f"Erreur lors du service du fichier {filename}: {e}")
+        abort(404)
+
 @app.route('/profile')
 @login_required
 def profile():

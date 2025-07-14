@@ -192,10 +192,20 @@ def export_courrier_pdf(courrier):
     
     # Ajouter le logo s'il existe
     logo_path = None
-    if parametres.logo_pdf and os.path.exists(parametres.logo_pdf):
-        logo_path = parametres.logo_pdf
-    elif parametres.logo_url and os.path.exists(parametres.logo_url):
-        logo_path = parametres.logo_url
+    if parametres.logo_pdf:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_pdf.startswith('/uploads/'):
+            logo_file_path = parametres.logo_pdf[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    elif parametres.logo_url:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_url.startswith('/uploads/'):
+            logo_file_path = parametres.logo_url[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
     
     if logo_path:
         try:
@@ -203,8 +213,8 @@ def export_courrier_pdf(courrier):
             logo.hAlign = 'CENTER'
             story.append(logo)
             story.append(Spacer(1, 10))
-        except:
-            pass  # Ignorer si le logo ne peut pas être chargé
+        except Exception as e:
+            print(f"Erreur chargement logo: {e}")  # Pour debug
     
     # Titre configuré du document
     titre_pdf = parametres.titre_pdf or "Ministère des Mines"
@@ -298,10 +308,20 @@ def export_mail_list_pdf(courriers, filters):
     
     # Ajouter le logo s'il existe
     logo_path = None
-    if parametres.logo_pdf and os.path.exists(parametres.logo_pdf):
-        logo_path = parametres.logo_pdf
-    elif parametres.logo_url and os.path.exists(parametres.logo_url):
-        logo_path = parametres.logo_url
+    if parametres.logo_pdf:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_pdf.startswith('/uploads/'):
+            logo_file_path = parametres.logo_pdf[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    elif parametres.logo_url:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_url.startswith('/uploads/'):
+            logo_file_path = parametres.logo_url[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
     
     if logo_path:
         try:
@@ -309,8 +329,8 @@ def export_mail_list_pdf(courriers, filters):
             logo.hAlign = 'CENTER'
             story.append(logo)
             story.append(Spacer(1, 8))
-        except:
-            pass  # Ignorer si le logo ne peut pas être chargé
+        except Exception as e:
+            print(f"Erreur chargement logo: {e}")  # Pour debug
     
     # Style personnalisé pour le titre
     title_style = ParagraphStyle(
