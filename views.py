@@ -70,13 +70,25 @@ def register_mail():
         # Récupération des données du formulaire
         numero_reference = request.form.get('numero_reference', '').strip()
         objet = request.form['objet'].strip()
-        expediteur = request.form['expediteur'].strip()
+        type_courrier = request.form.get('type_courrier', 'ENTRANT')
         statut = request.form.get('statut', 'RECU')
         
-        if not objet or not expediteur:
-            flash('L\'objet et l\'expéditeur sont obligatoires.', 'error')
-            statuts_disponibles = StatutCourrier.get_statuts_actifs()
-            return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+        # Traiter expéditeur/destinataire selon le type
+        expediteur = None
+        destinataire = None
+        
+        if type_courrier == 'ENTRANT':
+            expediteur = request.form.get('expediteur', '').strip()
+            if not objet or not expediteur:
+                flash('L\'objet et l\'expéditeur sont obligatoires pour un courrier entrant.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+        else:  # SORTANT
+            destinataire = request.form.get('destinataire', '').strip()
+            if not objet or not destinataire:
+                flash('L\'objet et le destinataire sont obligatoires pour un courrier sortant.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
         
         # Génération du numéro d'accusé de réception
         numero_accuse = generate_accuse_reception()
@@ -107,7 +119,9 @@ def register_mail():
             numero_accuse_reception=numero_accuse,
             numero_reference=numero_reference if numero_reference else None,
             objet=objet,
+            type_courrier=type_courrier,
             expediteur=expediteur,
+            destinataire=destinataire,
             statut=statut,
             fichier_nom=fichier_nom,
             fichier_chemin=fichier_chemin,
@@ -188,6 +202,9 @@ def view_mail():
             # Utilisateur normal voit seulement ses propres courriers
             query = query.filter(Courrier.utilisateur_id == current_user.id)
     
+    # Ajout du filtre pour type de courrier
+    type_courrier = request.args.get('type_courrier', '')
+    
     # Recherche textuelle
     if search:
         query = query.filter(
@@ -195,9 +212,14 @@ def view_mail():
                 Courrier.numero_accuse_reception.contains(search),
                 Courrier.numero_reference.contains(search),
                 Courrier.objet.contains(search),
-                Courrier.expediteur.contains(search)
+                Courrier.expediteur.contains(search),
+                Courrier.destinataire.contains(search)
             )
         )
+    
+    # Filtre par type de courrier
+    if type_courrier:
+        query = query.filter(Courrier.type_courrier == type_courrier)
     
     # Filtre par statut
     if statut:

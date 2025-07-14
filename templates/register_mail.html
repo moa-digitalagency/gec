@@ -24,7 +24,47 @@
             </div>
             <div class="p-6">
                 <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                    <!-- Reference and Sender -->
+                    <!-- Type de Courrier -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
+                            Type de Courrier <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="relative flex items-center p-3 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rdc-blue mail-type-option">
+                                <input type="radio" 
+                                       name="type_courrier" 
+                                       value="ENTRANT" 
+                                       checked
+                                       class="sr-only"
+                                       onchange="toggleContactField()">
+                                <div class="radio-visual w-4 h-4 rounded-full border-2 border-gray-300 mr-3 flex items-center justify-center">
+                                    <div class="w-2 h-2 rounded-full bg-rdc-blue hidden"></div>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-inbox mr-2 text-blue-500"></i>
+                                    <span class="text-sm font-medium">Entrant</span>
+                                </div>
+                            </label>
+                            
+                            <label class="relative flex items-center p-3 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rdc-blue mail-type-option">
+                                <input type="radio" 
+                                       name="type_courrier" 
+                                       value="SORTANT"
+                                       class="sr-only"
+                                       onchange="toggleContactField()">
+                                <div class="radio-visual w-4 h-4 rounded-full border-2 border-gray-300 mr-3 flex items-center justify-center">
+                                    <div class="w-2 h-2 rounded-full bg-rdc-blue hidden"></div>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-paper-plane mr-2 text-green-500"></i>
+                                    <span class="text-sm font-medium">Sortant</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Reference and Contact -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="numero_reference" class="block text-sm font-medium text-gray-700 mb-2">
@@ -39,17 +79,22 @@
                             <p class="mt-1 text-xs text-gray-500">Laissez vide si aucun numéro de référence</p>
                         </div>
                         
-                        <div>
-                            <label for="expediteur" class="block text-sm font-medium text-gray-700 mb-2">
+                        <div id="contact-field">
+                            <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">
                                 <i class="fas fa-user mr-1 text-rdc-blue"></i>
-                                Expéditeur <span class="text-red-500">*</span>
+                                <span id="contact-label">Expéditeur</span> <span class="text-red-500">*</span>
                             </label>
                             <input type="text" 
-                                   id="expediteur" 
+                                   id="contact" 
                                    name="expediteur" 
                                    required 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
                                    placeholder="Nom de l'expéditeur">
+                            <!-- Hidden field for destinataire -->
+                            <input type="hidden" 
+                                   id="destinataire" 
+                                   name="destinataire" 
+                                   value="">
                         </div>
                     </div>
                     
@@ -280,5 +325,59 @@ function updateCurrentTime() {
 // Update time every second
 setInterval(updateCurrentTime, 1000);
 updateCurrentTime();
+
+// Initialize radio button visual indicators
+function initializeRadioButtons() {
+    const radioOptions = document.querySelectorAll('.mail-type-option');
+    
+    radioOptions.forEach(option => {
+        const radio = option.querySelector('input[type="radio"]');
+        const visual = option.querySelector('.radio-visual div');
+        
+        if (radio.checked) {
+            visual.classList.remove('hidden');
+            option.classList.add('border-rdc-blue', 'bg-blue-50');
+        }
+        
+        option.addEventListener('click', function() {
+            // Reset all options
+            radioOptions.forEach(opt => {
+                const vis = opt.querySelector('.radio-visual div');
+                vis.classList.add('hidden');
+                opt.classList.remove('border-rdc-blue', 'bg-blue-50');
+            });
+            
+            // Set selected option
+            radio.checked = true;
+            visual.classList.remove('hidden');
+            option.classList.add('border-rdc-blue', 'bg-blue-50');
+            
+            // Update contact field
+            toggleContactField();
+        });
+    });
+}
+
+function toggleContactField() {
+    const typeSelected = document.querySelector('input[name="type_courrier"]:checked').value;
+    const contactLabel = document.getElementById('contact-label');
+    const contactInput = document.getElementById('contact');
+    const destinataireField = document.querySelector('input[name="destinataire"]');
+    
+    if (typeSelected === 'ENTRANT') {
+        contactLabel.textContent = 'Expéditeur';
+        contactInput.placeholder = 'Nom de l\'expéditeur';
+        contactInput.name = 'expediteur';
+        destinataireField.value = '';
+    } else {
+        contactLabel.textContent = 'Destinataire';
+        contactInput.placeholder = 'Nom du destinataire';
+        contactInput.name = 'destinataire';
+    }
+}
+
+// Initialize on page load
+initializeRadioButtons();
+toggleContactField();
 </script>
 {% endblock %}

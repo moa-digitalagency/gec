@@ -198,21 +198,32 @@ def export_courrier_pdf(courrier):
     story.append(title)
     story.append(Spacer(1, 20))
     
-    # Sous-titre
-    subtitle = Paragraph("ACCUSÉ DE RÉCEPTION - COURRIER ENTRANT", styles['Heading2'])
+    # Sous-titre selon le type
+    type_display = "COURRIER ENTRANT" if courrier.type_courrier == 'ENTRANT' else "COURRIER SORTANT"
+    subtitle = Paragraph(f"ACCUSÉ DE RÉCEPTION - {type_display}", styles['Heading2'])
     story.append(subtitle)
     story.append(Spacer(1, 20))
     
     # Tableau des métadonnées
     data = [
         ['N° d\'Accusé de Réception:', courrier.numero_accuse_reception],
+        ['Type de Courrier:', courrier.get_type_display()],
         ['N° de Référence:', courrier.reference_display],
         ['Objet:', courrier.objet],
-        ['Expéditeur:', courrier.expediteur],
+    ]
+    
+    # Ajouter expéditeur ou destinataire selon le type
+    if courrier.type_courrier == 'ENTRANT':
+        data.append(['Expéditeur:', courrier.expediteur or 'Non spécifié'])
+    else:
+        data.append(['Destinataire:', courrier.destinataire or 'Non spécifié'])
+    
+    data.extend([
         ['Date d\'Enregistrement:', courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M')],
         ['Enregistré par:', courrier.utilisateur_enregistrement.nom_complet],
+        ['Statut:', courrier.statut.replace('_', ' ').title()],
         ['Fichier Joint:', courrier.fichier_nom if courrier.fichier_nom else 'Aucun'],
-    ]
+    ])
     
     table = Table(data, colWidths=[2.5*inch, 4*inch])
     table.setStyle(TableStyle([

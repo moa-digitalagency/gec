@@ -145,7 +145,9 @@ class Courrier(db.Model):
     numero_accuse_reception = db.Column(db.String(50), unique=True, nullable=False)
     numero_reference = db.Column(db.String(100), nullable=True)
     objet = db.Column(db.Text, nullable=False)
-    expediteur = db.Column(db.String(200), nullable=False)
+    type_courrier = db.Column(db.String(20), nullable=False, default='ENTRANT')  # ENTRANT ou SORTANT
+    expediteur = db.Column(db.String(200), nullable=True)  # Pour courrier entrant
+    destinataire = db.Column(db.String(200), nullable=True)  # Pour courrier sortant
     date_enregistrement = db.Column(db.DateTime, default=datetime.utcnow)
     fichier_nom = db.Column(db.String(255), nullable=True)
     fichier_chemin = db.Column(db.String(500), nullable=True)
@@ -164,6 +166,31 @@ class Courrier(db.Model):
     @property
     def reference_display(self):
         return self.numero_reference if self.numero_reference else "Non référencé"
+    
+    def get_contact_principal(self):
+        """Retourne l'expéditeur ou le destinataire selon le type"""
+        if self.type_courrier == 'ENTRANT':
+            return self.expediteur
+        else:
+            return self.destinataire
+    
+    def get_label_contact(self):
+        """Retourne le label du contact selon le type"""
+        if self.type_courrier == 'ENTRANT':
+            return "Expéditeur"
+        else:
+            return "Destinataire"
+    
+    def get_type_display(self):
+        """Affichage formaté du type de courrier"""
+        return "Courrier Entrant" if self.type_courrier == 'ENTRANT' else "Courrier Sortant"
+    
+    def get_type_color(self):
+        """Couleur associée au type de courrier"""
+        if self.type_courrier == 'ENTRANT':
+            return 'bg-blue-100 text-blue-800'
+        else:
+            return 'bg-green-100 text-green-800'
     
     @property
     def statut_color(self):
