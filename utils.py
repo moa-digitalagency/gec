@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import request, session
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
@@ -190,6 +190,22 @@ def export_courrier_pdf(courrier):
     from models import ParametresSysteme
     parametres = ParametresSysteme.get_parametres()
     
+    # Ajouter le logo s'il existe
+    logo_path = None
+    if parametres.logo_pdf and os.path.exists(parametres.logo_pdf):
+        logo_path = parametres.logo_pdf
+    elif parametres.logo_url and os.path.exists(parametres.logo_url):
+        logo_path = parametres.logo_url
+    
+    if logo_path:
+        try:
+            logo = Image(logo_path, width=1.5*inch, height=1*inch)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 10))
+        except:
+            pass  # Ignorer si le logo ne peut pas être chargé
+    
     # Titre configuré du document
     titre_pdf = parametres.titre_pdf or "Ministère des Mines"
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
@@ -279,6 +295,22 @@ def export_mail_list_pdf(courriers, filters):
     # Récupérer les paramètres système
     from models import ParametresSysteme
     parametres = ParametresSysteme.get_parametres()
+    
+    # Ajouter le logo s'il existe
+    logo_path = None
+    if parametres.logo_pdf and os.path.exists(parametres.logo_pdf):
+        logo_path = parametres.logo_pdf
+    elif parametres.logo_url and os.path.exists(parametres.logo_url):
+        logo_path = parametres.logo_url
+    
+    if logo_path:
+        try:
+            logo = Image(logo_path, width=1.2*inch, height=0.8*inch)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 8))
+        except:
+            pass  # Ignorer si le logo ne peut pas être chargé
     
     # Style personnalisé pour le titre
     title_style = ParagraphStyle(

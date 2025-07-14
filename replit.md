@@ -224,3 +224,15 @@ The application is designed for easy deployment on cloud platforms with minimal 
 ✓ Created init_database.py script for automated database initialization
 ✓ Updated installation guides for both cPanel and VPS in French and English
 ✓ Complete documentation package ready for deployment and maintenance
+
+### System Parameters and PDF Enhancement (July 14, 2025 - Evening)
+✓ Fixed critical system parameter bug: all template updates to use dynamic parameters
+✓ Corrected hardcoded application names to use parametres.nom_logiciel dynamically
+✓ Updated login pages, navigation, and all templates for parameter consistency
+✓ Fixed PDF/page information synchronization for identical data display
+✓ Added Date de Rédaction to mail detail page (was missing)
+✓ Enhanced PDF export consistency: individual and list exports match page content exactly
+✓ Added logo support in PDF exports using reportlab.platypus.Image
+✓ Implemented logo_pdf priority over logo_url with fallback handling
+✓ PDF logos properly centered and sized for both individual and list exports
+✓ Complete system parameter integration: name, logos, contact info, PDF headers all dynamic
