@@ -164,7 +164,7 @@
                             Référence
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Expéditeur
+                            Expéditeur/Destinataire
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Objet
@@ -201,7 +201,10 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ courrier.expediteur }}
+                            <div>
+                                <span class="text-xs text-gray-400">{{ courrier.get_label_contact() }}:</span><br>
+                                <span class="font-medium">{{ courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié' }}</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">
                             <div class="max-w-xs truncate" title="{{ courrier.objet }}">
