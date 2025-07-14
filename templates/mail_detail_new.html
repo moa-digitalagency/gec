@@ -66,6 +66,20 @@
                         </div>
                     </div>
                     
+                    <!-- Type de Courrier -->
+                    <div>
+                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-exchange-alt mr-2 text-rdc-blue"></i>
+                            Type de Courrier
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ courrier.get_type_color() }}">
+                                <i class="fas {{ 'fa-inbox' if courrier.type_courrier == 'ENTRANT' else 'fa-paper-plane' }} mr-1"></i>
+                                {{ courrier.get_type_display() }}
+                            </span>
+                        </div>
+                    </div>
+                    
                     <!-- Reference Number -->
                     <div>
                         <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -79,6 +93,53 @@
                                 </span>
                             {% else %}
                                 <span class="text-gray-500 italic">Non référencé</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Fichier Joint -->
+                    <div>
+                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
+                            Fichier Joint
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            {% if courrier.fichier_nom %}
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-file mr-1"></i>
+                                        {{ courrier.fichier_nom }}
+                                    </span>
+                                    <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                                       class="text-rdc-blue hover:text-rdc-green transition-colors">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-500 italic">Aucun fichier joint</span>
+                            {% endif %}
+                        </div>
+                    
+                    <!-- Fichier Joint -->
+                    <div>
+                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
+                            Fichier Joint
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            {% if courrier.fichier_nom %}
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-file mr-1"></i>
+                                        {{ courrier.fichier_nom }}
+                                    </span>
+                                    <a href="{{ url_for('download_file', id=courrier.id) }}" 
+                                       class="text-rdc-blue hover:text-rdc-green transition-colors">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-500 italic">Aucun fichier joint</span>
                             {% endif %}
                         </div>
                     </div>
