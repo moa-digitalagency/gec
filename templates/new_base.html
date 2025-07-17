@@ -34,6 +34,12 @@
         .shadow-rdc {
             box-shadow: 0 4px 6px -1px rgba(0, 48, 135, 0.1), 0 2px 4px -1px rgba(0, 48, 135, 0.06);
         }
+        .mobile-menu-hidden {
+            right: -320px !important;
+        }
+        .mobile-menu-visible {
+            right: 0px !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -134,7 +140,7 @@
             </div>
             
             <!-- Menu universel avec animation slide -->
-            <div id="mobile-menu" style="
+            <div id="mobile-menu" class="mobile-menu-hidden" style="
                 position: fixed; 
                 top: 0; 
                 bottom: 0;
@@ -304,24 +310,8 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     
     <script>
-        // Force menu closed immediately on script load
-        const forceCloseMenu = function() {
-            const menu = document.getElementById('mobile-menu');
-            if (menu) {
-                menu.style.right = '-320px';
-                document.body.style.overflow = '';
-                console.log('Menu force closed immediately');
-            }
-        };
-        
-        // Execute immediately
-        forceCloseMenu();
-        
         document.addEventListener('DOMContentLoaded', function() {
             console.log('GEC Mines Application Initialized');
-            
-            // Force close menu again when DOM is ready
-            forceCloseMenu();
             
             // Variables globales pour le menu
             let menuOverlay = null;
@@ -332,27 +322,20 @@
             
             console.log('Menu elements:', { button: !!mobileMenuButton, menu: !!mobileMenu });
             
-            // Force menu to be closed on page load
-            if (mobileMenu) {
-                // Immediate close
-                mobileMenu.style.right = '-320px';
-                isMenuOpen = false;
-                document.body.style.overflow = '';
-                
-                // Remove any existing overlay
-                const existingOverlay = document.querySelector('[style*="position: fixed"][style*="background: rgba(0,0,0,0.5)"]');
-                if (existingOverlay) {
-                    existingOverlay.remove();
-                }
-                
-                // Force close again after a short delay to ensure it works
-                setTimeout(() => {
+            // Initialize menu state
+            function initMenu() {
+                if (mobileMenu) {
+                    mobileMenu.classList.remove('mobile-menu-visible');
+                    mobileMenu.classList.add('mobile-menu-hidden');
                     mobileMenu.style.right = '-320px';
                     isMenuOpen = false;
                     document.body.style.overflow = '';
-                    console.log('Menu force closed on page load');
-                }, 100);
+                    console.log('Menu initialized as closed');
+                }
             }
+            
+            // Initialize immediately
+            initMenu();
             
             function openMenu() {
                 if (!mobileMenu || isMenuOpen) return;
@@ -374,7 +357,8 @@
                 document.body.style.overflow = 'hidden';
                 
                 // Animate menu in
-                mobileMenu.style.right = '0px';
+                mobileMenu.classList.remove('mobile-menu-hidden');
+                mobileMenu.classList.add('mobile-menu-visible');
                 
                 // Change icon to X
                 const icon = mobileMenuButton?.querySelector('i');
@@ -388,7 +372,8 @@
                 isMenuOpen = false;
                 
                 // Animate menu out
-                mobileMenu.style.right = '-320px';
+                mobileMenu.classList.remove('mobile-menu-visible');
+                mobileMenu.classList.add('mobile-menu-hidden');
                 
                 // Change icon back to hamburger
                 const icon = mobileMenuButton?.querySelector('i');
