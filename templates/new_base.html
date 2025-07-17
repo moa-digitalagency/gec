@@ -34,6 +34,21 @@
         .shadow-rdc {
             box-shadow: 0 4px 6px -1px rgba(0, 48, 135, 0.1), 0 2px 4px -1px rgba(0, 48, 135, 0.06);
         }
+        #mobile-menu {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 320px;
+            height: 100vh;
+            background-color: #003087;
+            border-left: 3px solid #009639;
+            padding: 0;
+            z-index: 1000;
+            transition: right 0.3s ease-in-out;
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
+            display: block;
+        }
         .mobile-menu-hidden {
             right: -320px !important;
         }
@@ -140,22 +155,7 @@
             </div>
             
             <!-- Menu universel avec animation slide -->
-            <div id="mobile-menu" class="mobile-menu-hidden" style="
-                position: fixed; 
-                top: 0; 
-                bottom: 0;
-                right: -320px; 
-                width: 320px; 
-                height: 100vh; 
-                background-color: #003087; 
-                border-left: 3px solid #009639; 
-                padding: 0;
-                z-index: 1000;
-                transition: right 0.3s ease-in-out;
-                overflow-y: auto;
-                box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
-                display: block;
-            ">
+            <div id="mobile-menu" class="mobile-menu-hidden">
                 <!-- Menu Content Container -->
                 <div style="height: 100%; display: flex; flex-direction: column; padding: 1rem;">
                     <!-- Close Button -->
@@ -327,7 +327,6 @@
                 if (mobileMenu) {
                     mobileMenu.classList.remove('mobile-menu-visible');
                     mobileMenu.classList.add('mobile-menu-hidden');
-                    mobileMenu.style.right = '-320px';
                     isMenuOpen = false;
                     document.body.style.overflow = '';
                     console.log('Menu initialized as closed');
