@@ -34,28 +34,6 @@
         .shadow-rdc {
             box-shadow: 0 4px 6px -1px rgba(0, 48, 135, 0.1), 0 2px 4px -1px rgba(0, 48, 135, 0.06);
         }
-        #mobile-menu {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            right: -320px;
-            width: 320px;
-            height: 100vh;
-            background-color: #003087;
-            border-left: 3px solid #009639;
-            padding: 0;
-            z-index: 1000;
-            transition: right 0.3s ease-in-out;
-            overflow-y: auto;
-            box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
-            display: block;
-        }
-        .mobile-menu-hidden {
-            right: -320px !important;
-        }
-        .mobile-menu-visible {
-            right: 0px !important;
-        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -156,25 +134,24 @@
             </div>
             
             <!-- Menu universel avec animation slide -->
-            <div id="mobile-menu" class="mobile-menu-hidden">
+            <div id="mobile-menu" style="
+                position: fixed; 
+                top: 0; 
+                bottom: 0;
+                right: -320px; 
+                width: 320px; 
+                height: 100vh; 
+                background-color: #003087; 
+                border-left: 3px solid #009639; 
+                padding: 0;
+                z-index: 1000;
+                transition: right 0.3s ease-in-out;
+                overflow-y: auto;
+                box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
+                display: block;
+            ">
                 <!-- Menu Content Container -->
                 <div style="height: 100%; display: flex; flex-direction: column; padding: 1rem;">
-                    <!-- Close Button -->
-                    <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-                        <button id="close-menu-button" style="
-                            background: none; 
-                            border: none; 
-                            color: white; 
-                            font-size: 1.5rem; 
-                            cursor: pointer; 
-                            padding: 0.5rem;
-                            border-radius: 0.375rem;
-                            transition: background-color 0.3s;
-                        " onmouseover="this.style.backgroundColor='#dc2626'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
                     <!-- Navigation principale -->
                     <div style="margin-bottom: 1rem;">
                         <a href="{{ url_for('dashboard') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
@@ -323,28 +300,27 @@
             
             console.log('Menu elements:', { button: !!mobileMenuButton, menu: !!mobileMenu });
             
-            // Initialize menu state
-            function initMenu() {
-                if (mobileMenu) {
-                    mobileMenu.classList.remove('mobile-menu-visible');
-                    mobileMenu.classList.add('mobile-menu-hidden');
-                    isMenuOpen = false;
-                    console.log('Menu initialized as closed');
-                }
-            }
-            
-            // Initialize immediately
-            initMenu();
-            
             function openMenu() {
                 if (!mobileMenu || isMenuOpen) return;
                 
                 console.log('Opening menu');
                 isMenuOpen = true;
                 
+                // Create overlay
+                if (!menuOverlay) {
+                    menuOverlay = document.createElement('div');
+                    menuOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none;';
+                    document.body.appendChild(menuOverlay);
+                    
+                    menuOverlay.addEventListener('click', closeMenu);
+                }
+                
+                // Show overlay and prevent body scroll
+                menuOverlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+                
                 // Animate menu in
-                mobileMenu.classList.remove('mobile-menu-hidden');
-                mobileMenu.classList.add('mobile-menu-visible');
+                mobileMenu.style.right = '0px';
                 
                 // Change icon to X
                 const icon = mobileMenuButton?.querySelector('i');
@@ -352,18 +328,23 @@
             }
             
             function closeMenu() {
-                if (!mobileMenu) return;
+                if (!mobileMenu || !isMenuOpen) return;
                 
                 console.log('Closing menu');
                 isMenuOpen = false;
                 
                 // Animate menu out
-                mobileMenu.classList.remove('mobile-menu-visible');
-                mobileMenu.classList.add('mobile-menu-hidden');
+                mobileMenu.style.right = '-320px';
                 
                 // Change icon back to hamburger
                 const icon = mobileMenuButton?.querySelector('i');
                 if (icon) icon.className = 'fas fa-bars';
+                
+                // Hide overlay and restore body scroll after animation
+                setTimeout(() => {
+                    if (menuOverlay) menuOverlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }, 300);
             }
             
             // Button click handler
@@ -389,16 +370,6 @@
                         console.log('Menu link clicked:', this.href);
                         closeMenu();
                     });
-                });
-            }
-            
-            // Close button handler
-            const closeMenuButton = document.getElementById('close-menu-button');
-            if (closeMenuButton) {
-                closeMenuButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeMenu();
                 });
             }
             
