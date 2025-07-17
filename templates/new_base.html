@@ -329,7 +329,6 @@
                     mobileMenu.classList.remove('mobile-menu-visible');
                     mobileMenu.classList.add('mobile-menu-hidden');
                     isMenuOpen = false;
-                    document.body.style.overflow = '';
                     console.log('Menu initialized as closed');
                 }
             }
@@ -342,19 +341,6 @@
                 
                 console.log('Opening menu');
                 isMenuOpen = true;
-                
-                // Create overlay
-                if (!menuOverlay) {
-                    menuOverlay = document.createElement('div');
-                    menuOverlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none;';
-                    document.body.appendChild(menuOverlay);
-                    
-                    menuOverlay.addEventListener('click', closeMenu);
-                }
-                
-                // Show overlay and prevent body scroll
-                menuOverlay.style.display = 'block';
-                document.body.style.overflow = 'hidden';
                 
                 // Animate menu in
                 mobileMenu.classList.remove('mobile-menu-hidden');
@@ -378,12 +364,6 @@
                 // Change icon back to hamburger
                 const icon = mobileMenuButton?.querySelector('i');
                 if (icon) icon.className = 'fas fa-bars';
-                
-                // Hide overlay and restore body scroll immediately
-                if (menuOverlay) {
-                    menuOverlay.style.display = 'none';
-                }
-                document.body.style.overflow = '';
             }
             
             // Button click handler
