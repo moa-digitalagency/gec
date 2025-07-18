@@ -23,10 +23,11 @@ GEC Mines is a comprehensive electronic mail management system developed for the
 - **Advanced Search**: Multiple filters and text search
 
 ### 📊 Reports and Exports
-- **Individual PDF Export**: Formatted receipt acknowledgment
-- **List Exports**: PDF reports with applied filters
+- **Individual PDF Export**: Formatted receipt acknowledgment with logos
+- **List Exports**: PDF reports with applied filters and custom headers
+- **PDF Logos**: Automatic integration with aspect ratio preservation
 - **Printing**: Direct print functionality
-- **Backup/Restore**: Complete backup system
+- **Backup/Restore**: Complete backup system with ZIP archives
 
 ### 🌍 Multilingual System
 - **Supported Languages**: French (default) and English
@@ -40,6 +41,7 @@ GEC Mines is a comprehensive electronic mail management system developed for the
   - `read_own_mail`: Access to personal mail (User)
 - **Activity Logging**: Complete activity logs
 - **Encryption**: Protected copyright and sensitive data
+- **Secure Authentication**: Default credentials removed for production security
 
 ## Technologies Used
 

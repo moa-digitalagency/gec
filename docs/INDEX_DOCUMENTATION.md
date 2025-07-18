@@ -23,6 +23,10 @@ Cette documentation complète couvre tous les aspects de l'installation, la conf
 - **[INSTALL_VPS_FR.md](./INSTALL_VPS_FR.md)** - Guide complet VPS/serveur dédié (français)
 - **[INSTALL_VPS_EN.md](./INSTALL_VPS_EN.md)** - Complete VPS/dedicated server guide (English)
 
+### Installation sur PythonAnywhere ⭐ **NOUVEAU**
+- **[INSTALL_PYTHONANYWHERE_FR.md](./INSTALL_PYTHONANYWHERE_FR.md)** - Guide complet PythonAnywhere (français)
+- **[INSTALL_PYTHONANYWHERE_EN.md](./INSTALL_PYTHONANYWHERE_EN.md)** - Complete PythonAnywhere guide (English)
+
 ### Configuration Base de Données
 - **[DATABASE_SETUP_FR.md](./DATABASE_SETUP_FR.md)** - Scripts SQL et procédures (français)
 - **[DATABASE_SETUP_EN.md](./DATABASE_SETUP_EN.md)** - SQL scripts and procedures (English)
@@ -44,6 +48,10 @@ Cette documentation complète couvre tous les aspects de l'installation, la conf
 - ✅ **Documentation complète** : Guides multilingues complets
 - ✅ **Scripts d'initialisation** : Automatisation de l'installation
 - ✅ **Export PDF amélioré** : Inclusion des dates de rédaction
+- ✅ **Logos PDF optimisés** : Préservation automatique des proportions d'image ⭐ **NOUVEAU**
+- ✅ **Route Flask uploads** : Service sécurisé des fichiers uploadés ⭐ **NOUVEAU**
+- ✅ **Sécurité renforcée** : Suppression des identifiants par défaut ⭐ **NOUVEAU**
+- ✅ **Guide PythonAnywhere** : Documentation déploiement cloud ⭐ **NOUVEAU**
 
 ### Version 2.0.0 (Juillet 2025)
 - ✅ **Système de sauvegarde/restauration** complet
@@ -92,6 +100,7 @@ Tables principales :
 - **Développement** : SQLite + Flask dev server
 - **Production cPanel** : PostgreSQL/MySQL + Apache/LiteSpeed
 - **Production VPS** : PostgreSQL + Nginx + Gunicorn
+- **Production PythonAnywhere** : PostgreSQL/MySQL + WSGI ⭐ **NOUVEAU**
 
 ### Checklist de Déploiement
 - [ ] Base de données configurée

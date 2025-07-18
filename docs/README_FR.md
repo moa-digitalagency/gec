@@ -23,10 +23,11 @@ GEC Mines est un système complet de gestion électronique du courrier développ
 - **Recherche avancée** : Filtres multiples et recherche textuelle
 
 ### 📊 Rapports et Exports
-- **Export PDF individuel** : Accusé de réception formaté
-- **Export de listes** : Rapports PDF avec filtres appliqués
+- **Export PDF individuel** : Accusé de réception formaté avec logos
+- **Export de listes** : Rapports PDF avec filtres appliqués et en-têtes personnalisés
+- **Logos PDF** : Intégration automatique avec préservation des proportions
 - **Impression** : Fonction d'impression directe
-- **Sauvegarde/Restauration** : Système complet de backup
+- **Sauvegarde/Restauration** : Système complet de backup avec archives ZIP
 
 ### 🌍 Système Multilingue
 - **Langues supportées** : Français (par défaut) et Anglais
@@ -40,6 +41,7 @@ GEC Mines est un système complet de gestion électronique du courrier développ
   - `read_own_mail` : Accès aux courriers personnels (Utilisateur)
 - **Journalisation** : Logs d'activité complets
 - **Chiffrement** : Copyright et données sensibles protégés
+- **Authentification sécurisée** : Suppression des identifiants par défaut en production
 
 ## Technologies Utilisées
 
