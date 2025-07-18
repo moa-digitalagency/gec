@@ -246,3 +246,12 @@ The application is designed for easy deployment on cloud platforms with minimal 
 ✓ Logo preview functionality restored in system parameters page
 ✓ Removed default admin credentials display from login page for security
 ✓ Complete logo system: upload → preview → PDF export workflow functional
+
+### System Reset and Documentation Simplification (July 18, 2025)
+✓ Complete database cleanup: all test data and logs removed for fresh start
+✓ File system cleanup: uploads, exports, backups directories cleared
+✓ Simplified PythonAnywhere deployment guides (FR/EN) for 30-minute setup
+✓ Streamlined installation process from 11 steps to 9 simple steps
+✓ Removed complex configurations and maintenance sections for clarity
+✓ Focus on essential setup: account → files → dependencies → database → deploy
+✓ Application ready for clean deployment with default admin credentials
