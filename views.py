@@ -18,6 +18,15 @@ from utils import allowed_file, generate_accuse_reception, log_activity, export_
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 
+@app.context_processor
+def inject_system_context():
+    """Inject system parameters and utility functions into all templates"""
+    return dict(
+        get_system_params=lambda: ParametresSysteme.get_parametres(),
+        get_current_language=get_current_language,
+        get_available_languages=get_available_languages
+    )
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:

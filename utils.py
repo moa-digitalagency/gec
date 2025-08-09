@@ -475,7 +475,20 @@ def export_courrier_pdf(courrier):
     titre_pdf = parametres.titre_pdf or "Ministère des Mines"
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
-    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}<br/>République Démocratique du Congo", title_style)
+    # En-tête pays - PREMIER ÉLÉMENT
+    pays_style = ParagraphStyle(
+        'PaysStyle',
+        parent=styles['Normal'],
+        fontSize=16,
+        fontName='Helvetica-Bold',
+        alignment=1,  # Center
+        spaceAfter=10,
+        textColor=colors.darkblue
+    )
+    pays_text = parametres.pays_pdf or "République Démocratique du Congo"
+    story.append(Paragraph(pays_text, pays_style))
+    
+    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)
     story.append(title)
     story.append(Spacer(1, 20))
     
