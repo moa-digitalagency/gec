@@ -142,6 +142,131 @@ def generate_accuse_reception():
     
     return numero
 
+def generate_format_preview(format_string):
+    """Générer un aperçu du format de numéro d'accusé"""
+    import re
+    from datetime import datetime
+    
+    if not format_string:
+        format_string = "GEC-{year}-{counter:05d}"
+    
+    now = datetime.now()
+    preview = format_string
+    
+    # Remplacer les variables de base
+    preview = preview.replace('{year}', str(now.year))
+    preview = preview.replace('{month}', f"{now.month:02d}")
+    preview = preview.replace('{day}', f"{now.day:02d}")
+    
+    # Traiter les compteurs avec format
+    counter_pattern = r'\{counter:(\d+)d\}'
+    matches = re.findall(counter_pattern, preview)
+    for match in matches:
+        width = int(match)
+        formatted_counter = f"{1:0{width}d}"  # Exemple avec 1
+        preview = re.sub(r'\{counter:\d+d\}', formatted_counter, preview, count=1)
+    
+    # Compteur simple
+    preview = preview.replace('{counter}', '1')
+    
+    # Nombre aléatoire (exemple fixe pour la prévisualisation)
+    random_pattern = r'\{random:(\d+)\}'
+    matches = re.findall(random_pattern, preview)
+    for match in matches:
+        width = int(match)
+        example_random = '1' * width  # Exemple avec des 1
+        preview = re.sub(r'\{random:\d+\}', example_random, preview, count=1)
+    
+    return preview
+
+def get_backup_files():
+    """Obtenir la liste des fichiers de sauvegarde disponibles"""
+    backup_dir = 'backups'
+    if not os.path.exists(backup_dir):
+        return []
+    
+    backup_files = []
+    for filename in os.listdir(backup_dir):
+        if filename.endswith('.zip'):
+            file_path = os.path.join(backup_dir, filename)
+            file_stat = os.stat(file_path)
+            backup_files.append({
+                'filename': filename,
+                'size': file_stat.st_size,
+                'date': datetime.fromtimestamp(file_stat.st_mtime)
+            })
+    
+    # Trier par date décroissante
+    backup_files.sort(key=lambda x: x['date'], reverse=True)
+    return backup_files
+
+def create_system_backup():
+    """Créer une sauvegarde complète du système"""
+    import zipfile
+    from datetime import datetime
+    
+    # Créer le dossier de sauvegarde s'il n'existe pas
+    backup_dir = 'backups'
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    # Nom du fichier de sauvegarde avec timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_filename = f"backup_gec_{timestamp}.zip"
+    backup_path = os.path.join(backup_dir, backup_filename)
+    
+    with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Sauvegarder la base de données SQLite (si applicable)
+        if os.path.exists('instance/database.db'):
+            zipf.write('instance/database.db', 'database.db')
+        
+        # Sauvegarder les fichiers uploadés
+        if os.path.exists('uploads'):
+            for root, dirs, files in os.walk('uploads'):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
+        
+        # Sauvegarder les fichiers de configuration
+        config_files = ['app.py', 'models.py', 'utils.py', 'views.py']
+        for config_file in config_files:
+            if os.path.exists(config_file):
+                zipf.write(config_file)
+    
+    return backup_filename
+
+def restore_system_from_backup(backup_file):
+    """Restaurer le système depuis un fichier de sauvegarde"""
+    import zipfile
+    import tempfile
+    
+    # Créer un dossier temporaire pour extraire la sauvegarde
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Sauvegarder le fichier uploadé
+        backup_path = os.path.join(temp_dir, 'backup.zip')
+        backup_file.save(backup_path)
+        
+        # Extraire la sauvegarde
+        with zipfile.ZipFile(backup_path, 'r') as zipf:
+            zipf.extractall(temp_dir)
+        
+        # Restaurer la base de données
+        db_backup_path = os.path.join(temp_dir, 'database.db')
+        if os.path.exists(db_backup_path):
+            os.makedirs('instance', exist_ok=True)
+            import shutil
+            shutil.copy2(db_backup_path, 'instance/database.db')
+        
+        # Restaurer les fichiers uploadés
+        uploads_backup_path = os.path.join(temp_dir, 'uploads')
+        if os.path.exists(uploads_backup_path):
+            if os.path.exists('uploads'):
+                import shutil
+                shutil.rmtree('uploads')
+            shutil.copytree(uploads_backup_path, 'uploads')
+    
+    return True
+
 def log_activity(user_id, action, description, courrier_id=None):
     """Enregistrer une activité dans les logs"""
     try:

@@ -487,76 +487,79 @@ def download_file(id):
 @login_required
 @rate_limit(max_requests=20, per_minutes=15)
 def settings():
-    parametres = ParametresSysteme.get_parametres()
-    
-    if request.method == 'POST':
-        # Mise à jour des paramètres
-        parametres.nom_logiciel = request.form['nom_logiciel']
-        parametres.format_numero_accuse = request.form['format_numero_accuse']
-        parametres.telephone = request.form.get('telephone', '').strip() or None
-        parametres.email_contact = request.form.get('email_contact', '').strip() or None
-        parametres.adresse_organisme = request.form.get('adresse_organisme', '').strip() or None
+    with PerformanceMonitor("settings_page"):
+        parametres = ParametresSysteme.get_parametres()
         
-        # Paramètres footer et PDF
-        parametres.texte_footer = request.form.get('texte_footer', '').strip() or "Système de Gestion Électronique du Courrier"
-        parametres.titre_pdf = request.form.get('titre_pdf', '').strip() or "Ministère des Mines"
-        parametres.sous_titre_pdf = request.form.get('sous_titre_pdf', '').strip() or "Secrétariat Général"
+        if request.method == 'POST':
+            # Sanitize and update parameters
+            parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
+            parametres.format_numero_accuse = sanitize_input(request.form['format_numero_accuse'].strip())
+            parametres.telephone = sanitize_input(request.form.get('telephone', '').strip()) or None
+            parametres.email_contact = sanitize_input(request.form.get('email_contact', '').strip()) or None
+            parametres.adresse_organisme = sanitize_input(request.form.get('adresse_organisme', '').strip()) or None
+            
+            # Sanitize PDF parameters
+            parametres.texte_footer = sanitize_input(request.form.get('texte_footer', '').strip()) or "Système de Gestion Électronique du Courrier"
+            parametres.titre_pdf = sanitize_input(request.form.get('titre_pdf', '').strip()) or "Ministère des Mines"
+            parametres.sous_titre_pdf = sanitize_input(request.form.get('sous_titre_pdf', '').strip()) or "Secrétariat Général"
+            
+            parametres.modifie_par_id = current_user.id
+            
+            # Gestion du logo principal
+            if 'logo' in request.files:
+                logo = request.files['logo']
+                if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
+                    filename = secure_filename(logo.filename)
+                    # Créer un nom unique pour le logo
+                    logo_filename = f"logo_{uuid.uuid4().hex[:8]}_{filename}"
+                    logo_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_filename)
+                    
+                    try:
+                        logo.save(logo_path)
+                        parametres.logo_url = f'/uploads/{logo_filename}'
+                        flash('Logo téléchargé avec succès!', 'success')
+                    except Exception as e:
+                        flash(f'Erreur lors du téléchargement du logo: {str(e)}', 'error')
+            
+            # Gestion du logo PDF
+            if 'logo_pdf' in request.files:
+                logo_pdf = request.files['logo_pdf']
+                if logo_pdf and logo_pdf.filename and logo_pdf.filename != '' and allowed_file(logo_pdf.filename):
+                    filename = secure_filename(logo_pdf.filename)
+                    # Créer un nom unique pour le logo PDF
+                    logo_pdf_filename = f"logo_pdf_{uuid.uuid4().hex[:8]}_{filename}"
+                    logo_pdf_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_pdf_filename)
+                    
+                    try:
+                        logo_pdf.save(logo_pdf_path)
+                        parametres.logo_pdf = f'/uploads/{logo_pdf_filename}'
+                        flash('Logo PDF téléchargé avec succès!', 'success')
+                    except Exception as e:
+                        flash(f'Erreur lors du téléchargement du logo PDF: {str(e)}', 'error')
         
-        parametres.modifie_par_id = current_user.id
+            try:
+                db.session.commit()
+                log_activity(current_user.id, "MODIFICATION_PARAMETRES", 
+                            f"Mise à jour des paramètres système par {current_user.username}")
+                log_security_event("SETTINGS_UPDATE", f"System settings updated by {current_user.username}")
+                flash('Paramètres sauvegardés avec succès!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
+                log_security_event("SETTINGS_ERROR", f"Failed to save settings: {str(e)}")
+            
+            return redirect(url_for('settings'))
         
-        # Gestion du logo principal
-        if 'logo' in request.files:
-            logo = request.files['logo']
-            if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
-                filename = secure_filename(logo.filename)
-                # Créer un nom unique pour le logo
-                logo_filename = f"logo_{uuid.uuid4().hex[:8]}_{filename}"
-                logo_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_filename)
-                
-                try:
-                    logo.save(logo_path)
-                    parametres.logo_url = f'/uploads/{logo_filename}'
-                    flash('Logo téléchargé avec succès!', 'success')
-                except Exception as e:
-                    flash(f'Erreur lors du téléchargement du logo: {str(e)}', 'error')
+        # Generate format preview with caching
+        format_preview = generate_format_preview(parametres.format_numero_accuse)
         
-        # Gestion du logo PDF
-        if 'logo_pdf' in request.files:
-            logo_pdf = request.files['logo_pdf']
-            if logo_pdf and logo_pdf.filename and logo_pdf.filename != '' and allowed_file(logo_pdf.filename):
-                filename = secure_filename(logo_pdf.filename)
-                # Créer un nom unique pour le logo PDF
-                logo_pdf_filename = f"logo_pdf_{uuid.uuid4().hex[:8]}_{filename}"
-                logo_pdf_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_pdf_filename)
-                
-                try:
-                    logo_pdf.save(logo_pdf_path)
-                    parametres.logo_pdf = f'/uploads/{logo_pdf_filename}'
-                    flash('Logo PDF téléchargé avec succès!', 'success')
-                except Exception as e:
-                    flash(f'Erreur lors du téléchargement du logo PDF: {str(e)}', 'error')
+        # Get backup files (only for super admins)
+        backup_files = get_backup_files() if current_user.is_super_admin() else []
         
-        try:
-            db.session.commit()
-            log_activity(current_user.id, "MODIFICATION_PARAMETRES", 
-                        f"Mise à jour des paramètres système par {current_user.username}")
-            flash('Paramètres sauvegardés avec succès!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
-        
-        return redirect(url_for('settings'))
-    
-    # Générer un aperçu du format
-    format_preview = generate_format_preview(parametres.format_numero_accuse)
-    
-    # Obtenir la liste des sauvegardes disponibles
-    backup_files = get_backup_files()
-    
-    return render_template('settings.html', 
-                          parametres=parametres,
-                          format_preview=format_preview,
-                          backup_files=backup_files)
+        return render_template('settings.html', 
+                              parametres=parametres,
+                              format_preview=format_preview,
+                              backup_files=backup_files)
 
 @app.route('/backup_system', methods=['POST'])
 @login_required

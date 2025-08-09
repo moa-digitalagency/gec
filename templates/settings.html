@@ -468,67 +468,353 @@
 
 {% block scripts %}
 <script>
-// Preview format updates
-document.getElementById('format_numero_accuse').addEventListener('input', function() {
-    updateFormatPreview(this.value);
-});
-
-function updateFormatPreview(format) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const counter = 1;
-    const random = Math.floor(Math.random() * 9000) + 1000;
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced format preview with comprehensive pattern support
+    const formatInput = document.getElementById('format_numero_accuse');
+    const previewElement = document.getElementById('preview-format');
     
-    let preview = format
-        .replace('{year}', year)
-        .replace('{month}', month)
-        .replace('{day}', day)
-        .replace('{counter:05d}', String(counter).padStart(5, '0'))
-        .replace('{counter}', counter)
-        .replace('{random:4}', random);
+    function updateFormatPreview(format) {
+        if (!format) format = 'GEC-{year}-{counter:05d}';
+        
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        let preview = format;
+        
+        // Replace basic date variables
+        preview = preview.replace(/{year}/g, year);
+        preview = preview.replace(/{month}/g, month);
+        preview = preview.replace(/{day}/g, day);
+        
+        // Handle counter patterns with formatting {counter:05d}
+        preview = preview.replace(/{counter:(\d+)d}/g, function(match, digits) {
+            return String(1).padStart(parseInt(digits), '0');
+        });
+        
+        // Handle simple counter
+        preview = preview.replace(/{counter}/g, '1');
+        
+        // Handle random patterns {random:4}
+        preview = preview.replace(/{random:(\d+)}/g, function(match, digits) {
+            return '1'.repeat(parseInt(digits));
+        });
+        
+        previewElement.textContent = preview;
+        
+        // Visual feedback for valid/invalid format
+        if (preview.includes('{') && preview.includes('}')) {
+            previewElement.className = 'font-mono bg-red-100 text-red-700 px-2 py-1 rounded';
+            previewElement.title = 'Format invalide - variables non reconnues détectées';
+        } else {
+            previewElement.className = 'font-mono bg-gray-100 px-2 py-1 rounded';
+            previewElement.title = 'Aperçu du format';
+        }
+    }
     
-    document.getElementById('preview-format').textContent = preview;
-}
-
-// File upload preview
-document.getElementById('logo').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        // Check file size
-        if (file.size > 2 * 1024 * 1024) {
-            alert('Erreur: Le fichier est trop volumineux (max 2MB)');
-            e.target.value = '';
-            return;
+    formatInput.addEventListener('input', function() {
+        updateFormatPreview(this.value);
+    });
+    
+    // Enhanced file upload with preview for main logo
+    function setupFileUpload(inputId, previewContainerSelector, isMainLogo = true) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                showNotification('Erreur: Type de fichier non autorisé. Utilisez PNG, JPG, JPEG ou SVG.', 'error');
+                e.target.value = '';
+                return;
+            }
+            
+            // Validate file size (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showNotification('Erreur: Le fichier est trop volumineux (maximum 2MB)', 'error');
+                e.target.value = '';
+                return;
+            }
+            
+            // Show upload progress
+            const progressBar = createProgressBar();
+            const container = document.querySelector(previewContainerSelector);
+            
+            // Read file and show preview
+            const reader = new FileReader();
+            reader.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentLoaded = Math.round((e.loaded / e.total) * 100);
+                    updateProgressBar(progressBar, percentLoaded);
+                }
+            };
+            
+            reader.onload = function(e) {
+                setTimeout(() => {
+                    removeProgressBar(progressBar);
+                    
+                    if (isMainLogo) {
+                        container.innerHTML = `
+                            <div class="mb-4">
+                                <img src="${e.target.result}" alt="Aperçu du logo" class="h-16 w-auto mx-auto rounded shadow-sm">
+                                <p class="text-sm text-gray-500 mt-2">Nouveau logo (aperçu)</p>
+                            </div>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="${inputId}" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
+                                    <span>Changer le fichier</span>
+                                    <input id="${inputId}" name="${inputId}" type="file" class="sr-only" accept=".png,.jpg,.jpeg,.svg">
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500">PNG, JPG, JPEG, SVG jusqu'à 2MB</p>
+                        `;
+                    } else {
+                        // For PDF logo
+                        const imgContainer = container.querySelector('.mb-4') || document.createElement('div');
+                        imgContainer.className = 'mb-4';
+                        imgContainer.innerHTML = `<img src="${e.target.result}" alt="Logo PDF" class="mx-auto h-16 object-contain rounded shadow-sm">`;
+                        if (!container.querySelector('.mb-4')) {
+                            container.insertBefore(imgContainer, container.firstChild);
+                        }
+                    }
+                    
+                    // Re-attach event listener
+                    const newInput = document.getElementById(inputId);
+                    if (newInput) {
+                        newInput.addEventListener('change', handleFileSelect);
+                    }
+                    
+                    showNotification('Image chargée avec succès!', 'success');
+                }, 500);
+            };
+            
+            reader.onerror = function() {
+                removeProgressBar(progressBar);
+                showNotification('Erreur lors du chargement du fichier', 'error');
+                e.target.value = '';
+            };
+            
+            reader.readAsDataURL(file);
         }
         
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.querySelector('.space-y-1.text-center');
-            preview.innerHTML = `
-                <div class="mb-4">
-                    <img src="${e.target.result}" alt="Aperçu du logo" class="h-16 w-auto mx-auto">
-                    <p class="text-sm text-gray-500 mt-2">Nouveau logo (aperçu)</p>
-                </div>
-                <div class="flex text-sm text-gray-600">
-                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
-                        <span>Changer le fichier</span>
-                        <input id="logo" name="logo" type="file" class="sr-only" accept=".png,.jpg,.jpeg,.svg">
-                    </label>
-                </div>
-                <p class="text-xs text-gray-500">PNG, JPG, JPEG, SVG jusqu'à 2MB</p>
-            `;
+        input.addEventListener('change', handleFileSelect);
+        
+        // Add drag and drop functionality
+        const dropZone = input.closest('.border-dashed') || input.closest('.border');
+        if (dropZone) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
             
-            // Re-attach event listener to new input
-            document.getElementById('logo').addEventListener('change', arguments.callee);
-        };
-        reader.readAsDataURL(file);
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            function highlight(e) {
+                dropZone.classList.add('border-rdc-blue', 'bg-blue-50');
+            }
+            
+            function unhighlight(e) {
+                dropZone.classList.remove('border-rdc-blue', 'bg-blue-50');
+            }
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    input.files = files;
+                    handleFileSelect({ target: input });
+                }
+            }
+        }
     }
+    
+    // Setup file uploads
+    setupFileUpload('logo', '.space-y-1.text-center', true);
+    setupFileUpload('logo_pdf', '.border-dashed', false);
+    
+    // Form validation and feedback
+    function setupFormValidation() {
+        const form = document.querySelector('form');
+        const inputs = form.querySelectorAll('input[required], textarea[required]');
+        
+        inputs.forEach(input => {
+            input.addEventListener('blur', validateField);
+            input.addEventListener('input', function() {
+                if (this.classList.contains('border-red-300')) {
+                    validateField.call(this);
+                }
+            });
+        });
+        
+        function validateField() {
+            const field = this;
+            const value = field.value.trim();
+            
+            // Remove existing error styling
+            field.classList.remove('border-red-300', 'border-green-300');
+            
+            // Remove existing feedback
+            const existingFeedback = field.parentNode.querySelector('.validation-feedback');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+            
+            let isValid = true;
+            let message = '';
+            
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                message = 'Ce champ est obligatoire';
+            } else if (field.type === 'email' && value && !isValidEmail(value)) {
+                isValid = false;
+                message = 'Format d\'email invalide';
+            } else if (field.type === 'tel' && value && !isValidPhone(value)) {
+                isValid = false;
+                message = 'Format de téléphone invalide';
+            }
+            
+            // Apply styling and feedback
+            if (!isValid) {
+                field.classList.add('border-red-300');
+                showFieldFeedback(field, message, 'error');
+            } else if (value) {
+                field.classList.add('border-green-300');
+            }
+            
+            return isValid;
+        }
+        
+        // Form submission handling
+        form.addEventListener('submit', function(e) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Validate all fields
+            let isFormValid = true;
+            inputs.forEach(input => {
+                if (!validateField.call(input)) {
+                    isFormValid = false;
+                }
+            });
+            
+            if (!isFormValid) {
+                e.preventDefault();
+                showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+                return;
+            }
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+        });
+    }
+    
+    // Utility functions
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    function isValidPhone(phone) {
+        const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
+        return phoneRegex.test(phone);
+    }
+    
+    function showFieldFeedback(field, message, type) {
+        const feedback = document.createElement('p');
+        feedback.className = `validation-feedback mt-1 text-sm ${type === 'error' ? 'text-red-600' : 'text-green-600'}`;
+        feedback.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} mr-1"></i>${message}`;
+        field.parentNode.appendChild(feedback);
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                <span>${message}</span>
+                <button class="ml-2 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    function createProgressBar() {
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-lg shadow-lg p-4 min-w-64';
+        progressContainer.innerHTML = `
+            <div class="flex items-center mb-2">
+                <i class="fas fa-cloud-upload-alt text-rdc-blue mr-2"></i>
+                <span class="text-sm font-medium">Chargement de l'image...</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-rdc-blue h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        `;
+        
+        document.body.appendChild(progressContainer);
+        return progressContainer;
+    }
+    
+    function updateProgressBar(progressContainer, percentage) {
+        const progressBar = progressContainer.querySelector('.bg-rdc-blue');
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+        }
+    }
+    
+    function removeProgressBar(progressContainer) {
+        if (progressContainer && progressContainer.parentNode) {
+            progressContainer.remove();
+        }
+    }
+    
+    // Initialize all functionality
+    updateFormatPreview(formatInput.value);
+    setupFormValidation();
+    
+    // Auto-save draft functionality (optional)
+    let autoSaveTimeout;
+    const formInputs = document.querySelectorAll('input, textarea');
+    
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                // Auto-save draft logic can be implemented here
+                console.log('Auto-saving draft...');
+            }, 2000);
+        });
+    });
 });
-
-// Initialize format preview
-updateFormatPreview(document.getElementById('format_numero_accuse').value);
 </script>
 {% endblock %}
