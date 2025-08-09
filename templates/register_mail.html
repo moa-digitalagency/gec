@@ -166,26 +166,25 @@
                             Pièce Jointe
                         </label>
                         
-                        <!-- Options de téléchargement -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <!-- Upload Fichier -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-sm font-medium text-gray-700">Télécharger fichier</p>
-                                <p class="text-xs text-gray-500">PDF, JPG, PNG, TIFF</p>
-                                <input id="fichier" 
-                                       name="fichier" 
-                                       type="file" 
-                                       class="hidden" 
-                                       accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
-                            </div>
-                            
-                            <!-- Capture Webcam Direct -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-green transition-colors cursor-pointer" onclick="openWebcamWindow()">
-                                <i class="fas fa-video text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-sm font-medium text-gray-700">Capture Webcam</p>
-                                <p class="text-xs text-gray-500">Photo en direct</p>
-                            </div>
+                        <!-- Option unique de téléchargement -->
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-700">Télécharger un fichier</p>
+                            <p class="text-xs text-gray-500">PDF, JPG, PNG, TIFF</p>
+                            <p class="text-xs text-gray-400 mt-2">Cliquez ou glissez-déposez</p>
+                            <input id="fichier" 
+                                   name="fichier" 
+                                   type="file" 
+                                   class="hidden" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
+                        </div>
+                        
+                        <!-- Test Camera Button -->
+                        <div class="mt-4">
+                            <a href="/camera_test" target="_blank" class="block w-full px-4 py-3 bg-rdc-yellow text-white text-center rounded-lg hover:bg-opacity-90">
+                                <i class="fas fa-wrench mr-2"></i>
+                                Tester les options de caméra
+                            </a>
                         </div>
                         
                         <!-- Zone de prévisualisation -->
@@ -599,38 +598,7 @@ function toggleContactField() {
     }
 }
 
-// Fonction pour ouvrir la fenêtre de capture webcam
-function openWebcamWindow() {
-    // Ouvrir dans une nouvelle fenêtre pour éviter les restrictions
-    const webcamWindow = window.open('/webcam_capture', 'WebcamCapture', 'width=900,height=700');
-    
-    // Fonction pour recevoir la photo depuis la fenêtre webcam
-    window.receiveWebcamPhoto = function(filename) {
-        // Créer un fichier fictif pour l'affichage
-        const preview = document.getElementById('file-preview');
-        const previewContent = document.getElementById('preview-content');
-        const fileInfo = document.getElementById('file-info');
-        
-        // Mettre à jour l'affichage
-        fileInfo.textContent = `${filename} - Photo webcam`;
-        previewContent.innerHTML = `
-            <div class="flex items-center justify-center h-32 bg-green-50 rounded-lg">
-                <div class="text-center">
-                    <i class="fas fa-camera text-4xl text-green-500 mb-2"></i>
-                    <p class="text-sm text-green-700">Photo capturée avec succès</p>
-                </div>
-            </div>
-        `;
-        preview.classList.remove('hidden');
-        
-        // Mettre à jour le champ caché si nécessaire
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'webcam_photo';
-        hiddenInput.value = filename;
-        document.getElementById('mail-form').appendChild(hiddenInput);
-    };
-}
+
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {

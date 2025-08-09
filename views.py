@@ -105,42 +105,10 @@ def logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
 
-@app.route('/webcam_capture')
-def webcam_capture():
-    """Page de capture webcam en direct"""
-    return render_template('webcam_capture.html')
-
-@app.route('/save_webcam_capture', methods=['POST'])
-def save_webcam_capture():
-    """Sauvegarder une capture webcam"""
-    try:
-        if 'photo' not in request.files:
-            return {'success': False, 'error': 'Aucune photo reçue'}, 400
-        
-        photo = request.files['photo']
-        
-        if photo:
-            # Générer un nom unique
-            filename = f"webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
-            filepath = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), filename)
-            
-            # Créer le dossier si nécessaire
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            
-            # Sauvegarder le fichier
-            photo.save(filepath)
-            
-            return {'success': True, 'filename': filename}
-        
-        return {'success': False, 'error': 'Photo invalide'}, 400
-        
-    except Exception as e:
-        return {'success': False, 'error': str(e)}, 500
-
-@app.route('/simple_photo_capture')
-def simple_photo_capture():
-    """Page simple de capture photo compatible tous navigateurs"""
-    return render_template('simple_photo_capture.html')
+@app.route('/camera_test')
+def camera_test():
+    """Test simple pour vérifier l'accès caméra"""
+    return render_template('camera_test.html')
 
 @app.route('/dashboard')
 @login_required

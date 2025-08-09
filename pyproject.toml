@@ -16,4 +16,6 @@ dependencies = [
     "pycryptodome>=3.23.0",
     "cryptography>=45.0.6",
     "bcrypt>=4.3.0",
+    "opencv-python>=4.12.0.88",
+    "crypto>=1.4.1",
 ]
