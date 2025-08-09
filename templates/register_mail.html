@@ -167,10 +167,10 @@
                         </label>
                         
                         <!-- Options de téléchargement -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <!-- Upload Fichier -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
-                                <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
                                 <p class="text-sm font-medium text-gray-700">Télécharger fichier</p>
                                 <p class="text-xs text-gray-500">PDF, JPG, PNG</p>
                                 <input id="fichier" 
@@ -181,17 +181,10 @@
                             </div>
                             
                             <!-- Capture Webcam -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-green transition-colors cursor-pointer" id="webcam-capture-btn">
-                                <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-green transition-colors cursor-pointer" id="webcam-capture-btn">
+                                <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
                                 <p class="text-sm font-medium text-gray-700">Capture webcam</p>
                                 <p class="text-xs text-gray-500">Prendre une photo</p>
-                            </div>
-                            
-                            <!-- Rogner Image -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-yellow transition-colors cursor-pointer opacity-50" id="crop-image-btn" title="Sélectionnez d'abord une image">
-                                <i class="fas fa-crop-alt text-2xl text-gray-400 mb-2"></i>
-                                <p class="text-sm font-medium text-gray-700">Rogner image</p>
-                                <p class="text-xs text-gray-500">Modifier l'image</p>
                             </div>
                         </div>
                         
@@ -200,9 +193,14 @@
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <div class="flex items-center justify-between mb-3">
                                     <h4 class="text-sm font-medium text-gray-900">Fichier sélectionné</h4>
-                                    <button type="button" id="remove-file" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                    <div class="flex items-center space-x-2">
+                                        <button type="button" id="crop-image-btn" class="px-3 py-1 text-xs bg-rdc-yellow text-white rounded-md hover:bg-opacity-90 hidden">
+                                            <i class="fas fa-crop-alt mr-1"></i>Rogner
+                                        </button>
+                                        <button type="button" id="remove-file" class="text-red-600 hover:text-red-800">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div id="preview-content" class="mb-3">
                                     <!-- Le contenu de prévisualisation sera inséré ici -->
@@ -417,7 +415,7 @@ class AdvancedFileHandler {
             this.openWebcamModal();
         });
 
-        // Bouton rogner
+        // Bouton rogner (dans la zone de prévisualisation)
         document.getElementById('crop-image-btn').addEventListener('click', () => {
             if (currentFile && currentFile.type.startsWith('image/')) {
                 this.openCropModal();
@@ -455,22 +453,13 @@ class AdvancedFileHandler {
 
         currentFile = file;
         this.showFilePreview(file);
-        
-        // Activer le bouton de rognage pour les images
-        const cropBtn = document.getElementById('crop-image-btn');
-        if (file.type.startsWith('image/')) {
-            cropBtn.classList.remove('opacity-50');
-            cropBtn.title = 'Cliquer pour rogner l\'image';
-        } else {
-            cropBtn.classList.add('opacity-50');
-            cropBtn.title = 'Sélectionnez d\'abord une image';
-        }
     }
 
     showFilePreview(file) {
         const preview = document.getElementById('file-preview');
         const previewContent = document.getElementById('preview-content');
         const fileInfo = document.getElementById('file-info');
+        const cropBtn = document.getElementById('crop-image-btn');
         
         // Mise à jour des informations
         fileInfo.textContent = `${file.name} - ${this.formatFileSize(file.size)}`;
@@ -484,12 +473,18 @@ class AdvancedFileHandler {
                 `;
             };
             reader.readAsDataURL(file);
+            
+            // Afficher le bouton de rognage pour les images
+            cropBtn.classList.remove('hidden');
         } else if (file.type === 'application/pdf') {
             previewContent.innerHTML = `
                 <div class="flex items-center justify-center h-32 bg-red-50 rounded-lg">
                     <i class="fas fa-file-pdf text-4xl text-red-500"></i>
                 </div>
             `;
+            
+            // Masquer le bouton de rognage pour les PDF
+            cropBtn.classList.add('hidden');
         }
         
         preview.classList.remove('hidden');
@@ -498,7 +493,7 @@ class AdvancedFileHandler {
     removeFile() {
         document.getElementById('fichier').value = '';
         document.getElementById('file-preview').classList.add('hidden');
-        document.getElementById('crop-image-btn').classList.add('opacity-50');
+        document.getElementById('crop-image-btn').classList.add('hidden');
         currentFile = null;
     }
 
@@ -516,15 +511,46 @@ class AdvancedFileHandler {
 
         startBtn.addEventListener('click', async () => {
             try {
-                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Vérifier si les médias sont supportés
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('La webcam n\'est pas supportée par ce navigateur');
+                }
+                
+                // Demander l'accès à la webcam avec des contraintes spécifiques
+                const constraints = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                };
+                
+                webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = webcamStream;
                 
-                placeholder.style.display = 'none';
-                video.style.display = 'block';
-                startBtn.style.display = 'none';
-                captureBtn.style.display = 'inline-block';
+                // Attendre que la vidéo soit prête
+                video.onloadedmetadata = () => {
+                    placeholder.style.display = 'none';
+                    video.style.display = 'block';
+                    startBtn.style.display = 'none';
+                    captureBtn.style.display = 'inline-block';
+                };
+                
             } catch (err) {
-                alert('Erreur d\'accès à la webcam: ' + err.message);
+                console.error('Erreur webcam:', err);
+                let message = 'Erreur d\'accès à la webcam: ';
+                
+                if (err.name === 'NotAllowedError') {
+                    message += 'Permission refusée. Veuillez autoriser l\'accès à la caméra dans les paramètres de votre navigateur.';
+                } else if (err.name === 'NotFoundError') {
+                    message += 'Aucune caméra trouvée sur cet appareil.';
+                } else if (err.name === 'NotSupportedError') {
+                    message += 'La webcam n\'est pas supportée par ce navigateur.';
+                } else {
+                    message += err.message;
+                }
+                
+                alert(message);
             }
         });
 
@@ -664,10 +690,11 @@ class AdvancedFileHandler {
         currentFile = file;
         this.showFilePreview(file);
         
-        // Activer le bouton de rognage
+        // Afficher le bouton de rognage pour les images
         const cropBtn = document.getElementById('crop-image-btn');
-        cropBtn.classList.remove('opacity-50');
-        cropBtn.title = 'Cliquer pour rogner l\'image';
+        if (file.type.startsWith('image/')) {
+            cropBtn.classList.remove('hidden');
+        }
     }
 
     formatFileSize(bytes) {
