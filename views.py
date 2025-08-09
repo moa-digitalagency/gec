@@ -942,6 +942,10 @@ def view_file(id):
 @app.route('/manage_statuses', methods=['GET', 'POST'])
 @login_required
 def manage_statuses():
+    # Vérifier les permissions d'accès à la gestion des statuts
+    if not (current_user.has_permission('manage_statuses') or current_user.is_super_admin()):
+        flash('Vous n\'avez pas les permissions pour gérer les statuts.', 'error')
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -2076,8 +2080,10 @@ def get_backup_files():
 @app.route("/security_logs")
 @login_required
 def security_logs():
-    if not current_user.is_super_admin():
-        abort(403)
+    # Vérifier les permissions d'accès aux logs de sécurité
+    if not (current_user.has_permission('view_security_logs') or current_user.is_super_admin()):
+        flash('Vous n\'avez pas les permissions pour consulter les logs de sécurité.', 'error')
+        return redirect(url_for('dashboard'))
     
     from security_utils import get_security_logs, get_security_stats
     
@@ -2115,8 +2121,9 @@ def security_logs():
 @login_required
 def security_settings():
     """Configuration des paramètres de sécurité"""
-    if not current_user.is_super_admin():
-        abort(403)
+    if not (current_user.has_permission('manage_security_settings') or current_user.is_super_admin()):
+        flash('Vous n\'avez pas les permissions pour gérer les paramètres de sécurité.', 'error')
+        return redirect(url_for('dashboard'))
         
     from security_utils import (MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_DURATION, 
                                SUSPICIOUS_ACTIVITY_THRESHOLD, AUTO_BLOCK_DURATION,

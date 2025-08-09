@@ -193,29 +193,37 @@
                             Configuration Système
                         </a>
                         {% endif %}
+                        {% if current_user.has_permission('manage_statuses') or current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_statuses') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-tags" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Gérer les Statuts
                         </a>
+                        {% endif %}
                         {% if current_user.can_manage_users() %}
                         <a href="{{ url_for('manage_users') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-users" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Gérer les Utilisateurs
                         </a>
                         {% endif %}
-                        {% if current_user.is_super_admin() %}
+                        {% if current_user.has_permission('view_all_logs') or current_user.is_super_admin() %}
                         <a href="{{ url_for('view_logs') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-history" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Logs d'Activité
                         </a>
+                        {% endif %}
+                        {% if current_user.has_permission('view_security_logs') or current_user.is_super_admin() %}
                         <a href="{{ url_for('security_logs') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-shield-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Logs de Sécurité
                         </a>
+                        {% endif %}
+                        {% if current_user.has_permission('manage_security_settings') or current_user.is_super_admin() %}
                         <a href="{{ url_for('security_settings') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-shield-virus" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Paramètres de Sécurité
                         </a>
+                        {% endif %}
+                        {% if current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_roles') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-user-shield" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Gestion des Rôles
