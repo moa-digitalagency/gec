@@ -39,7 +39,7 @@ def generate_licenses():
         # Crée la table si elle n'existe pas
         connection.execute(text("""
             CREATE TABLE IF NOT EXISTS licenses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 license_key VARCHAR(12) UNIQUE NOT NULL,
                 duration_days INTEGER NOT NULL,
                 duration_label VARCHAR(50) NOT NULL,

@@ -18,7 +18,22 @@ from utils import allowed_file, generate_accuse_reception, log_activity, export_
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 from license_system import license_validator, require_license, generate_sample_license
-from secure_license_system import secure_license_manager, check_license_status, activate_license
+from secure_license_system import secure_license_manager
+from centralized_license_validator import (
+    check_license_status_centralized as check_license_status,
+    activate_license_centralized,
+    get_license_history_centralized,
+    get_available_demo_licenses
+)
+
+def activate_license(license_key):
+    """Active une licence avec validation centralisée"""
+    try:
+        domain_fingerprint = secure_license_manager.get_current_domain()
+        return activate_license_centralized(license_key, domain_fingerprint)
+    except Exception as e:
+        logging.error(f"Erreur activation licence: {e}")
+        return False, f"Erreur activation: {str(e)}"
 
 @app.context_processor
 def inject_system_context():
@@ -2460,23 +2475,7 @@ def add_license():
         # Licences de démonstration (développement seulement)
         demo_licenses = {}
         if app.debug:
-            from sqlalchemy import create_engine, text
-            database_url = os.environ.get('DATABASE_URL')
-            if database_url:
-                try:
-                    engine = create_engine(database_url)
-                    with engine.connect() as connection:
-                        # Récupère quelques licences par type
-                        for duration in ['1 jour', '5 jours']:
-                            query = text("""
-                                SELECT license_key FROM licenses 
-                                WHERE duration_label = :duration AND is_used = false 
-                                LIMIT 5
-                            """)
-                            result = connection.execute(query, {"duration": duration}).fetchall()
-                            demo_licenses[duration.replace(' ', '_')] = [row[0] for row in result]
-                except Exception:
-                    demo_licenses = {}
+            demo_licenses = get_available_demo_licenses()
         
         return render_template('add_license.html',
                              current_license=current_license if is_valid else None,
@@ -2492,12 +2491,12 @@ def add_license():
 def license_history():
     """Page d'historique des licences pour l'utilisateur connecté"""
     try:
-        # Pour l'instant, affiche les informations du fichier local
-        current_licenses = secure_license_manager.check_cumulative_licenses()
+        # Utilise le système centralisé
+        licenses = get_license_history_centralized()
         
         return render_template('license_history.html',
-                             licenses=current_licenses.get('licenses', []),
-                             domain_fingerprint=get_current_domain())
+                             licenses=licenses,
+                             domain_fingerprint=secure_license_manager.get_current_domain())
                              
     except Exception as e:
         logging.error(f"Erreur page historique licence: {e}")
