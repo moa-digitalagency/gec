@@ -351,6 +351,171 @@ def export_pdf(id):
         flash('Erreur lors de l\'export PDF.', 'error')
         return redirect(url_for('mail_detail', id=id))
 
+@app.route('/edit_courrier/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_courrier(id):
+    """Modifier un courrier existant avec logging des changements"""
+    courrier = Courrier.query.get_or_404(id)
+    
+    # Vérifier les permissions d'édition
+    if not current_user.can_edit_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de modifier ce courrier.', 'error')
+        return redirect(url_for('mail_detail', id=id))
+    
+    if request.method == 'POST':
+        from utils import log_courrier_modification
+        
+        # Sauvegarder les anciennes valeurs pour le log
+        old_values = {
+            'numero_reference': courrier.numero_reference,
+            'objet': courrier.objet,
+            'type_courrier': courrier.type_courrier,
+            'expediteur': courrier.expediteur,
+            'destinataire': courrier.destinataire,
+            'date_redaction': courrier.date_redaction,
+            'statut': courrier.statut
+        }
+        
+        # Mettre à jour les champs
+        new_numero_reference = request.form.get('numero_reference', '').strip() or None
+        new_objet = request.form.get('objet', '').strip()
+        new_type_courrier = request.form.get('type_courrier')
+        new_expediteur = request.form.get('expediteur', '').strip() or None
+        new_destinataire = request.form.get('destinataire', '').strip() or None
+        new_statut = request.form.get('statut')
+        
+        # Date de rédaction
+        new_date_redaction = None
+        if request.form.get('date_redaction'):
+            try:
+                new_date_redaction = datetime.strptime(request.form.get('date_redaction'), '%Y-%m-%d').date()
+            except ValueError:
+                flash('Format de date invalide.', 'error')
+                return redirect(url_for('edit_courrier', id=id))
+        
+        # Validation
+        if not new_objet:
+            flash('L\'objet est obligatoire.', 'error')
+            return redirect(url_for('edit_courrier', id=id))
+        
+        # Vérifier l'unicité du numéro de référence s'il est fourni
+        if new_numero_reference and new_numero_reference != courrier.numero_reference:
+            existing_courrier = Courrier.query.filter_by(numero_reference=new_numero_reference).first()
+            if existing_courrier:
+                flash('Ce numéro de référence existe déjà.', 'error')
+                return redirect(url_for('edit_courrier', id=id))
+        
+        try:
+            # Logger chaque modification
+            changes = []
+            
+            if new_numero_reference != old_values['numero_reference']:
+                log_courrier_modification(courrier.id, current_user.id, 'numero_reference', 
+                                        old_values['numero_reference'], new_numero_reference)
+                courrier.numero_reference = new_numero_reference
+                changes.append('numéro de référence')
+            
+            if new_objet != old_values['objet']:
+                log_courrier_modification(courrier.id, current_user.id, 'objet', 
+                                        old_values['objet'], new_objet)
+                courrier.objet = new_objet
+                changes.append('objet')
+            
+            if new_type_courrier != old_values['type_courrier']:
+                log_courrier_modification(courrier.id, current_user.id, 'type_courrier', 
+                                        old_values['type_courrier'], new_type_courrier)
+                courrier.type_courrier = new_type_courrier
+                changes.append('type de courrier')
+            
+            if new_expediteur != old_values['expediteur']:
+                log_courrier_modification(courrier.id, current_user.id, 'expediteur', 
+                                        old_values['expediteur'], new_expediteur)
+                courrier.expediteur = new_expediteur
+                changes.append('expéditeur')
+            
+            if new_destinataire != old_values['destinataire']:
+                log_courrier_modification(courrier.id, current_user.id, 'destinataire', 
+                                        old_values['destinataire'], new_destinataire)
+                courrier.destinataire = new_destinataire
+                changes.append('destinataire')
+            
+            if new_date_redaction != old_values['date_redaction']:
+                log_courrier_modification(courrier.id, current_user.id, 'date_redaction', 
+                                        old_values['date_redaction'], new_date_redaction)
+                courrier.date_redaction = new_date_redaction
+                changes.append('date de rédaction')
+            
+            if new_statut != old_values['statut']:
+                log_courrier_modification(courrier.id, current_user.id, 'statut', 
+                                        old_values['statut'], new_statut)
+                courrier.statut = new_statut
+                courrier.date_modification_statut = datetime.utcnow()
+                changes.append('statut')
+            
+            # Mettre à jour le modifieur et la date
+            courrier.modifie_par_id = current_user.id
+            
+            db.session.commit()
+            
+            if changes:
+                changes_text = ', '.join(changes)
+                log_activity(current_user.id, "MODIFICATION_COURRIER", 
+                           f"Modification du courrier {courrier.numero_accuse_reception}: {changes_text}", 
+                           courrier.id)
+                flash(f'Courrier modifié avec succès. Champs mis à jour: {changes_text}', 'success')
+            else:
+                flash('Aucune modification détectée.', 'info')
+            
+            return redirect(url_for('mail_detail', id=id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erreur lors de la modification: {str(e)}', 'error')
+            return redirect(url_for('edit_courrier', id=id))
+    
+    # GET request - afficher le formulaire
+    statuts_disponibles = StatutCourrier.get_statuts_actifs()
+    return render_template('edit_courrier.html', 
+                          courrier=courrier,
+                          statuts_disponibles=statuts_disponibles)
+
+@app.route('/senders_list')
+@login_required
+def senders_list():
+    """Liste de tous les expéditeurs/destinataires avec statistiques"""
+    from utils import get_all_senders
+    
+    try:
+        senders = get_all_senders()
+        log_activity(current_user.id, "CONSULTATION_EXPEDITEURS", 
+                    f"Consultation de la liste des expéditeurs/destinataires")
+        
+        return render_template('senders_list.html', senders=senders)
+        
+    except Exception as e:
+        flash(f'Erreur lors de la récupération des contacts: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/courrier_modifications/<int:courrier_id>')
+@login_required
+def courrier_modifications(courrier_id):
+    """Voir l'historique complet des modifications d'un courrier"""
+    courrier = Courrier.query.get_or_404(courrier_id)
+    
+    # Vérifier les permissions
+    if not current_user.can_view_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de consulter ce courrier.', 'error')
+        return redirect(url_for('view_mail'))
+    
+    modifications = courrier.modifications
+    log_activity(current_user.id, "CONSULTATION_MODIFICATIONS", 
+                f"Consultation de l'historique des modifications du courrier {courrier.numero_accuse_reception}", 
+                courrier.id)
+    
+    return render_template('courrier_modifications.html', 
+                          courrier=courrier, 
+                          modifications=modifications)
+
 @app.route('/export_mail_list')
 @login_required
 def export_mail_list():

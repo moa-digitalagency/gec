@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier Courrier - GEC{% endblock %}
+
+{% block content %}
+<div class="bg-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">Modifier Courrier</h1>
+                <p class="text-blue-200 mt-1">{{ courrier.numero_accuse_reception }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('mail_detail', id=courrier.id) }}" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-eye mr-2"></i>Voir Détails
+                </a>
+                <a href="{{ url_for('view_mail') }}" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Content -->
+    <div class="max-w-4xl mx-auto p-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300{% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300{% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                        <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Modification History (if available) -->
+        {% if courrier.modifications %}
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-semibold text-yellow-800 mb-2">
+                <i class="fas fa-history mr-2"></i>Historique des Modifications
+            </h3>
+            <div class="text-sm text-yellow-700">
+                {% for modif in courrier.modifications[-3:] %}
+                    <div class="mb-1">
+                        <strong>{{ modif.date_modification.strftime('%d/%m/%Y %H:%M') }}</strong> - 
+                        {{ modif.utilisateur.nom_complet }} a modifié 
+                        <em>{{ modif.champ_modifie }}</em>
+                    </div>
+                {% endfor %}
+                {% if courrier.modifications|length > 3 %}
+                    <div class="text-xs text-yellow-600 mt-1">
+                        ... et {{ courrier.modifications|length - 3 }} autre(s) modification(s)
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Edit Form -->
+        <form method="POST" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                <!-- Basic Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Numéro d'Accusé (Read-only) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            N° d'Accusé de Réception <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" value="{{ courrier.numero_accuse_reception }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600" 
+                               readonly>
+                        <p class="text-xs text-gray-500 mt-1">Non modifiable</p>
+                    </div>
+
+                    <!-- Numéro de Référence -->
+                    <div>
+                        <label for="numero_reference" class="block text-sm font-medium text-gray-700 mb-2">
+                            N° de Référence
+                        </label>
+                        <input type="text" name="numero_reference" id="numero_reference" 
+                               value="{{ courrier.numero_reference or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Numéro de référence (optionnel)">
+                    </div>
+
+                    <!-- Type de Courrier -->
+                    <div>
+                        <label for="type_courrier" class="block text-sm font-medium text-gray-700 mb-2">
+                            Type de Courrier <span class="text-red-500">*</span>
+                        </label>
+                        <select name="type_courrier" id="type_courrier" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="ENTRANT" {% if courrier.type_courrier == 'ENTRANT' %}selected{% endif %}>Courrier Entrant</option>
+                            <option value="SORTANT" {% if courrier.type_courrier == 'SORTANT' %}selected{% endif %}>Courrier Sortant</option>
+                        </select>
+                    </div>
+
+                    <!-- Statut -->
+                    <div>
+                        <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
+                            Statut <span class="text-red-500">*</span>
+                        </label>
+                        <select name="statut" id="statut" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            {% for statut in statuts_disponibles %}
+                                <option value="{{ statut.nom }}" {% if courrier.statut == statut.nom %}selected{% endif %}>
+                                    {{ statut.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Date de Rédaction -->
+                    <div>
+                        <label for="date_redaction" class="block text-sm font-medium text-gray-700 mb-2">
+                            Date de Rédaction
+                        </label>
+                        <input type="date" name="date_redaction" id="date_redaction" 
+                               value="{{ courrier.date_redaction.strftime('%Y-%m-%d') if courrier.date_redaction else '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Date d'Enregistrement (Read-only) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Date d'Enregistrement
+                        </label>
+                        <input type="text" value="{{ courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M') }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600" 
+                               readonly>
+                        <p class="text-xs text-gray-500 mt-1">Non modifiable</p>
+                    </div>
+                </div>
+
+                <!-- Contact Fields (Dynamic based on type) -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="contact-fields">
+                    <!-- Expéditeur -->
+                    <div id="expediteur-field" {% if courrier.type_courrier == 'SORTANT' %}style="display: none;"{% endif %}>
+                        <label for="expediteur" class="block text-sm font-medium text-gray-700 mb-2">
+                            Expéditeur
+                        </label>
+                        <input type="text" name="expediteur" id="expediteur" 
+                               value="{{ courrier.expediteur or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Nom de l'expéditeur">
+                    </div>
+
+                    <!-- Destinataire -->
+                    <div id="destinataire-field" {% if courrier.type_courrier == 'ENTRANT' %}style="display: none;"{% endif %}>
+                        <label for="destinataire" class="block text-sm font-medium text-gray-700 mb-2">
+                            Destinataire
+                        </label>
+                        <input type="text" name="destinataire" id="destinataire" 
+                               value="{{ courrier.destinataire or '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Nom du destinataire">
+                    </div>
+                </div>
+
+                <!-- Objet -->
+                <div class="mt-6">
+                    <label for="objet" class="block text-sm font-medium text-gray-700 mb-2">
+                        Objet <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="objet" id="objet" rows="3" required
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Objet du courrier">{{ courrier.objet }}</textarea>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
+                   class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-center">
+                    <i class="fas fa-times mr-2"></i>Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Enregistrer les Modifications
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Dynamic field visibility based on courier type
+document.getElementById('type_courrier').addEventListener('change', function() {
+    const type = this.value;
+    const expediteurField = document.getElementById('expediteur-field');
+    const destinataireField = document.getElementById('destinataire-field');
+    
+    if (type === 'ENTRANT') {
+        expediteurField.style.display = 'block';
+        destinataireField.style.display = 'none';
+        document.getElementById('destinataire').value = '';
+    } else {
+        expediteurField.style.display = 'none';
+        destinataireField.style.display = 'block';
+        document.getElementById('expediteur').value = '';
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const objet = document.getElementById('objet').value.trim();
+    
+    if (!objet) {
+        e.preventDefault();
+        alert('L\'objet est obligatoire.');
+        document.getElementById('objet').focus();
+        return false;
+    }
+    
+    // Confirm modification
+    if (!confirm('Êtes-vous sûr de vouloir enregistrer ces modifications ?')) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

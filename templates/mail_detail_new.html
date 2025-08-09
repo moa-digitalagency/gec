@@ -293,6 +293,17 @@
                         </div>
                     </a>
                     
+                    {% if current_user.can_edit_courrier(courrier) %}
+                    <a href="{{ url_for('edit_courrier', id=courrier.id) }}" 
+                       class="flex items-center p-4 border-2 border-dashed border-orange-500 rounded-lg hover:bg-orange-50 transition-colors group w-full">
+                        <i class="fas fa-edit text-2xl text-orange-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Modifier Courrier</p>
+                            <p class="text-sm text-gray-500">Éditer les informations</p>
+                        </div>
+                    </a>
+                    {% endif %}
+                    
                     <a href="{{ url_for('register_mail') }}" 
                        class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
                         <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>

@@ -73,6 +73,7 @@ class User(UserMixin, db.Model):
     courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
     departement = db.relationship('Departement', foreign_keys=[departement_id], backref='utilisateurs', lazy=True)
+
     
     def has_permission(self, permission):
         """Vérifie si l'utilisateur a une permission spécifique"""
@@ -126,6 +127,37 @@ class User(UserMixin, db.Model):
             else:
                 # Utilisateur peut voir seulement ses propres courriers
                 return courrier.utilisateur_id == self.id
+    
+    def can_edit_courrier(self, courrier):
+        """Vérifier si l'utilisateur peut modifier un courrier donné"""
+        # Super admin peut tout modifier
+        if self.is_super_admin():
+            return True
+        
+        # Vérifier les permissions spécifiques d'édition
+        if self.has_permission('edit_all_mail'):
+            return True
+        elif self.has_permission('edit_department_mail'):
+            if hasattr(courrier, 'utilisateur_enregistrement') and courrier.utilisateur_enregistrement:
+                return courrier.utilisateur_enregistrement.departement_id == self.departement_id
+            return False
+        elif self.has_permission('edit_own_mail'):
+            return courrier.utilisateur_id == self.id
+        
+        # Fallback sur les rôles par défaut
+        if self.role == 'admin':
+            if hasattr(courrier, 'utilisateur_enregistrement') and courrier.utilisateur_enregistrement:
+                return courrier.utilisateur_enregistrement.departement_id == self.departement_id
+            return courrier.utilisateur_id == self.id
+        
+        # Utilisateur normal ne peut modifier que ses propres courriers dans les 24h
+        if courrier.utilisateur_id == self.id:
+            # Permettre modification dans les 24h suivant la création
+            from datetime import datetime, timedelta
+            time_limit = courrier.date_enregistrement + timedelta(hours=24)
+            return datetime.now() <= time_limit
+        
+        return False
     
     def get_profile_photo_url(self):
         """Retourne l'URL de la photo de profil ou une image par défaut"""
@@ -204,6 +236,26 @@ class Courrier(db.Model):
             'URGENT': 'bg-red-100 text-red-800'
         }
         return colors.get(self.statut, 'bg-gray-100 text-gray-800')
+
+class CourrierModification(db.Model):
+    """Historique des modifications des courriers"""
+    __tablename__ = 'courrier_modification'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    champ_modifie = db.Column(db.String(100), nullable=False)  # Nom du champ modifié
+    ancienne_valeur = db.Column(db.Text, nullable=True)  # Ancienne valeur
+    nouvelle_valeur = db.Column(db.Text, nullable=True)  # Nouvelle valeur
+    date_modification = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    
+    # Relations
+    courrier = db.relationship('Courrier', backref='modifications', lazy=True)
+    utilisateur = db.relationship('User', backref='courrier_modifications', lazy=True)
+    
+    def __repr__(self):
+        return f'<CourrierModification {self.champ_modifie} for {self.courrier_id}>'
 
 class LogActivite(db.Model):
     id = db.Column(db.Integer, primary_key=True)

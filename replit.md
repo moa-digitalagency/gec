@@ -16,10 +16,10 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Authentication**: Flask-Login
 - **Database**: SQLite (default), PostgreSQL (configurable)
 - **File Storage**: Local filesystem
-- **PDF Generation**: ReportLab
+- **PDF Generation**: ReportLab with enhanced text wrapping
 - **Security**: Password hashing (Werkzeug), session-based authentication, file upload validation, CSRF protection, ProxyFix middleware.
-- **Core Models**: `User`, `Courrier`, `LogActivite`, `ParametresSysteme`.
-- **Key Features**: Authentication, dashboard, mail registration/viewing/searching, file handling, system settings, activity logging, backup/restore, advanced administration (user management, role-based permissions, mail access control).
+- **Core Models**: `User`, `Courrier`, `LogActivite`, `ParametresSysteme`, `CourrierModification`.
+- **Key Features**: Authentication, dashboard, mail registration/viewing/searching/editing, file handling, system settings, activity logging, backup/restore, advanced administration (user management, role-based permissions, mail access control), sender management, change tracking.
 
 ### Frontend
 - **Template Engine**: Jinja2

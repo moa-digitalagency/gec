@@ -270,8 +270,10 @@ def restore_system_from_backup(backup_file):
 def log_activity(user_id, action, description, courrier_id=None):
     """Enregistrer une activité dans les logs"""
     try:
+        from flask import request
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
         
+        from models import LogActivite
         log = LogActivite(
             utilisateur_id=user_id,
             action=action,
@@ -286,6 +288,93 @@ def log_activity(user_id, action, description, courrier_id=None):
         db.session.rollback()
         print(f"Erreur lors de l'enregistrement du log: {e}")
 
+def log_courrier_modification(courrier_id, user_id, champ_modifie, ancienne_valeur, nouvelle_valeur):
+    """Enregistrer une modification de courrier"""
+    try:
+        from flask import request
+        from models import CourrierModification, db
+        
+        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+        
+        modification = CourrierModification(
+            courrier_id=courrier_id,
+            utilisateur_id=user_id,
+            champ_modifie=champ_modifie,
+            ancienne_valeur=str(ancienne_valeur) if ancienne_valeur is not None else None,
+            nouvelle_valeur=str(nouvelle_valeur) if nouvelle_valeur is not None else None,
+            ip_address=ip_address
+        )
+        
+        db.session.add(modification)
+        db.session.commit()
+        
+    except Exception as e:
+        print(f"Erreur lors de l'enregistrement de la modification: {e}")
+        db.session.rollback()
+
+def get_all_senders():
+    """Récupérer la liste de tous les expéditeurs/destinataires uniques"""
+    try:
+        from models import Courrier, db
+        from sqlalchemy import or_, func
+        
+        # Récupérer tous les expéditeurs et destinataires non vides
+        senders_query = db.session.query(
+            Courrier.expediteur.label('contact'),
+            func.count(Courrier.id).label('count_courriers'),
+            func.max(Courrier.date_enregistrement).label('derniere_date')
+        ).filter(
+            Courrier.expediteur.isnot(None),
+            Courrier.expediteur != ''
+        ).group_by(Courrier.expediteur)
+        
+        destinataires_query = db.session.query(
+            Courrier.destinataire.label('contact'),
+            func.count(Courrier.id).label('count_courriers'),
+            func.max(Courrier.date_enregistrement).label('derniere_date')
+        ).filter(
+            Courrier.destinataire.isnot(None),
+            Courrier.destinataire != ''
+        ).group_by(Courrier.destinataire)
+        
+        # Combiner les résultats
+        all_contacts = []
+        
+        # Ajouter les expéditeurs
+        for sender in senders_query.all():
+            all_contacts.append({
+                'nom': sender.contact,
+                'type': 'Expéditeur',
+                'nombre_courriers': sender.count_courriers,
+                'derniere_date': sender.derniere_date
+            })
+        
+        # Ajouter les destinataires
+        for dest in destinataires_query.all():
+            # Vérifier s'il n'existe pas déjà comme expéditeur
+            existing = next((c for c in all_contacts if c['nom'] == dest.contact), None)
+            if existing:
+                existing['type'] = 'Expéditeur/Destinataire'
+                existing['nombre_courriers'] += dest.count_courriers
+                if dest.derniere_date > existing['derniere_date']:
+                    existing['derniere_date'] = dest.derniere_date
+            else:
+                all_contacts.append({
+                    'nom': dest.contact,
+                    'type': 'Destinataire',
+                    'nombre_courriers': dest.count_courriers,
+                    'derniere_date': dest.derniere_date
+                })
+        
+        # Trier par nombre de courriers décroissant
+        all_contacts.sort(key=lambda x: x['nombre_courriers'], reverse=True)
+        
+        return all_contacts
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des contacts: {e}")
+        return []
+
 def export_courrier_pdf(courrier):
     """Exporter un courrier en PDF avec ses métadonnées"""
     # Créer le dossier exports s'il n'existe pas
@@ -297,7 +386,8 @@ def export_courrier_pdf(courrier):
     pdf_path = os.path.join(exports_dir, filename)
     
     # Créer le document PDF
-    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1*inch, 
+                          leftMargin=0.75*inch, rightMargin=0.75*inch)
     styles = getSampleStyleSheet()
     story = []
     
@@ -309,6 +399,28 @@ def export_courrier_pdf(courrier):
         spaceAfter=30,
         alignment=1,  # Centré
         textColor=colors.darkblue
+    )
+    
+    # Style pour le texte avec wrap automatique
+    text_style = ParagraphStyle(
+        'CustomText',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=12,
+        wordWrap='CJK',  # Permettre le wrap sur les mots longs
+        splitLongWords=True,
+        allowWidows=1,
+        allowOrphans=1
+    )
+    
+    # Style pour les labels
+    label_style = ParagraphStyle(
+        'LabelStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6,
+        textColor=colors.darkblue,
+        fontName='Helvetica-Bold'
     )
     
     # Récupérer les paramètres système pour le PDF
@@ -373,30 +485,34 @@ def export_courrier_pdf(courrier):
     story.append(subtitle)
     story.append(Spacer(1, 20))
     
-    # Tableau des métadonnées - Dans le même ordre que la page de détail
+    # Tableau des métadonnées avec text wrapping pour les champs longs
     data = [
-        ['N° d\'Accusé de Réception:', courrier.numero_accuse_reception],
-        ['Type de Courrier:', courrier.type_courrier],
-        ['N° de Référence:', courrier.numero_reference if courrier.numero_reference else 'Non référencé'],
-        [courrier.get_label_contact() + ':', courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié'],
-        ['Objet:', courrier.objet],
-        ['Date de Rédaction:', courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée'],
-        ['Date d\'Enregistrement:', courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M')],
-        ['Enregistré par:', courrier.utilisateur_enregistrement.nom_complet],
-        ['Statut:', courrier.statut],
-        ['Fichier Joint:', courrier.fichier_nom if courrier.fichier_nom else 'Aucun'],
+        [Paragraph('N° d\'Accusé de Réception:', label_style), Paragraph(courrier.numero_accuse_reception, text_style)],
+        [Paragraph('Type de Courrier:', label_style), Paragraph(courrier.type_courrier, text_style)],
+        [Paragraph('N° de Référence:', label_style), Paragraph(courrier.numero_reference if courrier.numero_reference else 'Non référencé', text_style)],
+        [Paragraph(courrier.get_label_contact() + ':', label_style), Paragraph(courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié', text_style)],
+        [Paragraph('Objet:', label_style), Paragraph(courrier.objet, text_style)],
+        [Paragraph('Date de Rédaction:', label_style), Paragraph(courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée', text_style)],
+        [Paragraph('Date d\'Enregistrement:', label_style), Paragraph(courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M'), text_style)],
+        [Paragraph('Enregistré par:', label_style), Paragraph(courrier.utilisateur_enregistrement.nom_complet, text_style)],
+        [Paragraph('Statut:', label_style), Paragraph(courrier.statut, text_style)],
+        [Paragraph('Fichier Joint:', label_style), Paragraph(courrier.fichier_nom if courrier.fichier_nom else 'Aucun', text_style)],
     ]
     
-    table = Table(data, colWidths=[2.5*inch, 4*inch])
+    table = Table(data, colWidths=[2.5*inch, 4*inch], repeatRows=1)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
         ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Alignement vertical en haut
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
         ('BACKGROUND', (1, 0), (1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('WORDWRAP', (1, 0), (1, -1), 'CJK')  # Permettre le wrap des mots dans la colonne de droite
     ]))
     
     story.append(table)

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Contacts - GEC{% endblock %}
+
+{% block content %}
+<div class="bg-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-green-900 to-green-700 text-white p-6 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">Liste des Contacts</h1>
+                <p class="text-green-200 mt-1">Expéditeurs et destinataires des courriers</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('dashboard') }}" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour au Tableau de Bord
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="max-w-7xl mx-auto p-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300{% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300{% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                        <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-blue-900">Total Contacts</h3>
+                        <p class="text-2xl font-bold text-blue-600">{{ senders|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-inbox text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-green-900">Expéditeurs</h3>
+                        <p class="text-2xl font-bold text-green-600">
+                            {{ senders|selectattr('type', 'in', ['Expéditeur', 'Expéditeur/Destinataire'])|list|length }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                <div class="flex items-center">
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <i class="fas fa-paper-plane text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-orange-900">Destinataires</h3>
+                        <p class="text-2xl font-bold text-orange-600">
+                            {{ senders|selectattr('type', 'in', ['Destinataire', 'Expéditeur/Destinataire'])|list|length }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+            <div class="flex flex-col lg:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                        Rechercher un contact
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="search" placeholder="Nom du contact..." 
+                               class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:w-64">
+                    <label for="type-filter" class="block text-sm font-medium text-gray-700 mb-2">
+                        Filtrer par type
+                    </label>
+                    <select id="type-filter" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Tous les types</option>
+                        <option value="Expéditeur">Expéditeurs uniquement</option>
+                        <option value="Destinataire">Destinataires uniquement</option>
+                        <option value="Expéditeur/Destinataire">Expéditeurs et Destinataires</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts List -->
+        {% if senders %}
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-address-book mr-2"></i>Liste des Contacts
+                </h3>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="contacts-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Contact
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nombre de Courriers
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Dernier Courrier
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for sender in senders %}
+                        <tr class="hover:bg-gray-50 contact-row" 
+                            data-name="{{ sender.nom.lower() }}" 
+                            data-type="{{ sender.type }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 flex-shrink-0">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-r 
+                                                  {% if sender.type == 'Expéditeur' %}from-blue-400 to-blue-600
+                                                  {% elif sender.type == 'Destinataire' %}from-orange-400 to-orange-600
+                                                  {% else %}from-purple-400 to-purple-600{% endif %} 
+                                                  flex items-center justify-center">
+                                            <i class="fas fa-user text-white text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ sender.nom }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                                           {% if sender.type == 'Expéditeur' %}bg-blue-100 text-blue-800
+                                           {% elif sender.type == 'Destinataire' %}bg-orange-100 text-orange-800
+                                           {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                    {% if sender.type == 'Expéditeur' %}
+                                        <i class="fas fa-inbox mr-1"></i>
+                                    {% elif sender.type == 'Destinataire' %}
+                                        <i class="fas fa-paper-plane mr-1"></i>
+                                    {% else %}
+                                        <i class="fas fa-exchange-alt mr-1"></i>
+                                    {% endif %}
+                                    {{ sender.type }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div class="flex items-center">
+                                    <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                                    <span class="font-semibold">{{ sender.nombre_courriers }}</span>
+                                    courrier{{ 's' if sender.nombre_courriers > 1 else '' }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ sender.derniere_date.strftime('%d/%m/%Y') if sender.derniere_date else 'N/A' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <a href="{{ url_for('view_mail') }}?search={{ sender.nom|urlencode }}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors">
+                                    <i class="fas fa-search mr-1"></i>Voir Courriers
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
+            <div class="text-gray-400 mb-4">
+                <i class="fas fa-address-book text-6xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Aucun contact trouvé</h3>
+            <p class="text-gray-500 mb-6">
+                Il n'y a actuellement aucun expéditeur ou destinataire enregistré dans le système.
+            </p>
+            <a href="{{ url_for('register_mail') }}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>Enregistrer un Nouveau Courrier
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    filterContacts();
+});
+
+// Type filter functionality
+document.getElementById('type-filter').addEventListener('change', function() {
+    filterContacts();
+});
+
+function filterContacts() {
+    const searchTerm = document.getElementById('search').value.toLowerCase();
+    const typeFilter = document.getElementById('type-filter').value;
+    const rows = document.querySelectorAll('.contact-row');
+    
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const type = row.getAttribute('data-type');
+        
+        const matchesSearch = name.includes(searchTerm);
+        const matchesType = !typeFilter || type === typeFilter;
+        
+        if (matchesSearch && matchesType) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Highlight search terms
+document.getElementById('search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const contactCells = document.querySelectorAll('.contact-row td:first-child .text-sm');
+    
+    contactCells.forEach(cell => {
+        const originalText = cell.textContent.trim();
+        if (searchTerm && originalText.toLowerCase().includes(searchTerm)) {
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            cell.innerHTML = originalText.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+        } else {
+            cell.textContent = originalText;
+        }
+    });
+});
+</script>
+{% endblock %}
