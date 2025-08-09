@@ -546,47 +546,77 @@ class AdvancedFileHandler {
                 console.log('Demande d\'accès caméra avec contraintes:', constraints);
                 statusMessage.textContent = 'Demande d\'autorisation caméra...';
                 
+                // Ajouter un délai pour laisser le temps au navigateur de traiter la permission
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
                 console.log('✅ Stream webcam obtenu:', webcamStream);
                 console.log('Tracks vidéo:', webcamStream.getVideoTracks());
+                
+                // Vérifier que le stream est actif
+                const videoTrack = webcamStream.getVideoTracks()[0];
+                if (!videoTrack || videoTrack.readyState !== 'live') {
+                    console.warn('⚠️ Track vidéo pas en état "live":', videoTrack?.readyState);
+                }
                 
                 video.srcObject = webcamStream;
                 console.log('Stream assigné à la vidéo');
                 statusMessage.textContent = 'Préparation de la caméra...';
                 
-                // Démarrer automatiquement dès que la vidéo est prête
-                video.onloadedmetadata = () => {
-                    console.log('✅ Métadonnées vidéo chargées');
-                    console.log('Taille vidéo:', video.videoWidth, 'x', video.videoHeight);
-                    console.log('État de la vidéo - readyState:', video.readyState);
-                    
-                    placeholder.style.display = 'none';
-                    video.style.display = 'block';
-                    status.classList.add('hidden');
-                    startCaptureBtn.style.display = 'none';
-                    
-                    console.log('Interface mise à jour, capture dans 2 secondes...');
-                    
-                    // Délai de 2 secondes pour que l'utilisateur se prépare
-                    setTimeout(() => {
-                        console.log('Déclenchement de la capture photo');
-                        this.capturePhoto();
-                    }, 2000);
+                // Démarrer la vidéo explicitement
+                try {
+                    await video.play();
+                    console.log('✅ Vidéo démarrée');
+                } catch (playErr) {
+                    console.warn('⚠️ Erreur play() vidéo:', playErr);
+                    // Continuer quand même, certains navigateurs n'ont pas besoin de play()
+                }
+                
+                // Attendre que les métadonnées se chargent avec un timeout
+                const waitForMetadata = () => {
+                    return new Promise((resolve, reject) => {
+                        if (video.readyState >= 1) {
+                            // Métadonnées déjà disponibles
+                            resolve();
+                        } else {
+                            // Attendre l'événement loadedmetadata
+                            const onMetadata = () => {
+                                video.removeEventListener('loadedmetadata', onMetadata);
+                                clearTimeout(timeout);
+                                resolve();
+                            };
+                            video.addEventListener('loadedmetadata', onMetadata);
+                            
+                            // Timeout de 5 secondes
+                            const timeout = setTimeout(() => {
+                                video.removeEventListener('loadedmetadata', onMetadata);
+                                reject(new Error('Timeout metadata'));
+                            }, 5000);
+                        }
+                    });
                 };
                 
-                // Gestion des erreurs de la vidéo
-                video.onerror = (e) => {
-                    console.error('❌ Erreur vidéo:', e);
-                    this.handleCaptureError(new Error('Erreur de flux vidéo'));
-                };
+                await waitForMetadata();
+                console.log('✅ Métadonnées vidéo chargées');
+                console.log('Taille vidéo:', video.videoWidth, 'x', video.videoHeight);
+                console.log('État de la vidéo - readyState:', video.readyState);
                 
-                // Timeout de sécurité
+                if (video.videoWidth === 0 || video.videoHeight === 0) {
+                    throw new Error('Dimensions vidéo invalides');
+                }
+                
+                placeholder.style.display = 'none';
+                video.style.display = 'block';
+                status.classList.add('hidden');
+                startCaptureBtn.style.display = 'none';
+                
+                console.log('Interface mise à jour, capture dans 2 secondes...');
+                
+                // Délai de 2 secondes pour que l'utilisateur se prépare
                 setTimeout(() => {
-                    if (video.readyState === 0) {
-                        console.warn('⚠️ Timeout: vidéo pas prête après 10 secondes');
-                        this.handleCaptureError(new Error('Timeout - la vidéo ne répond pas'));
-                    }
-                }, 10000);
+                    console.log('Déclenchement de la capture photo');
+                    this.capturePhoto();
+                }, 2000);
                 
             } catch (err) {
                 console.error('❌ ERREUR CAPTURE:', err);
