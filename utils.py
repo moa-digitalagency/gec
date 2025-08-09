@@ -12,7 +12,7 @@ from reportlab.lib import colors
 from app import db
 from models import LogActivite
 
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif', 'svg'}
 
 # Languages disponibles
 AVAILABLE_LANGUAGES = {

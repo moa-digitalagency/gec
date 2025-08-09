@@ -691,11 +691,21 @@ def settings():
                     logo_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), logo_filename)
                     
                     try:
+                        # Supprimer l'ancien logo si il existe
+                        if parametres.logo_url:
+                            old_logo_path = parametres.logo_url.replace('/uploads/', '')
+                            old_full_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), old_logo_path)
+                            if os.path.exists(old_full_path):
+                                os.remove(old_full_path)
+                        
                         logo.save(logo_path)
                         parametres.logo_url = f'/uploads/{logo_filename}'
                         flash('Logo téléchargé avec succès!', 'success')
                     except Exception as e:
                         flash(f'Erreur lors du téléchargement du logo: {str(e)}', 'error')
+                elif logo and logo.filename:
+                    # Debug: show what files are rejected
+                    flash(f'Type de fichier non autorisé: {logo.filename}. Utilisez PNG, JPG, JPEG ou SVG.', 'error')
             
             # Gestion du logo PDF
             if 'logo_pdf' in request.files:
