@@ -120,6 +120,12 @@ def simple_photo_capture():
     """Page simple de capture photo compatible tous navigateurs"""
     return render_template('simple_photo_capture.html')
 
+@app.route('/real_camera_capture')
+@login_required
+def real_camera_capture():
+    """Accès direct au flux caméra avec streaming temps réel"""
+    return render_template('camera_capture.html')
+
 @app.route('/dashboard')
 @login_required
 def dashboard():

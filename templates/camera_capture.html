@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Capture Caméra en Temps Réel{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pt-4">
+    <div class="container mx-auto px-4">
+        <div class="max-w-5xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-video text-rdc-green mr-3"></i>
+                    Capture Caméra en Temps Réel
+                </h1>
+                <p class="text-gray-600 mt-2">Streaming vidéo direct depuis votre caméra</p>
+            </div>
+
+            <!-- Interface principale -->
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <!-- Zone vidéo -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <!-- Vidéo en direct -->
+                        <video id="camera-stream" class="w-full rounded-lg bg-black" autoplay playsinline></video>
+                        
+                        <!-- Canvas pour capture (caché) -->
+                        <canvas id="capture-canvas" class="hidden"></canvas>
+                        
+                        <!-- Overlay d'état -->
+                        <div id="camera-status" class="absolute top-4 right-4 px-3 py-1 bg-black bg-opacity-50 text-white rounded-full text-sm">
+                            <i class="fas fa-circle text-red-500 mr-1"></i>
+                            Hors ligne
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contrôles -->
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="start-camera" class="px-6 py-3 bg-rdc-green text-white rounded-lg hover:bg-opacity-90 transition">
+                        <i class="fas fa-play mr-2"></i>
+                        Démarrer la caméra
+                    </button>
+                    
+                    <button id="capture-photo" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90 transition disabled:opacity-50" disabled>
+                        <i class="fas fa-camera mr-2"></i>
+                        Capturer
+                    </button>
+                    
+                    <button id="stop-camera" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-opacity-90 transition disabled:opacity-50" disabled>
+                        <i class="fas fa-stop mr-2"></i>
+                        Arrêter
+                    </button>
+                </div>
+
+                <!-- Zone de prévisualisation des captures -->
+                <div id="captures-zone" class="hidden">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-images text-rdc-yellow mr-2"></i>
+                        Photos capturées
+                    </h3>
+                    <div id="captures-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                </div>
+
+                <!-- Messages et statistiques -->
+                <div class="mt-6 space-y-4">
+                    <!-- Message d'info -->
+                    <div id="info-message" class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <div class="flex">
+                            <i class="fas fa-info-circle text-blue-500 mr-3 mt-1"></i>
+                            <div>
+                                <p class="text-sm text-blue-800">
+                                    Cette solution utilise WebRTC pour accéder directement au flux de votre caméra.
+                                    Les images sont traitées en temps réel sur le serveur.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques de connexion -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Statistiques</h4>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">État:</span>
+                                <span id="connection-state" class="ml-2 font-medium">Déconnecté</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">FPS:</span>
+                                <span id="fps-counter" class="ml-2 font-medium">0</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Captures:</span>
+                                <span id="capture-counter" class="ml-2 font-medium">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Socket.IO -->
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+// Variables globales
+let socket = null;
+let stream = null;
+let captureCount = 0;
+let frameCount = 0;
+let lastFrameTime = Date.now();
+
+// Connexion Socket.IO
+function connectSocket() {
+    socket = io();
+    
+    socket.on('connect', function() {
+        console.log('Connecté au serveur Socket.IO');
+        updateStatus('Connecté', 'green');
+        document.getElementById('connection-state').textContent = 'Connecté';
+    });
+    
+    socket.on('disconnect', function() {
+        console.log('Déconnecté du serveur');
+        updateStatus('Hors ligne', 'red');
+        document.getElementById('connection-state').textContent = 'Déconnecté';
+    });
+    
+    socket.on('frame_received', function(data) {
+        // Calculer FPS
+        frameCount++;
+        const now = Date.now();
+        if (now - lastFrameTime > 1000) {
+            document.getElementById('fps-counter').textContent = frameCount;
+            frameCount = 0;
+            lastFrameTime = now;
+        }
+    });
+    
+    socket.on('capture_success', function(data) {
+        console.log('Photo capturée:', data);
+        captureCount++;
+        document.getElementById('capture-counter').textContent = captureCount;
+        
+        // Ajouter la miniature
+        addCaptureThumb(data);
+        
+        // Notification
+        showNotification('Photo capturée avec succès!', 'success');
+    });
+    
+    socket.on('capture_error', function(data) {
+        console.error('Erreur capture:', data);
+        showNotification('Erreur lors de la capture: ' + data.error, 'error');
+    });
+}
+
+// Démarrer la caméra
+async function startCamera() {
+    try {
+        const video = document.getElementById('camera-stream');
+        
+        // Demander l'accès à la caméra
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: false
+        });
+        
+        video.srcObject = stream;
+        
+        // Activer les boutons
+        document.getElementById('capture-photo').disabled = false;
+        document.getElementById('stop-camera').disabled = false;
+        document.getElementById('start-camera').disabled = true;
+        
+        updateStatus('En ligne', 'green');
+        
+        // Démarrer le streaming vers le serveur
+        startStreaming();
+        
+    } catch (error) {
+        console.error('Erreur accès caméra:', error);
+        showNotification('Impossible d\'accéder à la caméra: ' + error.message, 'error');
+    }
+}
+
+// Streaming vers le serveur
+function startStreaming() {
+    const video = document.getElementById('camera-stream');
+    const canvas = document.getElementById('capture-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Ajuster la taille du canvas
+    canvas.width = 640;
+    canvas.height = 480;
+    
+    // Envoyer des frames au serveur toutes les 100ms (10 FPS)
+    const streamInterval = setInterval(() => {
+        if (!stream || !socket.connected) {
+            clearInterval(streamInterval);
+            return;
+        }
+        
+        // Dessiner la frame actuelle sur le canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convertir en base64 et envoyer
+        canvas.toBlob((blob) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                socket.emit('camera_frame', {
+                    image: reader.result,
+                    timestamp: Date.now()
+                });
+            };
+            reader.readAsDataURL(blob);
+        }, 'image/jpeg', 0.8);
+        
+    }, 100);
+}
+
+// Capturer une photo
+function capturePhoto() {
+    const video = document.getElementById('camera-stream');
+    const canvas = document.getElementById('capture-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Capturer en haute qualité
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    
+    // Effet visuel de capture
+    video.style.opacity = '0.5';
+    setTimeout(() => {
+        video.style.opacity = '1';
+    }, 100);
+    
+    // Envoyer au serveur
+    canvas.toBlob((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            socket.emit('capture_photo', {
+                image: reader.result,
+                timestamp: Date.now()
+            });
+        };
+        reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.95);
+}
+
+// Arrêter la caméra
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    
+    const video = document.getElementById('camera-stream');
+    video.srcObject = null;
+    
+    // Désactiver les boutons
+    document.getElementById('capture-photo').disabled = true;
+    document.getElementById('stop-camera').disabled = true;
+    document.getElementById('start-camera').disabled = false;
+    
+    updateStatus('Hors ligne', 'red');
+}
+
+// Utilitaires
+function updateStatus(text, color) {
+    const status = document.getElementById('camera-status');
+    status.innerHTML = `<i class="fas fa-circle text-${color}-500 mr-1"></i>${text}`;
+}
+
+function showNotification(message, type) {
+    const div = document.createElement('div');
+    div.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white`;
+    div.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} mr-2"></i>
+        ${message}
+    `;
+    document.body.appendChild(div);
+    
+    setTimeout(() => {
+        div.remove();
+    }, 3000);
+}
+
+function addCaptureThumb(data) {
+    const grid = document.getElementById('captures-grid');
+    const zone = document.getElementById('captures-zone');
+    
+    zone.classList.remove('hidden');
+    
+    const thumb = document.createElement('div');
+    thumb.className = 'relative group';
+    thumb.innerHTML = `
+        <div class="aspect-square bg-gray-200 rounded-lg overflow-hidden">
+            <div class="w-full h-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-4xl text-green-500"></i>
+            </div>
+        </div>
+        <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition rounded-lg flex items-center justify-center">
+            <button class="text-white px-3 py-1 bg-rdc-blue rounded">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+        <p class="text-xs text-gray-600 mt-1 truncate">${data.filename}</p>
+    `;
+    
+    grid.insertBefore(thumb, grid.firstChild);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    connectSocket();
+    
+    document.getElementById('start-camera').addEventListener('click', startCamera);
+    document.getElementById('capture-photo').addEventListener('click', capturePhoto);
+    document.getElementById('stop-camera').addEventListener('click', stopCamera);
+});
+</script>
+
+{% endblock %}
