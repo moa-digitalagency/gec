@@ -128,7 +128,25 @@
             </h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% set additional_perms = {
+                    'view_security_logs': 'Consulter logs de sécurité',
+                    'manage_security_settings': 'Gérer paramètres de sécurité'
+                } %}
                 {% for perm_key, perm_name in all_permissions.items() %}
+                <div class="flex items-start">
+                    <input type="checkbox" 
+                           id="perm_{{ perm_key }}" 
+                           name="permissions" 
+                           value="{{ perm_key }}"
+                           {% if perm_key in role.get_permissions_list() %}checked{% endif %}
+                           class="mt-1 h-4 w-4 text-rdc-blue border-gray-300 rounded focus:ring-rdc-blue">
+                    <label for="perm_{{ perm_key }}" 
+                           class="ml-3 text-sm text-gray-700 cursor-pointer">
+                        {{ perm_name }}
+                    </label>
+                </div>
+                {% endfor %}
+                {% for perm_key, perm_name in additional_perms.items() %}
                 <div class="flex items-start">
                     <input type="checkbox" 
                            id="perm_{{ perm_key }}" 
