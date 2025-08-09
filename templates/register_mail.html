@@ -510,205 +510,114 @@ class AdvancedFileHandler {
         currentFile = null;
     }
 
-    // Webcam Modal - Simplifié et automatisé
+    // Webcam Modal - Version ultra-simplifiée
     initializeWebcamModal() {
-        const modal = document.getElementById('webcam-modal');
         const startCaptureBtn = document.getElementById('start-capture');
         const retakeBtn = document.getElementById('retake-photo');
         const useBtn = document.getElementById('use-photo');
         const closeBtn = document.getElementById('close-webcam');
+        
+        startCaptureBtn.addEventListener('click', () => this.startWebcamCapture());
+        retakeBtn.addEventListener('click', () => this.retakePhoto());
+        useBtn.addEventListener('click', () => this.usePhoto());
+        closeBtn.addEventListener('click', () => this.closeWebcamModal());
+    }
+    
+    async startWebcamCapture() {
+        const video = document.getElementById('webcam-video');
+        const placeholder = document.getElementById('webcam-placeholder');
+        const startBtn = document.getElementById('start-capture');
+        
+        try {
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
+            startBtn.disabled = true;
+            
+            // Contraintes minimales pour maximum de compatibilité
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
+            
+            video.srcObject = stream;
+            webcamStream = stream;
+            
+            // Attendre que la vidéo soit prête
+            await new Promise((resolve) => {
+                video.onloadedmetadata = resolve;
+            });
+            
+            // Afficher la vidéo
+            placeholder.style.display = 'none';
+            video.style.display = 'block';
+            startBtn.style.display = 'none';
+            
+            // Auto-capture après 2 secondes
+            setTimeout(() => this.capturePhoto(), 2000);
+            
+        } catch (error) {
+            console.error('Erreur webcam:', error);
+            this.showWebcamError(error);
+        }
+    }
+    
+    showWebcamError(error) {
+        const startBtn = document.getElementById('start-capture');
+        const errorDiv = document.getElementById('capture-error');
+        const errorMsg = document.getElementById('error-message');
+        
+        let message = 'Erreur caméra : ';
+        if (error.name === 'NotAllowedError') {
+            message += 'Permission refusée. Autorisez la caméra dans votre navigateur.';
+        } else if (error.name === 'NotFoundError') {
+            message += 'Aucune caméra détectée.';
+        } else {
+            message += error.message;
+        }
+        
+        errorMsg.textContent = message;
+        errorDiv.classList.remove('hidden');
+        
+        startBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
+        startBtn.disabled = false;
+    }
+    
+    retakePhoto() {
         const video = document.getElementById('webcam-video');
         const canvas = document.getElementById('webcam-canvas');
-        const placeholder = document.getElementById('webcam-placeholder');
-        const status = document.getElementById('capture-status');
-        const statusMessage = document.getElementById('status-message');
-
-        // Bouton principal - activation automatique de la caméra
-        startCaptureBtn.addEventListener('click', async () => {
-            console.log('=== DÉBUT CAPTURE WEBCAM ===');
-            
-            // Masquer les messages d'erreur précédents
-            document.getElementById('capture-error').classList.add('hidden');
-            
-            // Afficher le statut de chargement
-            status.classList.remove('hidden');
-            status.className = 'mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-600';
-            statusMessage.textContent = 'Activation de la caméra...';
-            startCaptureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
-            startCaptureBtn.disabled = true;
-
-            try {
-                console.log('Vérification du support webcam...');
-                // Vérifier le support
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Webcam non supportée par ce navigateur');
-                }
-                
-                console.log('Support webcam: OK');
-
-                // Configuration caméra simple et compatible
-                const constraints = {
-                    video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    }
-                };
-                
-                console.log('Demande d\'accès caméra...');
-                statusMessage.textContent = 'Demande d\'autorisation caméra...';
-                
-                // Demande directe sans délai
-                webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
-                console.log('✅ Stream webcam obtenu');
-                
-                video.srcObject = webcamStream;
-                console.log('Stream assigné à la vidéo');
-                statusMessage.textContent = 'Préparation de la caméra...';
-                
-                // Fonction simple pour attendre la vidéo
-                const videoReady = new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Timeout - caméra non disponible'));
-                    }, 8000);
-                    
-                    const checkVideo = () => {
-                        if (video.videoWidth > 0 && video.videoHeight > 0) {
-                            clearTimeout(timeout);
-                            resolve();
-                        } else {
-                            setTimeout(checkVideo, 100);
-                        }
-                    };
-                    
-                    video.addEventListener('loadedmetadata', () => {
-                        setTimeout(checkVideo, 100);
-                    });
-                    
-                    // Démarrer immédiatement la vérification
-                    checkVideo();
-                });
-                
-                await videoReady;
-                console.log('✅ Vidéo prête:', video.videoWidth, 'x', video.videoHeight);
-                
-                // Succès - afficher la vidéo
-                placeholder.style.display = 'none';
-                video.style.display = 'block';
-                status.classList.add('hidden');
-                startCaptureBtn.style.display = 'none';
-                
-                console.log('Interface mise à jour, capture dans 2 secondes...');
-                
-                // Auto-capture
-                setTimeout(() => {
-                    console.log('Déclenchement de la capture photo');
-                    this.capturePhoto();
-                }, 2000);
-                
-            } catch (err) {
-                console.error('❌ ERREUR CAPTURE:', err);
-                this.handleCaptureError(err);
-            }
-        });
-
-        retakeBtn.addEventListener('click', () => {
-            canvas.style.display = 'none';
-            video.style.display = 'block';
-            retakeBtn.style.display = 'none';
-            useBtn.style.display = 'none';
-            
-            // Nouvelle capture après 2 secondes
-            setTimeout(() => {
-                this.capturePhoto();
-            }, 2000);
-        });
-
-        useBtn.addEventListener('click', () => {
-            canvas.toBlob((blob) => {
-                const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
-                this.setFileFromBlob(file);
-                this.closeWebcamModal();
-            }, 'image/jpeg', 0.8);
-        });
-
-        closeBtn.addEventListener('click', () => {
+        
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+        document.getElementById('retake-photo').style.display = 'none';
+        document.getElementById('use-photo').style.display = 'none';
+        
+        setTimeout(() => this.capturePhoto(), 2000);
+    }
+    
+    usePhoto() {
+        const canvas = document.getElementById('webcam-canvas');
+        canvas.toBlob((blob) => {
+            const file = new File([blob], 'capture_webcam.jpg', { type: 'image/jpeg' });
+            this.setFileFromBlob(file);
             this.closeWebcamModal();
-        });
+        }, 'image/jpeg', 0.9);
     }
     
     capturePhoto() {
-        console.log('=== CAPTURE PHOTO ===');
         const video = document.getElementById('webcam-video');
         const canvas = document.getElementById('webcam-canvas');
         const retakeBtn = document.getElementById('retake-photo');
         const useBtn = document.getElementById('use-photo');
         
-        console.log('État vidéo avant capture:');
-        console.log('- readyState:', video.readyState);
-        console.log('- videoWidth:', video.videoWidth);
-        console.log('- videoHeight:', video.videoHeight);
-        console.log('- paused:', video.paused);
-        console.log('- currentTime:', video.currentTime);
+        // Capturer l'image directement
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        ctx.drawImage(video, 0, 0);
         
-        if (video.videoWidth === 0 || video.videoHeight === 0) {
-            console.error('❌ Vidéo sans dimensions valides');
-            this.handleCaptureError(new Error('La vidéo n\'est pas prête pour la capture'));
-            return;
-        }
-        
-        try {
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0);
-            
-            console.log('✅ Photo capturée avec succès');
-            console.log('- Taille canvas:', canvas.width, 'x', canvas.height);
-            
-            video.style.display = 'none';
-            canvas.style.display = 'block';
-            retakeBtn.style.display = 'inline-block';
-            useBtn.style.display = 'inline-block';
-            
-        } catch (err) {
-            console.error('❌ Erreur lors de la capture:', err);
-            this.handleCaptureError(err);
-        }
-    }
-    
-    handleCaptureError(err) {
-        const status = document.getElementById('capture-status');
-        const errorDiv = document.getElementById('capture-error');
-        const errorMessage = document.getElementById('error-message');
-        const startCaptureBtn = document.getElementById('start-capture');
-        
-        console.log('Erreur capture:', err.name, err.message);
-        
-        // Masquer le statut de chargement
-        status.classList.add('hidden');
-        
-        let message = '';
-        
-        if (err.name === 'NotAllowedError') {
-            message = 'Permission caméra refusée. Autorisez l\'accès à la caméra dans votre navigateur.';
-        } else if (err.name === 'NotFoundError') {
-            message = 'Aucune caméra détectée sur cet appareil.';
-        } else if (err.name === 'NotSupportedError') {
-            message = 'La webcam n\'est pas supportée par ce navigateur.';
-        } else if (err.message.includes('Timeout')) {
-            message = 'La caméra met trop de temps à répondre. Réessayez.';
-        } else {
-            message = 'Erreur : ' + err.message;
-        }
-        
-        // Afficher l'erreur dans le div séparé
-        errorMessage.textContent = message;
-        errorDiv.classList.remove('hidden');
-        
-        // Réinitialiser le bouton
-        startCaptureBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
-        startCaptureBtn.disabled = false;
-        startCaptureBtn.style.display = 'inline-block';
+        // Afficher la capture
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+        retakeBtn.style.display = 'inline-block';
+        useBtn.style.display = 'inline-block';
     }
 
 
@@ -728,16 +637,27 @@ class AdvancedFileHandler {
         }
         
         // Reset UI
-        document.getElementById('webcam-video').style.display = 'none';
-        document.getElementById('webcam-canvas').style.display = 'none';
-        document.getElementById('webcam-placeholder').style.display = 'flex';
-        document.getElementById('start-capture').style.display = 'inline-block';
-        document.getElementById('start-capture').innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
-        document.getElementById('start-capture').disabled = false;
-        document.getElementById('retake-photo').style.display = 'none';
-        document.getElementById('use-photo').style.display = 'none';
-        document.getElementById('capture-status').classList.add('hidden');
-        document.getElementById('capture-error').classList.add('hidden');
+        const elements = {
+            video: document.getElementById('webcam-video'),
+            canvas: document.getElementById('webcam-canvas'),
+            placeholder: document.getElementById('webcam-placeholder'),
+            startBtn: document.getElementById('start-capture'),
+            retakeBtn: document.getElementById('retake-photo'),
+            useBtn: document.getElementById('use-photo'),
+            status: document.getElementById('capture-status'),
+            error: document.getElementById('capture-error')
+        };
+        
+        elements.video.style.display = 'none';
+        elements.canvas.style.display = 'none';
+        elements.placeholder.style.display = 'flex';
+        elements.startBtn.style.display = 'inline-block';
+        elements.startBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
+        elements.startBtn.disabled = false;
+        elements.retakeBtn.style.display = 'none';
+        elements.useBtn.style.display = 'none';
+        elements.status.classList.add('hidden');
+        elements.error.classList.add('hidden');
     }
 
     // Crop Modal
