@@ -1,0 +1,390 @@
+{% extends "new_base.html" %}
+
+{% block title %}Administration des Licences - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-key mr-3 text-rdc-blue"></i>
+        Administration des Licences
+    </h1>
+    <p class="mt-2 text-gray-600">Gestion et surveillance du système de licences GEC Mines</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Licenses -->
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-rdc-blue rounded-lg flex items-center justify-center">
+                    <i class="fas fa-certificate text-xl text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Licences</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.total or 0 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Used Licenses -->
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-rdc-red rounded-lg flex items-center justify-center">
+                    <i class="fas fa-lock text-xl text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Utilisées</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.used or 0 }}</p>
+                <p class="text-xs text-gray-400">
+                    {{ "%.1f"|format((stats.used or 0) * 100 / (stats.total or 1)) }}% du total
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Licenses -->
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-rdc-green rounded-lg flex items-center justify-center">
+                    <i class="fas fa-unlock text-xl text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Disponibles</p>
+                <p class="text-2xl font-bold text-gray-900">{{ (stats.total or 0) - (stats.used or 0) }}</p>
+                <p class="text-xs text-gray-400">
+                    {{ "%.1f"|format(((stats.total or 0) - (stats.used or 0)) * 100 / (stats.total or 1)) }}% disponibles
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Potential -->
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-rdc-yellow rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-xl text-white"></i>
+                </div>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Statut</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.active or 0 }}</p>
+                <p class="text-xs text-rdc-green">Actives</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- License Types Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- License Types Chart -->
+    <div class="bg-white rounded-xl shadow-rdc">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-chart-pie mr-2 text-rdc-blue"></i>
+                Répartition par Type
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+                        <span class="font-medium">5 jours</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-900">{{ stats.five_days or 0 }}</span>
+                        <span class="text-sm text-gray-500 ml-1">licences</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                        <span class="font-medium">1 mois</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-900">{{ stats.one_month or 0 }}</span>
+                        <span class="text-sm text-gray-500 ml-1">licences</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-yellow-500 rounded-full mr-3"></div>
+                        <span class="font-medium">6 mois</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-900">{{ stats.six_months or 0 }}</span>
+                        <span class="text-sm text-gray-500 ml-1">licences</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-purple-500 rounded-full mr-3"></div>
+                        <span class="font-medium">12 mois</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-900">{{ stats.twelve_months or 0 }}</span>
+                        <span class="text-sm text-gray-500 ml-1">licences</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-xl shadow-rdc">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-tools mr-2 text-rdc-blue"></i>
+                Actions Rapides
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <a href="{{ url_for('download_licenses') }}" 
+                   class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                    <i class="fas fa-download mr-2"></i>
+                    Télécharger Excel
+                </a>
+                
+                <button onclick="testLicense()" 
+                        class="w-full flex items-center justify-center px-4 py-3 border border-rdc-green text-sm font-medium rounded-lg text-rdc-green bg-white hover:bg-green-50 transition-colors">
+                    <i class="fas fa-vial mr-2"></i>
+                    Tester une Licence
+                </button>
+                
+                <div class="pt-4 border-t border-gray-200">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Test de Licence</h3>
+                    <div class="flex space-x-2">
+                        <input type="text" 
+                               id="test-license-key" 
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                               placeholder="Clé de licence (12 chars)"
+                               maxlength="12">
+                        <button onclick="performTest()" 
+                                class="px-3 py-2 bg-rdc-blue text-white text-sm rounded-md hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="test-result" class="mt-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recently Used Licenses -->
+{% if recent_used %}
+<div class="bg-white rounded-xl shadow-rdc mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-history mr-2 text-rdc-blue"></i>
+            Licences Récemment Utilisées
+        </h2>
+    </div>
+    <div class="p-6">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Clé de Licence
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date Utilisation
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Domaine
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            IP
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for license in recent_used %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {{ license[0] }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ license[1] }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ license[2].strftime('%d/%m/%Y %H:%M') if license[2] else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="max-w-xs truncate" title="{{ license[3] or 'N/A' }}">
+                                {{ license[3][:20] + '...' if license[3] and license[3]|length > 20 else (license[3] or 'N/A') }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ license[4] or 'N/A' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sample Active Licenses -->
+{% if active_licenses %}
+<div class="bg-white rounded-xl shadow-rdc">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-list mr-2 text-rdc-blue"></i>
+            Échantillon de Licences Disponibles
+        </h2>
+        <p class="text-sm text-gray-600 mt-1">Premières licences disponibles par type</p>
+    </div>
+    <div class="p-6">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Clé de Licence
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date Création
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Expiration
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for license in active_licenses %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {{ license[0] }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                                   {% if license[1] == '5 jours' %}bg-blue-100 text-blue-800
+                                   {% elif license[1] == '1 mois' %}bg-green-100 text-green-800
+                                   {% elif license[1] == '6 mois' %}bg-yellow-100 text-yellow-800
+                                   {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                {{ license[1] }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ license[2].strftime('%d/%m/%Y') if license[2] else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ license[3].strftime('%d/%m/%Y') if license[3] else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="testSpecificLicense('{{ license[0] }}')" 
+                                    class="text-rdc-blue hover:text-rdc-blue-dark">
+                                <i class="fas fa-vial mr-1"></i>
+                                Tester
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Test de licence
+function testLicense() {
+    const input = document.getElementById('test-license-key');
+    const license = input.value.trim().toUpperCase();
+    
+    if (license.length !== 12) {
+        showTestResult('Erreur: La clé doit contenir exactement 12 caractères', 'error');
+        return;
+    }
+    
+    performTestWithKey(license);
+}
+
+function testSpecificLicense(licenseKey) {
+    performTestWithKey(licenseKey);
+}
+
+function performTest() {
+    testLicense();
+}
+
+function performTestWithKey(licenseKey) {
+    const resultDiv = document.getElementById('test-result');
+    resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Test en cours...';
+    
+    fetch(`/test_license/${licenseKey}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                showTestResult(
+                    `✅ ${data.message}<br>
+                     <small>Type: ${data.info.duration || 'N/A'}<br>
+                     Expiration: ${data.info.expiration ? new Date(data.info.expiration).toLocaleDateString('fr-FR') : 'N/A'}</small>`, 
+                    'success'
+                );
+            } else {
+                showTestResult(`❌ ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showTestResult('❌ Erreur lors du test', 'error');
+        });
+}
+
+function showTestResult(message, type) {
+    const resultDiv = document.getElementById('test-result');
+    const className = type === 'success' ? 'text-green-600' : 'text-red-600';
+    resultDiv.innerHTML = `<div class="${className}">${message}</div>`;
+}
+
+// Auto-format license input
+document.getElementById('test-license-key').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+    if (value.length > 12) {
+        value = value.substr(0, 12);
+    }
+    e.target.value = value;
+});
+
+// Enter key support
+document.getElementById('test-license-key').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        performTest();
+    }
+});
+</script>
+{% endblock %}

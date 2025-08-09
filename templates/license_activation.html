@@ -120,11 +120,11 @@
                                id="license_key" 
                                name="license_key" 
                                class="license-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue text-center text-lg"
-                               placeholder="GECM-XXXX-XXXX-XXXX-XXXX"
-                               maxlength="29"
+                               placeholder="ABC123XYZ789"
+                               maxlength="12"
                                required>
                         <p class="mt-2 text-xs text-gray-500 text-center">
-                            Format: GECM-XXXX-XXXX-XXXX-XXXX (29 caractères)
+                            Format: 12 caractères alphanumériques
                         </p>
                     </div>
                     
@@ -188,30 +188,16 @@
     </div>
     
     <script>
-        // Auto-format license input
+        // Auto-format license input (12 caractères alphanumériques)
         document.getElementById('license_key').addEventListener('input', function(e) {
             let value = e.target.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
             
-            // Limit to expected length (20 chars without dashes)
-            if (value.length > 20) {
-                value = value.substr(0, 20);
+            // Limit to 12 characters
+            if (value.length > 12) {
+                value = value.substr(0, 12);
             }
             
-            // Add dashes at appropriate positions
-            let formatted = '';
-            for (let i = 0; i < value.length; i++) {
-                if (i === 0) {
-                    formatted += 'GECM-';
-                } else if ((i - 0) % 4 === 0 && i < 16) {
-                    formatted += '-';
-                }
-                
-                if (i >= 0 && formatted.length < 29) {
-                    formatted += value[i];
-                }
-            }
-            
-            e.target.value = formatted;
+            e.target.value = value;
         });
         
         // Demo license generator (development only)

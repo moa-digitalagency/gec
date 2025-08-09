@@ -220,15 +220,22 @@ class LicenseValidator:
             self.logger.error(f"Erreur sauvegarde cache domaine: {e}")
     
     def validate_license(self, license_key: str) -> tuple[bool, str]:
-        """Valide une clé de licence"""
+        """Valide une clé de licence via base de données"""
         try:
-            # Vérification format
-            if not self._validate_license_format(license_key):
-                return False, "Format de licence invalide. Format attendu: GECM-XXXX-XXXX-XXXX-XXXX"
+            # Vérification format (12 caractères alphanumériques)
+            if len(license_key) != 12 or not license_key.isalnum():
+                return False, "Format de licence invalide. Attendu: 12 caractères alphanumériques"
             
-            # Vérification checksum
-            if not self._verify_license_checksum(license_key):
-                return False, "Clé de licence invalide ou corrompue"
+            # Vérification dans la base de données
+            is_valid, message, license_info = self._check_license_in_database(license_key)
+            
+            if not is_valid:
+                return False, message
+            
+            # Marque la licence comme utilisée
+            success = self._mark_license_as_used(license_key)
+            if not success:
+                return False, "Erreur lors de l'activation de la licence"
             
             # Création des données de licence
             domain_fingerprint = self._get_domain_fingerprint()
@@ -236,6 +243,8 @@ class LicenseValidator:
                 'license_key': license_key,
                 'domain_fingerprint': domain_fingerprint,
                 'activation_date': datetime.now().isoformat(),
+                'expiration_date': license_info['expiration_date'],
+                'duration_label': license_info['duration_label'],
                 'application': 'GEC_MINES',
                 'version': '2.0'
             }
@@ -251,12 +260,116 @@ class LicenseValidator:
             # Met à jour le cache du domaine
             self.save_domain_cache()
             
-            self.logger.info("Licence validée et sauvegardée avec succès")
-            return True, "Licence activée avec succès"
+            self.logger.info(f"Licence {license_key} validée et activée avec succès")
+            return True, f"Licence activée avec succès ({license_info['duration_label']})"
             
         except Exception as e:
             self.logger.error(f"Erreur validation licence: {e}")
             return False, f"Erreur lors de la validation: {str(e)}"
+    
+    def _check_license_in_database(self, license_key: str) -> tuple[bool, str, dict]:
+        """Vérifie la licence dans la base de données"""
+        try:
+            import os
+            from sqlalchemy import create_engine, text
+            
+            database_url = os.environ.get('DATABASE_URL')
+            if not database_url:
+                return False, "Erreur de configuration de la base de données", {}
+            
+            engine = create_engine(database_url)
+            
+            with engine.connect() as connection:
+                # Recherche la licence
+                query = text("""
+                    SELECT license_key, duration_days, duration_label, 
+                           expiration_date, is_used, status 
+                    FROM licenses 
+                    WHERE license_key = :license_key
+                """)
+                
+                result = connection.execute(query, {"license_key": license_key}).fetchone()
+                
+                if not result:
+                    return False, "Licence introuvable", {}
+                
+                # Convertit en dictionnaire
+                license_info = {
+                    'license_key': result[0],
+                    'duration_days': result[1],
+                    'duration_label': result[2],
+                    'expiration_date': result[3].isoformat() if result[3] else None,
+                    'is_used': result[4],
+                    'status': result[5]
+                }
+                
+                # Vérifie le statut
+                if license_info['status'] != 'ACTIVE':
+                    return False, "Licence inactive ou expirée", {}
+                
+                # Vérifie si déjà utilisée
+                if license_info['is_used']:
+                    return False, "Cette licence a déjà été utilisée", {}
+                
+                # Vérifie la date d'expiration
+                if license_info['expiration_date']:
+                    expiration = datetime.fromisoformat(license_info['expiration_date'].replace('Z', '+00:00'))
+                    if expiration < datetime.now():
+                        return False, "Licence expirée", {}
+                
+                return True, "Licence valide", license_info
+                
+        except Exception as e:
+            self.logger.error(f"Erreur vérification licence DB: {e}")
+            return False, "Erreur lors de la vérification", {}
+    
+    def _mark_license_as_used(self, license_key: str) -> bool:
+        """Marque une licence comme utilisée"""
+        try:
+            import os
+            from sqlalchemy import create_engine, text
+            
+            database_url = os.environ.get('DATABASE_URL')
+            if not database_url:
+                return False
+            
+            engine = create_engine(database_url)
+            domain_fingerprint = self._get_domain_fingerprint()
+            
+            with engine.connect() as connection:
+                query = text("""
+                    UPDATE licenses 
+                    SET is_used = TRUE, 
+                        used_date = CURRENT_TIMESTAMP,
+                        used_domain = :domain,
+                        used_ip = :ip
+                    WHERE license_key = :license_key AND is_used = FALSE
+                """)
+                
+                # Récupère l'IP si possible
+                import socket
+                try:
+                    ip_address = socket.gethostbyname(socket.gethostname())
+                except:
+                    ip_address = "unknown"
+                
+                result = connection.execute(query, {
+                    "license_key": license_key,
+                    "domain": domain_fingerprint[:50],  # Limite la taille
+                    "ip": ip_address
+                })
+                
+                connection.commit()
+                
+                # Vérifie que la mise à jour a eu lieu
+                if result.rowcount == 0:
+                    return False
+                
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Erreur marquage licence utilisée: {e}")
+            return False
     
     def check_license_validity(self) -> tuple[bool, str]:
         """Vérifie si la licence actuelle est valide"""

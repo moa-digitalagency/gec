@@ -2346,3 +2346,119 @@ def generate_demo_license_route():
     demo_license = generate_sample_license()
     return {"license": demo_license}
 
+@app.route('/admin/licenses')
+@login_required
+def admin_licenses():
+    """Interface d'administration des licences"""
+    # Vérification des permissions super admin
+    if not current_user.is_authenticated or current_user.role != 'super_admin':
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from sqlalchemy import create_engine, text
+        import os
+        
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            flash('Erreur de configuration de la base de données.', 'error')
+            return redirect(url_for('dashboard'))
+        
+        engine = create_engine(database_url)
+        
+        with engine.connect() as connection:
+            # Statistiques globales
+            stats_query = text("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN is_used = true THEN 1 ELSE 0 END) as used,
+                    SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN duration_label = '5 jours' THEN 1 ELSE 0 END) as five_days,
+                    SUM(CASE WHEN duration_label = '1 mois' THEN 1 ELSE 0 END) as one_month,
+                    SUM(CASE WHEN duration_label = '6 mois' THEN 1 ELSE 0 END) as six_months,
+                    SUM(CASE WHEN duration_label = '12 mois' THEN 1 ELSE 0 END) as twelve_months
+                FROM licenses
+            """)
+            
+            stats = connection.execute(stats_query).fetchone()
+            
+            # Licences récemment utilisées
+            recent_query = text("""
+                SELECT license_key, duration_label, used_date, used_domain, used_ip
+                FROM licenses 
+                WHERE is_used = true 
+                ORDER BY used_date DESC 
+                LIMIT 20
+            """)
+            
+            recent_used = connection.execute(recent_query).fetchall()
+            
+            # Quelques licences actives par type
+            active_query = text("""
+                SELECT license_key, duration_label, created_date, expiration_date
+                FROM licenses 
+                WHERE is_used = false AND status = 'ACTIVE'
+                ORDER BY duration_days ASC, created_date ASC
+                LIMIT 50
+            """)
+            
+            active_licenses = connection.execute(active_query).fetchall()
+        
+        return render_template('admin_licenses.html', 
+                             stats=stats,
+                             recent_used=recent_used,
+                             active_licenses=active_licenses)
+        
+    except Exception as e:
+        logging.error(f"Erreur page admin licences: {e}")
+        flash('Erreur lors du chargement des données de licence.', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/test_license/<license_key>')
+@login_required  
+def test_license(license_key):
+    """Route de test pour une licence (admin uniquement)"""
+    if not current_user.is_authenticated or current_user.role != 'super_admin':
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Test de validation sans marquage comme utilisée
+    from license_system import license_validator
+    
+    # Vérification dans la DB seulement
+    is_valid, message, license_info = license_validator._check_license_in_database(license_key)
+    
+    if is_valid:
+        return {
+            "valid": True,
+            "message": "Licence valide et disponible",
+            "info": {
+                "duration": license_info['duration_label'],
+                "expiration": license_info['expiration_date'],
+                "status": license_info['status']
+            }
+        }
+    else:
+        return {
+            "valid": False,
+            "message": message,
+            "info": {}
+        }
+
+@app.route('/admin/download_licenses')
+@login_required
+def download_licenses():
+    """Télécharge le fichier Excel des licences"""
+    if not current_user.is_authenticated or current_user.role != 'super_admin':
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        return send_file('gec_licenses.xlsx', 
+                        as_attachment=True,
+                        download_name=f'gec_licenses_{datetime.now().strftime("%Y%m%d")}.xlsx')
+    except Exception as e:
+        logging.error(f"Erreur téléchargement licences: {e}")
+        flash('Erreur lors du téléchargement du fichier.', 'error')
+        return redirect(url_for('admin_licenses'))
+
