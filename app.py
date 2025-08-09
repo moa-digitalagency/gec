@@ -52,13 +52,15 @@ with app.app_context():
     @app.before_request
     def before_request():
         """Execute before each request for security checks"""
+        from flask import request
+        from flask_login import current_user
+        
         # Clean expired security data
         clean_security_storage()
         
-        # Log all requests for audit
-        from flask_login import current_user
-        if current_user.is_authenticated:
-            audit_log("REQUEST", f"{request.method} {request.path}")
+        # Skip request logging to prevent performance issues
+        # if current_user.is_authenticated and not request.path.startswith('/static'):
+        #     audit_log("REQUEST", f"{request.method} {request.path}")
     
     @app.after_request
     def after_request(response):
@@ -81,14 +83,13 @@ with app.app_context():
     from werkzeug.security import generate_password_hash
     admin_user = models.User.query.filter_by(username='admin').first()
     if not admin_user:
-        admin_user = models.User(
-            username='admin',
-            email='admin@mines.gov.cd',
-            nom_complet='Administrateur Système',
-            password_hash=generate_password_hash('admin123'),
-            role='super_admin',
-            langue='fr'
-        )
+        admin_user = models.User()
+        admin_user.username = 'admin'
+        admin_user.email = 'admin@mines.gov.cd'
+        admin_user.nom_complet = 'Administrateur Système'
+        admin_user.password_hash = generate_password_hash('admin123')
+        admin_user.role = 'super_admin'
+        admin_user.langue = 'fr'
         db.session.add(admin_user)
         db.session.commit()
         logging.info("Default super admin user created (username: admin, password: admin123)")
@@ -127,18 +128,20 @@ def security_headers(response):
 # Enhanced error handlers with security logging
 @app.errorhandler(429)
 def rate_limit_error(error):
-    from security_utils import log_security_event
+    from flask import request, render_template
+    from security_utils import audit_log
     try:
-        log_security_event("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
+        audit_log("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
     except:
         pass
     return render_template('429.html'), 429
 
 @app.errorhandler(403)
 def forbidden_error(error):
-    from security_utils import log_security_event
+    from flask import request, render_template
+    from security_utils import audit_log
     try:
-        log_security_event("ACCESS_DENIED", f"403 error for URL: {request.url}")
+        audit_log("ACCESS_DENIED", f"403 error for URL: {request.url}")
     except:
         pass
     return render_template('403.html'), 403

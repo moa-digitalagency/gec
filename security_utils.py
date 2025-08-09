@@ -557,8 +557,9 @@ def audit_log(action, details="", severity="INFO"):
         )
         
         # Store in memory for web interface
+        from datetime import datetime as dt
         security_log_entry = {
-            "timestamp": timestamp,
+            "timestamp": dt.now().strftime("%Y-%m-%d %H:%M:%S"),
             "level": severity,
             "event_type": action,
             "message": details,
