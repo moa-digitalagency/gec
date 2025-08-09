@@ -684,6 +684,7 @@ def settings():
             # Gestion du logo principal
             if 'logo' in request.files:
                 logo = request.files['logo']
+                logging.info(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
                 print(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
                 if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
                     filename = secure_filename(logo.filename)
@@ -713,6 +714,7 @@ def settings():
                     flash(f'Type de fichier non autorisé: {logo.filename}. Utilisez PNG, JPG, JPEG ou SVG.', 'error')
                 else:
                     print("DEBUG: No logo file uploaded or empty filename")
+                    flash('Veuillez sélectionner un fichier pour le logo.', 'warning')
             
             # Gestion du logo PDF
             if 'logo_pdf' in request.files:

@@ -91,7 +91,7 @@
                     
                     <!-- Profil utilisateur -->
                     <div class="relative">
-                        <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu">
+                        <button type="button" class="px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu" style="color: #003087 !important; font-weight: bold;">
                             <div class="h-6 w-6 rounded-full bg-rdc-green flex items-center justify-center mr-2">
                                 {% if current_user.photo_profile %}
                                     <img src="{{ current_user.get_profile_photo_url() }}" 

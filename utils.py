@@ -9,7 +9,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
-from app import db
+# Imported locally to avoid circular imports
 from models import LogActivite
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif', 'svg'}
@@ -274,6 +274,7 @@ def log_activity(user_id, action, description, courrier_id=None):
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
         
         from models import LogActivite
+        from app import db  # Import locally to avoid circular import
         log = LogActivite(
             utilisateur_id=user_id,
             action=action,
@@ -285,6 +286,7 @@ def log_activity(user_id, action, description, courrier_id=None):
         db.session.add(log)
         db.session.commit()
     except Exception as e:
+        from app import db  # Import locally to avoid circular import
         db.session.rollback()
         print(f"Erreur lors de l'enregistrement du log: {e}")
 
@@ -292,7 +294,8 @@ def log_courrier_modification(courrier_id, user_id, champ_modifie, ancienne_vale
     """Enregistrer une modification de courrier"""
     try:
         from flask import request
-        from models import CourrierModification, db
+        from models import CourrierModification
+        from app import db  # Import locally to avoid circular import
         
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
         
@@ -310,12 +313,14 @@ def log_courrier_modification(courrier_id, user_id, champ_modifie, ancienne_vale
         
     except Exception as e:
         print(f"Erreur lors de l'enregistrement de la modification: {e}")
+        from app import db  # Import locally to avoid circular import
         db.session.rollback()
 
 def get_all_senders():
     """Récupérer la liste de tous les expéditeurs/destinataires uniques"""
     try:
-        from models import Courrier, db
+        from models import Courrier
+        from app import db  # Import locally to avoid circular import
         from sqlalchemy import or_, func
         
         # Récupérer tous les expéditeurs et destinataires non vides
