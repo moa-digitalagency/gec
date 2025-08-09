@@ -2073,7 +2073,7 @@ def get_backup_files():
     return backups
 
 
-@app.route("/security-logs")
+@app.route("/security_logs")
 @login_required
 def security_logs():
     if not current_user.is_super_admin():
