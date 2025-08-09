@@ -338,10 +338,18 @@
                     </div>
                     
                     <!-- Message de statut -->
-                    <div id="capture-status" class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 hidden">
+                    <div id="capture-status" class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-600 hidden">
                         <div class="flex items-center">
                             <i class="fas fa-info-circle mr-2"></i>
                             <span id="status-message">Prêt à capturer</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message d'erreur séparé -->
+                    <div id="capture-error" class="mt-4 p-3 bg-red-50 rounded-lg text-sm text-red-600 hidden">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span id="error-message"></span>
                         </div>
                     </div>
                 </div>
@@ -519,13 +527,17 @@ class AdvancedFileHandler {
         startCaptureBtn.addEventListener('click', async () => {
             console.log('=== DÉBUT CAPTURE WEBCAM ===');
             
-            try {
-                // Afficher le statut de chargement
-                status.classList.remove('hidden');
-                statusMessage.textContent = 'Activation de la caméra...';
-                startCaptureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
-                startCaptureBtn.disabled = true;
+            // Masquer les messages d'erreur précédents
+            document.getElementById('capture-error').classList.add('hidden');
+            
+            // Afficher le statut de chargement
+            status.classList.remove('hidden');
+            status.className = 'mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-600';
+            statusMessage.textContent = 'Activation de la caméra...';
+            startCaptureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
+            startCaptureBtn.disabled = true;
 
+            try {
                 console.log('Vérification du support webcam...');
                 // Vérifier le support
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -534,77 +546,52 @@ class AdvancedFileHandler {
                 
                 console.log('Support webcam: OK');
 
-                // Demander l'accès caméra directement (popup native)
+                // Configuration caméra simple et compatible
                 const constraints = {
                     video: {
-                        width: { ideal: 640, max: 1280 },
-                        height: { ideal: 480, max: 720 },
-                        facingMode: 'user'
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     }
                 };
                 
-                console.log('Demande d\'accès caméra avec contraintes:', constraints);
+                console.log('Demande d\'accès caméra...');
                 statusMessage.textContent = 'Demande d\'autorisation caméra...';
                 
-                // Ajouter un délai pour laisser le temps au navigateur de traiter la permission
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
+                // Demande directe sans délai
                 webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
-                console.log('✅ Stream webcam obtenu:', webcamStream);
-                console.log('Tracks vidéo:', webcamStream.getVideoTracks());
-                
-                // Vérifier que le stream est actif
-                const videoTrack = webcamStream.getVideoTracks()[0];
-                if (!videoTrack || videoTrack.readyState !== 'live') {
-                    console.warn('⚠️ Track vidéo pas en état "live":', videoTrack?.readyState);
-                }
+                console.log('✅ Stream webcam obtenu');
                 
                 video.srcObject = webcamStream;
                 console.log('Stream assigné à la vidéo');
                 statusMessage.textContent = 'Préparation de la caméra...';
                 
-                // Démarrer la vidéo explicitement
-                try {
-                    await video.play();
-                    console.log('✅ Vidéo démarrée');
-                } catch (playErr) {
-                    console.warn('⚠️ Erreur play() vidéo:', playErr);
-                    // Continuer quand même, certains navigateurs n'ont pas besoin de play()
-                }
-                
-                // Attendre que les métadonnées se chargent avec un timeout
-                const waitForMetadata = () => {
-                    return new Promise((resolve, reject) => {
-                        if (video.readyState >= 1) {
-                            // Métadonnées déjà disponibles
+                // Fonction simple pour attendre la vidéo
+                const videoReady = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Timeout - caméra non disponible'));
+                    }, 8000);
+                    
+                    const checkVideo = () => {
+                        if (video.videoWidth > 0 && video.videoHeight > 0) {
+                            clearTimeout(timeout);
                             resolve();
                         } else {
-                            // Attendre l'événement loadedmetadata
-                            const onMetadata = () => {
-                                video.removeEventListener('loadedmetadata', onMetadata);
-                                clearTimeout(timeout);
-                                resolve();
-                            };
-                            video.addEventListener('loadedmetadata', onMetadata);
-                            
-                            // Timeout de 5 secondes
-                            const timeout = setTimeout(() => {
-                                video.removeEventListener('loadedmetadata', onMetadata);
-                                reject(new Error('Timeout metadata'));
-                            }, 5000);
+                            setTimeout(checkVideo, 100);
                         }
+                    };
+                    
+                    video.addEventListener('loadedmetadata', () => {
+                        setTimeout(checkVideo, 100);
                     });
-                };
+                    
+                    // Démarrer immédiatement la vérification
+                    checkVideo();
+                });
                 
-                await waitForMetadata();
-                console.log('✅ Métadonnées vidéo chargées');
-                console.log('Taille vidéo:', video.videoWidth, 'x', video.videoHeight);
-                console.log('État de la vidéo - readyState:', video.readyState);
+                await videoReady;
+                console.log('✅ Vidéo prête:', video.videoWidth, 'x', video.videoHeight);
                 
-                if (video.videoWidth === 0 || video.videoHeight === 0) {
-                    throw new Error('Dimensions vidéo invalides');
-                }
-                
+                // Succès - afficher la vidéo
                 placeholder.style.display = 'none';
                 video.style.display = 'block';
                 status.classList.add('hidden');
@@ -612,7 +599,7 @@ class AdvancedFileHandler {
                 
                 console.log('Interface mise à jour, capture dans 2 secondes...');
                 
-                // Délai de 2 secondes pour que l'utilisateur se prépare
+                // Auto-capture
                 setTimeout(() => {
                     console.log('Déclenchement de la capture photo');
                     this.capturePhoto();
@@ -620,9 +607,6 @@ class AdvancedFileHandler {
                 
             } catch (err) {
                 console.error('❌ ERREUR CAPTURE:', err);
-                console.error('Type d\'erreur:', err.name);
-                console.error('Message:', err.message);
-                console.error('Stack:', err.stack);
                 this.handleCaptureError(err);
             }
         });
@@ -694,31 +678,32 @@ class AdvancedFileHandler {
     
     handleCaptureError(err) {
         const status = document.getElementById('capture-status');
-        const statusMessage = document.getElementById('status-message');
+        const errorDiv = document.getElementById('capture-error');
+        const errorMessage = document.getElementById('error-message');
         const startCaptureBtn = document.getElementById('start-capture');
         
         console.log('Erreur capture:', err.name, err.message);
         
+        // Masquer le statut de chargement
+        status.classList.add('hidden');
+        
         let message = '';
-        let bgColor = 'bg-red-50';
-        let textColor = 'text-red-600';
         
         if (err.name === 'NotAllowedError') {
-            message = 'Permission caméra refusée. Cliquez sur l\'icône caméra 📹 dans votre navigateur pour autoriser ce site.';
+            message = 'Permission caméra refusée. Autorisez l\'accès à la caméra dans votre navigateur.';
         } else if (err.name === 'NotFoundError') {
             message = 'Aucune caméra détectée sur cet appareil.';
         } else if (err.name === 'NotSupportedError') {
             message = 'La webcam n\'est pas supportée par ce navigateur.';
-        } else if (err.message.includes('non supportée')) {
-            message = err.message;
+        } else if (err.message.includes('Timeout')) {
+            message = 'La caméra met trop de temps à répondre. Réessayez.';
         } else {
-            message = 'Erreur technique: ' + err.message;
-            console.error('Erreur webcam détaillée:', err);
+            message = 'Erreur : ' + err.message;
         }
         
-        status.classList.remove('hidden');
-        status.className = `mt-4 p-3 ${bgColor} rounded-lg text-sm ${textColor}`;
-        statusMessage.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>' + message;
+        // Afficher l'erreur dans le div séparé
+        errorMessage.textContent = message;
+        errorDiv.classList.remove('hidden');
         
         // Réinitialiser le bouton
         startCaptureBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
@@ -752,6 +737,7 @@ class AdvancedFileHandler {
         document.getElementById('retake-photo').style.display = 'none';
         document.getElementById('use-photo').style.display = 'none';
         document.getElementById('capture-status').classList.add('hidden');
+        document.getElementById('capture-error').classList.add('hidden');
     }
 
     // Crop Modal
