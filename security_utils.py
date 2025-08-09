@@ -49,11 +49,11 @@ XSS_PATTERNS = [
     r"<meta[^>]*>",
 ]
 
-# Security configuration
-MAX_LOGIN_ATTEMPTS = 5
-LOGIN_LOCKOUT_DURATION = 30  # minutes
-SUSPICIOUS_ACTIVITY_THRESHOLD = 10
-AUTO_BLOCK_DURATION = 60  # minutes
+# Security configuration - Made less restrictive
+MAX_LOGIN_ATTEMPTS = 8  # Increased from 5 to 8 attempts
+LOGIN_LOCKOUT_DURATION = 15  # Reduced from 30 to 15 minutes
+SUSPICIOUS_ACTIVITY_THRESHOLD = 15  # Increased from 10 to 15
+AUTO_BLOCK_DURATION = 30  # Reduced from 60 to 30 minutes
 
 def clean_security_storage():
     """Clean expired security entries"""

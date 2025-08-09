@@ -1,0 +1,252 @@
+{% extends "new_base.html" %}
+
+{% block title %}Paramètres de Sécurité - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <div class="mb-6">
+        <nav class="flex" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-4">
+                <li>
+                    <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-home"></i>
+                        <span class="sr-only">Accueil</span>
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                        <span class="text-sm font-medium text-gray-900">Paramètres de Sécurité</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-shield-virus mr-3 text-rdc-blue"></i>
+            Paramètres de Sécurité
+        </h1>
+        <p class="mt-2 text-gray-600">Configuration avancée des mesures de sécurité du système</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Configuration des Tentatives de Connexion -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Contrôle des Connexions
+                </h2>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="form_type" value="login_security">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-exclamation-triangle mr-1 text-rdc-yellow"></i>
+                        Nombre maximum de tentatives de connexion
+                    </label>
+                    <input type="number" 
+                           name="max_login_attempts" 
+                           value="{{ max_login_attempts }}"
+                           min="3" 
+                           max="20"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
+                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ max_login_attempts }} tentatives autorisées</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-clock mr-1 text-rdc-blue"></i>
+                        Durée de blocage (minutes)
+                    </label>
+                    <input type="number" 
+                           name="lockout_duration" 
+                           value="{{ lockout_duration }}"
+                           min="5" 
+                           max="120"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
+                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ lockout_duration }} minutes de blocage</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tachometer-alt mr-1 text-rdc-green"></i>
+                        Limite de requêtes par période
+                    </label>
+                    <input type="number" 
+                           name="rate_limit_requests" 
+                           value="{{ rate_limit_requests }}"
+                           min="5" 
+                           max="50"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
+                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ rate_limit_requests }} requêtes par 15 minutes</p>
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-rdc-blue text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Sauvegarder les Paramètres
+                </button>
+            </form>
+        </div>
+
+        <!-- Gestion des IP Bloquées -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200 bg-red-600">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <i class="fas fa-ban mr-2"></i>
+                    Gestion des IP Bloquées
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Bouton pour débloquer toutes les IPs -->
+                <form method="POST" class="mb-4">
+                    <input type="hidden" name="form_type" value="unblock_all">
+                    <button type="submit" 
+                            class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-unlock mr-2"></i>Débloquer Toutes les IP
+                    </button>
+                </form>
+
+                <!-- Liste des IPs bloquées -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">IP Actuellement Bloquées</h3>
+                    {% if blocked_ips %}
+                        <div class="space-y-2">
+                            {% for ip in blocked_ips %}
+                            <div class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-md">
+                                <span class="font-mono text-sm">{{ ip }}</span>
+                                <form method="POST" class="inline">
+                                    <input type="hidden" name="form_type" value="unblock_ip">
+                                    <input type="hidden" name="ip_address" value="{{ ip }}">
+                                    <button type="submit" 
+                                            class="text-green-600 hover:text-green-800 text-sm">
+                                        <i class="fas fa-unlock"></i> Débloquer
+                                    </button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500 text-center py-4">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            Aucune IP bloquée actuellement
+                        </p>
+                    {% endif %}
+                </div>
+
+                <!-- Statistiques -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-md">
+                    <h4 class="font-medium text-gray-900 mb-2">Statistiques de Sécurité</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Tentatives échouées (24h):</span>
+                            <span class="font-medium ml-2">{{ failed_attempts_24h }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">IPs surveillées:</span>
+                            <span class="font-medium ml-2">{{ monitored_ips }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Avancée -->
+        <div class="bg-white shadow-rdc rounded-xl lg:col-span-2">
+            <div class="px-6 py-4 border-b border-gray-200 bg-rdc-yellow">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <i class="fas fa-cogs mr-2"></i>
+                    Configuration Avancée
+                </h2>
+            </div>
+            <form method="POST" class="p-6">
+                <input type="hidden" name="form_type" value="advanced_security">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-exclamation-circle mr-1 text-red-500"></i>
+                            Seuil d'activité suspecte
+                        </label>
+                        <input type="number" 
+                               name="suspicious_threshold" 
+                               value="{{ suspicious_threshold }}"
+                               min="5" 
+                               max="50"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
+                        <p class="text-xs text-gray-500 mt-1">Nombre d'actions suspectes avant alerte</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-shield-alt mr-1 text-rdc-blue"></i>
+                            Durée de blocage automatique (minutes)
+                        </label>
+                        <input type="number" 
+                               name="auto_block_duration" 
+                               value="{{ auto_block_duration }}"
+                               min="10" 
+                               max="240"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
+                        <p class="text-xs text-gray-500 mt-1">Durée de blocage pour activité suspecte</p>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   name="enable_audit_logging" 
+                                   id="enable_audit_logging"
+                                   {% if audit_logging_enabled %}checked{% endif %}
+                                   class="h-4 w-4 text-rdc-blue focus:ring-rdc-blue border-gray-300 rounded">
+                            <label for="enable_audit_logging" class="ml-2 block text-sm text-gray-900">
+                                Activer l'audit complet des actions utilisateur
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">Enregistre toutes les actions sensibles (peut impacter les performances)</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" 
+                            class="bg-rdc-yellow text-white px-6 py-2 rounded-md hover:bg-yellow-600 transition-colors">
+                        <i class="fas fa-cog mr-2"></i>Appliquer la Configuration Avancée
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alerte de sécurité -->
+    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">Important</h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                    <p>Des paramètres de sécurité trop permissifs peuvent exposer votre système à des attaques. 
+                    Des paramètres trop restrictifs peuvent bloquer les utilisateurs légitimes. 
+                    Ajustez ces valeurs avec prudence et surveillez les logs de sécurité.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-actualisation des statistiques toutes les 30 secondes
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

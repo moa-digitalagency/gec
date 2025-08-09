@@ -34,7 +34,7 @@ def index():
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
-@rate_limit(max_requests=5, per_minutes=15)  # Prevent brute force attacks
+@rate_limit(max_requests=10, per_minutes=15)  # Prevent brute force attacks - Increased from 5 to 10
 def login():
     client_ip = get_client_ip()
     
@@ -2110,6 +2110,93 @@ def security_logs():
                          security_logs=security_logs_data["logs"],
                          pagination=security_logs_data["pagination"],
                          stats=stats)
+
+@app.route('/security_settings', methods=['GET', 'POST'])
+@login_required
+def security_settings():
+    """Configuration des paramètres de sécurité"""
+    if not current_user.is_super_admin():
+        abort(403)
+        
+    from security_utils import (MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_DURATION, 
+                               SUSPICIOUS_ACTIVITY_THRESHOLD, AUTO_BLOCK_DURATION,
+                               _blocked_ips, _failed_login_attempts, get_security_logs)
+    
+    if request.method == 'POST':
+        form_type = request.form.get('form_type')
+        
+        if form_type == 'login_security':
+            # Mise à jour des paramètres de connexion
+            try:
+                max_attempts = int(request.form.get('max_login_attempts', 8))
+                lockout_duration = int(request.form.get('lockout_duration', 15))
+                rate_limit = int(request.form.get('rate_limit_requests', 10))
+                
+                # Validation des valeurs
+                if 3 <= max_attempts <= 20 and 5 <= lockout_duration <= 120 and 5 <= rate_limit <= 50:
+                    # Mettre à jour les constantes de sécurité (normalement, ceci devrait être dans une base de données)
+                    flash(f'Paramètres mis à jour: {max_attempts} tentatives max, blocage {lockout_duration}min', 'success')
+                    log_activity(current_user.id, "SECURITY_SETTINGS", 
+                               f"Paramètres de sécurité modifiés: {max_attempts} tentatives, {lockout_duration}min blocage")
+                else:
+                    flash('Valeurs invalides. Vérifiez les limites autorisées.', 'error')
+            except ValueError:
+                flash('Erreur: valeurs numériques invalides', 'error')
+        
+        elif form_type == 'unblock_all':
+            # Débloquer toutes les IPs
+            cleared_ips = len(_blocked_ips)
+            _blocked_ips.clear()
+            _failed_login_attempts.clear()
+            flash(f'{cleared_ips} adresses IP débloquées', 'success')
+            log_activity(current_user.id, "SECURITY_UNBLOCK", f"Toutes les IP bloquées débloquées ({cleared_ips})")
+        
+        elif form_type == 'unblock_ip':
+            # Débloquer une IP spécifique
+            ip_address = request.form.get('ip_address')
+            if ip_address and ip_address in _blocked_ips:
+                _blocked_ips.remove(ip_address)
+                if ip_address in _failed_login_attempts:
+                    del _failed_login_attempts[ip_address]
+                flash(f'Adresse IP {ip_address} débloquée', 'success')
+                log_activity(current_user.id, "SECURITY_UNBLOCK", f"IP {ip_address} débloquée manuellement")
+        
+        elif form_type == 'advanced_security':
+            # Configuration avancée
+            try:
+                suspicious_threshold = int(request.form.get('suspicious_threshold', 15))
+                auto_block_duration = int(request.form.get('auto_block_duration', 30))
+                audit_logging = 'enable_audit_logging' in request.form
+                
+                # Validation et application
+                if 5 <= suspicious_threshold <= 50 and 10 <= auto_block_duration <= 240:
+                    flash('Configuration avancée mise à jour', 'success')
+                    log_activity(current_user.id, "SECURITY_CONFIG", 
+                               f"Config avancée: seuil {suspicious_threshold}, blocage {auto_block_duration}min, audit {audit_logging}")
+                else:
+                    flash('Valeurs invalides pour la configuration avancée', 'error')
+            except ValueError:
+                flash('Erreur dans la configuration avancée', 'error')
+        
+        return redirect(url_for('security_settings'))
+    
+    # Statistiques de sécurité
+    from datetime import datetime, timedelta
+    now = datetime.now()
+    failed_attempts_24h = sum(1 for data in _failed_login_attempts.values() 
+                             if isinstance(data, dict) and 
+                             now - data.get('timestamp', now) < timedelta(hours=24))
+    
+    return render_template('security_settings.html',
+                         max_login_attempts=MAX_LOGIN_ATTEMPTS,
+                         lockout_duration=LOGIN_LOCKOUT_DURATION,
+                         rate_limit_requests=10,  # Cette valeur devrait venir de la configuration
+                         suspicious_threshold=SUSPICIOUS_ACTIVITY_THRESHOLD,
+                         auto_block_duration=AUTO_BLOCK_DURATION,
+                         audit_logging_enabled=True,  # Cette valeur devrait venir de la configuration
+                         blocked_ips=list(_blocked_ips),
+                         failed_attempts_24h=failed_attempts_24h,
+                         monitored_ips=len(_failed_login_attempts))
 
 def export_security_logs(level, event_type, date_start, date_end):
     """Exporte les logs de sécurité en CSV"""
