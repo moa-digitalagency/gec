@@ -45,8 +45,18 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <a href="{{ url_for('dashboard') }}" class="flex items-center text-white font-bold text-xl">
-                        <i class="fas fa-mail-bulk mr-3 text-rdc-yellow"></i>
-                        <span>{{ parametres.nom_logiciel if parametres else 'GEC - Mines RDC' }}</span>
+                        {% set system_params = get_system_params() %}
+                        {% if system_params.logo_url and system_params.logo_url.strip() %}
+                            <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
+                                 alt="Logo Organisation" 
+                                 class="mr-3" 
+                                 style="height: 40px; width: auto; max-width: 60px; object-fit: contain;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                            <i class="fas fa-mail-bulk mr-3 text-rdc-yellow" style="display: none;"></i>
+                        {% else %}
+                            <i class="fas fa-mail-bulk mr-3 text-rdc-yellow"></i>
+                        {% endif %}
+                        <span>{{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Mines RDC' }}</span>
                     </a>
                 </div>
                 

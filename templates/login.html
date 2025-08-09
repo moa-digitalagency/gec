@@ -8,9 +8,19 @@
         <div class="bg-white rounded-xl shadow-rdc p-8">
             <!-- Header -->
             <div class="text-center mb-8">
-                <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
-                </div>
+                {% set system_params = get_system_params() %}
+                {% if system_params.logo_url and system_params.logo_url.strip() %}
+                    <div class="mx-auto h-16 w-16 mb-4 flex items-center justify-center">
+                        <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
+                             alt="Logo Organisation" 
+                             class="h-16 w-auto max-w-16 object-contain"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center\'><i class=\'fas fa-mail-bulk text-2xl text-rdc-yellow\'></i></div>';">
+                    </div>
+                {% else %}
+                    <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
+                    </div>
+                {% endif %}
                 <h2 class="text-2xl font-bold text-gray-900">{{ parametres.nom_logiciel if parametres else 'Système GEC' }}</h2>
                 <p class="mt-2 text-sm text-gray-600">{{ parametres.sous_titre_pdf if parametres else 'Secrétariat Général des Mines' }}</p>
                 <p class="text-xs text-gray-500">{{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}</p>
