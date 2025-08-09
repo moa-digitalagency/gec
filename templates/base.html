@@ -81,24 +81,6 @@
                         </a>
                     </li>
                     
-                    <!-- Menu Gestion des Licences -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-primary" href="#" id="licenseDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-key me-1"></i>Licences
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('license_status') }}">
-                                <i class="fas fa-info-circle me-1"></i>Statut de ma Licence
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('add_license') }}">
-                                <i class="fas fa-plus me-1"></i>Ajouter une Licence
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('license_history') }}">
-                                <i class="fas fa-history me-1"></i>Historique des Licences
-                            </a></li>
-                        </ul>
-                    </li>
-                    
                     {% if current_user.is_super_admin() %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-primary" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
@@ -126,10 +108,6 @@
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('security_settings') }}">
                                 <i class="fas fa-shield-virus me-1"></i>Paramètres de Sécurité
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('admin_licenses') }}">
-                                <i class="fas fa-key me-1"></i>Gestion des Licences
                             </a></li>
                         </ul>
                     </li>
