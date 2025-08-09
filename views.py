@@ -2158,8 +2158,11 @@ def security_settings():
                 _blocked_ips.remove(ip_address)
                 if ip_address in _failed_login_attempts:
                     del _failed_login_attempts[ip_address]
-                flash(f'Adresse IP {ip_address} débloquée', 'success')
+                flash(f'Adresse IP {ip_address} débloquée avec succès', 'success')
                 log_activity(current_user.id, "SECURITY_UNBLOCK", f"IP {ip_address} débloquée manuellement")
+                log_security_event("IP_UNBLOCK", f"IP {ip_address} unblocked by {current_user.username}")
+            else:
+                flash(f'Adresse IP {ip_address} non trouvée dans la liste des IP bloquées', 'error')
         
         elif form_type == 'advanced_security':
             # Configuration avancée
