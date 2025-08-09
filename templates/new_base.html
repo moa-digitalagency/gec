@@ -40,11 +40,11 @@
     
     <!-- Navigation -->
     {% if current_user.is_authenticated %}
-    <nav class="bg-rdc-blue shadow-lg">
+    <nav class="bg-white shadow-lg border-b-2 border-rdc-blue">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="{{ url_for('dashboard') }}" class="flex items-center text-white font-bold text-xl">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center text-rdc-blue font-bold text-xl">
                         {% set system_params = get_system_params() %}
                         {% if system_params.logo_url and system_params.logo_url.strip() %}
                             <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
@@ -63,14 +63,14 @@
                 <!-- Menu hamburger universel (desktop, tablette, mobile) -->
                 <div class="flex items-center space-x-3">
                     <!-- Bouton menu principal -->
-                    <button type="button" class="text-white hover:bg-rdc-green px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="mobile-menu-button">
+                    <button type="button" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="mobile-menu-button">
                         <i class="fas fa-bars mr-2"></i>
                         <span class="hidden sm:inline">Menu</span>
                     </button>
                     
                     <!-- Sélecteur de langue compact -->
                     <div class="relative group">
-                        <button class="text-white hover:bg-rdc-green px-2 py-2 rounded-md text-xs font-medium transition-colors flex items-center">
+                        <button class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-2 py-2 rounded-md text-xs font-medium transition-colors flex items-center">
                             {% if get_current_language() == 'fr' %}
                                 🇫🇷 <span class="hidden lg:inline ml-1">FR</span>
                             {% else %}
