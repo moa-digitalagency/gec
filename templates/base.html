@@ -34,9 +34,19 @@
     {% if current_user.is_authenticated %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-                <i class="fas fa-mail-bulk me-2"></i>
-                {{ parametres.nom_logiciel if parametres else 'GEC - Mines RDC' }}
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                {% set system_params = get_system_params() %}
+                {% if system_params.logo_url and system_params.logo_url.strip() %}
+                    <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
+                         alt="Logo" 
+                         class="me-2" 
+                         style="height: 40px; width: auto; max-width: 60px; object-fit: contain;"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <i class="fas fa-mail-bulk me-2" style="display: none;"></i>
+                {% else %}
+                    <i class="fas fa-mail-bulk me-2"></i>
+                {% endif %}
+                {{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Mines RDC' }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -112,7 +122,8 @@
     <footer class="bg-light mt-5 py-4">
         <div class="container text-center">
             <p class="mb-0 text-muted">
-                &copy; 2025 Secrétariat Général des Mines - {{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}
+                {% set system_params = get_system_params() %}
+                &copy; 2025 Secrétariat Général des Mines - {{ system_params.pays_pdf if system_params.pays_pdf else 'République Démocratique du Congo' }}
             </p>
         </div>
     </footer>
