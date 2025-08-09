@@ -37,7 +37,7 @@
             <a class="navbar-brand d-flex align-items-center text-primary fw-bold" href="{{ url_for('dashboard') }}">
                 {% set system_params = get_system_params() %}
                 {% if system_params.logo_url and system_params.logo_url.strip() %}
-                    <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
+                    <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" 
                          alt="Logo" 
                          class="me-2" 
                          style="height: 40px; width: auto; max-width: 60px; object-fit: contain;"

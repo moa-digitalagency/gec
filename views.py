@@ -684,6 +684,7 @@ def settings():
             # Gestion du logo principal
             if 'logo' in request.files:
                 logo = request.files['logo']
+                print(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
                 if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
                     filename = secure_filename(logo.filename)
                     # Créer un nom unique pour le logo
@@ -697,15 +698,21 @@ def settings():
                             old_full_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), old_logo_path)
                             if os.path.exists(old_full_path):
                                 os.remove(old_full_path)
+                                print(f"DEBUG: Removed old logo: {old_full_path}")
                         
                         logo.save(logo_path)
                         parametres.logo_url = f'/uploads/{logo_filename}'
+                        print(f"DEBUG: New logo saved: {parametres.logo_url}")
                         flash('Logo téléchargé avec succès!', 'success')
                     except Exception as e:
+                        print(f"DEBUG: Error saving logo: {e}")
                         flash(f'Erreur lors du téléchargement du logo: {str(e)}', 'error')
                 elif logo and logo.filename:
                     # Debug: show what files are rejected
+                    print(f"DEBUG: File rejected: {logo.filename}")
                     flash(f'Type de fichier non autorisé: {logo.filename}. Utilisez PNG, JPG, JPEG ou SVG.', 'error')
+                else:
+                    print("DEBUG: No logo file uploaded or empty filename")
             
             # Gestion du logo PDF
             if 'logo_pdf' in request.files:

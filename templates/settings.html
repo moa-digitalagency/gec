@@ -50,7 +50,7 @@
                             <div class="space-y-1 text-center">
                                 {% if parametres.logo_url %}
                                 <div class="mb-4">
-                                    <img src="{{ url_for('uploaded_file', filename=parametres.logo_url.split('/')[-1]) }}" alt="Logo actuel" class="h-16 w-auto mx-auto">
+                                    <img src="{{ url_for('uploaded_file', filename=parametres.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" alt="Logo actuel" class="h-16 w-auto mx-auto">
                                     <p class="text-sm text-gray-500 mt-2">Logo actuel</p>
                                 </div>
                                 {% else %}
