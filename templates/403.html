@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accès refusé - {{ parametres.nom_logiciel }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'rdc-blue': '#003087',
+                        'rdc-yellow': '#FFD700',
+                        'rdc-red': '#CE1126',
+                        'rdc-green': '#009639'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+        <div class="mb-6">
+            <div class="mx-auto w-16 h-16 bg-rdc-red rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-ban text-white text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Accès refusé</h1>
+            <p class="text-gray-600">
+                Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.
+            </p>
+        </div>
+        
+        <div class="bg-rdc-red bg-opacity-10 border border-rdc-red rounded-lg p-4 mb-6">
+            <p class="text-sm text-gray-700">
+                <strong>Permissions insuffisantes :</strong> Contactez votre administrateur système si vous pensez que c'est une erreur.
+            </p>
+        </div>
+        
+        <div class="space-y-3">
+            <a href="{{ url_for('dashboard') }}" 
+               class="block w-full bg-rdc-blue text-white py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">
+                Retour au tableau de bord
+            </a>
+            <p class="text-sm text-gray-500">
+                Code d'erreur: 403 - Forbidden
+            </p>
+        </div>
+    </div>
+</body>
+</html>

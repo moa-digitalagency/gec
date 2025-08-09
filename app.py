@@ -25,9 +25,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
-app.config["UPLOAD_FOLDER"] = "uploads"
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
-
 # Configure upload settings
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -99,6 +96,33 @@ def inject_language_functions():
         'get_available_languages': get_available_languages,
         't': t
     }
+
+# Import security utilities
+from security_utils import add_security_headers
+
+# Add security headers to all responses
+@app.after_request
+def security_headers(response):
+    return add_security_headers(response)
+
+# Enhanced error handlers with security logging
+@app.errorhandler(429)
+def rate_limit_error(error):
+    from security_utils import log_security_event
+    try:
+        log_security_event("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
+    except:
+        pass
+    return render_template('429.html'), 429
+
+@app.errorhandler(403)
+def forbidden_error(error):
+    from security_utils import log_security_event
+    try:
+        log_security_event("ACCESS_DENIED", f"403 error for URL: {request.url}")
+    except:
+        pass
+    return render_template('403.html'), 403
 
 # Import views
 import views

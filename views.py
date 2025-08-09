@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import subprocess
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, flash, session, send_file, abort
+from flask import render_template, request, redirect, url_for, flash, session, send_file, abort, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -15,6 +15,8 @@ import logging
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
+from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event
+from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 
 @app.route('/')
 def index():
@@ -23,6 +25,7 @@ def index():
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
+@rate_limit(max_requests=5, per_minutes=15)  # Prevent brute force attacks
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -51,24 +54,38 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Statistiques pour le tableau de bord
-    total_courriers = Courrier.query.count()
-    courriers_today = Courrier.query.filter(
-        Courrier.date_enregistrement >= datetime.now().date()
-    ).count()
-    
-    # Derniers courriers enregistrés
-    recent_courriers = Courrier.query.order_by(
-        Courrier.date_enregistrement.desc()
-    ).limit(5).all()
-    
-    return render_template('dashboard.html', 
-                         total_courriers=total_courriers,
-                         courriers_today=courriers_today,
-                         recent_courriers=recent_courriers)
+    with PerformanceMonitor("dashboard_load"):
+        # Use cached statistics for better performance
+        stats = get_dashboard_statistics()
+        
+        # Get recent mail specific to user permissions
+        recent_query = Courrier.query
+        
+        # Apply permission filters
+        if current_user.has_permission('read_all_mail'):
+            pass  # Can see all
+        elif current_user.has_permission('read_department_mail') and current_user.departement_id:
+            recent_query = recent_query.join(User, Courrier.utilisateur_id == User.id).filter(
+                User.departement_id == current_user.departement_id
+            )
+        else:
+            recent_query = recent_query.filter(Courrier.utilisateur_id == current_user.id)
+        
+        recent_courriers = recent_query.order_by(
+            Courrier.date_enregistrement.desc()
+        ).limit(5).all()
+        
+        return render_template('dashboard.html', 
+                             total_courriers=stats['total_courriers'],
+                             courriers_today=stats['courriers_today'],
+                             courriers_this_week=stats['courriers_this_week'],
+                             total_users=stats['total_users'],
+                             recent_courriers=recent_courriers,
+                             recent_activities=stats['recent_activities'])
 
 @app.route('/register_mail', methods=['GET', 'POST'])
 @login_required
+@rate_limit(max_requests=50, per_minutes=15)  # Prevent spam registration
 def register_mail():
     if request.method == 'POST':
         # Récupération des données du formulaire
@@ -114,7 +131,7 @@ def register_mail():
         fichier_chemin = None
         fichier_type = None
         
-        if file and file.filename != '':
+        if file and file.filename and file.filename != '':
             if allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 # Ajouter timestamp pour éviter les conflits
@@ -171,7 +188,7 @@ def register_mail():
 @login_required
 def view_mail():
     page = request.args.get('page', 1, type=int)
-    per_page = 20
+    per_page = 25  # Increased from 20 for better performance
     
     # Filtres
     search = request.args.get('search', '')
@@ -223,17 +240,16 @@ def view_mail():
     # Ajout du filtre pour type de courrier
     type_courrier = request.args.get('type_courrier', '')
     
-    # Recherche textuelle
+    # Enhanced search with performance optimization
     if search:
-        query = query.filter(
-            or_(
-                Courrier.numero_accuse_reception.contains(search),
-                Courrier.numero_reference.contains(search),
-                Courrier.objet.contains(search),
-                Courrier.expediteur.contains(search),
-                Courrier.destinataire.contains(search)
-            )
-        )
+        with PerformanceMonitor("search_query"):
+            # Sanitize search input for security
+            search = sanitize_input(search)
+            search_condition = optimize_search_query(search, Courrier)
+            if search_condition is not None:
+                query = query.filter(search_condition)
+                # Log search activity for analytics
+                log_security_event("SEARCH", f"Search performed: {search[:50]}...")
     
     # Filtre par type de courrier
     if type_courrier:
@@ -469,6 +485,7 @@ def download_file(id):
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
+@rate_limit(max_requests=20, per_minutes=15)
 def settings():
     parametres = ParametresSysteme.get_parametres()
     
@@ -490,7 +507,7 @@ def settings():
         # Gestion du logo principal
         if 'logo' in request.files:
             logo = request.files['logo']
-            if logo and logo.filename and allowed_file(logo.filename):
+            if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
                 filename = secure_filename(logo.filename)
                 # Créer un nom unique pour le logo
                 logo_filename = f"logo_{uuid.uuid4().hex[:8]}_{filename}"
@@ -506,7 +523,7 @@ def settings():
         # Gestion du logo PDF
         if 'logo_pdf' in request.files:
             logo_pdf = request.files['logo_pdf']
-            if logo_pdf and logo_pdf.filename and allowed_file(logo_pdf.filename):
+            if logo_pdf and logo_pdf.filename and logo_pdf.filename != '' and allowed_file(logo_pdf.filename):
                 filename = secure_filename(logo_pdf.filename)
                 # Créer un nom unique pour le logo PDF
                 logo_pdf_filename = f"logo_pdf_{uuid.uuid4().hex[:8]}_{filename}"
@@ -1457,7 +1474,7 @@ def upload_profile_photo():
         flash('Aucun fichier sélectionné.', 'error')
         return redirect(url_for('dashboard'))
     
-    if file and allowed_file(file.filename):
+    if file and file.filename and file.filename != '' and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         ext = filename.rsplit('.', 1)[1].lower()

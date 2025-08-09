@@ -56,17 +56,17 @@ class Departement(db.Model):
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    nom_complet = db.Column(db.String(120), nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    nom_complet = db.Column(db.String(120), nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
-    actif = db.Column(db.Boolean, default=True)
-    role = db.Column(db.String(20), nullable=False, default='user')
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    actif = db.Column(db.Boolean, default=True, index=True)
+    role = db.Column(db.String(20), nullable=False, default='user', index=True)
     langue = db.Column(db.String(5), nullable=False, default='fr')
     photo_profile = db.Column(db.String(255), nullable=True)  # Chemin vers la photo de profil
-    departement_id = db.Column(db.Integer, db.ForeignKey('departement.id'), nullable=True)
-    matricule = db.Column(db.String(50), nullable=True)  # Matricule de l'employé
+    departement_id = db.Column(db.Integer, db.ForeignKey('departement.id'), nullable=True, index=True)
+    matricule = db.Column(db.String(50), nullable=True, unique=True)  # Matricule de l'employé
     fonction = db.Column(db.String(200), nullable=True)  # Fonction/poste de l'employé
     
     # Relations
@@ -142,19 +142,19 @@ class User(UserMixin, db.Model):
 
 class Courrier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    numero_accuse_reception = db.Column(db.String(50), unique=True, nullable=False)
-    numero_reference = db.Column(db.String(100), nullable=True)
+    numero_accuse_reception = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    numero_reference = db.Column(db.String(100), nullable=True, index=True)
     objet = db.Column(db.Text, nullable=False)
-    type_courrier = db.Column(db.String(20), nullable=False, default='ENTRANT')  # ENTRANT ou SORTANT
-    expediteur = db.Column(db.String(200), nullable=True)  # Pour courrier entrant
-    destinataire = db.Column(db.String(200), nullable=True)  # Pour courrier sortant
-    date_redaction = db.Column(db.Date, nullable=True)  # Date de rédaction de la lettre
-    date_enregistrement = db.Column(db.DateTime, default=datetime.utcnow)
+    type_courrier = db.Column(db.String(20), nullable=False, default='ENTRANT', index=True)  # ENTRANT ou SORTANT
+    expediteur = db.Column(db.String(200), nullable=True, index=True)  # Pour courrier entrant
+    destinataire = db.Column(db.String(200), nullable=True, index=True)  # Pour courrier sortant
+    date_redaction = db.Column(db.Date, nullable=True, index=True)  # Date de rédaction de la lettre
+    date_enregistrement = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     fichier_nom = db.Column(db.String(255), nullable=True)
     fichier_chemin = db.Column(db.String(500), nullable=True)
-    fichier_type = db.Column(db.String(50), nullable=True)
-    statut = db.Column(db.String(50), nullable=False, default='RECU')
-    date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fichier_type = db.Column(db.String(50), nullable=True, index=True)
+    statut = db.Column(db.String(50), nullable=False, default='RECU', index=True)
+    date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
     
     # Clé étrangère
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -207,14 +207,14 @@ class Courrier(db.Model):
 
 class LogActivite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    action = db.Column(db.String(100), nullable=False)
+    action = db.Column(db.String(100), nullable=False, index=True)
     description = db.Column(db.Text, nullable=True)
-    date_action = db.Column(db.DateTime, default=datetime.utcnow)
+    date_action = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     ip_address = db.Column(db.String(45), nullable=True)
     
     # Clé étrangère
-    utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=True)
+    utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=True, index=True)
     
     def __repr__(self):
         return f'<LogActivite {self.action} by {self.utilisateur.username}>'
