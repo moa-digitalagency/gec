@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Sécurité - GEC Mines{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <!-- En-tête -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-shield-alt text-blue-600 mr-2"></i>
+                    Logs de Sécurité
+                </h1>
+                <p class="text-gray-600 mt-1">Surveillance et audit des événements de sécurité</p>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>Actualiser
+                </button>
+                <button onclick="exportLogs()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exporter
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <form method="GET" id="filterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Niveau</label>
+                    <select name="level" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les niveaux</option>
+                        <option value="INFO" {% if request.args.get('level') == 'INFO' %}selected{% endif %}>INFO</option>
+                        <option value="WARNING" {% if request.args.get('level') == 'WARNING' %}selected{% endif %}>WARNING</option>
+                        <option value="ERROR" {% if request.args.get('level') == 'ERROR' %}selected{% endif %}>ERROR</option>
+                        <option value="CRITICAL" {% if request.args.get('level') == 'CRITICAL' %}selected{% endif %}>CRITICAL</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type d'événement</label>
+                    <select name="event_type" class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                        <option value="">Tous les types</option>
+                        <option value="LOGIN_SUCCESS" {% if request.args.get('event_type') == 'LOGIN_SUCCESS' %}selected{% endif %}>Connexion réussie</option>
+                        <option value="LOGIN_FAILED" {% if request.args.get('event_type') == 'LOGIN_FAILED' %}selected{% endif %}>Échec de connexion</option>
+                        <option value="LOGIN_BLOCKED" {% if request.args.get('event_type') == 'LOGIN_BLOCKED' %}selected{% endif %}>IP bloquée</option>
+                        <option value="FILE_ENCRYPTED" {% if request.args.get('event_type') == 'FILE_ENCRYPTED' %}selected{% endif %}>Fichier crypté</option>
+                        <option value="SQL_INJECTION" {% if request.args.get('event_type') == 'SQL_INJECTION' %}selected{% endif %}>Tentative injection SQL</option>
+                        <option value="XSS_ATTACK" {% if request.args.get('event_type') == 'XSS_ATTACK' %}selected{% endif %}>Tentative XSS</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                    <input type="date" name="date_start" value="{{ request.args.get('date_start', '') }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin</label>
+                    <input type="date" name="date_end" value="{{ request.args.get('date_end', '') }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="md:col-span-4 flex space-x-3">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-filter mr-2"></i>Filtrer
+                    </button>
+                    <a href="{{ url_for('security_logs') }}" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-times mr-2"></i>Effacer
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistiques rapides -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-full">
+                        <i class="fas fa-check text-green-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-green-800">Connexions réussies</p>
+                        <p class="text-2xl font-bold text-green-600">{{ stats.successful_logins or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-full">
+                        <i class="fas fa-times text-red-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-red-800">Échecs de connexion</p>
+                        <p class="text-2xl font-bold text-red-600">{{ stats.failed_logins or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-full">
+                        <i class="fas fa-ban text-yellow-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-yellow-800">IPs bloquées</p>
+                        <p class="text-2xl font-bold text-yellow-600">{{ stats.blocked_ips or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-full">
+                        <i class="fas fa-lock text-purple-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-purple-800">Fichiers cryptés</p>
+                        <p class="text-2xl font-bold text-purple-600">{{ stats.encrypted_files or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des logs -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Date/Heure</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Niveau</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Type</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Message</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">IP</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">Utilisateur</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for log in security_logs %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            {{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% set level_colors = {
+                                'INFO': 'bg-blue-100 text-blue-800',
+                                'WARNING': 'bg-yellow-100 text-yellow-800',
+                                'ERROR': 'bg-red-100 text-red-800',
+                                'CRITICAL': 'bg-red-200 text-red-900'
+                            } %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded {{ level_colors.get(log.level, 'bg-gray-100 text-gray-800') }}">
+                                {{ log.level }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            {% set event_icons = {
+                                'LOGIN_SUCCESS': 'fas fa-sign-in-alt text-green-500',
+                                'LOGIN_FAILED': 'fas fa-times-circle text-red-500',
+                                'LOGIN_BLOCKED': 'fas fa-ban text-red-600',
+                                'FILE_ENCRYPTED': 'fas fa-lock text-purple-500',
+                                'SQL_INJECTION': 'fas fa-database text-red-600',
+                                'XSS_ATTACK': 'fas fa-code text-orange-500'
+                            } %}
+                            <i class="{{ event_icons.get(log.event_type, 'fas fa-info-circle text-gray-500') }} mr-2"></i>
+                            {{ log.event_type }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            <div class="max-w-xs truncate" title="{{ log.message }}">
+                                {{ log.message }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 font-mono">
+                            {{ log.ip_address or '-' }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            {{ log.username or '-' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-info-circle text-4xl mb-4"></i>
+                            <p>Aucun log de sécurité trouvé pour les critères sélectionnés.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="mt-6 flex justify-between items-center">
+            <div class="text-sm text-gray-700">
+                Affichage {{ pagination.per_page * (pagination.page - 1) + 1 }} à 
+                {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} 
+                de {{ pagination.total }} résultats
+            </div>
+            
+            <div class="flex space-x-1">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('security_logs', page=pagination.prev_num, **request.args) }}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 rounded">
+                        Précédent
+                    </a>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <a href="{{ url_for('security_logs', page=page_num, **request.args) }}" 
+                               class="px-3 py-2 text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded">
+                                {{ page_num }}
+                            </a>
+                        {% else %}
+                            <span class="px-3 py-2 text-sm bg-blue-600 border border-blue-600 text-white rounded">
+                                {{ page_num }}
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="px-3 py-2 text-sm text-gray-500">…</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('security_logs', page=pagination.next_num, **request.args) }}" 
+                       class="px-3 py-2 text-sm bg-white border border-gray-300 text-gray-500 hover:bg-gray-50 rounded">
+                        Suivant
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function refreshLogs() {
+    window.location.reload();
+}
+
+function exportLogs() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    window.open(`{{ url_for('security_logs') }}?${params.toString()}`);
+}
+
+// Auto-refresh toutes les 30 secondes
+setInterval(function() {
+    if (document.visibilityState === 'visible') {
+        refreshLogs();
+    }
+}, 30000);
+</script>
+{% endblock %}

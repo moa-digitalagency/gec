@@ -2068,3 +2068,86 @@ def get_backup_files():
     # Trier par date (plus récent en premier)
     backups.sort(key=lambda x: x['date'], reverse=True)
     return backups
+
+
+@app.route("/security-logs")
+@login_required
+def security_logs():
+    if not current_user.is_super_admin():
+        abort(403)
+    
+    from security_utils import get_security_logs, get_security_stats
+    
+    # Paramètres de filtrage
+    level = request.args.get("level", "")
+    event_type = request.args.get("event_type", "")
+    date_start = request.args.get("date_start", "")
+    date_end = request.args.get("date_end", "")
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
+    
+    # Vérifier si export CSV
+    if request.args.get("export") == "csv":
+        return export_security_logs(level, event_type, date_start, date_end)
+    
+    # Récupérer les logs avec filtres
+    filters = {
+        "level": level,
+        "event_type": event_type,
+        "date_start": date_start,
+        "date_end": date_end,
+        "page": page,
+        "per_page": per_page
+    }
+    
+    security_logs_data = get_security_logs(filters)
+    stats = get_security_stats()
+    
+    return render_template("security_logs.html", 
+                         security_logs=security_logs_data["logs"],
+                         pagination=security_logs_data["pagination"],
+                         stats=stats)
+
+def export_security_logs(level, event_type, date_start, date_end):
+    """Exporte les logs de sécurité en CSV"""
+    from security_utils import get_security_logs
+    from flask import Response
+    import csv
+    import io
+    
+    filters = {
+        "level": level,
+        "event_type": event_type,
+        "date_start": date_start,
+        "date_end": date_end,
+        "page": 1,
+        "per_page": 10000
+    }
+    
+    logs_data = get_security_logs(filters)
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(["Date/Heure", "Niveau", "Type", "Message", "IP", "Utilisateur"])
+    
+    for log in logs_data["logs"]:
+        writer.writerow([
+            log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            log.level,
+            log.event_type,
+            log.message,
+            log.ip_address or "",
+            log.username or ""
+        ])
+    
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=security_logs_{}.csv".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
+        }
+    )
+

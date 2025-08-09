@@ -24,6 +24,7 @@ _failed_login_attempts = defaultdict(dict)  # Changed to dict to store more info
 _blocked_ips = set()
 _suspicious_activities = defaultdict(list)
 _session_tokens = {}
+_security_logs = []  # Store security logs in memory
 
 # SQL injection patterns
 SQL_INJECTION_PATTERNS = [
@@ -555,6 +556,22 @@ def audit_log(action, details="", severity="INFO"):
             f"AUDIT: {json.dumps(audit_entry)}"
         )
         
+        # Store in memory for web interface
+        security_log_entry = {
+            "timestamp": timestamp,
+            "level": severity,
+            "event_type": action,
+            "message": details,
+            "username": current_user.username if current_user and current_user.is_authenticated else "SYSTEM",
+            "ip_address": client_ip,
+            "source": "GEC_AUDIT"
+        }
+        _security_logs.append(security_log_entry)
+        
+        # Keep only last 1000 logs in memory
+        if len(_security_logs) > 1000:
+            _security_logs.pop(0)
+        
         # Store in database if possible
         try:
             from app import db
@@ -606,3 +623,92 @@ def require_https():
     if not request.is_secure and not current_app.config.get('TESTING', False):
         return redirect(request.url.replace('http://', 'https://'))
     return None
+
+def get_security_logs(filters=None):
+    """Get security logs with filtering and pagination"""
+    logs = _security_logs.copy()
+    
+    if filters:
+        # Filter by level
+        if filters.get('level'):
+            logs = [log for log in logs if log['level'] == filters['level']]
+        
+        # Filter by event type
+        if filters.get('event_type'):
+            logs = [log for log in logs if log['event_type'] == filters['event_type']]
+        
+        # Filter by date range
+        if filters.get('date_start'):
+            from datetime import datetime
+            start_date = datetime.strptime(filters['date_start'], '%Y-%m-%d').date()
+            logs = [log for log in logs if datetime.strptime(log['timestamp'], '%Y-%m-%d %H:%M:%S').date() >= start_date]
+        
+        if filters.get('date_end'):
+            from datetime import datetime
+            end_date = datetime.strptime(filters['date_end'], '%Y-%m-%d').date()
+            logs = [log for log in logs if datetime.strptime(log['timestamp'], '%Y-%m-%d %H:%M:%S').date() <= end_date]
+    
+    # Sort by timestamp (newest first)
+    logs.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    # Pagination
+    page = filters.get('page', 1) if filters else 1
+    per_page = filters.get('per_page', 50) if filters else 50
+    
+    total = len(logs)
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_logs = logs[start:end]
+    
+    # Create mock log objects for template
+    class MockLog:
+        def __init__(self, data):
+            from datetime import datetime
+            self.timestamp = datetime.strptime(data['timestamp'], '%Y-%m-%d %H:%M:%S')
+            self.level = data['level']
+            self.event_type = data['event_type']
+            self.message = data['message']
+            self.username = data.get('username')
+            self.ip_address = data.get('ip_address')
+    
+    mock_logs = [MockLog(log) for log in paginated_logs]
+    
+    # Mock pagination object
+    class MockPagination:
+        def __init__(self, page, per_page, total):
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+        
+        def iter_pages(self, left_edge=2, left_current=2, right_current=3, right_edge=2):
+            last = self.pages
+            for num in range(1, last + 1):
+                if num <= left_edge or \
+                   (num > self.page - left_current - 1 and num < self.page + right_current) or \
+                   num > last - right_edge:
+                    yield num
+    
+    pagination = MockPagination(page, per_page, total)
+    
+    return {
+        'logs': mock_logs,
+        'pagination': pagination
+    }
+
+def get_security_stats():
+    """Get security statistics"""
+    logs = _security_logs
+    
+    stats = {
+        'successful_logins': len([log for log in logs if log['event_type'] == 'LOGIN_SUCCESS']),
+        'failed_logins': len([log for log in logs if log['event_type'] == 'LOGIN_FAILED']),
+        'blocked_ips': len([log for log in logs if log['event_type'] == 'LOGIN_BLOCKED']),
+        'encrypted_files': len([log for log in logs if log['event_type'] == 'FILE_ENCRYPTED']),
+    }
+    
+    return stats
