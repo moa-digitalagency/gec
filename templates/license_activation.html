@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activation de Licence - GEC Mines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --rdc-blue: #003087;
+            --rdc-yellow: #FFD700;
+            --rdc-red: #CE1126;
+            --rdc-green: #009639;
+        }
+        
+        .bg-rdc-blue { background-color: var(--rdc-blue); }
+        .text-rdc-blue { color: var(--rdc-blue); }
+        .border-rdc-blue { border-color: var(--rdc-blue); }
+        .bg-rdc-green { background-color: var(--rdc-green); }
+        .text-rdc-green { color: var(--rdc-green); }
+        
+        .license-input {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .floating-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, var(--rdc-blue) 0%, var(--rdc-green) 100%);
+        }
+        
+        .license-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="min-h-screen flex items-center justify-center p-6">
+        <div class="max-w-md w-full">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="floating-animation inline-block">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-xl">
+                        <i class="fas fa-key text-3xl text-rdc-blue"></i>
+                    </div>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2">GEC Mines</h1>
+                <p class="text-blue-100">Système de Gestion Électronique de Courrier</p>
+            </div>
+            
+            <!-- License Activation Card -->
+            <div class="license-card rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Activation de Licence</h2>
+                    <p class="text-gray-600">
+                        {% if is_first_time %}
+                        Première utilisation détectée. Veuillez saisir votre clé de licence.
+                        {% else %}
+                        Nouveau domaine détecté. Réactivation de licence requise.
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Domain Info -->
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-globe text-rdc-blue mt-1 mr-3"></i>
+                        <div>
+                            <h3 class="font-medium text-gray-800 mb-1">Environnement détecté</h3>
+                            <p class="text-sm text-gray-600">{{ domain_info }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error Messages -->
+                {% if error %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
+                        <div>
+                            <h3 class="font-medium text-red-800 mb-1">Erreur</h3>
+                            <p class="text-sm text-red-600">{{ error }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Success Messages -->
+                {% if success %}
+                <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                        <div>
+                            <h3 class="font-medium text-green-800 mb-1">Succès</h3>
+                            <p class="text-sm text-green-600">{{ success }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- License Form -->
+                <form method="POST" class="space-y-6">
+                    <div>
+                        <label for="license_key" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-2 text-rdc-blue"></i>
+                            Clé de Licence
+                        </label>
+                        <input type="text" 
+                               id="license_key" 
+                               name="license_key" 
+                               class="license-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue text-center text-lg"
+                               placeholder="GECM-XXXX-XXXX-XXXX-XXXX"
+                               maxlength="29"
+                               required>
+                        <p class="mt-2 text-xs text-gray-500 text-center">
+                            Format: GECM-XXXX-XXXX-XXXX-XXXX (29 caractères)
+                        </p>
+                    </div>
+                    
+                    <!-- Additional Info -->
+                    <div class="text-sm text-gray-600 space-y-2">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-rdc-green mr-2"></i>
+                            <span>Licence liée à cet environnement</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-lock text-rdc-blue mr-2"></i>
+                            <span>Données chiffrées et sécurisées</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-gray-400 mr-2"></i>
+                            <span>Activation instantanée</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="space-y-4">
+                        <button type="submit" 
+                                class="w-full bg-rdc-blue hover:bg-opacity-90 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:ring-offset-2">
+                            <i class="fas fa-unlock mr-2"></i>
+                            Activer la Licence
+                        </button>
+                        
+                        {% if show_demo %}
+                        <button type="button" 
+                                onclick="generateDemoLicense()"
+                                class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2">
+                            <i class="fas fa-flask mr-2"></i>
+                            Générer Licence Démo
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+                
+                <!-- Contact Info -->
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <p class="text-center text-sm text-gray-500">
+                        Besoin d'aide ? Contactez le support technique
+                    </p>
+                    <div class="text-center mt-2">
+                        <a href="mailto:support@gecmines.cd" 
+                           class="text-rdc-blue hover:underline text-sm font-medium">
+                            <i class="fas fa-envelope mr-1"></i>
+                            support@gecmines.cd
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="text-center mt-6">
+                <p class="text-blue-100 text-sm">
+                    © 2025 Secrétariat Général des Mines - Tous droits réservés
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-format license input
+        document.getElementById('license_key').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+            
+            // Limit to expected length (20 chars without dashes)
+            if (value.length > 20) {
+                value = value.substr(0, 20);
+            }
+            
+            // Add dashes at appropriate positions
+            let formatted = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i === 0) {
+                    formatted += 'GECM-';
+                } else if ((i - 0) % 4 === 0 && i < 16) {
+                    formatted += '-';
+                }
+                
+                if (i >= 0 && formatted.length < 29) {
+                    formatted += value[i];
+                }
+            }
+            
+            e.target.value = formatted;
+        });
+        
+        // Demo license generator (development only)
+        {% if show_demo %}
+        function generateDemoLicense() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let parts = [];
+            
+            // Generate 3 random parts
+            for (let i = 0; i < 3; i++) {
+                let part = '';
+                for (let j = 0; j < 4; j++) {
+                    part += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                parts.push(part);
+            }
+            
+            // Simple checksum (this would be more complex in reality)
+            const dataString = parts.join('');
+            let checksum = '';
+            for (let i = 0; i < 4; i++) {
+                checksum += chars.charAt((dataString.charCodeAt(i % dataString.length) + i) % chars.length);
+            }
+            
+            const license = `GECM-${parts.join('-')}-${checksum}`;
+            document.getElementById('license_key').value = license;
+        }
+        {% endif %}
+        
+        // Focus on license input when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('license_key').focus();
+        });
+    </script>
+</body>
+</html>

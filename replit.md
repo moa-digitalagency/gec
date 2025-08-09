@@ -71,3 +71,12 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Security Headers**: Complete set of HTTP security headers
 - **Input Sanitization**: Advanced input validation and sanitization
 - **Secure File Handling**: Path traversal protection and secure file operations
+
+### License System Features (August 2025)
+- **Domain-based License Validation**: Automatic detection of domain/subdomain changes requiring license reactivation
+- **Advanced Encryption**: Multi-layer encryption with PBKDF2, Fernet, and obfuscation techniques
+- **License Format**: GECM-XXXX-XXXX-XXXX-XXXX format with checksum validation
+- **Security Integration**: Full integration with audit logging and security monitoring
+- **Environment Detection**: Automatic detection of Replit environment and domain fingerprinting
+- **Tamper Resistance**: Heavily obfuscated code with encrypted license storage
+- **Demo Mode**: Development-only demo license generation for testing purposes

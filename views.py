@@ -17,6 +17,7 @@ from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrie
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
+from license_system import license_validator, require_license, generate_sample_license
 
 @app.context_processor
 def inject_system_context():
@@ -26,6 +27,24 @@ def inject_system_context():
         get_current_language=get_current_language,
         get_available_languages=get_available_languages
     )
+
+def check_license_required():
+    """Middleware pour vérifier si une licence est requise"""
+    needs_license, message = require_license()
+    if needs_license and request.endpoint not in ['license_activation', 'static']:
+        return redirect(url_for('license_activation'))
+    return None
+
+@app.before_request
+def before_request():
+    """Vérification de licence avant chaque requête"""
+    # Skip license check for static files and license activation
+    if request.endpoint in ['static', 'license_activation']:
+        return
+    
+    license_redirect = check_license_required()
+    if license_redirect:
+        return license_redirect
 
 @app.route('/')
 def index():
@@ -2254,4 +2273,76 @@ def export_security_logs(level, event_type, date_start, date_end):
             "Content-Disposition": "attachment; filename=security_logs_{}.csv".format(datetime.now().strftime("%Y%m%d_%H%M%S"))
         }
     )
+
+@app.route('/license_activation', methods=['GET', 'POST'])
+def license_activation():
+    """Page d'activation de licence"""
+    try:
+        # Informations sur le domaine/environnement
+        domain_info = f"Replit: {os.environ.get('REPLIT_DOMAINS', 'Non défini')}"
+        if os.environ.get('REPL_SLUG'):
+            domain_info += f" - {os.environ.get('REPL_SLUG')}"
+        
+        # Détermine s'il s'agit de la première utilisation
+        is_first_time = not os.path.exists(license_validator.domain_cache)
+        
+        if request.method == 'POST':
+            license_key = request.form.get('license_key', '').strip().upper()
+            
+            if not license_key:
+                flash('Veuillez saisir une clé de licence.', 'error')
+                return render_template('license_activation.html', 
+                                     domain_info=domain_info,
+                                     is_first_time=is_first_time,
+                                     show_demo=app.debug,
+                                     error="Clé de licence requise")
+            
+            # Valide la licence
+            is_valid, message = license_validator.validate_license(license_key)
+            
+            if is_valid:
+                # Log de sécurité
+                audit_log("LICENSE_ACTIVATED", f"Licence activée avec succès: {license_key[:8]}...")
+                
+                flash('Licence activée avec succès !', 'success')
+                
+                # Redirige vers la page de connexion ou dashboard
+                if current_user.is_authenticated:
+                    return redirect(url_for('dashboard'))
+                else:
+                    return redirect(url_for('login'))
+            else:
+                # Log de tentative d'activation échouée
+                audit_log("LICENSE_ACTIVATION_FAILED", f"Échec activation licence: {license_key[:8]}... - {message}", "WARNING")
+                
+                flash(f'Erreur d\'activation: {message}', 'error')
+                return render_template('license_activation.html',
+                                     domain_info=domain_info,
+                                     is_first_time=is_first_time,
+                                     show_demo=app.debug,
+                                     error=message)
+        
+        # GET request - affiche le formulaire
+        return render_template('license_activation.html',
+                             domain_info=domain_info,
+                             is_first_time=is_first_time,
+                             show_demo=app.debug)
+        
+    except Exception as e:
+        logging.error(f"Erreur page activation licence: {e}")
+        flash('Erreur système lors de l\'activation de licence.', 'error')
+        return render_template('license_activation.html',
+                             domain_info="Erreur détection environnement",
+                             is_first_time=True,
+                             show_demo=app.debug,
+                             error="Erreur système")
+
+@app.route('/generate_demo_license')
+def generate_demo_license_route():
+    """Route pour générer une licence de démonstration (développement uniquement)"""
+    if not app.debug:
+        abort(404)
+    
+    demo_license = generate_sample_license()
+    return {"license": demo_license}
 
