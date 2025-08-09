@@ -667,6 +667,8 @@ def settings():
             parametres.texte_footer = sanitize_input(request.form.get('texte_footer', '').strip()) or "Système de Gestion Électronique du Courrier"
             parametres.titre_pdf = sanitize_input(request.form.get('titre_pdf', '').strip()) or "Ministère des Mines"
             parametres.sous_titre_pdf = sanitize_input(request.form.get('sous_titre_pdf', '').strip()) or "Secrétariat Général"
+            parametres.pays_pdf = sanitize_input(request.form.get('pays_pdf', '').strip()) or "République Démocratique du Congo"
+            parametres.copyright_text = sanitize_input(request.form.get('copyright_text', '').strip()) or "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
             
             parametres.modifie_par_id = current_user.id
             

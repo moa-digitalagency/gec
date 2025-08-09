@@ -289,6 +289,8 @@ class ParametresSysteme(db.Model):
     logo_pdf = db.Column(db.String(500), nullable=True)  # Logo spécifique pour PDF
     titre_pdf = db.Column(db.String(200), nullable=True, default="Ministère des Mines")
     sous_titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
+    pays_pdf = db.Column(db.String(200), nullable=True, default="République Démocratique du Congo")
+    copyright_text = db.Column(db.Text, nullable=True, default="© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
     
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -303,12 +305,14 @@ class ParametresSysteme(db.Model):
         """Décrypte et retourne le copyright"""
         import base64
         try:
-            if self.copyright_crypte:
+            if self.copyright_text:
+                return self.copyright_text
+            elif self.copyright_crypte:
                 return base64.b64decode(self.copyright_crypte.encode()).decode('utf-8')
             else:
-                return "© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC"
+                return "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
         except:
-            return "© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC"
+            return "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
     
     def set_copyright_crypte(self, copyright_text):
         """Crypte et sauvegarde le copyright"""
@@ -321,13 +325,17 @@ class ParametresSysteme(db.Model):
         parametres = ParametresSysteme.query.first()
         if not parametres:
             parametres = ParametresSysteme()
-            # Initialiser le copyright crypté par défaut
-            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC")
+            # Initialiser les valeurs par défaut
+            parametres.copyright_text = "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            parametres.pays_pdf = "République Démocratique du Congo"
+            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
             db.session.add(parametres)
             db.session.commit()
-        elif not parametres.copyright_crypte:
-            # Si pas de copyright crypté, l'initialiser
-            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC")
+        elif not parametres.copyright_text:
+            # Migrer depuis l'ancien système crypté
+            parametres.copyright_text = "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            if not parametres.pays_pdf:
+                parametres.pays_pdf = "République Démocratique du Congo"
             db.session.commit()
         return parametres
 
