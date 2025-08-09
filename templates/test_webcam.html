@@ -36,13 +36,15 @@
     <h1>Test Webcam Direct</h1>
     
     <div style="background: #ffebcd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-        <h3>Instructions pour Brave Browser:</h3>
-        <ol>
-            <li>Cliquez sur l'icône 📹 dans la barre d'adresse</li>
-            <li>Sélectionnez "Autoriser" pour la caméra</li>
+        <h3>SOLUTION - Réinitialisez les permissions:</h3>
+        <ol style="font-weight: bold; color: red;">
+            <li>Cliquez sur "Reset permissions" (le bouton bleu dans le popup)</li>
             <li>Rafraîchissez la page (F5)</li>
-            <li>OU allez dans Paramètres → Confidentialité → Paramètres des sites → Caméra</li>
+            <li>Brave redemandera la permission - Acceptez</li>
         </ol>
+        <p style="margin-top: 10px; color: green; font-weight: bold;">
+            ⚠️ Le toggle bleu ne suffit pas, il faut réinitialiser pour corriger l'incohérence.
+        </p>
     </div>
     
     <div id="error"></div>
@@ -177,12 +179,13 @@
                         // Instructions spécifiques pour débloquer
                         const instructions = document.createElement('div');
                         instructions.innerHTML = `
-                            <br><strong>Pour débloquer dans Brave:</strong><br>
-                            1. Cliquez sur le cadenas 🔒 à gauche de l'URL<br>
-                            2. Trouvez "Caméra" et changez de "Bloquer" à "Autoriser"<br>
-                            3. Rafraîchissez la page<br>
-                            <br>OU<br><br>
-                            brave://settings/content/camera → Ajoutez ce site
+                            <br><strong style="color: red;">IMPORTANT - Réinitialisez les permissions:</strong><br>
+                            1. Cliquez sur le cadenas 🔒<br>
+                            2. Cliquez sur "Reset permissions" (bouton bleu)<br>
+                            3. Rafraîchissez la page (F5)<br>
+                            4. Acceptez la nouvelle demande de permission<br>
+                            <br>
+                            <strong>Le toggle bleu ne suffit pas si les permissions sont corrompues!</strong>
                         `;
                         permDiv.appendChild(instructions);
                     } else {
