@@ -543,6 +543,7 @@ class AdvancedFileHandler {
                 
                 // Démarrer automatiquement dès que la vidéo est prête
                 video.onloadedmetadata = () => {
+                    console.log('Vidéo prête, taille:', video.videoWidth, 'x', video.videoHeight);
                     placeholder.style.display = 'none';
                     video.style.display = 'block';
                     status.classList.add('hidden');
@@ -552,6 +553,12 @@ class AdvancedFileHandler {
                     setTimeout(() => {
                         this.capturePhoto();
                     }, 2000);
+                };
+                
+                // Gestion des erreurs de la vidéo
+                video.onerror = (e) => {
+                    console.error('Erreur vidéo:', e);
+                    this.handleCaptureError(new Error('Erreur de flux vidéo'));
                 };
                 
             } catch (err) {
@@ -606,17 +613,27 @@ class AdvancedFileHandler {
         const statusMessage = document.getElementById('status-message');
         const startCaptureBtn = document.getElementById('start-capture');
         
+        console.log('Erreur capture:', err.name, err.message);
+        
         let message = '';
+        let bgColor = 'bg-red-50';
+        let textColor = 'text-red-600';
+        
         if (err.name === 'NotAllowedError') {
-            message = 'Autorisation refusée - autorisez l\'accès caméra dans votre navigateur';
+            message = 'Permission caméra refusée. Cliquez sur l\'icône caméra 📹 dans votre navigateur pour autoriser ce site.';
         } else if (err.name === 'NotFoundError') {
-            message = 'Aucune caméra détectée sur cet appareil';
+            message = 'Aucune caméra détectée sur cet appareil.';
+        } else if (err.name === 'NotSupportedError') {
+            message = 'La webcam n\'est pas supportée par ce navigateur.';
+        } else if (err.message.includes('non supportée')) {
+            message = err.message;
         } else {
-            message = 'Erreur : ' + err.message;
+            message = 'Erreur technique: ' + err.message;
+            console.error('Erreur webcam détaillée:', err);
         }
         
         status.classList.remove('hidden');
-        status.className = 'mt-4 p-3 bg-red-50 rounded-lg text-sm text-red-600';
+        status.className = `mt-4 p-3 ${bgColor} rounded-lg text-sm ${textColor}`;
         statusMessage.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>' + message;
         
         // Réinitialiser le bouton
