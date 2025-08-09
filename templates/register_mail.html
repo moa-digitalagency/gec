@@ -502,28 +502,25 @@ class AdvancedFileHandler {
         currentFile = null;
     }
 
-    // Webcam Modal - Version simplifiée et directe
+    // Webcam Modal - Version basique qui fonctionne
     initializeWebcamModal() {
         const closeBtn = document.getElementById('close-webcam');
-        const retakeBtn = document.getElementById('retake-photo');
-        const useBtn = document.getElementById('use-photo');
-        
         closeBtn.addEventListener('click', () => this.closeWebcamModal());
-        retakeBtn.addEventListener('click', () => this.retakePhoto());
-        useBtn.addEventListener('click', () => this.usePhoto());
     }
     
-    async activateWebcam() {
+    async startSimpleWebcam() {
         const video = document.getElementById('webcam-video');
         const placeholder = document.getElementById('webcam-placeholder');
-        const startBtn = document.getElementById('start-capture');
+        const retakeBtn = document.getElementById('retake-photo');
+        const useBtn = document.getElementById('use-photo');
         const errorDiv = document.getElementById('capture-error');
+        const errorMsg = document.getElementById('error-message');
         
-        // Cacher les éléments non nécessaires
+        // Reset de l'interface
         errorDiv.classList.add('hidden');
-        startBtn.style.display = 'none';
+        placeholder.style.display = 'block';
+        video.style.display = 'none';
         
-        // Message de chargement
         placeholder.innerHTML = `
             <div class="text-center">
                 <i class="fas fa-spinner fa-spin text-4xl text-rdc-blue mb-2"></i>
@@ -532,52 +529,89 @@ class AdvancedFileHandler {
         `;
         
         try {
-            // Demander directement l'accès caméra
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            
-            // Assigner le flux et démarrer
-            video.srcObject = stream;
-            webcamStream = stream;
-            await video.play();
-            
-            // Attendre que la vidéo soit complètement chargée
-            await new Promise(resolve => {
-                if (video.readyState >= 2) {
-                    resolve();
-                } else {
-                    video.addEventListener('loadeddata', resolve, { once: true });
-                }
+            // Demande simple et directe
+            console.log('Demande accès caméra...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: true, 
+                audio: false 
             });
             
-            // Masquer placeholder et afficher vidéo
-            placeholder.style.display = 'none';
-            video.style.display = 'block';
+            console.log('Stream obtenu');
+            video.srcObject = stream;
+            webcamStream = stream;
             
-            // Capture automatique après 3 secondes
-            setTimeout(() => this.capturePhoto(), 3000);
+            // Attendre que la vidéo soit vraiment prête
+            video.onloadedmetadata = () => {
+                console.log('Vidéo prête:', video.videoWidth, 'x', video.videoHeight);
+                
+                // Afficher la vidéo
+                placeholder.style.display = 'none';
+                video.style.display = 'block';
+                
+                // Attendre 3 secondes puis capturer
+                setTimeout(() => {
+                    // Capture
+                    const canvas = document.getElementById('webcam-canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0);
+                    
+                    // Afficher le résultat
+                    video.style.display = 'none';
+                    canvas.style.display = 'block';
+                    retakeBtn.style.display = 'inline-block';
+                    useBtn.style.display = 'inline-block';
+                    
+                    // Configurer les boutons
+                    retakeBtn.onclick = () => {
+                        canvas.style.display = 'none';
+                        video.style.display = 'block';
+                        retakeBtn.style.display = 'none';
+                        useBtn.style.display = 'none';
+                        
+                        setTimeout(() => {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0);
+                            
+                            video.style.display = 'none';
+                            canvas.style.display = 'block';
+                            retakeBtn.style.display = 'inline-block';
+                            useBtn.style.display = 'inline-block';
+                        }, 3000);
+                    };
+                    
+                    useBtn.onclick = () => {
+                        canvas.toBlob((blob) => {
+                            const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
+                            this.setFileFromBlob(file);
+                            this.closeWebcamModal();
+                        }, 'image/jpeg', 0.9);
+                    };
+                }, 3000);
+            };
             
-        } catch (error) {
-            // En cas d'erreur, afficher le message
+        } catch (err) {
+            console.error('Erreur webcam:', err);
+            
             placeholder.innerHTML = `
                 <div class="text-center">
-                    <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
-                    <p class="text-gray-500">Impossible d'accéder à la caméra</p>
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                    <p class="text-gray-600">Erreur d'accès à la caméra</p>
+                    <button onclick="fileHandler.startSimpleWebcam()" class="mt-4 px-4 py-2 bg-rdc-blue text-white rounded-md">
+                        <i class="fas fa-redo mr-2"></i>Réessayer
+                    </button>
                 </div>
             `;
             
-            // Afficher le bouton pour réessayer
-            startBtn.style.display = 'inline-block';
-            startBtn.innerHTML = '<i class="fas fa-redo mr-2"></i>Réessayer';
-            startBtn.onclick = () => this.activateWebcam();
-            
-            // Message d'erreur détaillé
-            const errorMsg = document.getElementById('error-message');
-            if (error.name === 'NotAllowedError') {
-                errorMsg.textContent = 'Autorisez l\'accès à la caméra dans votre navigateur';
-            } else if (error.name === 'NotFoundError') {
-                errorMsg.textContent = 'Aucune caméra détectée';
+            if (err.name === 'NotAllowedError') {
+                errorMsg.textContent = 'Permission refusée. Autorisez la caméra dans votre navigateur.';
+            } else if (err.name === 'NotFoundError') {
+                errorMsg.textContent = 'Aucune caméra détectée.';
             } else {
-                errorMsg.textContent = 'Erreur: ' + error.message;
+                errorMsg.textContent = err.message;
             }
             errorDiv.classList.remove('hidden');
         }
@@ -627,8 +661,8 @@ class AdvancedFileHandler {
 
     openWebcamModal() {
         document.getElementById('webcam-modal').classList.remove('hidden');
-        // Activer directement la webcam à l'ouverture du modal
-        this.activateWebcam();
+        // Démarrer la webcam immédiatement
+        this.startSimpleWebcam();
     }
 
     closeWebcamModal() {

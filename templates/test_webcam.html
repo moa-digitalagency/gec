@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Webcam Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 640px;
+            border: 2px solid #333;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #error {
+            color: red;
+            margin: 10px 0;
+        }
+        #success {
+            color: green;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Webcam Direct</h1>
+    
+    <div id="error"></div>
+    <div id="success"></div>
+    
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    
+    <div>
+        <button id="start">Démarrer Webcam</button>
+        <button id="capture" style="display:none;">Capturer Photo</button>
+        <button id="stop" style="display:none;">Arrêter</button>
+    </div>
+    
+    <div id="photo-preview" style="margin-top:20px;"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('start');
+        const captureBtn = document.getElementById('capture');
+        const stopBtn = document.getElementById('stop');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+        let stream = null;
+
+        // Fonction pour démarrer la webcam
+        async function startWebcam() {
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+            
+            try {
+                // Configuration très simple
+                const constraints = {
+                    video: true,
+                    audio: false
+                };
+                
+                console.log('Demande accès caméra...');
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                console.log('Stream obtenu:', stream);
+                video.srcObject = stream;
+                
+                // Attendre que la vidéo soit prête
+                video.onloadedmetadata = () => {
+                    console.log('Vidéo prête:', video.videoWidth, 'x', video.videoHeight);
+                    successDiv.textContent = `✓ Webcam active (${video.videoWidth}x${video.videoHeight})`;
+                    
+                    // Afficher les boutons
+                    captureBtn.style.display = 'inline';
+                    stopBtn.style.display = 'inline';
+                    startBtn.style.display = 'none';
+                };
+                
+            } catch (err) {
+                console.error('Erreur:', err);
+                errorDiv.textContent = `Erreur: ${err.name} - ${err.message}`;
+                
+                if (err.name === 'NotAllowedError') {
+                    errorDiv.textContent += '\nAutorisez l\'accès à la caméra dans votre navigateur.';
+                } else if (err.name === 'NotFoundError') {
+                    errorDiv.textContent += '\nAucune caméra détectée.';
+                }
+            }
+        }
+
+        // Fonction pour capturer une photo
+        function capturePhoto() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Créer une image à partir du canvas
+            const img = new Image();
+            img.src = canvas.toDataURL('image/jpeg');
+            img.style.width = '300px';
+            img.style.border = '2px solid green';
+            
+            const preview = document.getElementById('photo-preview');
+            preview.innerHTML = '<h3>Photo capturée:</h3>';
+            preview.appendChild(img);
+            
+            successDiv.textContent = '✓ Photo capturée avec succès!';
+        }
+
+        // Fonction pour arrêter la webcam
+        function stopWebcam() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                stream = null;
+            }
+            
+            captureBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
+            startBtn.style.display = 'inline';
+            successDiv.textContent = '';
+            errorDiv.textContent = '';
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startWebcam);
+        captureBtn.addEventListener('click', capturePhoto);
+        stopBtn.addEventListener('click', stopWebcam);
+
+        // Test initial
+        console.log('getUserMedia supporté:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+    </script>
+</body>
+</html>
