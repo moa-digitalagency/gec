@@ -46,6 +46,25 @@ with app.app_context():
     # Create all tables
     db.create_all()
     
+    # Import security utilities
+    from security_utils import add_security_headers, clean_security_storage, audit_log
+    
+    @app.before_request
+    def before_request():
+        """Execute before each request for security checks"""
+        # Clean expired security data
+        clean_security_storage()
+        
+        # Log all requests for audit
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            audit_log("REQUEST", f"{request.method} {request.path}")
+    
+    @app.after_request
+    def after_request(response):
+        """Execute after each request to add security headers"""
+        return add_security_headers(response)
+    
     # Initialize language support - will be done in views.py
     
     # Context processor pour les paramètres système

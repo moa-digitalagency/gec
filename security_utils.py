@@ -1,40 +1,150 @@
 """
 Security utilities for the GEC Mines application
+Includes advanced security measures against various attacks
 """
 import re
 import uuid
+import json
 import logging
+import hashlib
+import secrets
+import threading
+import os
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import request, session, abort, current_app, flash, redirect, url_for
+from collections import defaultdict
+from flask import request, session, abort, current_app, flash, redirect, url_for, g
 from flask_login import current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+import ipaddress
 
-# Rate limiting storage (in production, use Redis or similar)
+# Security storage (in production, use Redis or similar)
 _rate_limit_storage = {}
+_failed_login_attempts = defaultdict(dict)  # Changed to dict to store more info
+_blocked_ips = set()
+_suspicious_activities = defaultdict(list)
+_session_tokens = {}
 
-def clean_rate_limit_storage():
-    """Clean expired rate limit entries"""
+# SQL injection patterns
+SQL_INJECTION_PATTERNS = [
+    r"(\\'|(\\\\)+\')|(--)|(;)|(\\|)|(\\*)|(union)|(select)|(insert)|(drop)|(delete)|(update)|(create)|(alter)|(exec)|(execute)",
+    r"(script.*?/script)|(javascript)|(vbscript)|(onload)|(onerror)|(onclick)",
+    r"(<|%3C).*?(>|%3E)",
+    r"(eval\s*\(.*?\))",
+    r"(expression\s*\(.*?\))",
+    r"(url\s*\(.*?\))",
+]
+
+# XSS patterns
+XSS_PATTERNS = [
+    r"<script[^>]*>.*?</script>",
+    r"javascript:",
+    r"vbscript:",
+    r"on\w+\s*=",
+    r"<iframe[^>]*>",
+    r"<object[^>]*>",
+    r"<embed[^>]*>",
+    r"<link[^>]*>",
+    r"<meta[^>]*>",
+]
+
+# Security configuration
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_LOCKOUT_DURATION = 30  # minutes
+SUSPICIOUS_ACTIVITY_THRESHOLD = 10
+AUTO_BLOCK_DURATION = 60  # minutes
+
+def clean_security_storage():
+    """Clean expired security entries"""
     now = datetime.now()
+    
+    # Clean rate limit storage
     expired_keys = [
         key for key, (count, timestamp) in _rate_limit_storage.items()
         if now - timestamp > timedelta(minutes=15)
     ]
     for key in expired_keys:
         del _rate_limit_storage[key]
+    
+    # Clean failed login attempts
+    expired_attempts = [
+        ip for ip, data in _failed_login_attempts.items()
+        if isinstance(data, dict) and now - data.get('timestamp', now) > timedelta(minutes=LOGIN_LOCKOUT_DURATION)
+    ]
+    for ip in expired_attempts:
+        del _failed_login_attempts[ip]
+    
+    # Clean suspicious activities
+    for ip in list(_suspicious_activities.keys()):
+        _suspicious_activities[ip] = [
+            activity for activity in _suspicious_activities[ip]
+            if now - activity['timestamp'] < timedelta(hours=24)
+        ]
+        if not _suspicious_activities[ip]:
+            del _suspicious_activities[ip]
+
+def get_client_ip():
+    """Get the real client IP address"""
+    # Check for forwarded IPs first
+    forwarded_ips = request.environ.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_ips:
+        return forwarded_ips.split(',')[0].strip()
+    
+    return request.environ.get('REMOTE_ADDR', 'unknown')
+
+def is_ip_blocked(ip):
+    """Check if IP is blocked"""
+    return ip in _blocked_ips
+
+def block_ip(ip, duration_minutes=AUTO_BLOCK_DURATION):
+    """Block an IP address temporarily"""
+    _blocked_ips.add(ip)
+    logging.warning(f"IP blocked: {ip} for {duration_minutes} minutes")
+    
+    # Schedule unblock (in production, use a job queue)
+    def unblock_later():
+        import threading
+        import time
+        time.sleep(duration_minutes * 60)
+        _blocked_ips.discard(ip)
+        logging.info(f"IP unblocked: {ip}")
+    
+    threading.Thread(target=unblock_later, daemon=True).start()
+
+def log_suspicious_activity(ip, activity_type, details=""):
+    """Log suspicious activity"""
+    now = datetime.now()
+    _suspicious_activities[ip].append({
+        'timestamp': now,
+        'type': activity_type,
+        'details': details,
+        'user_agent': request.headers.get('User-Agent', 'Unknown')
+    })
+    
+    # Auto-block if too many suspicious activities
+    if len(_suspicious_activities[ip]) >= SUSPICIOUS_ACTIVITY_THRESHOLD:
+        block_ip(ip)
+        logging.warning(f"IP auto-blocked due to suspicious activity: {ip}")
 
 def rate_limit(max_requests=10, per_minutes=15):
-    """Rate limiting decorator"""
+    """Enhanced rate limiting decorator with IP blocking"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if not current_app.config.get('TESTING', False):  # Skip in testing
-                # Clean old entries
-                clean_rate_limit_storage()
+            if not current_app.config.get('TESTING', False):
+                clean_security_storage()
+                
+                client_ip = get_client_ip()
+                
+                # Check if IP is blocked
+                if is_ip_blocked(client_ip):
+                    logging.warning(f"Blocked IP attempted access: {client_ip}")
+                    abort(403)  # Forbidden
                 
                 # Get client identifier
-                client_id = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+                client_id = client_ip
                 if current_user.is_authenticated:
-                    client_id = f"user_{current_user.id}_{client_id}"
+                    client_id = f"user_{current_user.id}_{client_ip}"
                 
                 # Check rate limit
                 now = datetime.now()
@@ -42,8 +152,10 @@ def rate_limit(max_requests=10, per_minutes=15):
                     count, first_request = _rate_limit_storage[client_id]
                     if now - first_request < timedelta(minutes=per_minutes):
                         if count >= max_requests:
+                            log_suspicious_activity(client_ip, "RATE_LIMIT_EXCEEDED", 
+                                                  f"Exceeded {max_requests} requests in {per_minutes} minutes")
                             logging.warning(f"Rate limit exceeded for {client_id}")
-                            abort(429)  # Too Many Requests
+                            abort(429)
                         _rate_limit_storage[client_id] = (count + 1, first_request)
                     else:
                         _rate_limit_storage[client_id] = (1, now)
@@ -54,31 +166,68 @@ def rate_limit(max_requests=10, per_minutes=15):
         return decorated_function
     return decorator
 
-def sanitize_input(text):
-    """Sanitize user input to prevent XSS"""
+def detect_sql_injection(input_text):
+    """Detect potential SQL injection attempts"""
+    if not input_text:
+        return False
+    
+    input_lower = input_text.lower()
+    for pattern in SQL_INJECTION_PATTERNS:
+        if re.search(pattern, input_lower, re.IGNORECASE):
+            return True
+    return False
+
+def detect_xss_attack(input_text):
+    """Detect potential XSS attacks"""
+    if not input_text:
+        return False
+    
+    for pattern in XSS_PATTERNS:
+        if re.search(pattern, input_text, re.IGNORECASE):
+            return True
+    return False
+
+def sanitize_input(text, strict=False):
+    """Enhanced input sanitization with attack detection"""
     if not text:
         return text
     
-    # Remove dangerous HTML tags and scripts
-    dangerous_patterns = [
-        r'<script[^>]*>.*?</script>',
-        r'<iframe[^>]*>.*?</iframe>',
-        r'<object[^>]*>.*?</object>',
-        r'<embed[^>]*>.*?</embed>',
-        r'<link[^>]*>',
-        r'<meta[^>]*>',
-        r'javascript:',
-        r'vbscript:',
-        r'onload=',
-        r'onerror=',
-        r'onclick=',
-        r'onmouseover=',
+    client_ip = get_client_ip()
+    
+    # Detect SQL injection
+    if detect_sql_injection(text):
+        log_suspicious_activity(client_ip, "SQL_INJECTION_ATTEMPT", f"Detected in: {text[:100]}")
+        logging.warning(f"SQL injection attempt from {client_ip}: {text[:100]}")
+        if strict:
+            abort(400)  # Bad Request
+        # Remove dangerous SQL patterns
+        for pattern in SQL_INJECTION_PATTERNS:
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    
+    # Detect XSS
+    if detect_xss_attack(text):
+        log_suspicious_activity(client_ip, "XSS_ATTEMPT", f"Detected in: {text[:100]}")
+        logging.warning(f"XSS attempt from {client_ip}: {text[:100]}")
+        if strict:
+            abort(400)  # Bad Request
+        # Remove dangerous XSS patterns
+        for pattern in XSS_PATTERNS:
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    
+    # Additional dangerous patterns
+    additional_patterns = [
+        r'eval\s*\(',
+        r'expression\s*\(',
+        r'url\s*\(',
+        r'@import',
+        r'\\x[0-9a-fA-F]+',
+        r'&#[0-9]+;',
     ]
     
-    for pattern in dangerous_patterns:
+    for pattern in additional_patterns:
         text = re.sub(pattern, '', text, flags=re.IGNORECASE)
     
-    return text
+    return text.strip()
 
 def validate_file_upload(file):
     """Validate uploaded files for security"""
@@ -135,30 +284,112 @@ def check_permission(permission_required, redirect_route='dashboard'):
         return decorated_function
     return decorator
 
-def validate_password_strength(password):
-    """Validate password strength"""
-    if len(password) < 8:
-        return False, "Le mot de passe doit contenir au moins 8 caractères"
+def record_failed_login(ip, username=""):
+    """Record failed login attempt"""
+    now = datetime.now()
     
+    if ip not in _failed_login_attempts:
+        _failed_login_attempts[ip] = {'count': 0, 'timestamp': now, 'usernames': set()}
+    
+    _failed_login_attempts[ip]['count'] += 1
+    _failed_login_attempts[ip]['timestamp'] = now
+    if username:
+        _failed_login_attempts[ip]['usernames'].add(username)
+    
+    # Auto-block after too many failures
+    if _failed_login_attempts[ip]['count'] >= MAX_LOGIN_ATTEMPTS:
+        block_ip(ip, LOGIN_LOCKOUT_DURATION)
+        log_suspicious_activity(ip, "BRUTE_FORCE_LOGIN", 
+                              f"Too many failed login attempts: {_failed_login_attempts[ip]['count']}")
+        return True  # Blocked
+    
+    return False  # Not blocked yet
+
+def is_login_locked(ip):
+    """Check if login is locked for this IP"""
+    if ip in _failed_login_attempts:
+        attempts_data = _failed_login_attempts[ip]
+        return attempts_data.get('count', 0) >= MAX_LOGIN_ATTEMPTS
+    return False
+
+def reset_failed_login_attempts(ip):
+    """Reset failed login attempts for IP (on successful login)"""
+    if ip in _failed_login_attempts:
+        del _failed_login_attempts[ip]
+
+def validate_password_strength(password):
+    """Enhanced password strength validation"""
+    errors = []
+    score = 0
+    
+    # Length check
+    if len(password) < 8:
+        errors.append("Le mot de passe doit contenir au moins 8 caractères")
+    elif len(password) >= 12:
+        score += 2
+    else:
+        score += 1
+    
+    # Character variety checks
     if not re.search(r'[A-Z]', password):
-        return False, "Le mot de passe doit contenir au moins une majuscule"
+        errors.append("Le mot de passe doit contenir au moins une majuscule")
+    else:
+        score += 1
     
     if not re.search(r'[a-z]', password):
-        return False, "Le mot de passe doit contenir au moins une minuscule"
+        errors.append("Le mot de passe doit contenir au moins une minuscule")
+    else:
+        score += 1
     
     if not re.search(r'\d', password):
-        return False, "Le mot de passe doit contenir au moins un chiffre"
+        errors.append("Le mot de passe doit contenir au moins un chiffre")
+    else:
+        score += 1
     
-    # Check for common weak passwords
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'"\\|,.<>?]', password):
+        errors.append("Le mot de passe doit contenir au moins un caractère spécial")
+    else:
+        score += 2
+    
+    # Common patterns check
+    common_patterns = [
+        r'(012|123|234|345|456|567|678|789)',  # Sequential numbers
+        r'(abc|bcd|cde|def|efg|fgh|ghi)',      # Sequential letters
+        r'(password|admin|user|login)',         # Common words
+        r'(\w)\1{2,}',                          # Repeated characters (3+)
+    ]
+    
+    for pattern in common_patterns:
+        if re.search(pattern, password.lower()):
+            errors.append("Le mot de passe contient des motifs trop prévisibles")
+            score -= 1
+            break
+    
+    # Check against common weak passwords
     weak_passwords = [
         'password', '123456789', 'admin123', 'password123',
-        'qwerty', 'azerty', '12345678', 'admin'
+        'qwerty', 'azerty', '12345678', 'admin', 'user',
+        'login', 'root', 'toor', 'pass', '1234', 'test'
     ]
     
     if password.lower() in weak_passwords:
-        return False, "Ce mot de passe est trop faible. Choisissez un mot de passe plus complexe"
+        errors.append("Ce mot de passe est dans la liste des mots de passe faibles")
+        score = 0
     
-    return True, "Mot de passe valide"
+    # Overall strength assessment
+    if errors:
+        return False, "; ".join(errors)
+    
+    if score >= 6:
+        strength = "Très fort"
+    elif score >= 4:
+        strength = "Fort"
+    elif score >= 3:
+        strength = "Moyen"
+    else:
+        strength = "Faible"
+    
+    return True, f"Mot de passe valide - Force: {strength}"
 
 def log_security_event(event_type, description, user_id=None, ip_address=None):
     """Log security events"""
@@ -194,13 +425,184 @@ def validate_csrf_token(token):
     """Validate CSRF token"""
     return token == session.get('_csrf_token')
 
+def generate_secure_session_token():
+    """Generate a secure session token"""
+    return secrets.token_urlsafe(32)
+
+def create_session_token(user_id):
+    """Create and store a secure session token"""
+    token = generate_secure_session_token()
+    _session_tokens[token] = {
+        'user_id': user_id,
+        'created': datetime.now(),
+        'last_used': datetime.now(),
+        'ip': get_client_ip()
+    }
+    return token
+
+def validate_session_token(token):
+    """Validate a session token"""
+    if token in _session_tokens:
+        token_data = _session_tokens[token]
+        # Check if token is not expired (24 hours max)
+        if datetime.now() - token_data['created'] < timedelta(hours=24):
+            # Update last used
+            token_data['last_used'] = datetime.now()
+            return token_data['user_id']
+        else:
+            # Remove expired token
+            del _session_tokens[token]
+    return None
+
+def invalidate_session_token(token):
+    """Invalidate a session token"""
+    if token in _session_tokens:
+        del _session_tokens[token]
+
+def clean_expired_session_tokens():
+    """Clean expired session tokens"""
+    now = datetime.now()
+    expired_tokens = [
+        token for token, data in _session_tokens.items()
+        if now - data['created'] > timedelta(hours=24)
+    ]
+    for token in expired_tokens:
+        del _session_tokens[token]
+
+def secure_file_handling(filename):
+    """Secure file name handling"""
+    # Remove path traversal attempts
+    filename = filename.replace('..', '').replace('/', '').replace('\\', '')
+    
+    # Sanitize filename
+    filename = re.sub(r'[<>:"|?*]', '', filename)
+    
+    # Limit filename length
+    if len(filename) > 255:
+        name, ext = os.path.splitext(filename)
+        filename = name[:250] + ext
+    
+    return filename
+
+def check_file_integrity(file_path, expected_checksum=None):
+    """Check file integrity using SHA-256"""
+    try:
+        import hashlib
+        
+        hash_sha256 = hashlib.sha256()
+        with open(file_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+        
+        file_checksum = hash_sha256.hexdigest()
+        
+        if expected_checksum:
+            return file_checksum == expected_checksum, file_checksum
+        
+        return True, file_checksum
+        
+    except Exception as e:
+        logging.error(f"Error checking file integrity: {e}")
+        return False, None
+
+def secure_redirect(url, allowed_hosts=None):
+    """Secure redirect to prevent open redirect vulnerabilities"""
+    if not url:
+        return url_for('dashboard')
+    
+    # Parse URL
+    try:
+        from urllib.parse import urlparse, urljoin
+        parsed = urlparse(url)
+        
+        # Only allow relative URLs or URLs to allowed hosts
+        if parsed.netloc:
+            if allowed_hosts and parsed.netloc not in allowed_hosts:
+                logging.warning(f"Attempted redirect to unauthorized host: {parsed.netloc}")
+                return url_for('dashboard')
+        
+        # Prevent javascript: and data: URLs
+        if parsed.scheme in ('javascript', 'data', 'vbscript'):
+            logging.warning(f"Attempted redirect to dangerous scheme: {parsed.scheme}")
+            return url_for('dashboard')
+        
+        return url
+        
+    except Exception as e:
+        logging.error(f"Error parsing redirect URL: {e}")
+        return url_for('dashboard')
+
+def audit_log(action, details="", severity="INFO"):
+    """Create audit log entry"""
+    try:
+        client_ip = get_client_ip()
+        user_agent = request.headers.get('User-Agent', 'Unknown')
+        
+        audit_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'action': action,
+            'details': details,
+            'user_id': current_user.id if current_user.is_authenticated else None,
+            'username': current_user.username if current_user.is_authenticated else 'Anonymous',
+            'ip_address': client_ip,
+            'user_agent': user_agent,
+            'severity': severity
+        }
+        
+        # Log to file (in production, send to SIEM)
+        logging.log(
+            getattr(logging, severity, logging.INFO),
+            f"AUDIT: {json.dumps(audit_entry)}"
+        )
+        
+        # Store in database if possible
+        try:
+            from app import db
+            from models import LogActivite
+            
+            if current_user.is_authenticated:
+                log = LogActivite()
+                log.utilisateur_id = current_user.id
+                log.action = f"AUDIT_{action}"
+                log.description = details
+                log.ip_address = client_ip
+                db.session.add(log)
+                db.session.commit()
+        except Exception as db_e:
+            logging.error(f"Failed to store audit log in database: {db_e}")
+            
+    except Exception as e:
+        logging.error(f"Failed to create audit log: {e}")
+
 # Security headers middleware
 def add_security_headers(response):
-    """Add security headers to responses"""
+    """Add comprehensive security headers to responses"""
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' cdn.tailwindcss.com; font-src 'self' cdnjs.cloudflare.com;"
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' cdn.tailwindcss.com cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' cdn.tailwindcss.com cdnjs.cloudflare.com; "
+        "font-src 'self' cdnjs.cloudflare.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
+    response.headers['Permissions-Policy'] = (
+        "camera=(), microphone=(), geolocation=(), "
+        "accelerometer=(), gyroscope=(), magnetometer=()"
+    )
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
     return response
+
+def require_https():
+    """Require HTTPS for sensitive operations"""
+    if not request.is_secure and not current_app.config.get('TESTING', False):
+        return redirect(request.url.replace('http://', 'https://'))
+    return None

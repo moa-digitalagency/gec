@@ -3,6 +3,8 @@ from flask_login import UserMixin
 from datetime import datetime
 import uuid
 import os
+from encryption_utils import encryption_manager, encrypt_sensitive_data, decrypt_sensitive_data
+import os
 
 class Departement(db.Model):
     """Modèle pour les départements"""
@@ -69,10 +71,91 @@ class User(UserMixin, db.Model):
     matricule = db.Column(db.String(50), nullable=True, unique=True)  # Matricule de l'employé
     fonction = db.Column(db.String(200), nullable=True)  # Fonction/poste de l'employé
     
+    # Données cryptées (nouvelles colonnes pour les données sensibles)
+    email_encrypted = db.Column(db.Text, nullable=True)  # Email crypté
+    nom_complet_encrypted = db.Column(db.Text, nullable=True)  # Nom complet crypté
+    matricule_encrypted = db.Column(db.Text, nullable=True)  # Matricule crypté
+    fonction_encrypted = db.Column(db.Text, nullable=True)  # Fonction cryptée
+    password_hash_encrypted = db.Column(db.Text, nullable=True)  # Hash de mot de passe crypté
+    
+
+    
     # Relations
     courriers = db.relationship('Courrier', foreign_keys='Courrier.utilisateur_id', backref='utilisateur_enregistrement', lazy=True)
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
     departement = db.relationship('Departement', foreign_keys=[departement_id], backref='utilisateurs', lazy=True)
+    
+    def set_encrypted_email(self, email):
+        """Définit l'email crypté"""
+        self.email = email  # Garde aussi en clair pour la compatibilité
+        self.email_encrypted = encrypt_sensitive_data(email)
+    
+    def get_decrypted_email(self):
+        """Récupère l'email décrypté"""
+        if self.email_encrypted:
+            try:
+                return decrypt_sensitive_data(self.email_encrypted)
+            except:
+                return self.email  # Fallback vers l'email en clair
+        return self.email
+    
+    def set_encrypted_nom_complet(self, nom_complet):
+        """Définit le nom complet crypté"""
+        self.nom_complet = nom_complet  # Garde aussi en clair pour la compatibilité
+        self.nom_complet_encrypted = encrypt_sensitive_data(nom_complet)
+    
+    def get_decrypted_nom_complet(self):
+        """Récupère le nom complet décrypté"""
+        if self.nom_complet_encrypted:
+            try:
+                return decrypt_sensitive_data(self.nom_complet_encrypted)
+            except:
+                return self.nom_complet  # Fallback vers le nom en clair
+        return self.nom_complet
+    
+    def set_encrypted_password(self, password_hash):
+        """Définit le hash de mot de passe crypté"""
+        self.password_hash = password_hash  # Garde aussi en clair pour la compatibilité
+        self.password_hash_encrypted = encrypt_sensitive_data(password_hash)
+    
+    def get_decrypted_password_hash(self):
+        """Récupère le hash de mot de passe décrypté"""
+        if self.password_hash_encrypted:
+            try:
+                return decrypt_sensitive_data(self.password_hash_encrypted)
+            except:
+                return self.password_hash  # Fallback vers le hash en clair
+        return self.password_hash
+    
+    def set_encrypted_matricule(self, matricule):
+        """Définit le matricule crypté"""
+        if matricule:
+            self.matricule = matricule  # Garde aussi en clair pour la compatibilité
+            self.matricule_encrypted = encrypt_sensitive_data(matricule)
+    
+    def get_decrypted_matricule(self):
+        """Récupère le matricule décrypté"""
+        if self.matricule_encrypted:
+            try:
+                return decrypt_sensitive_data(self.matricule_encrypted)
+            except:
+                return self.matricule  # Fallback vers le matricule en clair
+        return self.matricule
+    
+    def set_encrypted_fonction(self, fonction):
+        """Définit la fonction cryptée"""
+        if fonction:
+            self.fonction = fonction  # Garde aussi en clair pour la compatibilité
+            self.fonction_encrypted = encrypt_sensitive_data(fonction)
+    
+    def get_decrypted_fonction(self):
+        """Récupère la fonction décryptée"""
+        if self.fonction_encrypted:
+            try:
+                return decrypt_sensitive_data(self.fonction_encrypted)
+            except:
+                return self.fonction  # Fallback vers la fonction en clair
+        return self.fonction
 
     
     def has_permission(self, permission):
@@ -188,6 +271,14 @@ class Courrier(db.Model):
     statut = db.Column(db.String(50), nullable=False, default='RECU', index=True)
     date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
     
+    # Colonnes de sécurité et cryptage
+    objet_encrypted = db.Column(db.Text, nullable=True)  # Objet crypté
+    expediteur_encrypted = db.Column(db.Text, nullable=True)  # Expéditeur crypté
+    destinataire_encrypted = db.Column(db.Text, nullable=True)  # Destinataire crypté
+    numero_reference_encrypted = db.Column(db.Text, nullable=True)  # Référence cryptée
+    fichier_checksum = db.Column(db.String(64), nullable=True)  # Checksum du fichier
+    fichier_encrypted = db.Column(db.Boolean, default=False)  # Fichier crypté ?
+    
     # Clé étrangère
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -236,6 +327,87 @@ class Courrier(db.Model):
             'URGENT': 'bg-red-100 text-red-800'
         }
         return colors.get(self.statut, 'bg-gray-100 text-gray-800')
+    
+    def set_encrypted_objet(self, objet):
+        """Définit l'objet crypté"""
+        self.objet = objet  # Garde aussi en clair pour la compatibilité
+        self.objet_encrypted = encrypt_sensitive_data(objet)
+    
+    def get_decrypted_objet(self):
+        """Récupère l'objet décrypté"""
+        if self.objet_encrypted:
+            try:
+                return decrypt_sensitive_data(self.objet_encrypted)
+            except:
+                return self.objet  # Fallback vers l'objet en clair
+        return self.objet
+    
+    def set_encrypted_expediteur(self, expediteur):
+        """Définit l'expéditeur crypté"""
+        if expediteur:
+            self.expediteur = expediteur  # Garde aussi en clair pour la compatibilité
+            self.expediteur_encrypted = encrypt_sensitive_data(expediteur)
+    
+    def get_decrypted_expediteur(self):
+        """Récupère l'expéditeur décrypté"""
+        if self.expediteur_encrypted:
+            try:
+                return decrypt_sensitive_data(self.expediteur_encrypted)
+            except:
+                return self.expediteur  # Fallback vers l'expéditeur en clair
+        return self.expediteur
+    
+    def set_encrypted_destinataire(self, destinataire):
+        """Définit le destinataire crypté"""
+        if destinataire:
+            self.destinataire = destinataire  # Garde aussi en clair pour la compatibilité
+            self.destinataire_encrypted = encrypt_sensitive_data(destinataire)
+    
+    def get_decrypted_destinataire(self):
+        """Récupère le destinataire décrypté"""
+        if self.destinataire_encrypted:
+            try:
+                return decrypt_sensitive_data(self.destinataire_encrypted)
+            except:
+                return self.destinataire  # Fallback vers le destinataire en clair
+        return self.destinataire
+    
+    def set_encrypted_reference(self, numero_reference):
+        """Définit la référence cryptée"""
+        if numero_reference:
+            self.numero_reference = numero_reference  # Garde aussi en clair pour la compatibilité
+            self.numero_reference_encrypted = encrypt_sensitive_data(numero_reference)
+    
+    def get_decrypted_reference(self):
+        """Récupère la référence décryptée"""
+        if self.numero_reference_encrypted:
+            try:
+                return decrypt_sensitive_data(self.numero_reference_encrypted)
+            except:
+                return self.numero_reference  # Fallback vers la référence en clair
+        return self.numero_reference
+    
+    def set_file_checksum(self, file_path):
+        """Calcule et définit le checksum du fichier"""
+        if file_path and os.path.exists(file_path):
+            from encryption_utils import encryption_manager
+            try:
+                self.fichier_checksum = encryption_manager.generate_file_checksum(file_path)
+            except Exception as e:
+                logging.error(f"Erreur lors du calcul du checksum: {e}")
+    
+    def verify_file_integrity(self, file_path):
+        """Vérifie l'intégrité du fichier"""
+        if not self.fichier_checksum or not file_path or not os.path.exists(file_path):
+            return False
+        
+        from encryption_utils import encryption_manager
+        try:
+            current_checksum = encryption_manager.generate_file_checksum(file_path)
+            return current_checksum == self.fichier_checksum
+        except Exception as e:
+            logging.error(f"Erreur lors de la vérification de l'intégrité: {e}")
+            return False
 
 class CourrierModification(db.Model):
     """Historique des modifications des courriers"""

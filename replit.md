@@ -17,7 +17,7 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Database**: SQLite (default), PostgreSQL (configurable)
 - **File Storage**: Local filesystem
 - **PDF Generation**: ReportLab with enhanced text wrapping
-- **Security**: Password hashing (Werkzeug), session-based authentication, file upload validation, CSRF protection, ProxyFix middleware.
+- **Security**: Advanced security suite including AES-256 data encryption, bcrypt password hashing with custom salts, brute force protection, IP blocking, SQL injection prevention, XSS protection, comprehensive audit logging, file integrity verification, secure file deletion, CSRF protection, security headers, and ProxyFix middleware.
 - **Core Models**: `User`, `Courrier`, `LogActivite`, `ParametresSysteme`, `CourrierModification`.
 - **Key Features**: Authentication, dashboard, mail registration/viewing/searching/editing, file handling, system settings, activity logging, backup/restore, advanced administration (user management, role-based permissions, mail access control), sender management, change tracking.
 
@@ -35,7 +35,7 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Configurability**: Extensive system parameters stored in `ParametresSysteme` for dynamic customization (e.g., software name, logos, receipt format, PDF headers).
 - **Role-Based Access Control**: Three-tier system (Super Admin, Admin, User) with granular permissions for features and mail access (`read_all_mail`, `read_department_mail`, `read_own_mail`).
 - **Internationalization**: JSON-based translation files with language switching for multi-language support.
-- **Robustness**: Comprehensive error handling, strategic database indexing, caching mechanisms, and performance monitoring.
+- **Robustness**: Comprehensive error handling, strategic database indexing, caching mechanisms, performance monitoring, and encrypted data storage with automatic migration capabilities.
 - **Security**: Proactive security measures including rate limiting, input sanitization, security logging, and enhanced file upload validation.
 
 ## External Dependencies
@@ -56,3 +56,18 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - python-dotenv (for environment configuration)
 - psycopg2-binary (for PostgreSQL support)
 - Pillow (PIL, for image processing)
+- cryptography (for advanced encryption)
+- bcrypt (for secure password hashing)
+- pycryptodome (for additional crypto operations)
+
+### Security Features Added (August 2025)
+- **Data Encryption**: AES-256-CBC encryption for all sensitive data (emails, names, file contents)
+- **Password Security**: Enhanced bcrypt hashing with custom salts and strength validation
+- **Brute Force Protection**: Automatic IP blocking after failed login attempts
+- **Attack Prevention**: SQL injection detection, XSS filtering, CSRF protection
+- **File Security**: Automatic file encryption, integrity verification with checksums
+- **Audit Logging**: Comprehensive security event logging and monitoring
+- **Session Security**: Secure session token management with expiration
+- **Security Headers**: Complete set of HTTP security headers
+- **Input Sanitization**: Advanced input validation and sanitization
+- **Secure File Handling**: Path traversal protection and secure file operations

@@ -15,7 +15,7 @@ import logging
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
-from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event
+from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 
 @app.context_processor
@@ -36,18 +36,63 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 @rate_limit(max_requests=5, per_minutes=15)  # Prevent brute force attacks
 def login():
+    client_ip = get_client_ip()
+    
+    # Check if IP is locked due to too many failed attempts
+    if is_login_locked(client_ip):
+        audit_log("LOGIN_BLOCKED", f"Login attempt from blocked IP: {client_ip}", "WARNING")
+        flash('Trop de tentatives de connexion échouées. Veuillez réessayer plus tard.', 'error')
+        return render_template('login.html'), 429
+    
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        # Sanitize inputs
+        username = sanitize_input(request.form.get('username', '').strip())
+        password = request.form.get('password', '')
         
+        if not username or not password:
+            record_failed_login(client_ip, username)
+            flash('Nom d\'utilisateur et mot de passe requis.', 'error')
+            return render_template('login.html')
+        
+        # Find user
         user = User.query.filter_by(username=username).first()
         
-        if user and check_password_hash(user.password_hash, password) and user.actif:
-            login_user(user)
-            log_activity(user.id, "CONNEXION", f"Connexion réussie pour {username}")
-            flash('Connexion réussie!', 'success')
-            return redirect(url_for('dashboard'))
+        # Check credentials
+        if user and user.actif:
+            # Use encrypted password hash if available
+            stored_hash = user.get_decrypted_password_hash()
+            
+            if check_password_hash(stored_hash, password):
+                # Successful login
+                reset_failed_login_attempts(client_ip)
+                login_user(user)
+                
+                # Audit log
+                audit_log("LOGIN_SUCCESS", f"Successful login for user: {username}")
+                log_activity(user.id, "CONNEXION", f"Connexion réussie pour {username}")
+                
+                flash('Connexion réussie!', 'success')
+                
+                # Secure redirect
+                next_page = request.args.get('next')
+                if next_page:
+                    from security_utils import secure_redirect
+                    return redirect(secure_redirect(next_page))
+                
+                return redirect(url_for('dashboard'))
+            else:
+                # Failed password check
+                is_blocked = record_failed_login(client_ip, username)
+                audit_log("LOGIN_FAILED", f"Failed login attempt for user: {username} from IP: {client_ip}", "WARNING")
+                
+                if is_blocked:
+                    flash('Trop de tentatives échouées. Votre IP est temporairement bloquée.', 'error')
+                else:
+                    flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
         else:
+            # User not found or inactive
+            record_failed_login(client_ip, username)
+            audit_log("LOGIN_FAILED", f"Login attempt for non-existent/inactive user: {username} from IP: {client_ip}", "WARNING")
             flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
     
     return render_template('login.html')

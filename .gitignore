@@ -1,0 +1,20 @@
+
+# Fichiers de sécurité - NE PAS COMMITTER!
+.env
+keys_backup_*.txt
+*.key
+*.pem
+
+# Dossiers de cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers temporaires
+*.tmp
+temp/
+.temp/
+
+# Logs de sécurité
+security.log
+audit.log
