@@ -159,43 +159,58 @@
                         </p>
                     </div>
                     
-                    <!-- File Upload -->
+                    <!-- File Upload Avancé -->
                     <div>
-                        <label for="fichier" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-paperclip mr-1 text-rdc-blue"></i>
                             Pièce Jointe
                         </label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors">
-                            <div class="space-y-1 text-center">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="fichier" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
-                                        <span>Télécharger un fichier</span>
-                                        <input id="fichier" 
-                                               name="fichier" 
-                                               type="file" 
-                                               class="sr-only" 
-                                               accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
-                                    </label>
-                                    <p class="pl-1">ou glisser-déposer</p>
-                                </div>
-                                <p class="text-xs text-gray-500">
-                                    PDF, JPG, PNG, TIFF jusqu'à 16MB
-                                </p>
+                        
+                        <!-- Options de téléchargement -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <!-- Upload Fichier -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-sm font-medium text-gray-700">Télécharger fichier</p>
+                                <p class="text-xs text-gray-500">PDF, JPG, PNG</p>
+                                <input id="fichier" 
+                                       name="fichier" 
+                                       type="file" 
+                                       class="hidden" 
+                                       accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
+                            </div>
+                            
+                            <!-- Capture Webcam -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-green transition-colors cursor-pointer" id="webcam-capture-btn">
+                                <i class="fas fa-camera text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-sm font-medium text-gray-700">Capture webcam</p>
+                                <p class="text-xs text-gray-500">Prendre une photo</p>
+                            </div>
+                            
+                            <!-- Rogner Image -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rdc-yellow transition-colors cursor-pointer opacity-50" id="crop-image-btn" title="Sélectionnez d'abord une image">
+                                <i class="fas fa-crop-alt text-2xl text-gray-400 mb-2"></i>
+                                <p class="text-sm font-medium text-gray-700">Rogner image</p>
+                                <p class="text-xs text-gray-500">Modifier l'image</p>
                             </div>
                         </div>
+                        
+                        <!-- Zone de prévisualisation -->
                         <div id="file-preview" class="mt-4 hidden">
-                            <div class="flex items-center p-3 bg-gray-50 rounded-md">
-                                <i class="fas fa-file text-2xl text-gray-400 mr-3"></i>
-                                <div class="flex-1">
-                                    <p class="text-sm font-medium text-gray-900" id="file-name"></p>
-                                    <p class="text-xs text-gray-500" id="file-size"></p>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-medium text-gray-900">Fichier sélectionné</h4>
+                                    <button type="button" id="remove-file" class="text-red-600 hover:text-red-800">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
-                                <button type="button" 
-                                        id="remove-file" 
-                                        class="ml-3 text-red-600 hover:text-red-800">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <div id="preview-content" class="mb-3">
+                                    <!-- Le contenu de prévisualisation sera inséré ici -->
+                                </div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    <span id="file-info"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -286,48 +301,385 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Webcam -->
+<div id="webcam-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-camera mr-2 text-rdc-green"></i>
+                        Capture Webcam
+                    </h3>
+                    <button type="button" id="close-webcam" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="text-center">
+                    <video id="webcam-video" autoplay class="w-full max-w-lg mx-auto rounded-lg mb-4" style="display: none;"></video>
+                    <canvas id="webcam-canvas" class="w-full max-w-lg mx-auto rounded-lg mb-4" style="display: none;"></canvas>
+                    <div id="webcam-placeholder" class="w-full max-w-lg mx-auto h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                        <div class="text-center">
+                            <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500">Cliquez sur "Démarrer caméra" pour commencer</p>
+                        </div>
+                    </div>
+                    <div class="space-x-4">
+                        <button type="button" id="start-camera" class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-opacity-90">
+                            <i class="fas fa-play mr-2"></i>Démarrer caméra
+                        </button>
+                        <button type="button" id="capture-photo" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90" style="display: none;">
+                            <i class="fas fa-camera mr-2"></i>Capturer
+                        </button>
+                        <button type="button" id="retake-photo" class="px-4 py-2 bg-rdc-yellow text-white rounded-md hover:bg-opacity-90" style="display: none;">
+                            <i class="fas fa-redo mr-2"></i>Reprendre
+                        </button>
+                        <button type="button" id="use-photo" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90" style="display: none;">
+                            <i class="fas fa-check mr-2"></i>Utiliser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Rognage -->
+<div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl max-w-4xl w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-crop-alt mr-2 text-rdc-yellow"></i>
+                        Rogner l'image
+                    </h3>
+                    <button type="button" id="close-crop" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="text-center">
+                    <div id="crop-container" class="max-w-2xl mx-auto mb-4">
+                        <img id="crop-image" class="max-w-full" style="display: none;">
+                    </div>
+                    <div class="space-x-4">
+                        <button type="button" id="apply-crop" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90">
+                            <i class="fas fa-crop mr-2"></i>Appliquer
+                        </button>
+                        <button type="button" id="cancel-crop" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90">
+                            <i class="fas fa-times mr-2"></i>Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
+<!-- Cropperjs CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+<!-- Cropperjs JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+
 <script>
-// File upload handling
-document.getElementById('fichier').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const preview = document.getElementById('file-preview');
-    const fileName = document.getElementById('file-name');
-    const fileSize = document.getElementById('file-size');
-    
-    if (file) {
-        // Check file size
+// Variables globales
+let webcamStream = null;
+let cropper = null;
+let currentFile = null;
+
+// Système de fichiers avancé
+class AdvancedFileHandler {
+    constructor() {
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        // Zone d'upload de fichier
+        document.getElementById('file-upload-zone').addEventListener('click', () => {
+            document.getElementById('fichier').click();
+        });
+
+        // Gestion du fichier sélectionné
+        document.getElementById('fichier').addEventListener('change', (e) => {
+            this.handleFileSelection(e);
+        });
+
+        // Bouton webcam
+        document.getElementById('webcam-capture-btn').addEventListener('click', () => {
+            this.openWebcamModal();
+        });
+
+        // Bouton rogner
+        document.getElementById('crop-image-btn').addEventListener('click', () => {
+            if (currentFile && currentFile.type.startsWith('image/')) {
+                this.openCropModal();
+            }
+        });
+
+        // Bouton supprimer
+        document.getElementById('remove-file').addEventListener('click', () => {
+            this.removeFile();
+        });
+
+        // Modals
+        this.initializeWebcamModal();
+        this.initializeCropModal();
+    }
+
+    handleFileSelection(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Vérification de taille
         if (file.size > 16 * 1024 * 1024) {
             alert('Erreur: Le fichier est trop volumineux (max 16MB)');
             e.target.value = '';
             return;
         }
+
+        // Vérification du type
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/tiff'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Erreur: Type de fichier non autorisé');
+            e.target.value = '';
+            return;
+        }
+
+        currentFile = file;
+        this.showFilePreview(file);
         
-        // Show preview
-        fileName.textContent = file.name;
-        fileSize.textContent = formatFileSize(file.size);
+        // Activer le bouton de rognage pour les images
+        const cropBtn = document.getElementById('crop-image-btn');
+        if (file.type.startsWith('image/')) {
+            cropBtn.classList.remove('opacity-50');
+            cropBtn.title = 'Cliquer pour rogner l\'image';
+        } else {
+            cropBtn.classList.add('opacity-50');
+            cropBtn.title = 'Sélectionnez d\'abord une image';
+        }
+    }
+
+    showFilePreview(file) {
+        const preview = document.getElementById('file-preview');
+        const previewContent = document.getElementById('preview-content');
+        const fileInfo = document.getElementById('file-info');
+        
+        // Mise à jour des informations
+        fileInfo.textContent = `${file.name} - ${this.formatFileSize(file.size)}`;
+        
+        // Prévisualisation selon le type
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewContent.innerHTML = `
+                    <img src="${e.target.result}" alt="Prévisualisation" class="max-w-full h-32 object-cover rounded-lg mx-auto">
+                `;
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            previewContent.innerHTML = `
+                <div class="flex items-center justify-center h-32 bg-red-50 rounded-lg">
+                    <i class="fas fa-file-pdf text-4xl text-red-500"></i>
+                </div>
+            `;
+        }
+        
         preview.classList.remove('hidden');
     }
-});
 
-// Remove file
-document.getElementById('remove-file').addEventListener('click', function() {
-    document.getElementById('fichier').value = '';
-    document.getElementById('file-preview').classList.add('hidden');
-});
+    removeFile() {
+        document.getElementById('fichier').value = '';
+        document.getElementById('file-preview').classList.add('hidden');
+        document.getElementById('crop-image-btn').classList.add('opacity-50');
+        currentFile = null;
+    }
 
-// Format file size
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    // Webcam Modal
+    initializeWebcamModal() {
+        const modal = document.getElementById('webcam-modal');
+        const startBtn = document.getElementById('start-camera');
+        const captureBtn = document.getElementById('capture-photo');
+        const retakeBtn = document.getElementById('retake-photo');
+        const useBtn = document.getElementById('use-photo');
+        const closeBtn = document.getElementById('close-webcam');
+        const video = document.getElementById('webcam-video');
+        const canvas = document.getElementById('webcam-canvas');
+        const placeholder = document.getElementById('webcam-placeholder');
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = webcamStream;
+                
+                placeholder.style.display = 'none';
+                video.style.display = 'block';
+                startBtn.style.display = 'none';
+                captureBtn.style.display = 'inline-block';
+            } catch (err) {
+                alert('Erreur d\'accès à la webcam: ' + err.message);
+            }
+        });
+
+        captureBtn.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+            useBtn.style.display = 'inline-block';
+        });
+
+        retakeBtn.addEventListener('click', () => {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            captureBtn.style.display = 'inline-block';
+            retakeBtn.style.display = 'none';
+            useBtn.style.display = 'none';
+        });
+
+        useBtn.addEventListener('click', () => {
+            canvas.toBlob((blob) => {
+                const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
+                this.setFileFromBlob(file);
+                this.closeWebcamModal();
+            }, 'image/jpeg', 0.8);
+        });
+
+        closeBtn.addEventListener('click', () => {
+            this.closeWebcamModal();
+        });
+    }
+
+    openWebcamModal() {
+        document.getElementById('webcam-modal').classList.remove('hidden');
+    }
+
+    closeWebcamModal() {
+        const modal = document.getElementById('webcam-modal');
+        modal.classList.add('hidden');
+        
+        // Arrêter la webcam
+        if (webcamStream) {
+            webcamStream.getTracks().forEach(track => track.stop());
+            webcamStream = null;
+        }
+        
+        // Reset UI
+        document.getElementById('webcam-video').style.display = 'none';
+        document.getElementById('webcam-canvas').style.display = 'none';
+        document.getElementById('webcam-placeholder').style.display = 'flex';
+        document.getElementById('start-camera').style.display = 'inline-block';
+        document.getElementById('capture-photo').style.display = 'none';
+        document.getElementById('retake-photo').style.display = 'none';
+        document.getElementById('use-photo').style.display = 'none';
+    }
+
+    // Crop Modal
+    initializeCropModal() {
+        const modal = document.getElementById('crop-modal');
+        const applyBtn = document.getElementById('apply-crop');
+        const cancelBtn = document.getElementById('cancel-crop');
+        const closeBtn = document.getElementById('close-crop');
+
+        applyBtn.addEventListener('click', () => {
+            if (cropper) {
+                cropper.getCroppedCanvas().toBlob((blob) => {
+                    const file = new File([blob], currentFile.name, { type: currentFile.type });
+                    this.setFileFromBlob(file);
+                    this.closeCropModal();
+                }, currentFile.type);
+            }
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            this.closeCropModal();
+        });
+
+        closeBtn.addEventListener('click', () => {
+            this.closeCropModal();
+        });
+    }
+
+    openCropModal() {
+        if (!currentFile || !currentFile.type.startsWith('image/')) return;
+        
+        const modal = document.getElementById('crop-modal');
+        const img = document.getElementById('crop-image');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+            img.style.display = 'block';
+            
+            // Initialiser Cropper
+            cropper = new Cropper(img, {
+                aspectRatio: NaN, // Libre
+                viewMode: 2,
+                dragMode: 'move',
+                autoCropArea: 1,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+            });
+        };
+        reader.readAsDataURL(currentFile);
+        
+        modal.classList.remove('hidden');
+    }
+
+    closeCropModal() {
+        const modal = document.getElementById('crop-modal');
+        modal.classList.add('hidden');
+        
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        
+        document.getElementById('crop-image').style.display = 'none';
+    }
+
+    setFileFromBlob(file) {
+        // Créer un DataTransfer pour simuler un fichier sélectionné
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('fichier').files = dt.files;
+        
+        currentFile = file;
+        this.showFilePreview(file);
+        
+        // Activer le bouton de rognage
+        const cropBtn = document.getElementById('crop-image-btn');
+        cropBtn.classList.remove('opacity-50');
+        cropBtn.title = 'Cliquer pour rogner l\'image';
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 }
 
-// Update current time
+// Fonctions existantes (maintenues pour compatibilité)
 function updateCurrentTime() {
     const now = new Date();
     const timeString = now.toLocaleDateString('fr-FR') + ' à ' + now.toLocaleTimeString('fr-FR', {
@@ -337,11 +689,6 @@ function updateCurrentTime() {
     document.querySelector('.current-time').textContent = timeString;
 }
 
-// Update time every second
-setInterval(updateCurrentTime, 1000);
-updateCurrentTime();
-
-// Initialize radio button visual indicators
 function initializeRadioButtons() {
     const radioOptions = document.querySelectorAll('.mail-type-option');
     
@@ -355,19 +702,16 @@ function initializeRadioButtons() {
         }
         
         option.addEventListener('click', function() {
-            // Reset all options
             radioOptions.forEach(opt => {
                 const vis = opt.querySelector('.radio-visual div');
                 vis.classList.add('hidden');
                 opt.classList.remove('border-rdc-blue', 'bg-blue-50');
             });
             
-            // Set selected option
             radio.checked = true;
             visual.classList.remove('hidden');
             option.classList.add('border-rdc-blue', 'bg-blue-50');
             
-            // Update contact field
             toggleContactField();
         });
     });
@@ -391,8 +735,16 @@ function toggleContactField() {
     }
 }
 
-// Initialize on page load
-initializeRadioButtons();
-toggleContactField();
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser le gestionnaire de fichiers avancé
+    new AdvancedFileHandler();
+    
+    // Initialiser les autres fonctions
+    initializeRadioButtons();
+    toggleContactField();
+    setInterval(updateCurrentTime, 1000);
+    updateCurrentTime();
+});
 </script>
 {% endblock %}
