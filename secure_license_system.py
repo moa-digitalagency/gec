@@ -170,7 +170,7 @@ class SecureLicenseManager:
                 "duration_days": duration_days,
                 "duration_label": duration_label,
                 "activation_date": activation_date.isoformat(),
-                "expiration_date": expiration_date.isoformat()
+                "expiration": expiration_date.isoformat()
             }
             
             cumulative_data[domain_fingerprint]["licenses"].append(new_license)

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de Licence - {{ get_system_params().software_name or "GEC Mines" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'rdc-blue': '#003087',
+                        'rdc-yellow': '#FFD700',
+                        'rdc-red': '#CE1126',
+                        'rdc-green': '#009639'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-gradient-to-br from-rdc-blue via-blue-800 to-blue-900">
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Logo et titre -->
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-green-100">
+                    <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                </div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
+                    Licence Activée
+                </h2>
+                <p class="mt-2 text-center text-sm text-blue-100">
+                    Votre licence a été activée avec succès
+                </p>
+            </div>
+
+            <!-- Carte de confirmation -->
+            <div class="bg-white rounded-lg shadow-xl p-8">
+                <!-- Informations de la licence -->
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">
+                            Détails de la Licence
+                        </h3>
+                    </div>
+
+                    <!-- Statut -->
+                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-green-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Statut</span>
+                        </div>
+                        <span class="text-green-600 font-semibold">Actif</span>
+                    </div>
+
+                    <!-- Durée -->
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-blue-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Durée</span>
+                        </div>
+                        <span class="text-blue-600 font-semibold">{{ license_info.duration_label if license_info else 'N/A' }}</span>
+                    </div>
+
+                    <!-- Date d'activation -->
+                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-plus text-yellow-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Activée le</span>
+                        </div>
+                        <span class="text-yellow-600 font-semibold">{{ activation_date or 'Aujourd\'hui' }}</span>
+                    </div>
+
+                    <!-- Date d'expiration -->
+                    <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-times text-red-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Expire le</span>
+                        </div>
+                        <span class="text-red-600 font-semibold">{{ expiration_date or 'N/A' }}</span>
+                    </div>
+
+                    <!-- Licences cumulées -->
+                    {% if total_licenses > 1 %}
+                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-layer-group text-purple-600 mr-3"></i>
+                            <span class="font-medium text-gray-900">Licences cumulées</span>
+                        </div>
+                        <span class="text-purple-600 font-semibold">{{ total_licenses }} licences</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Message de succès -->
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600">
+                            Votre licence est maintenant active et vous pouvez accéder au système complet.
+                            La page de licence réapparaîtra automatiquement à l'expiration.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bouton d'accès -->
+                <div class="mt-8">
+                    <button onclick="window.location.href='{{ url_for('dashboard') }}'" 
+                            class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <i class="fas fa-arrow-right text-blue-300 group-hover:text-blue-200"></i>
+                        </span>
+                        Accéder au système
+                    </button>
+                </div>
+
+                <!-- Redirection automatique -->
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-500">
+                        Redirection automatique dans <span id="countdown">5</span> secondes...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Redirection automatique
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(timer);
+                window.location.href = "{{ url_for('dashboard') }}";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

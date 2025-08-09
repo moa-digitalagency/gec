@@ -2308,13 +2308,13 @@ def license_activation():
                 # Log de sécurité
                 audit_log("LICENSE_ACTIVATED", f"Licence activée avec succès: {license_key[:8]}...")
                 
-                flash('Licence activée avec succès !', 'success')
+                # Récupère les informations de la licence pour la confirmation
+                is_valid_check, _, license_info = check_license_status()
                 
-                # Redirige vers la page de connexion ou dashboard
-                if current_user.is_authenticated:
-                    return redirect(url_for('dashboard'))
-                else:
-                    return redirect(url_for('login'))
+                # Redirige vers la page de confirmation
+                return redirect(url_for('license_confirmation', 
+                                      license_key=license_key[:8] + "...",
+                                      message=message))
             else:
                 # Log de tentative d'activation échouée
                 audit_log("LICENSE_ACTIVATION_FAILED", f"Échec activation licence: {license_key[:8]}... - {message}", "WARNING")
@@ -2340,6 +2340,44 @@ def license_activation():
                              is_first_time=True,
                              show_demo=app.debug,
                              error="Erreur système")
+
+@app.route('/license_confirmation')
+def license_confirmation():
+    """Page de confirmation après activation de licence"""
+    try:
+        # Vérifie qu'une licence est active
+        is_valid, message, license_info = check_license_status()
+        
+        if not is_valid:
+            flash('Aucune licence active trouvée.', 'error')
+            return redirect(url_for('license_activation'))
+        
+        # Prépare les données pour l'affichage
+        from datetime import datetime
+        
+        activation_date = datetime.now().strftime('%d/%m/%Y')
+        
+        if license_info.get('expiration'):
+            expiration_dt = datetime.fromisoformat(license_info['expiration'])
+            expiration_date = expiration_dt.strftime('%d/%m/%Y à %H:%M')
+        else:
+            expiration_date = 'Non définie'
+        
+        # Informations supplémentaires
+        license_key = request.args.get('license_key', 'N/A')
+        activation_message = request.args.get('message', message)
+        
+        return render_template('license_confirmation.html',
+                             license_info=license_info,
+                             activation_date=activation_date,
+                             expiration_date=expiration_date,
+                             total_licenses=license_info.get('total_licenses', 1),
+                             message=activation_message)
+        
+    except Exception as e:
+        logging.error(f"Erreur page confirmation licence: {e}")
+        flash('Erreur lors de l\'affichage de la confirmation.', 'error')
+        return redirect(url_for('dashboard'))
 
 @app.route('/generate_demo_license')
 def generate_demo_license_route():
