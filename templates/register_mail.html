@@ -322,17 +322,11 @@
                     <div id="webcam-placeholder" class="w-full max-w-lg mx-auto h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                         <div class="text-center">
                             <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-gray-500">Cliquez sur "Démarrer caméra" pour commencer</p>
+                            <p class="text-gray-500">Cliquez sur "Capturer" pour prendre une photo</p>
                         </div>
                     </div>
                     <div class="space-x-4">
-                        <button type="button" id="request-permission" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90">
-                            <i class="fas fa-shield-alt mr-2"></i>Autoriser la caméra
-                        </button>
-                        <button type="button" id="start-camera" class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-opacity-90" style="display: none;">
-                            <i class="fas fa-play mr-2"></i>Démarrer caméra
-                        </button>
-                        <button type="button" id="capture-photo" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90" style="display: none;">
+                        <button type="button" id="start-capture" class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-opacity-90">
                             <i class="fas fa-camera mr-2"></i>Capturer
                         </button>
                         <button type="button" id="retake-photo" class="px-4 py-2 bg-rdc-yellow text-white rounded-md hover:bg-opacity-90" style="display: none;">
@@ -343,35 +337,11 @@
                         </button>
                     </div>
                     
-                    <!-- Instructions pour les permissions -->
-                    <div id="permission-help" class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                        <div class="flex items-start">
-                            <i class="fas fa-info-circle mt-0.5 mr-2"></i>
-                            <div>
-                                <p class="font-medium">Pour utiliser la webcam :</p>
-                                <ol class="mt-2 list-decimal list-inside space-y-1 text-xs">
-                                    <li>Cliquez sur "Autoriser la caméra"</li>
-                                    <li>Acceptez la demande d'autorisation dans votre navigateur</li>
-                                    <li>La caméra s'activera automatiquement</li>
-                                </ol>
-                                
-                                <!-- Instructions spécifiques par navigateur -->
-                                <div id="browser-specific-help" class="mt-3 p-2 bg-white rounded border-l-4 border-blue-300 hidden">
-                                    <p class="font-medium text-blue-800 text-xs mb-1">Si l'autorisation est bloquée :</p>
-                                    <div id="chrome-help" class="hidden text-xs">
-                                        <strong>Chrome :</strong> Cliquez sur l'icône 🎥 dans la barre d'adresse → Autoriser
-                                    </div>
-                                    <div id="firefox-help" class="hidden text-xs">
-                                        <strong>Firefox :</strong> Cliquez sur l'icône caméra barrée → Autoriser les permissions
-                                    </div>
-                                    <div id="safari-help" class="hidden text-xs">
-                                        <strong>Safari :</strong> Safari → Préférences → Sites web → Caméra → Autoriser
-                                    </div>
-                                    <div id="edge-help" class="hidden text-xs">
-                                        <strong>Edge :</strong> Cliquez sur l'icône caméra dans la barre d'adresse → Autoriser
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Message de statut -->
+                    <div id="capture-status" class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600 hidden">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span id="status-message">Prêt à capturer</span>
                         </div>
                     </div>
                 </div>
@@ -532,31 +502,38 @@ class AdvancedFileHandler {
         currentFile = null;
     }
 
-    // Webcam Modal
+    // Webcam Modal - Simplifié et automatisé
     initializeWebcamModal() {
         const modal = document.getElementById('webcam-modal');
-        const requestBtn = document.getElementById('request-permission');
-        const startBtn = document.getElementById('start-camera');
-        const captureBtn = document.getElementById('capture-photo');
+        const startCaptureBtn = document.getElementById('start-capture');
         const retakeBtn = document.getElementById('retake-photo');
         const useBtn = document.getElementById('use-photo');
         const closeBtn = document.getElementById('close-webcam');
         const video = document.getElementById('webcam-video');
         const canvas = document.getElementById('webcam-canvas');
         const placeholder = document.getElementById('webcam-placeholder');
-        const permissionHelp = document.getElementById('permission-help');
+        const status = document.getElementById('capture-status');
+        const statusMessage = document.getElementById('status-message');
 
-        // Bouton pour demander la permission
-        requestBtn.addEventListener('click', async () => {
-            await this.requestWebcamPermission();
-        });
-
-        startBtn.addEventListener('click', async () => {
+        // Bouton principal - activation automatique de la caméra
+        startCaptureBtn.addEventListener('click', async () => {
             try {
+                // Afficher le statut de chargement
+                status.classList.remove('hidden');
+                statusMessage.textContent = 'Activation de la caméra...';
+                startCaptureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
+                startCaptureBtn.disabled = true;
+
+                // Vérifier le support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Webcam non supportée par ce navigateur');
+                }
+
+                // Demander l'accès caméra directement (popup native)
                 const constraints = {
                     video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
+                        width: { ideal: 640, max: 1280 },
+                        height: { ideal: 480, max: 720 },
                         facingMode: 'user'
                     }
                 };
@@ -564,40 +541,34 @@ class AdvancedFileHandler {
                 webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = webcamStream;
                 
-                // Attendre que la vidéo soit prête
+                // Démarrer automatiquement dès que la vidéo est prête
                 video.onloadedmetadata = () => {
                     placeholder.style.display = 'none';
                     video.style.display = 'block';
-                    startBtn.style.display = 'none';
-                    captureBtn.style.display = 'inline-block';
-                    permissionHelp.style.display = 'none';
+                    status.classList.add('hidden');
+                    startCaptureBtn.style.display = 'none';
+                    
+                    // Délai de 2 secondes pour que l'utilisateur se prépare
+                    setTimeout(() => {
+                        this.capturePhoto();
+                    }, 2000);
                 };
                 
             } catch (err) {
-                console.error('Erreur démarrage webcam:', err);
-                this.handleWebcamError(err);
+                this.handleCaptureError(err);
             }
-        });
-
-        captureBtn.addEventListener('click', () => {
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0);
-            
-            video.style.display = 'none';
-            canvas.style.display = 'block';
-            captureBtn.style.display = 'none';
-            retakeBtn.style.display = 'inline-block';
-            useBtn.style.display = 'inline-block';
         });
 
         retakeBtn.addEventListener('click', () => {
             canvas.style.display = 'none';
             video.style.display = 'block';
-            captureBtn.style.display = 'inline-block';
             retakeBtn.style.display = 'none';
             useBtn.style.display = 'none';
+            
+            // Nouvelle capture après 2 secondes
+            setTimeout(() => {
+                this.capturePhoto();
+            }, 2000);
         });
 
         useBtn.addEventListener('click', () => {
@@ -612,223 +583,49 @@ class AdvancedFileHandler {
             this.closeWebcamModal();
         });
     }
-
-    // Gestion fluide des autorisations webcam
-    async requestWebcamPermission() {
-        const requestBtn = document.getElementById('request-permission');
-        const startBtn = document.getElementById('start-camera');
-        const permissionHelp = document.getElementById('permission-help');
-        const browserHelp = document.getElementById('browser-specific-help');
+    
+    capturePhoto() {
+        const video = document.getElementById('webcam-video');
+        const canvas = document.getElementById('webcam-canvas');
+        const retakeBtn = document.getElementById('retake-photo');
+        const useBtn = document.getElementById('use-photo');
         
-        try {
-            // Vérifier le support des médias
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('WebcamNotSupported');
-            }
-            
-            // Détecter le navigateur
-            const browser = this.detectBrowser();
-            
-            // Afficher l'aide spécifique au navigateur
-            this.showBrowserSpecificHelp(browser);
-            
-            // Mettre à jour l'interface pendant la demande
-            requestBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Demande en cours...';
-            requestBtn.disabled = true;
-            
-            // Vérifier les permissions existantes (si supporté)
-            let permissionState = 'prompt';
-            try {
-                if (navigator.permissions && navigator.permissions.query) {
-                    const permission = await navigator.permissions.query({ name: 'camera' });
-                    permissionState = permission.state;
-                }
-            } catch (e) {
-                // API permissions non supportée, continuer
-            }
-            
-            if (permissionState === 'denied') {
-                this.showManualPermissionHelp(browser);
-                return;
-            }
-            
-            // Demander l'accès avec contraintes optimisées
-            const constraints = {
-                video: {
-                    width: { ideal: 640, max: 1280 },
-                    height: { ideal: 480, max: 720 },
-                    facingMode: 'user'
-                }
-            };
-            
-            // Test de permission avec gestion fluide
-            const testStream = await navigator.mediaDevices.getUserMedia(constraints);
-            
-            // Permission accordée - nettoyer le stream de test
-            testStream.getTracks().forEach(track => track.stop());
-            
-            // Succès - mettre à jour l'interface
-            this.showPermissionSuccess();
-            
-        } catch (err) {
-            console.error('Erreur permission webcam:', err);
-            this.handleWebcamPermissionError(err);
-        }
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+        retakeBtn.style.display = 'inline-block';
+        useBtn.style.display = 'inline-block';
     }
     
-    detectBrowser() {
-        const ua = navigator.userAgent;
-        if (ua.includes('Chrome') && !ua.includes('Edg')) return 'chrome';
-        if (ua.includes('Firefox')) return 'firefox';
-        if (ua.includes('Safari') && !ua.includes('Chrome')) return 'safari';
-        if (ua.includes('Edg')) return 'edge';
-        return 'unknown';
-    }
-    
-    showBrowserSpecificHelp(browser) {
-        const browserHelp = document.getElementById('browser-specific-help');
-        const helps = ['chrome-help', 'firefox-help', 'safari-help', 'edge-help'];
-        
-        // Masquer toutes les aides
-        helps.forEach(id => {
-            document.getElementById(id).classList.add('hidden');
-        });
-        
-        // Afficher l'aide appropriée
-        if (browser !== 'unknown') {
-            document.getElementById(`${browser}-help`).classList.remove('hidden');
-            browserHelp.classList.remove('hidden');
-        }
-    }
-    
-    showPermissionSuccess() {
-        const requestBtn = document.getElementById('request-permission');
-        const startBtn = document.getElementById('start-camera');
-        const permissionHelp = document.getElementById('permission-help');
-        
-        requestBtn.style.display = 'none';
-        startBtn.style.display = 'inline-block';
-        
-        permissionHelp.innerHTML = `
-            <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                <div>
-                    <p class="text-green-700 font-medium">Caméra autorisée avec succès !</p>
-                    <p class="text-green-600 text-xs mt-1">Cliquez sur "Démarrer caméra" pour continuer</p>
-                </div>
-            </div>
-        `;
-        permissionHelp.className = 'mt-4 p-3 bg-green-50 rounded-lg text-sm';
-    }
-    
-    showManualPermissionHelp(browser) {
-        const permissionHelp = document.getElementById('permission-help');
-        const requestBtn = document.getElementById('request-permission');
-        
-        let instructions = '';
-        switch (browser) {
-            case 'chrome':
-                instructions = 'Cliquez sur l\'icône 🎥 dans la barre d\'adresse, puis sélectionnez "Autoriser"';
-                break;
-            case 'firefox':
-                instructions = 'Cliquez sur l\'icône caméra barrée dans la barre d\'adresse pour autoriser';
-                break;
-            case 'safari':
-                instructions = 'Allez dans Safari → Préférences → Sites web → Caméra → Autoriser ce site';
-                break;
-            case 'edge':
-                instructions = 'Cliquez sur l\'icône caméra dans la barre d\'adresse pour autoriser';
-                break;
-            default:
-                instructions = 'Autorisez l\'accès à la caméra dans les paramètres de votre navigateur';
-        }
-        
-        permissionHelp.innerHTML = `
-            <div class="flex items-start">
-                <i class="fas fa-exclamation-triangle text-orange-500 mt-0.5 mr-2"></i>
-                <div>
-                    <p class="text-orange-700 font-medium">Permission requise</p>
-                    <p class="text-orange-600 text-xs mt-1">${instructions}</p>
-                    <button id="retry-permission" class="mt-2 px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600">
-                        <i class="fas fa-redo mr-1"></i>Réessayer
-                    </button>
-                </div>
-            </div>
-        `;
-        permissionHelp.className = 'mt-4 p-3 bg-orange-50 rounded-lg text-sm';
-        
-        // Réinitialiser le bouton
-        requestBtn.innerHTML = '<i class="fas fa-shield-alt mr-2"></i>Autoriser la caméra';
-        requestBtn.disabled = false;
-        
-        // Ajouter le bouton de retry
-        document.getElementById('retry-permission').addEventListener('click', () => {
-            this.requestWebcamPermission();
-        });
-    }
-    
-    handleWebcamPermissionError(err) {
-        const permissionHelp = document.getElementById('permission-help');
-        const requestBtn = document.getElementById('request-permission');
-        const browser = this.detectBrowser();
+    handleCaptureError(err) {
+        const status = document.getElementById('capture-status');
+        const statusMessage = document.getElementById('status-message');
+        const startCaptureBtn = document.getElementById('start-capture');
         
         let message = '';
-        let className = 'mt-4 p-3 bg-red-50 rounded-lg text-sm';
-        
         if (err.name === 'NotAllowedError') {
-            this.showManualPermissionHelp(browser);
-            return;
+            message = 'Autorisation refusée - autorisez l\'accès caméra dans votre navigateur';
         } else if (err.name === 'NotFoundError') {
             message = 'Aucune caméra détectée sur cet appareil';
-        } else if (err.name === 'NotSupportedError' || err.message === 'WebcamNotSupported') {
-            message = 'La webcam n\'est pas supportée par ce navigateur';
         } else {
-            message = 'Erreur technique : ' + err.message;
+            message = 'Erreur : ' + err.message;
         }
         
-        permissionHelp.innerHTML = `
-            <div class="flex items-start">
-                <i class="fas fa-exclamation-circle text-red-500 mt-0.5 mr-2"></i>
-                <div>
-                    <p class="text-red-700 font-medium">Erreur d'accès</p>
-                    <p class="text-red-600 text-xs mt-1">${message}</p>
-                </div>
-            </div>
-        `;
-        permissionHelp.className = className;
+        status.classList.remove('hidden');
+        status.className = 'mt-4 p-3 bg-red-50 rounded-lg text-sm text-red-600';
+        statusMessage.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>' + message;
         
         // Réinitialiser le bouton
-        requestBtn.innerHTML = '<i class="fas fa-shield-alt mr-2"></i>Autoriser la caméra';
-        requestBtn.disabled = false;
+        startCaptureBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
+        startCaptureBtn.disabled = false;
+        startCaptureBtn.style.display = 'inline-block';
     }
-    
-    resetWebcamInterface() {
-        const requestBtn = document.getElementById('request-permission');
-        const startBtn = document.getElementById('start-camera');
-        const permissionHelp = document.getElementById('permission-help');
-        
-        // Réinitialiser les boutons
-        requestBtn.style.display = 'inline-block';
-        requestBtn.innerHTML = '<i class="fas fa-shield-alt mr-2"></i>Autoriser la caméra';
-        requestBtn.disabled = false;
-        startBtn.style.display = 'none';
-        
-        // Réinitialiser l'aide
-        permissionHelp.innerHTML = `
-            <div class="flex items-start">
-                <i class="fas fa-info-circle mt-0.5 mr-2"></i>
-                <div>
-                    <p class="font-medium">Pour utiliser la webcam :</p>
-                    <ol class="mt-2 list-decimal list-inside space-y-1 text-xs">
-                        <li>Cliquez sur "Autoriser la caméra"</li>
-                        <li>Acceptez la demande d'autorisation dans votre navigateur</li>
-                        <li>La caméra s'activera automatiquement</li>
-                    </ol>
-                </div>
-            </div>
-        `;
-        permissionHelp.className = 'mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700';
-    }
+
+
 
     openWebcamModal() {
         document.getElementById('webcam-modal').classList.remove('hidden');
@@ -848,14 +645,12 @@ class AdvancedFileHandler {
         document.getElementById('webcam-video').style.display = 'none';
         document.getElementById('webcam-canvas').style.display = 'none';
         document.getElementById('webcam-placeholder').style.display = 'flex';
-        document.getElementById('capture-photo').style.display = 'none';
+        document.getElementById('start-capture').style.display = 'inline-block';
+        document.getElementById('start-capture').innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
+        document.getElementById('start-capture').disabled = false;
         document.getElementById('retake-photo').style.display = 'none';
         document.getElementById('use-photo').style.display = 'none';
-        document.getElementById('permission-help').style.display = 'block';
-        document.getElementById('browser-specific-help').classList.add('hidden');
-        
-        // Réinitialiser l'interface de permission
-        this.resetWebcamInterface();
+        document.getElementById('capture-status').classList.add('hidden');
     }
 
     // Crop Modal
