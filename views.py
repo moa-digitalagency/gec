@@ -2388,6 +2388,124 @@ def generate_demo_license_route():
     demo_license = generate_sample_license()
     return {"license": demo_license}
 
+@app.route('/license_status')
+@login_required 
+def license_status():
+    """Page de statut de licence pour l'utilisateur connecté"""
+    try:
+        is_valid, message, license_info = check_license_status()
+        
+        # Formate la date d'expiration si disponible
+        expiration_formatted = None
+        if license_info.get('expiration'):
+            from datetime import datetime
+            exp_date = datetime.fromisoformat(license_info['expiration'])
+            expiration_formatted = exp_date.strftime('%d/%m/%Y à %H:%M')
+        
+        license_info['expiration_formatted'] = expiration_formatted
+        
+        # Empreinte du domaine actuel
+        domain_fingerprint = get_current_domain()
+        
+        return render_template('license_status.html',
+                             license_valid=is_valid,
+                             license_message=message,
+                             license_info=license_info,
+                             domain_fingerprint=domain_fingerprint,
+                             validation_type="Local + Centralisé",
+                             last_check=datetime.now().strftime('%H:%M:%S'))
+                             
+    except Exception as e:
+        logging.error(f"Erreur page statut licence: {e}")
+        flash('Erreur lors de la récupération du statut de licence.', 'error')
+        return render_template('license_status.html',
+                             license_valid=False,
+                             license_message="Erreur système",
+                             license_info={},
+                             domain_fingerprint="N/A")
+
+@app.route('/add_license', methods=['GET', 'POST'])
+@login_required
+def add_license():
+    """Page d'ajout de licence pour l'utilisateur connecté"""
+    if request.method == 'POST':
+        license_key = request.form.get('license_key', '').strip().upper()
+        
+        if not license_key:
+            flash('Veuillez entrer une clé de licence.', 'error')
+            return redirect(url_for('add_license'))
+        
+        # Tente d'activer la licence
+        is_valid, message = activate_license(license_key)
+        
+        if is_valid:
+            flash(f'Licence ajoutée avec succès ! {message}', 'success')
+            audit_log("LICENSE_ADDED", f"Licence {license_key[:8]}... ajoutée par {current_user.nom_complet}")
+            return redirect(url_for('license_status'))
+        else:
+            flash(f'Erreur lors de l\'ajout: {message}', 'error')
+            audit_log("LICENSE_ADD_FAILED", f"Échec ajout licence {license_key[:8]}... par {current_user.nom_complet}: {message}", "WARNING")
+    
+    # GET request
+    try:
+        # Récupère le statut actuel
+        is_valid, _, current_license = check_license_status()
+        
+        if is_valid:
+            from datetime import datetime
+            if current_license.get('expiration'):
+                exp_date = datetime.fromisoformat(current_license['expiration'])
+                current_license['expiration_formatted'] = exp_date.strftime('%d/%m/%Y à %H:%M')
+        
+        # Licences de démonstration (développement seulement)
+        demo_licenses = {}
+        if app.debug:
+            from sqlalchemy import create_engine, text
+            database_url = os.environ.get('DATABASE_URL')
+            if database_url:
+                try:
+                    engine = create_engine(database_url)
+                    with engine.connect() as connection:
+                        # Récupère quelques licences par type
+                        for duration in ['1 jour', '5 jours']:
+                            query = text("""
+                                SELECT license_key FROM licenses 
+                                WHERE duration_label = :duration AND is_used = false 
+                                LIMIT 5
+                            """)
+                            result = connection.execute(query, {"duration": duration}).fetchall()
+                            demo_licenses[duration.replace(' ', '_')] = [row[0] for row in result]
+                except Exception:
+                    demo_licenses = {}
+        
+        return render_template('add_license.html',
+                             current_license=current_license if is_valid else None,
+                             demo_licenses=demo_licenses)
+                             
+    except Exception as e:
+        logging.error(f"Erreur page ajout licence: {e}")
+        flash('Erreur lors du chargement de la page.', 'error')
+        return redirect(url_for('license_status'))
+
+@app.route('/license_history')
+@login_required
+def license_history():
+    """Page d'historique des licences pour l'utilisateur connecté"""
+    try:
+        # Pour l'instant, affiche les informations du fichier local
+        current_licenses = secure_license_manager.check_cumulative_licenses()
+        
+        return render_template('license_history.html',
+                             licenses=current_licenses.get('licenses', []),
+                             domain_fingerprint=get_current_domain())
+                             
+    except Exception as e:
+        logging.error(f"Erreur page historique licence: {e}")
+        flash('Erreur lors de la récupération de l\'historique.', 'error')
+        return render_template('license_history.html',
+                             licenses=[],
+                             domain_fingerprint="N/A")
+
 @app.route('/admin/licenses')
 @login_required
 def admin_licenses():

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Historique des Licences - {{ get_system_params().nom_logiciel or "GEC Mines" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Historique des Licences
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Informations du domaine -->
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-server me-2"></i>
+                        <strong>Domaine actuel:</strong> 
+                        <code>{{ domain_fingerprint }}</code>
+                    </div>
+
+                    {% if licenses %}
+                    <!-- Tableau des licences -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th><i class="fas fa-key me-1"></i>Clé de Licence</th>
+                                    <th><i class="fas fa-calendar me-1"></i>Type</th>
+                                    <th><i class="fas fa-clock me-1"></i>Durée</th>
+                                    <th><i class="fas fa-calendar-plus me-1"></i>Activée le</th>
+                                    <th><i class="fas fa-calendar-times me-1"></i>Expire le</th>
+                                    <th><i class="fas fa-info-circle me-1"></i>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for license in licenses %}
+                                <tr>
+                                    <td>
+                                        <code class="text-primary">{{ license.license_key }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ license.duration_label }}</span>
+                                    </td>
+                                    <td>
+                                        {{ license.duration_days }} jour(s)
+                                    </td>
+                                    <td>
+                                        {% set activation_date = license.activation_date | format_datetime if license.activation_date else 'N/A' %}
+                                        {{ activation_date }}
+                                    </td>
+                                    <td>
+                                        {% set expiration_date = license.expiration | format_datetime if license.expiration else 'N/A' %}
+                                        {{ expiration_date }}
+                                        
+                                        {% if license.expiration %}
+                                            {% set now = moment().utc() %}
+                                            {% set exp_date = moment(license.expiration) %}
+                                            {% if exp_date.isAfter(now) %}
+                                                <small class="text-success d-block">
+                                                    <i class="fas fa-check-circle me-1"></i>Active
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted d-block">
+                                                    <i class="fas fa-clock me-1"></i>Expirée
+                                                </small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if license.expiration %}
+                                            {% set now = moment().utc() %}
+                                            {% set exp_date = moment(license.expiration) %}
+                                            {% if exp_date.isAfter(now) %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Active
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-times me-1"></i>Expirée
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-question me-1"></i>Inconnue
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Résumé -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-primary">Total Licences</h6>
+                                    <span class="fs-4 fw-bold">{{ licenses | length }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-success">Licences Actives</h6>
+                                    <span class="fs-4 fw-bold">
+                                        {% set active_count = 0 %}
+                                        {% for license in licenses %}
+                                            {% if license.expiration %}
+                                                {% set now = moment().utc() %}
+                                                {% set exp_date = moment(license.expiration) %}
+                                                {% if exp_date.isAfter(now) %}
+                                                    {% set active_count = active_count + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ active_count }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-info">Durée Totale</h6>
+                                    <span class="fs-4 fw-bold">
+                                        {% set total_days = 0 %}
+                                        {% for license in licenses %}
+                                            {% set total_days = total_days + (license.duration_days or 0) %}
+                                        {% endfor %}
+                                        {{ total_days }} jours
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <!-- Aucune licence -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-key text-muted" style="font-size: 4rem;"></i>
+                        <h5 class="mt-3 text-muted">Aucune licence dans l'historique</h5>
+                        <p class="text-muted">Les licences activées apparaîtront ici.</p>
+                        <a href="{{ url_for('add_license') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Ajouter une Licence
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="mt-4 text-center">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('license_status') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-info-circle me-2"></i>Statut Actuel
+                            </a>
+                            <a href="{{ url_for('add_license') }}" class="btn btn-outline-success">
+                                <i class="fas fa-plus me-2"></i>Ajouter une Licence
+                            </a>
+                            <button onclick="window.location.reload()" class="btn btn-outline-secondary">
+                                <i class="fas fa-sync-alt me-2"></i>Actualiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fonctions pour le formatage des dates -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script>
+// Fonction pour formater les dates
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    return moment(dateString).format('DD/MM/YYYY HH:mm');
+}
+
+// Met à jour les dates au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    // Traite les dates dans le tableau
+    const dateElements = document.querySelectorAll('[data-date]');
+    dateElements.forEach(element => {
+        const dateString = element.getAttribute('data-date');
+        element.textContent = formatDateTime(dateString);
+    });
+});
+</script>
+{% endblock %}

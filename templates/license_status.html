@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Statut de ma Licence - {{ get_system_params().nom_logiciel or "GEC Mines" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-key me-2"></i>Statut de ma Licence
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if license_valid %}
+                    <!-- Licence active -->
+                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                        <i class="fas fa-check-circle me-3 fs-4"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Licence Active</h5>
+                            <p class="mb-0">Votre licence est valide et active.</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">
+                                        <i class="fas fa-calendar-check me-2"></i>Informations de Licence
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong>Statut:</strong> 
+                                            <span class="badge bg-success">Active</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Expire le:</strong> 
+                                            {{ license_info.expiration_formatted if license_info.expiration_formatted else 'Non définie' }}
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Jours restants:</strong> 
+                                            <span class="badge bg-info">{{ license_info.days_remaining or 0 }} jours</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Licences cumulées:</strong> 
+                                            <span class="badge bg-purple">{{ license_info.total_licenses or 1 }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h6 class="card-title text-info">
+                                        <i class="fas fa-info-circle me-2"></i>Informations Système
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong>Domaine:</strong> 
+                                            <code class="text-muted">{{ domain_fingerprint[:16] }}...</code>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Type de validation:</strong> 
+                                            <span class="badge bg-secondary">{{ validation_type or 'Local' }}</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Dernière vérification:</strong> 
+                                            {{ last_check or 'Maintenant' }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if license_info.days_remaining <= 7 %}
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attention:</strong> Votre licence expire dans {{ license_info.days_remaining }} jour(s). 
+                        Pensez à ajouter une nouvelle licence pour prolonger l'accès.
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <!-- Aucune licence active -->
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="fas fa-times-circle me-3 fs-4"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Aucune Licence Active</h5>
+                            <p class="mb-0">{{ license_message or 'Aucune licence valide trouvée pour ce domaine.' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('add_license') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Ajouter une Licence
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="mt-4 text-center">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('add_license') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-2"></i>Ajouter une Licence
+                            </a>
+                            <a href="{{ url_for('license_history') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-history me-2"></i>Historique
+                            </a>
+                            <button onclick="refreshStatus()" class="btn btn-outline-info">
+                                <i class="fas fa-sync-alt me-2"></i>Actualiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStatus() {
+    window.location.reload();
+}
+</script>
+{% endblock %}
