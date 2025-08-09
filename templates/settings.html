@@ -23,7 +23,7 @@
                 </h2>
             </div>
             <div class="p-6">
-                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data" class="space-y-6" id="settings-form">
                     <!-- Software Name -->
                     <div>
                         <label for="nom_logiciel" class="block text-sm font-medium text-gray-700 mb-2">
@@ -46,28 +46,35 @@
                             <i class="fas fa-image mr-1 text-rdc-blue"></i>
                             Logo de l'Organisation
                         </label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors">
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors" id="logo-upload-area">
                             <div class="space-y-1 text-center">
                                 {% if parametres.logo_url %}
-                                <div class="mb-4">
+                                <div class="mb-4" id="current-logo">
                                     <img src="{{ url_for('uploaded_file', filename=parametres.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" alt="Logo actuel" class="h-16 w-auto mx-auto">
                                     <p class="text-sm text-gray-500 mt-2">Logo actuel</p>
                                 </div>
                                 {% else %}
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4" id="upload-icon"></i>
                                 {% endif %}
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
-                                        <span>{{ 'Changer le logo' if parametres.logo_url else 'Télécharger un logo' }}</span>
+                                
+                                <!-- Preview area for new file -->
+                                <div id="file-preview" class="mb-4 hidden">
+                                    <img id="preview-image" src="" alt="Aperçu" class="h-16 w-auto mx-auto">
+                                    <p class="text-sm text-green-600 mt-2" id="file-name">Fichier sélectionné</p>
+                                </div>
+                                
+                                <div class="text-sm text-gray-600">
+                                    <label for="logo" class="cursor-pointer bg-rdc-blue text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors inline-block">
+                                        <i class="fas fa-upload mr-2"></i>{{ 'Changer le logo' if parametres.logo_url else 'Sélectionner un fichier' }}
                                         <input id="logo" 
                                                name="logo" 
                                                type="file" 
-                                               class="sr-only" 
-                                               accept=".png,.jpg,.jpeg,.svg">
+                                               class="hidden" 
+                                               accept=".png,.jpg,.jpeg,.svg"
+                                               onchange="previewLogo(this)">
                                     </label>
-                                    <p class="pl-1">ou glisser-déposer</p>
                                 </div>
-                                <p class="text-xs text-gray-500">
+                                <p class="text-xs text-gray-500 mt-2">
                                     PNG, JPG, JPEG, SVG jusqu'à 2MB
                                 </p>
                             </div>
@@ -505,6 +512,52 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+function previewLogo(input) {
+    const file = input.files[0];
+    const previewArea = document.getElementById('file-preview');
+    const previewImage = document.getElementById('preview-image');
+    const fileName = document.getElementById('file-name');
+    const uploadIcon = document.getElementById('upload-icon');
+    const currentLogo = document.getElementById('current-logo');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            fileName.textContent = file.name + ' - Prêt à télécharger';
+            previewArea.classList.remove('hidden');
+            
+            // Hide upload icon and current logo
+            if (uploadIcon) uploadIcon.classList.add('hidden');
+            if (currentLogo) currentLogo.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        previewArea.classList.add('hidden');
+        if (uploadIcon) uploadIcon.classList.remove('hidden');
+        if (currentLogo) currentLogo.classList.remove('hidden');
+    }
+}
+
+// Add form submission debugging
+document.getElementById('settings-form').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('logo');
+    const file = fileInput.files[0];
+    
+    console.log('Form submitted with file:', file ? file.name : 'No file selected');
+    console.log('File input value:', fileInput.value);
+    console.log('Form data will include logo file:', !!file);
+    
+    if (file) {
+        console.log('File details:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
+    }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Enhanced format preview with comprehensive pattern support

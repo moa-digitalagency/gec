@@ -682,8 +682,13 @@ def settings():
             parametres.modifie_par_id = current_user.id
             
             # Gestion du logo principal
+            print(f"DEBUG: All files in request: {list(request.files.keys())}")
             if 'logo' in request.files:
                 logo = request.files['logo']
+                print(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
+                print(f"DEBUG: Logo file size: {len(logo.read()) if logo else 0} bytes")
+                if logo:
+                    logo.seek(0)  # Reset file pointer after reading
                 logging.info(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
                 print(f"DEBUG: Logo file received: {logo.filename if logo else 'None'}")
                 if logo and logo.filename and logo.filename != '' and allowed_file(logo.filename):
