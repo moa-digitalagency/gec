@@ -105,10 +105,7 @@ def logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
 
-@app.route('/camera_test')
-def camera_test():
-    """Test simple pour vérifier l'accès caméra"""
-    return render_template('camera_test.html')
+
 
 @app.route('/dashboard')
 @login_required
