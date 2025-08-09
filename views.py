@@ -1779,11 +1779,14 @@ def edit_profile():
     if request.method == 'POST':
         # Mise à jour des informations de base
         current_user.nom_complet = request.form['nom_complet']
-        current_user.email = request.form['email']
         current_user.langue = request.form['langue']
-        current_user.matricule = request.form.get('matricule', '')
-        current_user.fonction = request.form.get('fonction', '')
-        current_user.departement_id = request.form.get('departement_id') or None
+        
+        # Seuls les super admins peuvent modifier email, département, matricule et fonction
+        if current_user.is_super_admin():
+            current_user.email = request.form['email']
+            current_user.matricule = request.form.get('matricule', '')
+            current_user.fonction = request.form.get('fonction', '')
+            current_user.departement_id = request.form.get('departement_id') or None
         
         # Mise à jour du mot de passe si fourni
         password = request.form.get('password')

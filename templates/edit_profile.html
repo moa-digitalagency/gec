@@ -70,13 +70,23 @@
                 <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-envelope mr-1 text-rdc-blue"></i>
                     Email *
+                    {% if not current_user.is_super_admin() %}
+                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
+                    {% endif %}
                 </label>
                 <input type="email" 
                        name="email" 
                        id="email"
                        value="{{ user.email }}"
                        required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
+                       {% if not current_user.is_super_admin() %}readonly{% endif %}
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}">
+                {% if not current_user.is_super_admin() %}
+                <p class="text-xs text-red-500 mt-1">
+                    <i class="fas fa-lock mr-1"></i>
+                    Ce champ ne peut être modifié que par un super administrateur.
+                </p>
+                {% endif %}
             </div>
             
             <!-- Nouveau mot de passe -->
@@ -117,14 +127,25 @@
                 <label for="matricule" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-id-badge mr-1 text-rdc-blue"></i>
                     Matricule
+                    {% if not current_user.is_super_admin() %}
+                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
+                    {% endif %}
                 </label>
                 <input type="text" 
                        name="matricule" 
                        id="matricule"
                        value="{{ user.matricule or '' }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Entrez votre matricule (optionnel)">
+                       {% if not current_user.is_super_admin() %}readonly{% endif %}
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}"
+                       placeholder="{% if current_user.is_super_admin() %}Entrez votre matricule (optionnel){% else %}Non modifiable{% endif %}">
+                {% if current_user.is_super_admin() %}
                 <p class="text-xs text-gray-500 mt-1">Numéro d'identification unique de l'employé</p>
+                {% else %}
+                <p class="text-xs text-red-500 mt-1">
+                    <i class="fas fa-lock mr-1"></i>
+                    Ce champ ne peut être modifié que par un super administrateur.
+                </p>
+                {% endif %}
             </div>
             
             <!-- Fonction -->
@@ -132,14 +153,25 @@
                 <label for="fonction" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-briefcase mr-1 text-rdc-blue"></i>
                     Fonction / Poste
+                    {% if not current_user.is_super_admin() %}
+                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
+                    {% endif %}
                 </label>
                 <input type="text" 
                        name="fonction" 
                        id="fonction"
                        value="{{ user.fonction or '' }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Ex: Secrétaire, Directeur, Agent">
+                       {% if not current_user.is_super_admin() %}readonly{% endif %}
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}"
+                       placeholder="{% if current_user.is_super_admin() %}Ex: Secrétaire, Directeur, Agent{% else %}Non modifiable{% endif %}">
+                {% if current_user.is_super_admin() %}
                 <p class="text-xs text-gray-500 mt-1">Poste ou fonction exercé dans l'organisation</p>
+                {% else %}
+                <p class="text-xs text-red-500 mt-1">
+                    <i class="fas fa-lock mr-1"></i>
+                    Ce champ ne peut être modifié que par un super administrateur.
+                </p>
+                {% endif %}
             </div>
             
             <!-- Département -->
@@ -147,18 +179,37 @@
                 <label for="departement_id" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-building mr-1 text-rdc-blue"></i>
                     Département
+                    {% if not current_user.is_super_admin() %}
+                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
+                    {% endif %}
                 </label>
                 <select name="departement_id" 
                         id="departement_id"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    <option value="">Aucun département</option>
+                        {% if not current_user.is_super_admin() %}disabled{% endif %}
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}">
+                    <option value="">{% if current_user.is_super_admin() %}Aucun département{% else %}Non modifiable{% endif %}</option>
+                    {% if current_user.is_super_admin() %}
                     {% for dept in departements %}
                     <option value="{{ dept.id }}" {% if user.departement_id == dept.id %}selected{% endif %}>
                         {{ dept.nom }} ({{ dept.code }})
                     </option>
                     {% endfor %}
+                    {% else %}
+                    {% if user.departement and user.departement.nom %}
+                    <option value="{{ user.departement.id }}" selected>
+                        {{ user.departement.nom }} ({{ user.departement.code }})
+                    </option>
+                    {% endif %}
+                    {% endif %}
                 </select>
+                {% if current_user.is_super_admin() %}
                 <p class="text-xs text-gray-500 mt-1">Département d'affectation</p>
+                {% else %}
+                <p class="text-xs text-red-500 mt-1">
+                    <i class="fas fa-lock mr-1"></i>
+                    Ce champ ne peut être modifié que par un super administrateur.
+                </p>
+                {% endif %}
             </div>
             
             <!-- Photo de profil -->
