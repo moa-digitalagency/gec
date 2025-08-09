@@ -18,6 +18,7 @@ from utils import allowed_file, generate_accuse_reception, log_activity, export_
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 from license_system import license_validator, require_license, generate_sample_license
+from secure_license_system import secure_license_manager, check_license_status, activate_license
 
 @app.context_processor
 def inject_system_context():
@@ -29,9 +30,11 @@ def inject_system_context():
     )
 
 def check_license_required():
-    """Middleware pour vérifier si une licence est requise"""
-    needs_license, message = require_license()
-    if needs_license and request.endpoint not in ['license_activation', 'static']:
+    """Middleware pour vérifier si une licence est requise (système cumulatif)"""
+    # Utilise le nouveau système de licence sécurisé et cumulatif
+    is_valid, message, info = check_license_status()
+    
+    if not is_valid and request.endpoint not in ['license_activation', 'static']:
         return redirect(url_for('license_activation'))
     return None
 
@@ -2284,7 +2287,8 @@ def license_activation():
             domain_info += f" - {os.environ.get('REPL_SLUG')}"
         
         # Détermine s'il s'agit de la première utilisation
-        is_first_time = not os.path.exists(license_validator.domain_cache)
+        is_valid, _, _ = check_license_status()
+        is_first_time = not is_valid
         
         if request.method == 'POST':
             license_key = request.form.get('license_key', '').strip().upper()
@@ -2297,8 +2301,8 @@ def license_activation():
                                      show_demo=app.debug,
                                      error="Clé de licence requise")
             
-            # Valide la licence
-            is_valid, message = license_validator.validate_license(license_key)
+            # Valide la licence avec le système sécurisé et cumulatif
+            is_valid, message = activate_license(license_key)
             
             if is_valid:
                 # Log de sécurité
@@ -2373,6 +2377,7 @@ def admin_licenses():
                     COUNT(*) as total,
                     SUM(CASE WHEN is_used = true THEN 1 ELSE 0 END) as used,
                     SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN duration_label = '1 jour' THEN 1 ELSE 0 END) as one_day,
                     SUM(CASE WHEN duration_label = '5 jours' THEN 1 ELSE 0 END) as five_days,
                     SUM(CASE WHEN duration_label = '1 mois' THEN 1 ELSE 0 END) as one_month,
                     SUM(CASE WHEN duration_label = '6 mois' THEN 1 ELSE 0 END) as six_months,

@@ -283,7 +283,7 @@ class LicenseValidator:
                 # Recherche la licence
                 query = text("""
                     SELECT license_key, duration_days, duration_label, 
-                           expiration_date, is_used, status 
+                           expiration_date, is_used, status, activation_date
                     FROM licenses 
                     WHERE license_key = :license_key
                 """)
@@ -300,7 +300,8 @@ class LicenseValidator:
                     'duration_label': result[2],
                     'expiration_date': result[3].isoformat() if result[3] else None,
                     'is_used': result[4],
-                    'status': result[5]
+                    'status': result[5],
+                    'activation_date': result[6].isoformat() if result[6] else None
                 }
                 
                 # Vérifie le statut
@@ -311,11 +312,8 @@ class LicenseValidator:
                 if license_info['is_used']:
                     return False, "Cette licence a déjà été utilisée", {}
                 
-                # Vérifie la date d'expiration
-                if license_info['expiration_date']:
-                    expiration = datetime.fromisoformat(license_info['expiration_date'].replace('Z', '+00:00'))
-                    if expiration < datetime.now():
-                        return False, "Licence expirée", {}
+                # Pour les nouvelles licences, pas de vérification d'expiration 
+                # car elle sera calculée lors de l'activation
                 
                 return True, "Licence valide", license_info
                 
@@ -324,10 +322,11 @@ class LicenseValidator:
             return False, "Erreur lors de la vérification", {}
     
     def _mark_license_as_used(self, license_key: str) -> bool:
-        """Marque une licence comme utilisée"""
+        """Marque une licence comme utilisée et calcule sa date d'expiration"""
         try:
             import os
             from sqlalchemy import create_engine, text
+            from datetime import timedelta
             
             database_url = os.environ.get('DATABASE_URL')
             if not database_url:
@@ -337,10 +336,27 @@ class LicenseValidator:
             domain_fingerprint = self._get_domain_fingerprint()
             
             with engine.connect() as connection:
+                # Récupère d'abord les infos de la licence
+                select_query = text("""
+                    SELECT duration_days FROM licenses 
+                    WHERE license_key = :license_key AND is_used = FALSE
+                """)
+                
+                license_info = connection.execute(select_query, {"license_key": license_key}).fetchone()
+                if not license_info:
+                    return False
+                
+                # Calcule la date d'expiration à partir de maintenant
+                activation_date = datetime.now()
+                expiration_date = activation_date + timedelta(days=license_info[0])
+                
+                # Met à jour la licence avec activation et expiration
                 query = text("""
                     UPDATE licenses 
                     SET is_used = TRUE, 
-                        used_date = CURRENT_TIMESTAMP,
+                        used_date = :activation_date,
+                        activation_date = :activation_date,
+                        expiration_date = :expiration_date,
                         used_domain = :domain,
                         used_ip = :ip
                     WHERE license_key = :license_key AND is_used = FALSE
@@ -355,6 +371,8 @@ class LicenseValidator:
                 
                 result = connection.execute(query, {
                     "license_key": license_key,
+                    "activation_date": activation_date,
+                    "expiration_date": expiration_date,
                     "domain": domain_fingerprint[:50],  # Limite la taille
                     "ip": ip_address
                 })
@@ -365,6 +383,7 @@ class LicenseValidator:
                 if result.rowcount == 0:
                     return False
                 
+                self.logger.info(f"Licence {license_key} activée jusqu'au {expiration_date.strftime('%Y-%m-%d %H:%M:%S')}")
                 return True
                 
         except Exception as e:

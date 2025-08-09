@@ -73,10 +73,13 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Secure File Handling**: Path traversal protection and secure file operations
 
 ### License System Features (August 2025)
+- **Cumulative License System**: Licenses can be stacked to extend validity periods (e.g., multiple 1-month licenses = longer access)
+- **Activation-Based Timing**: License validity starts only when activated, not when created in database
+- **5000 Generated Licenses**: 1000 each of 1 day, 5 days, 1 month, 6 months, and 12 months
+- **Database-Driven Validation**: Real-time verification against PostgreSQL database with single-use enforcement
+- **Advanced Security**: Obfuscated and encrypted license files with compression and distraction files
 - **Domain-based License Validation**: Automatic detection of domain/subdomain changes requiring license reactivation
-- **Advanced Encryption**: Multi-layer encryption with PBKDF2, Fernet, and obfuscation techniques
-- **License Format**: GECM-XXXX-XXXX-XXXX-XXXX format with checksum validation
-- **Security Integration**: Full integration with audit logging and security monitoring
-- **Environment Detection**: Automatic detection of Replit environment and domain fingerprinting
-- **Tamper Resistance**: Heavily obfuscated code with encrypted license storage
-- **Demo Mode**: Development-only demo license generation for testing purposes
+- **12-Character License Keys**: Simple alphanumeric format (e.g., ABC123XYZ789) for easy distribution
+- **Admin Interface**: Complete license management dashboard with statistics and testing capabilities
+- **Secure File Storage**: Hidden and encrypted license files (.gec_lic_sys, .gec_cumul_lic, .gec_dom_cache)
+- **Anti-Cracking Measures**: Multiple layers of obfuscation, fake files, and compressed encrypted storage

@@ -36,9 +36,10 @@ class LicenseGenerator:
             duration_days INTEGER NOT NULL,
             duration_label VARCHAR(50) NOT NULL,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expiration_date TIMESTAMP NOT NULL,
+            expiration_date TIMESTAMP NULL,
             is_used BOOLEAN DEFAULT FALSE,
             used_date TIMESTAMP NULL,
+            activation_date TIMESTAMP NULL,
             used_domain VARCHAR(255) NULL,
             used_ip VARCHAR(50) NULL,
             status VARCHAR(20) DEFAULT 'ACTIVE'
@@ -94,14 +95,14 @@ class LicenseGenerator:
         
         for i in range(count):
             license_key = self.generate_license_key()
-            expiration_date = creation_date + timedelta(days=duration_days)
+            # Pas d'expiration lors de la création - sera calculée lors de l'activation
             
             license_data = {
                 'license_key': license_key,
                 'duration_days': duration_days,
                 'duration_label': duration_label,
                 'created_date': creation_date,
-                'expiration_date': expiration_date,
+                'expiration_date': None,  # Sera définie lors de l'activation
                 'is_used': False,
                 'used_date': None,
                 'used_domain': None,
@@ -121,13 +122,14 @@ class LicenseGenerator:
     def generate_all_licenses(self):
         """Génère tous les lots de licences demandés"""
         license_types = [
+            (1000, 1, "1 jour"),      # Nouveau: 1000 licences de 1 jour
             (1000, 5, "5 jours"),
             (1000, 30, "1 mois"),
             (1000, 180, "6 mois"), 
             (1000, 365, "12 mois")
         ]
         
-        logger.info("Début de la génération de 4000 licences")
+        logger.info("Début de la génération de 5000 licences")
         
         for count, duration_days, duration_label in license_types:
             self.generate_licenses_batch(count, duration_days, duration_label)

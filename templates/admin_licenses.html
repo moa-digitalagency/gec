@@ -94,6 +94,17 @@
         </div>
         <div class="p-6">
             <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+                        <span class="font-medium">1 jour</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-gray-900">{{ stats.one_day or 0 }}</span>
+                        <span class="text-sm text-gray-500 ml-1">licences</span>
+                    </div>
+                </div>
+                
                 <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                     <div class="flex items-center">
                         <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
