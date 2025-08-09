@@ -675,74 +675,137 @@ def export_mail_list_pdf(courriers, filters):
         no_data = Paragraph("Aucun courrier trouvé avec les critères spécifiés.", styles['Normal'])
         story.append(no_data)
     else:
-        # Créer le tableau des courriers
-        headers = ['N° Accusé', 'Type', 'Référence', 'Contact', 'Objet', 'Date Réd.', 'Date Enr.', 'Statut', 'Fichier']
+        # Style pour le texte dans les cellules avec wrapping
+        cell_style = ParagraphStyle(
+            'CellStyle',
+            parent=styles['Normal'],
+            fontSize=8,
+            leading=10,
+            alignment=0,  # Left alignment
+            leftIndent=2,
+            rightIndent=2,
+            spaceAfter=2
+        )
+        
+        # Style pour les en-têtes
+        header_style = ParagraphStyle(
+            'HeaderStyle',
+            parent=styles['Normal'],
+            fontSize=9,
+            fontName='Helvetica-Bold',
+            alignment=0,  # Left alignment
+            textColor=colors.whitesmoke,
+            leftIndent=2,
+            rightIndent=2
+        )
+        
+        # Créer le tableau des courriers avec le nouveau champ Observation
+        headers = [
+            Paragraph('N° Accusé de Réception', header_style),
+            Paragraph('Type', header_style),
+            Paragraph('N° de Référence', header_style),
+            Paragraph('Contact Principal', header_style),
+            Paragraph('Objet', header_style),
+            Paragraph('Date de Rédaction', header_style),
+            Paragraph('Date d\'Enregistrement', header_style),
+            Paragraph('Statut', header_style),
+            Paragraph('Fichier Joint', header_style),
+            Paragraph('Observation', header_style)
+        ]
         data = [headers]
         
         for courrier in courriers:
-            # Contact principal selon le type
+            # Contact principal selon le type - texte complet avec wrapping
             contact = courrier.expediteur if courrier.type_courrier == 'ENTRANT' else courrier.destinataire
-            contact = contact[:20] + '...' if contact and len(contact) > 20 else contact or 'N/A'
+            contact_text = contact if contact else 'Non spécifié'
             
-            # Référence
-            reference = courrier.numero_reference[:15] + '...' if courrier.numero_reference and len(courrier.numero_reference) > 15 else courrier.numero_reference or 'N/A'
+            # Référence - texte complet avec wrapping
+            reference_text = courrier.numero_reference if courrier.numero_reference else 'Non référencé'
             
-            # Objet tronqué
-            objet = courrier.objet[:30] + '...' if len(courrier.objet) > 30 else courrier.objet
+            # Objet - texte complet avec wrapping
+            objet_text = courrier.objet
             
             # Date de rédaction formatée
-            date_redaction_str = courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'N/A'
+            date_redaction_str = courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée'
             
             # Date d'enregistrement formatée
-            date_enr_str = courrier.date_enregistrement.strftime('%d/%m/%Y')
+            date_enr_str = courrier.date_enregistrement.strftime('%d/%m/%Y<br/>%H:%M')
             
-            # Type court
-            type_short = 'ENT' if courrier.type_courrier == 'ENTRANT' else 'SOR'
+            # Type complet
+            type_text = 'Courrier Entrant' if courrier.type_courrier == 'ENTRANT' else 'Courrier Sortant'
             
             # Statut formatté
-            statut = courrier.statut.replace('_', ' ')[:8]
+            statut_text = courrier.statut.replace('_', ' ')
             
             # Fichier joint
-            fichier = 'Oui' if courrier.fichier_nom else 'Non'
+            fichier_text = 'Oui' if courrier.fichier_nom else 'Non'
+            
+            # Observation - champ vide pour remplissage manuel
+            observation_text = ''
             
             row = [
-                courrier.numero_accuse_reception,
-                type_short,
-                reference,
-                contact,
-                objet,
-                date_redaction_str,
-                date_enr_str,
-                statut,
-                fichier
+                Paragraph(courrier.numero_accuse_reception, cell_style),
+                Paragraph(type_text, cell_style),
+                Paragraph(reference_text, cell_style),
+                Paragraph(contact_text, cell_style),
+                Paragraph(objet_text, cell_style),
+                Paragraph(date_redaction_str, cell_style),
+                Paragraph(date_enr_str, cell_style),
+                Paragraph(statut_text, cell_style),
+                Paragraph(fichier_text, cell_style),
+                Paragraph(observation_text, cell_style)
             ]
             data.append(row)
         
-        # Créer le tableau avec largeurs optimisées pour paysage
-        col_widths = [1.0*inch, 0.4*inch, 0.8*inch, 1.4*inch, 2.0*inch, 0.6*inch, 0.6*inch, 0.6*inch, 0.4*inch]
+        # Créer le tableau avec largeurs optimisées pour paysage A4 (11.69 x 8.27 inches utilisables)
+        # Total width disponible: environ 10.69 inches (en retirant les marges)
+        col_widths = [
+            1.1*inch,   # N° Accusé de Réception
+            0.8*inch,   # Type  
+            1.0*inch,   # N° de Référence
+            1.5*inch,   # Contact Principal
+            2.5*inch,   # Objet (plus large pour le texte long)
+            0.8*inch,   # Date de Rédaction
+            0.9*inch,   # Date d'Enregistrement
+            0.8*inch,   # Statut
+            0.6*inch,   # Fichier Joint
+            1.3*inch    # Observation (nouveau champ)
+        ]
         table = Table(data, colWidths=col_widths, repeatRows=1)
         
-        # Style du tableau
+        # Style du tableau amélioré pour une meilleure lisibilité
         table.setStyle(TableStyle([
             # En-tête
             ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Alignement vertical en haut
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 0), (-1, 0), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
             
-            # Corps du tableau
+            # Corps du tableau avec plus d'espace pour le texte
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
-            ('TOPPADDING', (0, 1), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            ('ROWSIZE', (0, 1), (-1, -1), 'auto'),  # Hauteur automatique pour accommoder le texte
             
-            # Bordures
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            # Bordures plus épaisses pour la lisibilité
+            ('GRID', (0, 0), (-1, -1), 0.8, colors.black),
+            ('LINEBELOW', (0, 0), (-1, 0), 1.5, colors.darkblue),  # Ligne plus épaisse sous l'en-tête
             
             # Alternance de couleur pour les lignes
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+            
+            # Style spécial pour la colonne Observation (dernière colonne)
+            ('BACKGROUND', (-1, 1), (-1, -1), colors.lightyellow),  # Fond jaune clair pour Observation
+            
+            # Espacement entre les mots et retour à la ligne automatique
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),
         ]))
         
         story.append(table)
