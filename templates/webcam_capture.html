@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Capture Webcam{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 pt-4">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-video text-rdc-green mr-3"></i>
+                    Capture Photo en Direct
+                </h1>
+                <p class="text-gray-600 mt-2">Prenez une photo avec votre webcam</p>
+            </div>
+
+            <!-- Interface de capture -->
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <!-- Zone vidéo -->
+                <div class="mb-6">
+                    <video id="video" class="w-full max-w-2xl mx-auto rounded-lg bg-black" autoplay playsinline></video>
+                    <canvas id="canvas" class="hidden"></canvas>
+                </div>
+
+                <!-- Contrôles -->
+                <div class="text-center space-y-4">
+                    <div id="controls" class="space-x-4">
+                        <button id="startBtn" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90">
+                            <i class="fas fa-play mr-2"></i>
+                            Démarrer la Caméra
+                        </button>
+                        <button id="captureBtn" class="px-6 py-3 bg-rdc-green text-white rounded-lg hover:bg-opacity-90 hidden">
+                            <i class="fas fa-camera mr-2"></i>
+                            Capturer
+                        </button>
+                        <button id="retryBtn" class="px-6 py-3 bg-rdc-yellow text-white rounded-lg hover:bg-opacity-90 hidden">
+                            <i class="fas fa-redo mr-2"></i>
+                            Reprendre
+                        </button>
+                        <button id="saveBtn" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90 hidden">
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+
+                    <!-- Message d'état -->
+                    <div id="status" class="text-gray-600"></div>
+
+                    <!-- Zone de prévisualisation -->
+                    <div id="preview" class="hidden mt-6">
+                        <h3 class="text-lg font-semibold mb-3">Photo Capturée:</h3>
+                        <img id="captured" class="max-w-2xl mx-auto rounded-lg shadow-lg">
+                    </div>
+                </div>
+
+                <!-- Messages d'erreur -->
+                <div id="error" class="hidden mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                    <p class="text-red-700">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="errorMsg"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Solution simple et directe pour la capture webcam
+let stream = null;
+let capturedImageData = null;
+
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const startBtn = document.getElementById('startBtn');
+const captureBtn = document.getElementById('captureBtn');
+const retryBtn = document.getElementById('retryBtn');
+const saveBtn = document.getElementById('saveBtn');
+const status = document.getElementById('status');
+const error = document.getElementById('error');
+const errorMsg = document.getElementById('errorMsg');
+const preview = document.getElementById('preview');
+const captured = document.getElementById('captured');
+
+// Démarrer la caméra
+startBtn.addEventListener('click', async () => {
+    try {
+        status.textContent = 'Demande d\'accès à la caméra...';
+        error.classList.add('hidden');
+        
+        // Configuration simple
+        const constraints = {
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+        
+        // Demander l'accès à la caméra
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        
+        // Une fois la vidéo chargée
+        video.onloadedmetadata = () => {
+            status.textContent = 'Caméra active. Cliquez sur Capturer pour prendre une photo.';
+            startBtn.classList.add('hidden');
+            captureBtn.classList.remove('hidden');
+        };
+        
+    } catch (err) {
+        console.error('Erreur:', err);
+        status.textContent = '';
+        error.classList.remove('hidden');
+        
+        if (err.name === 'NotAllowedError') {
+            errorMsg.textContent = 'Accès à la caméra refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.';
+        } else if (err.name === 'NotFoundError') {
+            errorMsg.textContent = 'Aucune caméra détectée sur cet appareil.';
+        } else {
+            errorMsg.textContent = 'Erreur: ' + err.message;
+        }
+    }
+});
+
+// Capturer la photo
+captureBtn.addEventListener('click', () => {
+    // Configurer le canvas
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Dessiner l'image de la vidéo sur le canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    // Convertir en data URL
+    capturedImageData = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Afficher la prévisualisation
+    captured.src = capturedImageData;
+    preview.classList.remove('hidden');
+    
+    // Mettre à jour les boutons
+    captureBtn.classList.add('hidden');
+    retryBtn.classList.remove('hidden');
+    saveBtn.classList.remove('hidden');
+    
+    status.textContent = 'Photo capturée. Vous pouvez la reprendre ou l\'enregistrer.';
+});
+
+// Reprendre la photo
+retryBtn.addEventListener('click', () => {
+    preview.classList.add('hidden');
+    retryBtn.classList.add('hidden');
+    saveBtn.classList.add('hidden');
+    captureBtn.classList.remove('hidden');
+    status.textContent = 'Caméra active. Cliquez sur Capturer pour prendre une photo.';
+});
+
+// Enregistrer la photo
+saveBtn.addEventListener('click', async () => {
+    if (!capturedImageData) {
+        alert('Aucune photo à enregistrer');
+        return;
+    }
+    
+    try {
+        status.textContent = 'Enregistrement en cours...';
+        
+        // Convertir la data URL en blob
+        const response = await fetch(capturedImageData);
+        const blob = await response.blob();
+        
+        // Créer un FormData
+        const formData = new FormData();
+        formData.append('photo', blob, 'capture.jpg');
+        
+        // Envoyer au serveur
+        const uploadResponse = await fetch('/save_webcam_capture', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await uploadResponse.json();
+        
+        if (result.success) {
+            status.textContent = 'Photo enregistrée avec succès!';
+            
+            // Si on est dans le contexte du formulaire de courrier
+            if (window.opener && window.opener.receiveWebcamPhoto) {
+                window.opener.receiveWebcamPhoto(result.filename);
+                setTimeout(() => window.close(), 1000);
+            } else {
+                alert('Photo enregistrée: ' + result.filename);
+            }
+        } else {
+            throw new Error(result.error || 'Erreur lors de l\'enregistrement');
+        }
+        
+    } catch (err) {
+        console.error('Erreur:', err);
+        error.classList.remove('hidden');
+        errorMsg.textContent = 'Erreur lors de l\'enregistrement: ' + err.message;
+    }
+});
+
+// Nettoyer à la fermeture
+window.addEventListener('beforeunload', () => {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+
+{% endblock %}
