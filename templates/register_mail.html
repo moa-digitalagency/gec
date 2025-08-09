@@ -166,31 +166,17 @@
                             Pièce Jointe
                         </label>
                         
-                        <!-- Options de téléchargement -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <!-- Upload Fichier -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
-                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-sm font-medium text-gray-700">Télécharger fichier</p>
-                                <p class="text-xs text-gray-500">PDF, JPG, PNG</p>
-                                <input id="fichier" 
-                                       name="fichier" 
-                                       type="file" 
-                                       class="hidden" 
-                                       accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
-                            </div>
-                            
-                            <!-- Capture Photo (Compatible Brave) -->
-                            <label for="camera-direct" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-green transition-colors cursor-pointer">
-                                <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-sm font-medium text-gray-700">Prendre une photo</p>
-                                <p class="text-xs text-gray-500">Compatible tous navigateurs</p>
-                                <input id="camera-direct" 
-                                       type="file" 
-                                       class="hidden" 
-                                       accept="image/*" 
-                                       capture="environment">
-                            </label>
+                        <!-- Option unique de téléchargement -->
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-sm font-medium text-gray-700">Télécharger un fichier</p>
+                            <p class="text-xs text-gray-500">PDF, JPG, PNG, TIFF</p>
+                            <p class="text-xs text-gray-400 mt-2">Cliquez ou glissez-déposez</p>
+                            <input id="fichier" 
+                                   name="fichier" 
+                                   type="file" 
+                                   class="hidden" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
                         </div>
                         
                         <!-- Zone de prévisualisation -->
@@ -305,55 +291,7 @@
     </div>
 </div>
 
-<!-- Modal Webcam -->
-<div id="webcam-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-xl max-w-2xl w-full">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">
-                        <i class="fas fa-camera mr-2 text-rdc-green"></i>
-                        Capture Webcam
-                    </h3>
-                    <button type="button" id="close-webcam" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6">
-                <div class="text-center">
-                    <video id="webcam-video" autoplay class="w-full max-w-lg mx-auto rounded-lg mb-4" style="display: none;"></video>
-                    <canvas id="webcam-canvas" class="w-full max-w-lg mx-auto rounded-lg mb-4" style="display: none;"></canvas>
-                    <div id="webcam-placeholder" class="w-full max-w-lg mx-auto h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                        <div class="text-center">
-                            <i class="fas fa-spinner fa-spin text-4xl text-rdc-blue mb-2"></i>
-                            <p class="text-gray-600">Activation de la caméra...</p>
-                        </div>
-                    </div>
-                    <div class="space-x-4">
-                        <button type="button" id="start-capture" class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-opacity-90" style="display: none;">
-                            <i class="fas fa-redo mr-2"></i>Réessayer
-                        </button>
-                        <button type="button" id="retake-photo" class="px-4 py-2 bg-rdc-yellow text-white rounded-md hover:bg-opacity-90" style="display: none;">
-                            <i class="fas fa-redo mr-2"></i>Reprendre
-                        </button>
-                        <button type="button" id="use-photo" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90" style="display: none;">
-                            <i class="fas fa-check mr-2"></i>Utiliser
-                        </button>
-                    </div>
-                    
-                    <!-- Message d'erreur -->
-                    <div id="capture-error" class="mt-4 p-3 bg-red-50 rounded-lg text-sm text-red-600 hidden">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            <span id="error-message"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Modal de Rognage -->
 <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
@@ -399,7 +337,6 @@
 
 <script>
 // Variables globales
-let webcamStream = null;
 let cropper = null;
 let currentFile = null;
 
@@ -419,11 +356,6 @@ class AdvancedFileHandler {
         document.getElementById('fichier').addEventListener('change', (e) => {
             this.handleFileSelection(e);
         });
-        
-        // Gestion de la capture photo directe (compatible Brave)
-        document.getElementById('camera-direct').addEventListener('change', (e) => {
-            this.handleFileSelection(e);
-        });
 
         // Bouton rogner (dans la zone de prévisualisation)
         document.getElementById('crop-image-btn').addEventListener('click', () => {
@@ -437,8 +369,7 @@ class AdvancedFileHandler {
             this.removeFile();
         });
 
-        // Modals
-        this.initializeWebcamModal();
+        // Modal de rognage
         this.initializeCropModal();
     }
 
@@ -507,202 +438,7 @@ class AdvancedFileHandler {
         currentFile = null;
     }
 
-    // Webcam Modal - Version basique qui fonctionne
-    initializeWebcamModal() {
-        const closeBtn = document.getElementById('close-webcam');
-        closeBtn.addEventListener('click', () => this.closeWebcamModal());
-    }
-    
-    async startSimpleWebcam() {
-        const video = document.getElementById('webcam-video');
-        const placeholder = document.getElementById('webcam-placeholder');
-        const retakeBtn = document.getElementById('retake-photo');
-        const useBtn = document.getElementById('use-photo');
-        const errorDiv = document.getElementById('capture-error');
-        const errorMsg = document.getElementById('error-message');
-        
-        // Reset de l'interface
-        errorDiv.classList.add('hidden');
-        placeholder.style.display = 'block';
-        video.style.display = 'none';
-        
-        placeholder.innerHTML = `
-            <div class="text-center">
-                <i class="fas fa-spinner fa-spin text-4xl text-rdc-blue mb-2"></i>
-                <p class="text-gray-600">Activation de la caméra...</p>
-            </div>
-        `;
-        
-        try {
-            // Demande simple et directe
-            console.log('Demande accès caméra...');
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: true, 
-                audio: false 
-            });
-            
-            console.log('Stream obtenu');
-            video.srcObject = stream;
-            webcamStream = stream;
-            
-            // Attendre que la vidéo soit vraiment prête
-            video.onloadedmetadata = () => {
-                console.log('Vidéo prête:', video.videoWidth, 'x', video.videoHeight);
-                
-                // Afficher la vidéo
-                placeholder.style.display = 'none';
-                video.style.display = 'block';
-                
-                // Attendre 3 secondes puis capturer
-                setTimeout(() => {
-                    // Capture
-                    const canvas = document.getElementById('webcam-canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0);
-                    
-                    // Afficher le résultat
-                    video.style.display = 'none';
-                    canvas.style.display = 'block';
-                    retakeBtn.style.display = 'inline-block';
-                    useBtn.style.display = 'inline-block';
-                    
-                    // Configurer les boutons
-                    retakeBtn.onclick = () => {
-                        canvas.style.display = 'none';
-                        video.style.display = 'block';
-                        retakeBtn.style.display = 'none';
-                        useBtn.style.display = 'none';
-                        
-                        setTimeout(() => {
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(video, 0, 0);
-                            
-                            video.style.display = 'none';
-                            canvas.style.display = 'block';
-                            retakeBtn.style.display = 'inline-block';
-                            useBtn.style.display = 'inline-block';
-                        }, 3000);
-                    };
-                    
-                    useBtn.onclick = () => {
-                        canvas.toBlob((blob) => {
-                            const file = new File([blob], 'webcam_capture.jpg', { type: 'image/jpeg' });
-                            this.setFileFromBlob(file);
-                            this.closeWebcamModal();
-                        }, 'image/jpeg', 0.9);
-                    };
-                }, 3000);
-            };
-            
-        } catch (err) {
-            console.error('Erreur webcam:', err);
-            
-            placeholder.innerHTML = `
-                <div class="text-center">
-                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
-                    <p class="text-gray-600">Erreur d'accès à la caméra</p>
-                    <button onclick="fileHandler.startSimpleWebcam()" class="mt-4 px-4 py-2 bg-rdc-blue text-white rounded-md">
-                        <i class="fas fa-redo mr-2"></i>Réessayer
-                    </button>
-                </div>
-            `;
-            
-            if (err.name === 'NotAllowedError') {
-                errorMsg.textContent = 'Permission refusée. Autorisez la caméra dans votre navigateur.';
-            } else if (err.name === 'NotFoundError') {
-                errorMsg.textContent = 'Aucune caméra détectée.';
-            } else {
-                errorMsg.textContent = err.message;
-            }
-            errorDiv.classList.remove('hidden');
-        }
-    }
-    
-    retakePhoto() {
-        const video = document.getElementById('webcam-video');
-        const canvas = document.getElementById('webcam-canvas');
-        
-        canvas.style.display = 'none';
-        video.style.display = 'block';
-        document.getElementById('retake-photo').style.display = 'none';
-        document.getElementById('use-photo').style.display = 'none';
-        
-        setTimeout(() => this.capturePhoto(), 2000);
-    }
-    
-    usePhoto() {
-        const canvas = document.getElementById('webcam-canvas');
-        canvas.toBlob((blob) => {
-            const file = new File([blob], 'capture_webcam.jpg', { type: 'image/jpeg' });
-            this.setFileFromBlob(file);
-            this.closeWebcamModal();
-        }, 'image/jpeg', 0.9);
-    }
-    
-    capturePhoto() {
-        const video = document.getElementById('webcam-video');
-        const canvas = document.getElementById('webcam-canvas');
-        const retakeBtn = document.getElementById('retake-photo');
-        const useBtn = document.getElementById('use-photo');
-        
-        // Capturer l'image directement
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        ctx.drawImage(video, 0, 0);
-        
-        // Afficher la capture
-        video.style.display = 'none';
-        canvas.style.display = 'block';
-        retakeBtn.style.display = 'inline-block';
-        useBtn.style.display = 'inline-block';
-    }
 
-
-
-    openWebcamModal() {
-        document.getElementById('webcam-modal').classList.remove('hidden');
-        // Démarrer la webcam immédiatement
-        this.startSimpleWebcam();
-    }
-
-    closeWebcamModal() {
-        const modal = document.getElementById('webcam-modal');
-        modal.classList.add('hidden');
-        
-        // Arrêter la webcam
-        if (webcamStream) {
-            webcamStream.getTracks().forEach(track => track.stop());
-            webcamStream = null;
-        }
-        
-        // Reset UI
-        const elements = {
-            video: document.getElementById('webcam-video'),
-            canvas: document.getElementById('webcam-canvas'),
-            placeholder: document.getElementById('webcam-placeholder'),
-            startBtn: document.getElementById('start-capture'),
-            retakeBtn: document.getElementById('retake-photo'),
-            useBtn: document.getElementById('use-photo'),
-            status: document.getElementById('capture-status'),
-            error: document.getElementById('capture-error')
-        };
-        
-        elements.video.style.display = 'none';
-        elements.canvas.style.display = 'none';
-        elements.placeholder.style.display = 'flex';
-        elements.startBtn.style.display = 'inline-block';
-        elements.startBtn.innerHTML = '<i class="fas fa-camera mr-2"></i>Capturer';
-        elements.startBtn.disabled = false;
-        elements.retakeBtn.style.display = 'none';
-        elements.useBtn.style.display = 'none';
-        if (elements.status) elements.status.classList.add('hidden');
-        if (elements.error) elements.error.classList.add('hidden');
-    }
 
     // Crop Modal
     initializeCropModal() {

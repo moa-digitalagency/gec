@@ -115,6 +115,11 @@ def alternative_upload():
     """Solution alternative pour Brave"""
     return render_template('alternative_upload.html')
 
+@app.route('/simple_photo_capture')
+def simple_photo_capture():
+    """Page simple de capture photo compatible tous navigateurs"""
+    return render_template('simple_photo_capture.html')
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
