@@ -264,7 +264,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 text-center">
             <div class="flex items-center justify-center mb-2">
                 <i class="fas fa-flag mr-2 text-rdc-yellow"></i>
-                <span class="font-semibold">République Démocratique du Congo</span>
+                <span class="font-semibold">{{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}</span>
             </div>
             <!-- Texte footer configurable -->
             {% if parametres and parametres.texte_footer %}
