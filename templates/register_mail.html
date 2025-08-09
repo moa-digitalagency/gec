@@ -517,6 +517,8 @@ class AdvancedFileHandler {
 
         // Bouton principal - activation automatique de la caméra
         startCaptureBtn.addEventListener('click', async () => {
+            console.log('=== DÉBUT CAPTURE WEBCAM ===');
+            
             try {
                 // Afficher le statut de chargement
                 status.classList.remove('hidden');
@@ -524,10 +526,13 @@ class AdvancedFileHandler {
                 startCaptureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Activation...';
                 startCaptureBtn.disabled = true;
 
+                console.log('Vérification du support webcam...');
                 // Vérifier le support
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('Webcam non supportée par ce navigateur');
                 }
+                
+                console.log('Support webcam: OK');
 
                 // Demander l'accès caméra directement (popup native)
                 const constraints = {
@@ -538,30 +543,56 @@ class AdvancedFileHandler {
                     }
                 };
                 
+                console.log('Demande d\'accès caméra avec contraintes:', constraints);
+                statusMessage.textContent = 'Demande d\'autorisation caméra...';
+                
                 webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('✅ Stream webcam obtenu:', webcamStream);
+                console.log('Tracks vidéo:', webcamStream.getVideoTracks());
+                
                 video.srcObject = webcamStream;
+                console.log('Stream assigné à la vidéo');
+                statusMessage.textContent = 'Préparation de la caméra...';
                 
                 // Démarrer automatiquement dès que la vidéo est prête
                 video.onloadedmetadata = () => {
-                    console.log('Vidéo prête, taille:', video.videoWidth, 'x', video.videoHeight);
+                    console.log('✅ Métadonnées vidéo chargées');
+                    console.log('Taille vidéo:', video.videoWidth, 'x', video.videoHeight);
+                    console.log('État de la vidéo - readyState:', video.readyState);
+                    
                     placeholder.style.display = 'none';
                     video.style.display = 'block';
                     status.classList.add('hidden');
                     startCaptureBtn.style.display = 'none';
                     
+                    console.log('Interface mise à jour, capture dans 2 secondes...');
+                    
                     // Délai de 2 secondes pour que l'utilisateur se prépare
                     setTimeout(() => {
+                        console.log('Déclenchement de la capture photo');
                         this.capturePhoto();
                     }, 2000);
                 };
                 
                 // Gestion des erreurs de la vidéo
                 video.onerror = (e) => {
-                    console.error('Erreur vidéo:', e);
+                    console.error('❌ Erreur vidéo:', e);
                     this.handleCaptureError(new Error('Erreur de flux vidéo'));
                 };
                 
+                // Timeout de sécurité
+                setTimeout(() => {
+                    if (video.readyState === 0) {
+                        console.warn('⚠️ Timeout: vidéo pas prête après 10 secondes');
+                        this.handleCaptureError(new Error('Timeout - la vidéo ne répond pas'));
+                    }
+                }, 10000);
+                
             } catch (err) {
+                console.error('❌ ERREUR CAPTURE:', err);
+                console.error('Type d\'erreur:', err.name);
+                console.error('Message:', err.message);
+                console.error('Stack:', err.stack);
                 this.handleCaptureError(err);
             }
         });
@@ -592,20 +623,43 @@ class AdvancedFileHandler {
     }
     
     capturePhoto() {
+        console.log('=== CAPTURE PHOTO ===');
         const video = document.getElementById('webcam-video');
         const canvas = document.getElementById('webcam-canvas');
         const retakeBtn = document.getElementById('retake-photo');
         const useBtn = document.getElementById('use-photo');
         
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
+        console.log('État vidéo avant capture:');
+        console.log('- readyState:', video.readyState);
+        console.log('- videoWidth:', video.videoWidth);
+        console.log('- videoHeight:', video.videoHeight);
+        console.log('- paused:', video.paused);
+        console.log('- currentTime:', video.currentTime);
         
-        video.style.display = 'none';
-        canvas.style.display = 'block';
-        retakeBtn.style.display = 'inline-block';
-        useBtn.style.display = 'inline-block';
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            console.error('❌ Vidéo sans dimensions valides');
+            this.handleCaptureError(new Error('La vidéo n\'est pas prête pour la capture'));
+            return;
+        }
+        
+        try {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            console.log('✅ Photo capturée avec succès');
+            console.log('- Taille canvas:', canvas.width, 'x', canvas.height);
+            
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            retakeBtn.style.display = 'inline-block';
+            useBtn.style.display = 'inline-block';
+            
+        } catch (err) {
+            console.error('❌ Erreur lors de la capture:', err);
+            this.handleCaptureError(err);
+        }
     }
     
     handleCaptureError(err) {
