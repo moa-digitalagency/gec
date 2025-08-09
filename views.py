@@ -110,6 +110,11 @@ def test_webcam():
     """Page de test pour la webcam"""
     return render_template('test_webcam.html')
 
+@app.route('/alternative_upload')
+def alternative_upload():
+    """Solution alternative pour Brave"""
+    return render_template('alternative_upload.html')
+
 @app.route('/dashboard')
 @login_required
 def dashboard():

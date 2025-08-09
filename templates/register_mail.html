@@ -180,12 +180,17 @@
                                        accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
                             </div>
                             
-                            <!-- Capture Webcam -->
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-green transition-colors cursor-pointer" id="webcam-capture-btn">
+                            <!-- Capture Photo (Compatible Brave) -->
+                            <label for="camera-direct" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-green transition-colors cursor-pointer">
                                 <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
-                                <p class="text-sm font-medium text-gray-700">Capture webcam</p>
-                                <p class="text-xs text-gray-500">Prendre une photo</p>
-                            </div>
+                                <p class="text-sm font-medium text-gray-700">Prendre une photo</p>
+                                <p class="text-xs text-gray-500">Compatible tous navigateurs</p>
+                                <input id="camera-direct" 
+                                       type="file" 
+                                       class="hidden" 
+                                       accept="image/*" 
+                                       capture="environment">
+                            </label>
                         </div>
                         
                         <!-- Zone de prévisualisation -->
@@ -414,10 +419,10 @@ class AdvancedFileHandler {
         document.getElementById('fichier').addEventListener('change', (e) => {
             this.handleFileSelection(e);
         });
-
-        // Bouton webcam
-        document.getElementById('webcam-capture-btn').addEventListener('click', () => {
-            this.openWebcamModal();
+        
+        // Gestion de la capture photo directe (compatible Brave)
+        document.getElementById('camera-direct').addEventListener('change', (e) => {
+            this.handleFileSelection(e);
         });
 
         // Bouton rogner (dans la zone de prévisualisation)

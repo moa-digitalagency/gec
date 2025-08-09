@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Solution Alternative - Upload Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .alert {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .solution {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .mobile-upload {
+            background: #cce5ff;
+            border: 1px solid #b8daff;
+            color: #004085;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .upload-btn:hover {
+            background: #0056b3;
+        }
+        #preview {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+        #preview img {
+            max-width: 100%;
+            border: 2px solid #28a745;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solution Alternative pour Brave</h1>
+    
+    <div class="alert">
+        <h3>⚠️ Problème détecté</h3>
+        <p>Brave bloque la webcam sur les sites Replit pour des raisons de sécurité strictes.</p>
+    </div>
+    
+    <div class="solution">
+        <h3>✅ Solution Alternative</h3>
+        <p><strong>Sur mobile :</strong> Le bouton ci-dessous ouvrira directement votre caméra.</p>
+        <p><strong>Sur desktop :</strong> Utilisez Chrome, Firefox, ou Edge au lieu de Brave.</p>
+    </div>
+    
+    <div class="mobile-upload">
+        <h2>📱 Capture Mobile Direct</h2>
+        <p>Ce bouton fonctionne parfaitement sur mobile (iOS/Android)</p>
+        
+        <label for="camera-input" class="upload-btn">
+            📷 Prendre une Photo
+        </label>
+        
+        <!-- Input spécial qui déclenche la caméra sur mobile -->
+        <input type="file" 
+               id="camera-input" 
+               accept="image/*" 
+               capture="environment">
+        
+        <div id="status"></div>
+        <div id="preview"></div>
+    </div>
+    
+    <hr style="margin: 40px 0;">
+    
+    <div style="background: #fff3cd; padding: 15px; border-radius: 5px;">
+        <h3>Alternatives pour Desktop</h3>
+        <ol>
+            <li><strong>Chrome :</strong> Fonctionne parfaitement avec la webcam</li>
+            <li><strong>Firefox :</strong> Support complet de la webcam</li>
+            <li><strong>Edge :</strong> Compatible avec getUserMedia</li>
+            <li><strong>Safari :</strong> Fonctionne après autorisation</li>
+        </ol>
+        <p style="color: #856404; font-weight: bold;">
+            Brave a des restrictions de sécurité très strictes qui bloquent getUserMedia sur certains domaines comme Replit.
+        </p>
+    </div>
+
+    <script>
+        const input = document.getElementById('camera-input');
+        const status = document.getElementById('status');
+        const preview = document.getElementById('preview');
+        
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                status.innerHTML = '<p style="color: green;">✅ Photo capturée avec succès!</p>';
+                
+                // Afficher la preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <h3>Aperçu :</h3>
+                        <img src="${e.target.result}" alt="Photo capturée">
+                        <p>Taille : ${(file.size / 1024).toFixed(2)} KB</p>
+                        <p>Type : ${file.type}</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Détection du navigateur
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes('Brave')) {
+            document.body.insertAdjacentHTML('afterbegin', `
+                <div style="background: red; color: white; padding: 10px; text-align: center;">
+                    ⚠️ Brave détecté - La webcam ne fonctionnera pas. Utilisez l'upload mobile ou changez de navigateur.
+                </div>
+            `);
+        }
+    </script>
+</body>
+</html>
