@@ -193,7 +193,11 @@ def register_mail():
                 # Ajouter timestamp pour éviter les conflits
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = f"{timestamp}_{filename}"
-                fichier_chemin = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                # Stocker le chemin relatif, pas absolu
+                fichier_chemin = os.path.join('uploads', filename)
+                # Créer le dossier uploads s'il n'existe pas
+                os.makedirs('uploads', exist_ok=True)
+                # Sauvegarder le fichier
                 file.save(fichier_chemin)
                 fichier_nom = file.filename
                 fichier_type = filename.rsplit('.', 1)[1].lower()
@@ -400,8 +404,15 @@ def export_pdf(id):
         pdf_path = export_courrier_pdf(courrier)
         log_activity(current_user.id, "EXPORT_PDF", 
                     f"Export PDF du courrier {courrier.numero_accuse_reception}", courrier.id)
-        return send_file(pdf_path, as_attachment=True, 
-                        download_name=f"courrier_{courrier.numero_accuse_reception}.pdf")
+        
+        # Utiliser send_from_directory pour mieux gérer les chemins en production
+        import os
+        directory = os.path.dirname(pdf_path)
+        filename = os.path.basename(pdf_path)
+        return send_from_directory(directory, filename, 
+                                 as_attachment=True, 
+                                 download_name=f"courrier_{courrier.numero_accuse_reception}.pdf",
+                                 mimetype='application/pdf')
     except Exception as e:
         logging.error(f"Erreur lors de l'export PDF: {e}")
         flash('Erreur lors de l\'export PDF.', 'error')
@@ -684,7 +695,13 @@ def export_mail_list():
         filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M'))
         filename = '_'.join(filename_parts) + '.pdf'
         
-        return send_file(pdf_path, as_attachment=True, download_name=filename)
+        # Utiliser send_from_directory pour mieux gérer les chemins en production
+        directory = os.path.dirname(pdf_path)
+        pdf_filename = os.path.basename(pdf_path)
+        return send_from_directory(directory, pdf_filename, 
+                                 as_attachment=True, 
+                                 download_name=filename,
+                                 mimetype='application/pdf')
         
     except Exception as e:
         logging.error(f"Erreur lors de l'export PDF de la liste: {e}")
@@ -695,14 +712,43 @@ def export_mail_list():
 @login_required
 def download_file(id):
     courrier = Courrier.query.get_or_404(id)
-    if courrier.fichier_chemin and os.path.exists(courrier.fichier_chemin):
-        log_activity(current_user.id, "TELECHARGEMENT_FICHIER", 
-                    f"Téléchargement du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
-        return send_file(courrier.fichier_chemin, as_attachment=True, 
-                        download_name=courrier.fichier_nom)
-    else:
-        flash('Fichier non trouvé.', 'error')
-        return redirect(url_for('mail_detail', id=id))
+    
+    # Gérer les chemins relatifs et absolus
+    if courrier.fichier_chemin:
+        # Si le chemin est absolu, extraire la partie relative
+        file_path = courrier.fichier_chemin
+        if file_path.startswith('/'):
+            # Chemin absolu - chercher la partie uploads
+            if 'uploads/' in file_path:
+                relative_path = file_path.split('uploads/')[-1]
+                file_path = os.path.join('uploads', relative_path)
+        
+        # Vérifier si le fichier existe
+        if os.path.exists(file_path):
+            log_activity(current_user.id, "TELECHARGEMENT_FICHIER", 
+                        f"Téléchargement du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
+            
+            directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            
+            # Déterminer le mimetype
+            mimetype = 'application/octet-stream'
+            if courrier.fichier_nom:
+                ext = courrier.fichier_nom.lower().split('.')[-1]
+                if ext == 'pdf':
+                    mimetype = 'application/pdf'
+                elif ext in ['jpg', 'jpeg']:
+                    mimetype = 'image/jpeg'
+                elif ext == 'png':
+                    mimetype = 'image/png'
+            
+            return send_from_directory(directory, filename, 
+                                     as_attachment=True, 
+                                     download_name=courrier.fichier_nom,
+                                     mimetype=mimetype)
+    
+    flash('Fichier non trouvé.', 'error')
+    return redirect(url_for('mail_detail', id=id))
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -835,9 +881,14 @@ def download_backup(filename):
         flash('Accès refusé.', 'error')
         return redirect(url_for('settings'))
     
+    # Créer le dossier backups s'il n'existe pas
+    os.makedirs('backups', exist_ok=True)
+    
     backup_path = os.path.join('backups', filename)
     if os.path.exists(backup_path):
-        return send_file(backup_path, as_attachment=True)
+        return send_from_directory('backups', filename, 
+                                 as_attachment=True,
+                                 mimetype='application/zip')
     else:
         flash('Fichier de sauvegarde non trouvé.', 'error')
         return redirect(url_for('settings'))
@@ -933,13 +984,42 @@ def change_status(id):
 @login_required
 def view_file(id):
     courrier = Courrier.query.get_or_404(id)
-    if courrier.fichier_chemin and os.path.exists(courrier.fichier_chemin):
-        log_activity(current_user.id, "VISUALISATION_FICHIER", 
-                    f"Visualisation du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
-        return send_file(courrier.fichier_chemin, as_attachment=False)
-    else:
-        flash('Fichier non trouvé.', 'error')
-        return redirect(url_for('mail_detail', id=id))
+    
+    # Gérer les chemins relatifs et absolus
+    if courrier.fichier_chemin:
+        # Si le chemin est absolu, extraire la partie relative
+        file_path = courrier.fichier_chemin
+        if file_path.startswith('/'):
+            # Chemin absolu - chercher la partie uploads
+            if 'uploads/' in file_path:
+                relative_path = file_path.split('uploads/')[-1]
+                file_path = os.path.join('uploads', relative_path)
+        
+        # Vérifier si le fichier existe
+        if os.path.exists(file_path):
+            log_activity(current_user.id, "VISUALISATION_FICHIER", 
+                        f"Visualisation du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
+            
+            directory = os.path.dirname(file_path)
+            filename = os.path.basename(file_path)
+            
+            # Déterminer le mimetype
+            mimetype = 'application/octet-stream'
+            if courrier.fichier_nom:
+                ext = courrier.fichier_nom.lower().split('.')[-1]
+                if ext == 'pdf':
+                    mimetype = 'application/pdf'
+                elif ext in ['jpg', 'jpeg']:
+                    mimetype = 'image/jpeg'
+                elif ext == 'png':
+                    mimetype = 'image/png'
+            
+            return send_from_directory(directory, filename, 
+                                     as_attachment=False,
+                                     mimetype=mimetype)
+    
+    flash('Fichier non trouvé.', 'error')
+    return redirect(url_for('mail_detail', id=id))
 
 @app.route('/manage_statuses', methods=['GET', 'POST'])
 @login_required
