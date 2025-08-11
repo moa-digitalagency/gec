@@ -713,6 +713,11 @@ def export_mail_list():
 def download_file(id):
     courrier = Courrier.query.get_or_404(id)
     
+    # Debug logging
+    logging.info(f"Tentative de téléchargement - ID: {id}")
+    logging.info(f"Chemin dans DB: {courrier.fichier_chemin}")
+    logging.info(f"Nom du fichier: {courrier.fichier_nom}")
+    
     # Gérer les chemins relatifs et absolus
     if courrier.fichier_chemin:
         # Si le chemin est absolu, extraire la partie relative
@@ -723,6 +728,11 @@ def download_file(id):
                 relative_path = file_path.split('uploads/')[-1]
                 file_path = os.path.join('uploads', relative_path)
         
+        # Log du chemin final
+        logging.info(f"Chemin final à vérifier: {file_path}")
+        logging.info(f"Le fichier existe? {os.path.exists(file_path)}")
+        logging.info(f"Chemin absolu: {os.path.abspath(file_path)}")
+        
         # Vérifier si le fichier existe
         if os.path.exists(file_path):
             log_activity(current_user.id, "TELECHARGEMENT_FICHIER", 
@@ -730,6 +740,8 @@ def download_file(id):
             
             directory = os.path.dirname(file_path)
             filename = os.path.basename(file_path)
+            
+            logging.info(f"Directory: {directory}, Filename: {filename}")
             
             # Déterminer le mimetype
             mimetype = 'application/octet-stream'
@@ -746,6 +758,16 @@ def download_file(id):
                                      as_attachment=True, 
                                      download_name=courrier.fichier_nom,
                                      mimetype=mimetype)
+        else:
+            logging.error(f"Fichier non trouvé au chemin: {file_path}")
+            # Essayer de lister le contenu du dossier uploads
+            try:
+                uploads_content = os.listdir('uploads')
+                logging.info(f"Contenu du dossier uploads: {uploads_content}")
+            except Exception as e:
+                logging.error(f"Erreur en listant uploads: {e}")
+    else:
+        logging.error(f"Pas de chemin de fichier dans la base de données pour le courrier {id}")
     
     flash('Fichier non trouvé.', 'error')
     return redirect(url_for('mail_detail', id=id))
@@ -985,6 +1007,11 @@ def change_status(id):
 def view_file(id):
     courrier = Courrier.query.get_or_404(id)
     
+    # Debug logging
+    logging.info(f"Tentative de visualisation - ID: {id}")
+    logging.info(f"Chemin dans DB: {courrier.fichier_chemin}")
+    logging.info(f"Nom du fichier: {courrier.fichier_nom}")
+    
     # Gérer les chemins relatifs et absolus
     if courrier.fichier_chemin:
         # Si le chemin est absolu, extraire la partie relative
@@ -995,6 +1022,10 @@ def view_file(id):
                 relative_path = file_path.split('uploads/')[-1]
                 file_path = os.path.join('uploads', relative_path)
         
+        # Log du chemin final
+        logging.info(f"Chemin final à vérifier: {file_path}")
+        logging.info(f"Le fichier existe? {os.path.exists(file_path)}")
+        
         # Vérifier si le fichier existe
         if os.path.exists(file_path):
             log_activity(current_user.id, "VISUALISATION_FICHIER", 
@@ -1002,6 +1033,8 @@ def view_file(id):
             
             directory = os.path.dirname(file_path)
             filename = os.path.basename(file_path)
+            
+            logging.info(f"Directory: {directory}, Filename: {filename}")
             
             # Déterminer le mimetype
             mimetype = 'application/octet-stream'
@@ -1017,6 +1050,10 @@ def view_file(id):
             return send_from_directory(directory, filename, 
                                      as_attachment=False,
                                      mimetype=mimetype)
+        else:
+            logging.error(f"Fichier non trouvé au chemin: {file_path}")
+    else:
+        logging.error(f"Pas de chemin de fichier dans la base de données pour le courrier {id}")
     
     flash('Fichier non trouvé.', 'error')
     return redirect(url_for('mail_detail', id=id))
