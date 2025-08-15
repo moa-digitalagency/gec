@@ -326,7 +326,13 @@
                 </a>
                 {% endif %}
                 
-                {% if current_user.has_permission('delete_mail') %}
+                <a href="{{ url_for('edit_courrier', id=courrier.id) }}" 
+                   class="w-full flex items-center p-2 text-left rounded-lg hover:bg-green-50 transition-colors group">
+                    <i class="fas fa-edit text-rdc-green mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Éditer</span>
+                </a>
+                
+                {% if current_user.has_permission('delete_mail') or current_user.is_super_admin() %}
                 <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
                         class="w-full flex items-center p-2 text-left rounded-lg hover:bg-red-50 transition-colors group">
                     <i class="fas fa-trash text-red-600 mr-2 text-sm"></i>
