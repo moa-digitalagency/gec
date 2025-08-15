@@ -164,13 +164,21 @@ def register_mail():
         # Traiter expéditeur/destinataire selon le type
         expediteur = None
         destinataire = None
+        secretaire_general_copie = None
         
         if type_courrier == 'ENTRANT':
             expediteur = request.form.get('expediteur', '').strip()
-            if not objet or not expediteur:
-                flash('L\'objet et l\'expéditeur sont obligatoires pour un courrier entrant.', 'error')
+            # Récupérer le champ SG en copie pour les courriers entrants
+            sg_copie_value = request.form.get('secretaire_general_copie', '').strip()
+            
+            # Valider les champs obligatoires
+            if not objet or not expediteur or not sg_copie_value:
+                flash('L\'objet, l\'expéditeur et le statut de copie au Secrétaire Général sont obligatoires pour un courrier entrant.', 'error')
                 statuts_disponibles = StatutCourrier.get_statuts_actifs()
                 return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+            
+            # Convertir la valeur en booléen
+            secretaire_general_copie = (sg_copie_value.lower() == 'oui')
         else:  # SORTANT
             destinataire = request.form.get('destinataire', '').strip()
             if not objet or not destinataire:
@@ -219,7 +227,8 @@ def register_mail():
             fichier_nom=fichier_nom,
             fichier_chemin=fichier_chemin,
             fichier_type=fichier_type,
-            utilisateur_id=current_user.id
+            utilisateur_id=current_user.id,
+            secretaire_general_copie=secretaire_general_copie
         )
         
         try:

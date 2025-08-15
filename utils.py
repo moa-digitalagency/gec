@@ -509,13 +509,23 @@ def export_courrier_pdf(courrier):
         [Paragraph('Type de Courrier:', label_style), Paragraph(courrier.type_courrier, text_style)],
         [Paragraph('N° de Référence:', label_style), Paragraph(courrier.numero_reference if courrier.numero_reference else 'Non référencé', text_style)],
         [Paragraph(courrier.get_label_contact() + ':', label_style), Paragraph(courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié', text_style)],
+    ]
+    
+    # Ajouter le champ SG en copie seulement pour les courriers entrants
+    if courrier.type_courrier == 'ENTRANT' and hasattr(courrier, 'secretaire_general_copie'):
+        sg_copie_text = 'Oui' if courrier.secretaire_general_copie else 'Non'
+        if courrier.secretaire_general_copie is None:
+            sg_copie_text = 'Non renseigné'
+        data.append([Paragraph('Secrétaire Général en copie:', label_style), Paragraph(sg_copie_text, text_style)])
+    
+    data.extend([
         [Paragraph('Objet:', label_style), Paragraph(courrier.objet, text_style)],
         [Paragraph('Date de Rédaction:', label_style), Paragraph(courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée', text_style)],
         [Paragraph('Date d\'Enregistrement:', label_style), Paragraph(courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M'), text_style)],
         [Paragraph('Enregistré par:', label_style), Paragraph(courrier.utilisateur_enregistrement.nom_complet, text_style)],
         [Paragraph('Statut:', label_style), Paragraph(courrier.statut, text_style)],
         [Paragraph('Fichier Joint:', label_style), Paragraph(courrier.fichier_nom if courrier.fichier_nom else 'Aucun', text_style)],
-    ]
+    ])
     
     table = Table(data, colWidths=[2.5*inch, 4*inch], repeatRows=1)
     table.setStyle(TableStyle([
@@ -740,6 +750,7 @@ def export_mail_list_pdf(courriers, filters):
             Paragraph('Date de Rédaction', header_style),
             Paragraph('Date d\'Enregistrement', header_style),
             Paragraph('Statut', header_style),
+            Paragraph('SG Copie', header_style),
             Paragraph('Fichier Joint', header_style),
             Paragraph('Observation', header_style)
         ]
@@ -768,6 +779,12 @@ def export_mail_list_pdf(courriers, filters):
             # Statut formatté
             statut_text = courrier.statut.replace('_', ' ')
             
+            # SG en copie (pour courriers entrants)
+            sg_copie_text = '-'
+            if courrier.type_courrier == 'ENTRANT' and hasattr(courrier, 'secretaire_general_copie'):
+                if courrier.secretaire_general_copie is not None:
+                    sg_copie_text = 'Oui' if courrier.secretaire_general_copie else 'Non'
+            
             # Fichier joint
             fichier_text = 'Oui' if courrier.fichier_nom else 'Non'
             
@@ -783,6 +800,7 @@ def export_mail_list_pdf(courriers, filters):
                 Paragraph(date_redaction_str, cell_style),
                 Paragraph(date_enr_str, cell_style),
                 Paragraph(statut_text, cell_style),
+                Paragraph(sg_copie_text, cell_style),
                 Paragraph(fichier_text, cell_style),
                 Paragraph(observation_text, cell_style)
             ]
@@ -791,16 +809,17 @@ def export_mail_list_pdf(courriers, filters):
         # Créer le tableau avec largeurs optimisées pour paysage A4 (11.69 x 8.27 inches utilisables)
         # Total width disponible: environ 10.69 inches (en retirant les marges)
         col_widths = [
-            1.1*inch,   # N° Accusé de Réception
-            0.8*inch,   # Type  
-            1.0*inch,   # N° de Référence
-            1.5*inch,   # Contact Principal
-            2.5*inch,   # Objet (plus large pour le texte long)
-            0.8*inch,   # Date de Rédaction
-            0.9*inch,   # Date d'Enregistrement
-            0.8*inch,   # Statut
-            0.6*inch,   # Fichier Joint
-            1.3*inch    # Observation (nouveau champ)
+            1.0*inch,   # N° Accusé de Réception
+            0.7*inch,   # Type  
+            0.9*inch,   # N° de Référence
+            1.4*inch,   # Contact Principal
+            2.3*inch,   # Objet (plus large pour le texte long)
+            0.7*inch,   # Date de Rédaction
+            0.8*inch,   # Date d'Enregistrement
+            0.7*inch,   # Statut
+            0.5*inch,   # SG Copie
+            0.5*inch,   # Fichier Joint
+            1.2*inch    # Observation (nouveau champ)
         ]
         table = Table(data, colWidths=col_widths, repeatRows=1)
         

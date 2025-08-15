@@ -271,6 +271,9 @@ class Courrier(db.Model):
     statut = db.Column(db.String(50), nullable=False, default='RECU', index=True)
     date_modification_statut = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, index=True)
     
+    # Champ spécifique pour courriers entrants
+    secretaire_general_copie = db.Column(db.Boolean, nullable=True)  # Le SG est en copie (Oui/Non)
+    
     # Colonnes de sécurité et cryptage
     objet_encrypted = db.Column(db.Text, nullable=True)  # Objet crypté
     expediteur_encrypted = db.Column(db.Text, nullable=True)  # Expéditeur crypté
