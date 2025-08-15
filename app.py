@@ -81,18 +81,28 @@ with app.app_context():
     
     # Create default admin user if none exists
     from werkzeug.security import generate_password_hash
-    admin_user = models.User.query.filter_by(username='admin').first()
+    admin_user = models.User.query.filter_by(username='sa.gec001').first()
     if not admin_user:
-        admin_user = models.User()
-        admin_user.username = 'admin'
-        admin_user.email = 'admin@mines.gov.cd'
-        admin_user.nom_complet = 'Administrateur Système'
-        admin_user.password_hash = generate_password_hash('admin123')
-        admin_user.role = 'super_admin'
-        admin_user.langue = 'fr'
-        db.session.add(admin_user)
-        db.session.commit()
-        logging.info("Default super admin user created (username: admin, password: admin123)")
+        # Check if old admin exists
+        old_admin = models.User.query.filter_by(username='admin').first()
+        if old_admin:
+            # Just update the username
+            old_admin.username = 'sa.gec001'
+            old_admin.password_hash = generate_password_hash('Xzf)psYv%')
+            db.session.commit()
+            logging.info("Admin user updated (username: sa.gec001)")
+        else:
+            # Create new admin
+            admin_user = models.User()
+            admin_user.username = 'sa.gec001'
+            admin_user.email = 'admin@mines.gov.cd'
+            admin_user.nom_complet = 'Administrateur Système'
+            admin_user.password_hash = generate_password_hash('Xzf)psYv%')
+            admin_user.role = 'super_admin'
+            admin_user.langue = 'fr'
+            db.session.add(admin_user)
+            db.session.commit()
+            logging.info("Default super admin user created (username: sa.gec001)")
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
