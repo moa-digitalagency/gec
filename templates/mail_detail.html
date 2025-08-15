@@ -326,6 +326,14 @@
                 </a>
                 {% endif %}
                 
+                {% if current_user.has_permission('delete_mail') %}
+                <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                        class="w-full flex items-center p-2 text-left rounded-lg hover:bg-red-50 transition-colors group">
+                    <i class="fas fa-trash text-red-600 mr-2 text-sm"></i>
+                    <span class="text-sm text-gray-700 group-hover:text-gray-900">Supprimer</span>
+                </button>
+                {% endif %}
+                
                 <hr class="my-2">
                 
                 <a href="{{ url_for('view_mail') }}" 
@@ -452,5 +460,16 @@ document.getElementById('statusModal').addEventListener('click', function(e) {
         closeStatusModal();
     }
 });
+
+// Function to confirm deletion
+function confirmDeleteMail(id, numero) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_courrier/${id}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 </script>
 {% endblock %}

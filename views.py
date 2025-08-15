@@ -1623,6 +1623,16 @@ def manage_roles():
             'description': 'Supprimer définitivement des courriers',
             'category': 'Courrier'
         },
+        'view_trash': {
+            'name': 'Accéder à la corbeille',
+            'description': 'Voir les courriers supprimés dans la corbeille',
+            'category': 'Courrier'
+        },
+        'restore_mail': {
+            'name': 'Restaurer courriers',
+            'description': 'Restaurer des courriers depuis la corbeille',
+            'category': 'Courrier'
+        },
         'read_all_mail': {
             'name': 'Lire tous les courriers',
             'description': 'Accès complet à tous les courriers du système',
@@ -1712,6 +1722,8 @@ def add_role():
         'search_mail': 'Rechercher courriers',
         'export_data': 'Exporter données',
         'delete_mail': 'Supprimer courriers',
+        'view_trash': 'Accéder à la corbeille',
+        'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
         'read_own_mail': 'Lire ses propres courriers'
@@ -1793,6 +1805,8 @@ def edit_role(role_id):
         'search_mail': 'Rechercher courriers',
         'export_data': 'Exporter données',
         'delete_mail': 'Supprimer courriers',
+        'view_trash': 'Accéder à la corbeille',
+        'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
         'read_own_mail': 'Lire ses propres courriers'
