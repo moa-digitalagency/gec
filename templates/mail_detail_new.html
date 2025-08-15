@@ -329,6 +329,17 @@
                     </a>
                     {% endif %}
                     
+                    {% if current_user.has_permission('delete_mail') or current_user.is_super_admin() %}
+                    <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                            class="flex items-center p-4 border-2 border-dashed border-red-500 rounded-lg hover:bg-red-50 transition-colors group w-full text-left">
+                        <i class="fas fa-trash text-2xl text-red-500 mr-3 group-hover:scale-110 transition-transform"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">Supprimer Courrier</p>
+                            <p class="text-sm text-gray-500">Déplacer vers la corbeille</p>
+                        </div>
+                    </button>
+                    {% endif %}
+                    
                     <a href="{{ url_for('register_mail') }}" 
                        class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
                         <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
@@ -414,6 +425,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleStatusForm() {
     const form = document.getElementById('statusForm');
     form.classList.toggle('hidden');
+}
+
+// Function to confirm deletion
+function confirmDeleteMail(id, numero) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_courrier/${id}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 {% endblock %}
