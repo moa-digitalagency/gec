@@ -45,8 +45,8 @@ def login():
         return render_template('login.html'), 429
     
     if request.method == 'POST':
-        # Sanitize inputs
-        username = sanitize_input(request.form.get('username', '').strip())
+        # Get inputs (no sanitization for username as it's handled by ORM)
+        username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         
         if not username or not password:
