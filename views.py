@@ -114,8 +114,8 @@ def dashboard():
         # Use cached statistics for better performance
         stats = get_dashboard_statistics()
         
-        # Get recent mail specific to user permissions
-        recent_query = Courrier.query
+        # Get recent mail specific to user permissions (excluding deleted)
+        recent_query = Courrier.query.filter_by(is_deleted=False)
         
         # Apply permission filters
         if current_user.has_permission('read_all_mail'):
@@ -295,8 +295,8 @@ def view_mail():
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
-    # Construction de la requête avec restrictions selon le rôle
-    query = Courrier.query
+    # Construction de la requête avec restrictions selon le rôle (excluant les courriers supprimés)
+    query = Courrier.query.filter_by(is_deleted=False)
     
     # Appliquer les restrictions selon les permissions
     if current_user.has_permission('read_all_mail'):
@@ -632,8 +632,8 @@ def export_mail_list():
         sort_by = request.args.get('sort_by', 'date_enregistrement')
         sort_order = request.args.get('sort_order', 'desc')
         
-        # Build query with same logic as view_mail (without pagination)
-        query = Courrier.query
+        # Build query with same logic as view_mail (without pagination, excluding deleted)
+        query = Courrier.query.filter_by(is_deleted=False)
         
         # Apply permission restrictions
         if current_user.has_permission('read_all_mail'):
@@ -1334,6 +1334,103 @@ def edit_user(user_id):
     return render_template('edit_user.html', user=user, 
                          available_languages=get_available_languages(),
                          departements=departements)
+
+@app.route('/delete_courrier/<int:id>', methods=['POST'])
+@login_required
+def delete_courrier(id):
+    """Supprimer un courrier (soft delete - déplacer dans la corbeille)"""
+    courrier = Courrier.query.get_or_404(id)
+    
+    # Vérifier les permissions
+    if not current_user.has_permission('delete_mail'):
+        flash('Vous n\'avez pas l\'autorisation de supprimer des courriers.', 'error')
+        return redirect(url_for('view_mail'))
+    
+    # Soft delete
+    courrier.is_deleted = True
+    courrier.deleted_at = datetime.utcnow()
+    courrier.deleted_by_id = current_user.id
+    
+    try:
+        db.session.commit()
+        log_activity(current_user.id, "SUPPRESSION_COURRIER", 
+                    f"Suppression du courrier {courrier.numero_accuse_reception}", courrier.id)
+        flash(f'Le courrier {courrier.numero_accuse_reception} a été déplacé dans la corbeille.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erreur lors de la suppression du courrier.', 'error')
+        logging.error(f"Erreur suppression courrier: {e}")
+    
+    return redirect(url_for('view_mail'))
+
+@app.route('/restore_courrier/<int:id>', methods=['POST'])
+@login_required
+def restore_courrier(id):
+    """Restaurer un courrier depuis la corbeille"""
+    courrier = Courrier.query.get_or_404(id)
+    
+    # Vérifier les permissions
+    if not current_user.has_permission('restore_mail'):
+        flash('Vous n\'avez pas l\'autorisation de restaurer des courriers.', 'error')
+        return redirect(url_for('trash'))
+    
+    # Restaurer
+    courrier.is_deleted = False
+    courrier.deleted_at = None
+    courrier.deleted_by_id = None
+    
+    try:
+        db.session.commit()
+        log_activity(current_user.id, "RESTAURATION_COURRIER", 
+                    f"Restauration du courrier {courrier.numero_accuse_reception}", courrier.id)
+        flash(f'Le courrier {courrier.numero_accuse_reception} a été restauré avec succès.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erreur lors de la restauration du courrier.', 'error')
+        logging.error(f"Erreur restauration courrier: {e}")
+    
+    return redirect(url_for('trash'))
+
+@app.route('/trash')
+@login_required
+def trash():
+    """Afficher la corbeille (courriers supprimés)"""
+    # Vérifier les permissions
+    if not current_user.has_permission('view_trash'):
+        flash('Vous n\'avez pas l\'autorisation de consulter la corbeille.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Récupérer les courriers supprimés
+    courriers = Courrier.query.filter_by(is_deleted=True).order_by(Courrier.deleted_at.desc()).all()
+    
+    log_activity(current_user.id, "CONSULTATION_CORBEILLE", 
+                f"Consultation de la corbeille ({len(courriers)} courriers)")
+    
+    return render_template('trash.html', courriers=courriers)
+
+@app.route('/empty_trash', methods=['POST'])
+@login_required
+def empty_trash():
+    """Vider définitivement la corbeille (super admin only)"""
+    if not current_user.is_super_admin():
+        flash('Seuls les super administrateurs peuvent vider la corbeille.', 'error')
+        return redirect(url_for('trash'))
+    
+    # Supprimer définitivement tous les courriers de la corbeille
+    deleted_count = Courrier.query.filter_by(is_deleted=True).count()
+    Courrier.query.filter_by(is_deleted=True).delete()
+    
+    try:
+        db.session.commit()
+        log_activity(current_user.id, "VIDAGE_CORBEILLE", 
+                    f"Suppression définitive de {deleted_count} courriers")
+        flash(f'{deleted_count} courriers ont été supprimés définitivement.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erreur lors du vidage de la corbeille.', 'error')
+        logging.error(f"Erreur vidage corbeille: {e}")
+    
+    return redirect(url_for('trash'))
 
 @app.route('/delete_user/<int:user_id>', methods=['POST'])
 @login_required

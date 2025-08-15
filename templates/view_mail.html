@@ -298,6 +298,13 @@
                                     <i class="fas fa-file-pdf mr-1"></i>
                                     PDF
                                 </a>
+                                {% if current_user.has_permission('delete_mail') %}
+                                <button onclick="confirmDelete({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                                   class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-red-600 hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-trash mr-1"></i>
+                                    Supprimer
+                                </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -445,6 +452,18 @@ function toggleSortOrder() {
     
     // Submit the form automatically
     document.querySelector('form').submit();
+}
+
+// Fonction de confirmation pour la suppression
+function confirmDelete(id, numero) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
+        // Créer un formulaire pour envoyer la requête POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_courrier/${id}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
 

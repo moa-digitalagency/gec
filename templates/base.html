@@ -81,6 +81,14 @@
                         </a>
                     </li>
                     
+                    {% if current_user.has_permission('view_trash') %}
+                    <li class="nav-item">
+                        <a class="nav-link text-primary" href="{{ url_for('trash') }}">
+                            <i class="fas fa-trash-alt me-1"></i>Corbeille
+                        </a>
+                    </li>
+                    {% endif %}
+                    
                     {% if current_user.is_super_admin() %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-primary" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">

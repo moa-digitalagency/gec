@@ -282,10 +282,16 @@ class Courrier(db.Model):
     fichier_checksum = db.Column(db.String(64), nullable=True)  # Checksum du fichier
     fichier_encrypted = db.Column(db.Boolean, default=False)  # Fichier crypté ?
     
+    # Soft delete
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
     # Clé étrangère
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='courriers_modifies')
+    deleted_by = db.relationship('User', foreign_keys=[deleted_by_id], backref='courriers_deleted')
     
     def __repr__(self):
         return f'<Courrier {self.numero_accuse_reception}>'
@@ -669,7 +675,7 @@ class RolePermission(db.Model):
                 'manage_users', 'manage_roles', 'manage_system_settings', 
                 'view_all_logs', 'manage_statuses', 'manage_departments',
                 'register_mail', 'view_mail', 'search_mail', 'export_data', 
-                'delete_mail', 'view_all', 'edit_all', 'read_all_mail'
+                'delete_mail', 'view_trash', 'restore_mail', 'view_all', 'edit_all', 'read_all_mail'
             ],
             'admin': [
                 'manage_statuses', 'register_mail', 'view_mail', 
