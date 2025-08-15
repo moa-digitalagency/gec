@@ -451,7 +451,11 @@ class ParametresSysteme(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom_logiciel = db.Column(db.String(100), nullable=False, default="GEC - Mines RDC")
     logo_url = db.Column(db.String(500), nullable=True)
+    
+    # Configuration du numéro d'accusé de réception
+    mode_numero_accuse = db.Column(db.String(20), nullable=False, default="automatique")  # automatique ou manuel
     format_numero_accuse = db.Column(db.String(50), nullable=False, default="GEC-{year}-{counter:05d}")
+    
     adresse_organisme = db.Column(db.Text, nullable=True)
     telephone = db.Column(db.String(20), nullable=True)
     email_contact = db.Column(db.String(120), nullable=True)

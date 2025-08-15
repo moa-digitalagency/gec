@@ -186,8 +186,31 @@ def register_mail():
                 statuts_disponibles = StatutCourrier.get_statuts_actifs()
                 return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
         
-        # Génération du numéro d'accusé de réception
-        numero_accuse = generate_accuse_reception()
+        # Génération ou récupération du numéro d'accusé de réception
+        parametres = ParametresSysteme.get_parametres()
+        
+        if parametres.mode_numero_accuse == 'manuel':
+            # Mode manuel : récupérer le numéro saisi
+            numero_accuse = request.form.get('numero_accuse_manuel', '').strip()
+            
+            if not numero_accuse:
+                flash('Le numéro d\'accusé de réception est obligatoire en mode manuel.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                departements = Departement.get_departements_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+                                     departements=departements, parametres=parametres)
+            
+            # Vérifier l'unicité du numéro
+            existing = Courrier.query.filter_by(numero_accuse_reception=numero_accuse).first()
+            if existing:
+                flash(f'Le numéro d\'accusé "{numero_accuse}" existe déjà. Veuillez utiliser un numéro différent.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                departements = Departement.get_departements_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+                                     departements=departements, parametres=parametres)
+        else:
+            # Mode automatique : générer le numéro
+            numero_accuse = generate_accuse_reception()
         
         # Gestion du fichier uploadé
         file = request.files.get('fichier')
@@ -251,7 +274,10 @@ def register_mail():
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     # Récupérer les départements pour le formulaire
     departements = Departement.get_departements_actifs()
-    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, departements=departements)
+    # Récupérer les paramètres système pour le mode de numéro d'accusé
+    parametres = ParametresSysteme.get_parametres()
+    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+                         departements=departements, parametres=parametres)
 
 @app.route('/view_mail')
 @login_required
@@ -791,7 +817,8 @@ def settings():
         if request.method == 'POST':
             # Sanitize and update parameters
             parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
-            parametres.format_numero_accuse = sanitize_input(request.form['format_numero_accuse'].strip())
+            parametres.mode_numero_accuse = sanitize_input(request.form.get('mode_numero_accuse', 'automatique').strip())
+            parametres.format_numero_accuse = sanitize_input(request.form.get('format_numero_accuse', 'GEC-{year}-{counter:05d}').strip())
             parametres.telephone = sanitize_input(request.form.get('telephone', '').strip()) or None
             parametres.email_contact = sanitize_input(request.form.get('email_contact', '').strip()) or None
             parametres.adresse_organisme = sanitize_input(request.form.get('adresse_organisme', '').strip()) or None

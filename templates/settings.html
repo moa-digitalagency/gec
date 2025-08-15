@@ -81,17 +81,38 @@
                         </div>
                     </div>
                     
-                    <!-- Receipt Number Format -->
+                    <!-- Receipt Number Mode -->
                     <div>
+                        <label for="mode_numero_accuse" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-cog mr-1 text-rdc-blue"></i>
+                            Mode de Génération du Numéro d'Accusé
+                        </label>
+                        <select id="mode_numero_accuse" 
+                                name="mode_numero_accuse"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                onchange="toggleFormatField()">
+                            <option value="automatique" {% if parametres.mode_numero_accuse == 'automatique' %}selected{% endif %}>
+                                Automatique (avec format défini)
+                            </option>
+                            <option value="manuel" {% if parametres.mode_numero_accuse == 'manuel' %}selected{% endif %}>
+                                Manuel (saisie libre avec vérification d'unicité)
+                            </option>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">
+                            En mode manuel, l'utilisateur devra saisir un numéro unique lors de l'enregistrement
+                        </p>
+                    </div>
+
+                    <!-- Receipt Number Format (for automatic mode) -->
+                    <div id="format-field" class="{% if parametres.mode_numero_accuse == 'manuel' %}hidden{% endif %}">
                         <label for="format_numero_accuse" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-receipt mr-1 text-rdc-blue"></i>
-                            Format du Numéro d'Accusé de Réception
+                            Format du Numéro d'Accusé (Mode Automatique)
                         </label>
                         <input type="text" 
                                id="format_numero_accuse" 
                                name="format_numero_accuse" 
                                value="{{ parametres.format_numero_accuse }}"
-                               required
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue font-mono"
                                placeholder="GEC-{year}-{counter:05d}">
                         <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -513,6 +534,20 @@
 
 {% block scripts %}
 <script>
+function toggleFormatField() {
+    const mode = document.getElementById('mode_numero_accuse').value;
+    const formatField = document.getElementById('format-field');
+    const formatInput = document.getElementById('format_numero_accuse');
+    
+    if (mode === 'manuel') {
+        formatField.classList.add('hidden');
+        formatInput.removeAttribute('required');
+    } else {
+        formatField.classList.remove('hidden');
+        formatInput.setAttribute('required', 'required');
+    }
+}
+
 function previewLogo(input) {
     const file = input.files[0];
     const previewArea = document.getElementById('file-preview');
