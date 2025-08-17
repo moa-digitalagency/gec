@@ -1,214 +1,120 @@
-# GEC Mines - Système de Gestion du Courrier
+# 📮 GEC Mines - Mail Management System
 
-## Description
-Application web complète de gestion du courrier pour le Secrétariat Général des Mines (GEC). Cette solution digitale permet l'enregistrement, le suivi, la recherche et l'archivage des correspondances avec gestion des pièces jointes.
+## 🌍 Language / Langue
 
-## Fonctionnalités Principales
+### 📖 Documentation
 
-### 📮 Gestion du Courrier
-- **Enregistrement** : Courriers entrants et sortants avec métadonnées complètes
-- **Recherche Avancée** : Recherche textuelle indexant toutes les métadonnées
-- **Filtres Multiples** : Par type, statut, dates, SG en copie
-- **Pièces Jointes Obligatoires** : Upload sécurisé de documents (PDF, JPG, PNG, TIFF)
-- **Export PDF** : Génération de documents officiels avec en-tête personnalisable
+#### 🇫🇷 Français
+- [📚 Documentation Technique](README_TECHNICAL_FR.md) - Architecture, déploiement, API
+- [💼 Documentation Commerciale](README_COMMERCIAL_FR.md) - Fonctionnalités, tarifs, témoignages
 
-### 🔐 Sécurité
-- **Chiffrement AES-256** : Protection des données sensibles
-- **Authentification Sécurisée** : Hachage bcrypt avec salage personnalisé
-- **Protection Anti-Attaques** : SQL injection, XSS, CSRF, brute force
-- **Audit Complet** : Journalisation de toutes les actions
-- **Gestion des Sessions** : Tokens sécurisés avec expiration
+#### 🇬🇧 English
+- [📚 Technical Documentation](README_TECHNICAL_EN.md) - Architecture, deployment, API
+- [💼 Commercial Documentation](README_COMMERCIAL_EN.md) - Features, pricing, testimonials
 
-### 👥 Gestion des Utilisateurs
-- **Rôles Hiérarchiques** : Super Admin, Admin, Utilisateur
-- **Permissions Granulaires** : Accès par département ou individuel
-- **Départements** : Organisation structurée des utilisateurs
+---
 
-### ⚙️ Paramètres Système
-- **Personnalisation** : Logo, nom du logiciel, format des reçus
-- **Mode de Numérotation** : Automatique ou manuel
-- **Types de Courrier** : Configuration des catégories
-- **Statuts Personnalisables** : Workflow adaptatif
+## 🚀 Quick Overview
 
-### 📊 Fonctionnalités Avancées
-- **Tableau de Bord** : Statistiques en temps réel
-- **Historique des Modifications** : Traçabilité complète
-- **Corbeille** : Système de récupération des courriers supprimés
-- **Performance Optimisée** : Cache et indexation stratégique
+**GEC Mines** is a comprehensive web-based mail management system designed for the General Secretariat of Mines (Secrétariat Général des Mines) in the Democratic Republic of Congo. 
 
-## Installation
+### ✨ Key Highlights
 
-### Prérequis
-- Python 3.8+
-- PostgreSQL ou SQLite
-- 512MB RAM minimum
+- 📥 **Incoming/Outgoing Mail Management** with mandatory attachments
+- 🔍 **Advanced Full-Text Search** across all metadata fields
+- 🔐 **Bank-Level Security** with AES-256 encryption
+- 👥 **Multi-tier Access Control** (Super Admin, Admin, User)
+- 📊 **Real-time Analytics Dashboard**
+- 📱 **100% Responsive Design** with DRC colors
+- 🌍 **Multi-language Support** (French/English)
+- 📄 **PDF Generation** for official documents
 
-### Installation Locale
+### 🛠️ Technology Stack
 
-1. **Cloner le repository**
+**Backend**: Flask, PostgreSQL, SQLAlchemy, AES-256 Encryption
+**Frontend**: Tailwind CSS, DataTables, Font Awesome
+**Deployment**: Replit, PythonAnywhere, Heroku, Docker
+
+---
+
+## ⚡ Quick Start
+
+### 1️⃣ Installation
 ```bash
-git clone [URL_DU_REPO]
+# Clone repository
+git clone [REPOSITORY_URL]
 cd gec-mines
-```
 
-2. **Installer les dépendances**
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-3. **Configuration de l'environnement**
-Créer un fichier `.env` avec :
-```env
-DATABASE_URL=postgresql://user:password@localhost/gecmines
-SESSION_SECRET=votre_cle_secrete_tres_longue
-GEC_MASTER_KEY=votre_cle_de_chiffrement
-GEC_PASSWORD_SALT=votre_sel_personnalise
-```
-
-4. **Initialiser la base de données**
+### 2️⃣ Configuration
 ```bash
-python -c "from app import db; db.create_all()"
+# Set environment variables
+cp .env.example .env
+# Edit .env with your settings
 ```
 
-5. **Lancer l'application**
+### 3️⃣ Run
 ```bash
-gunicorn --bind 0.0.0.0:5000 main:app
+# Start application
+python main.py
+# Access at http://localhost:5000
 ```
 
-## Déploiement Production
+---
 
-### Sur Replit
-L'application est optimisée pour Replit avec configuration automatique :
-- Base de données PostgreSQL automatique
-- Variables d'environnement via Secrets
-- Déploiement en un clic
+## 📋 Latest Updates (August 2025)
 
-### Sur PythonAnywhere ou Heroku
-1. Configurer les variables d'environnement
-2. Adapter le chemin des fichiers statiques
-3. Configurer le serveur WSGI (gunicorn)
-4. Activer HTTPS pour la production
+✅ **Enhanced Search System**
+- Full metadata indexing including "autres_informations", "statut", and "fichier_nom"
+- Dynamic filter display based on mail type
 
-## Structure du Projet
+✅ **Improved Mail Management**
+- "Secrétaire Général en Copie" filter for incoming mail only
+- Mandatory file attachments for all mail types
+- Outgoing mail enhancements with required emission date
 
-```
-gec-mines/
-├── app.py              # Configuration Flask et DB
-├── main.py             # Point d'entrée
-├── models.py           # Modèles de données
-├── views.py            # Routes et logique métier
-├── utils.py            # Fonctions utilitaires
-├── security_utils.py   # Sécurité et chiffrement
-├── performance_utils.py # Optimisation
-├── templates/          # Templates HTML
-│   ├── new_base.html   # Template de base
-│   ├── dashboard.html  # Tableau de bord
-│   ├── register_mail.html # Enregistrement
-│   └── view_mail.html  # Consultation
-├── static/             # Assets statiques
-├── uploads/            # Fichiers uploadés
-└── exports/            # PDF générés
-```
+✅ **Production Ready**
+- Removed all test/temporary files
+- Optimized for external deployment (PythonAnywhere compatible)
+- Complete documentation in French and English
 
-## Utilisation
+✅ **Security Suite**
+- AES-256-CBC encryption for all sensitive data
+- Enhanced bcrypt password hashing
+- Brute force protection with IP blocking
+- Comprehensive audit logging
 
-### Premier Démarrage
-1. Connexion avec les identifiants par défaut :
-   - Email : `admin@gecmines.cd`
-   - Mot de passe : `Admin@2025`
-2. **Important** : Changer immédiatement le mot de passe
-3. Configurer les paramètres système
-4. Créer les départements et utilisateurs
+---
 
-### Workflow Courrier
+## 📞 Support & Contact
 
-#### Courrier Entrant
-1. Cliquer sur "Nouveau Courrier"
-2. Sélectionner "Entrant"
-3. Remplir :
-   - Expéditeur
-   - Objet
-   - Date de rédaction (optionnel)
-   - SG en copie (Oui/Non)
-   - Pièce jointe (obligatoire)
-4. Soumettre pour génération du numéro d'accusé
+- 📧 **Email**: contact@gecmines.cd
+- 📱 **WhatsApp**: +243 999 999 999
+- 🌐 **Website**: www.gecmines.cd
+- 📍 **Office**: Kinshasa, DRC
 
-#### Courrier Sortant
-1. Cliquer sur "Nouveau Courrier"
-2. Sélectionner "Sortant"
-3. Remplir :
-   - Destinataire
-   - Objet
-   - Date d'émission (obligatoire)
-   - Type de courrier sortant
-   - Autres informations
-   - Pièce jointe (obligatoire)
-4. Soumettre pour enregistrement
+---
 
-### Recherche et Filtres
-- **Recherche textuelle** : Indexe tous les champs
-- **Filtres disponibles** :
-  - Type (Entrant/Sortant)
-  - Statut
-  - Dates (enregistrement et rédaction)
-  - SG en copie
-  - Type de courrier sortant
+## 🎉 Special Offer
 
-## Sécurité
+**Launch Promotion**: -50% for 3 months for the first 100 customers!
+Use code: **GECMINES2025**
 
-### Mesures Implémentées
-- ✅ Chiffrement AES-256-CBC pour données sensibles
-- ✅ Hachage bcrypt avec salt personnalisé
-- ✅ Protection CSRF sur tous les formulaires
-- ✅ Headers de sécurité HTTP
-- ✅ Validation et sanitisation des entrées
-- ✅ Protection contre les injections SQL
-- ✅ Blocage IP après tentatives échouées
-- ✅ Audit trail complet
+---
 
-### Recommandations Production
-1. Utiliser HTTPS obligatoirement
-2. Configurer un firewall applicatif (WAF)
-3. Sauvegardes régulières automatisées
-4. Monitoring des logs de sécurité
-5. Mise à jour régulière des dépendances
+## 📜 License
 
-## Maintenance
+© 2025 GEC Mines - Secrétariat Général des Mines | All Rights Reserved
 
-### Sauvegarde
-```bash
-python -c "from utils import create_backup; create_backup()"
-```
+---
 
-### Restauration
-```bash
-python -c "from utils import restore_backup; restore_backup('path/to/backup.zip')"
-```
+<div align="center">
 
-### Nettoyage
-- Les fichiers temporaires sont automatiquement supprimés
-- La corbeille peut être vidée depuis l'interface admin
+**Choose your documentation language above to get started!**
 
-## Support et Contact
+[🇫🇷 Français](README_COMMERCIAL_FR.md) | [🇬🇧 English](README_COMMERCIAL_EN.md)
 
-Pour toute question ou assistance :
-- Documentation complète dans `/docs`
-- Logs d'activité dans la base de données
-- Monitoring via le tableau de bord admin
-
-## Licence
-
-© 2025 GEC Mines - Secrétariat Général des Mines
-Tous droits réservés.
-
-## Changelog
-
-### Version 1.0.0 (Août 2025)
-- ✅ Système complet de gestion du courrier
-- ✅ Sécurité renforcée avec chiffrement
-- ✅ Gestion des pièces jointes obligatoires
-- ✅ Recherche textuelle avancée
-- ✅ Filtre SG en copie
-- ✅ Export PDF optimisé
-- ✅ Compatibilité déploiement externe
-- ✅ Documentation complète
+</div>
