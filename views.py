@@ -169,6 +169,7 @@ def register_mail():
         expediteur = None
         destinataire = None
         secretaire_general_copie = None
+        autres_informations = None
         
         if type_courrier == 'ENTRANT':
             expediteur = request.form.get('expediteur', '').strip()
@@ -185,6 +186,16 @@ def register_mail():
             secretaire_general_copie = (sg_copie_value.lower() == 'oui')
         else:  # SORTANT
             destinataire = request.form.get('destinataire', '').strip()
+            autres_informations = request.form.get('autres_informations', '').strip()
+            
+            # Pour les courriers sortants, la date d'émission est obligatoire
+            if not date_redaction:
+                flash('La date d\'émission est obligatoire pour un courrier sortant.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
+                                     types_courrier_sortant=types_courrier_sortant)
+            
             if not objet or not destinataire:
                 flash('L\'objet et le destinataire sont obligatoires pour un courrier sortant.', 'error')
                 statuts_disponibles = StatutCourrier.get_statuts_actifs()
@@ -226,30 +237,39 @@ def register_mail():
             # Mode automatique : générer le numéro
             numero_accuse = generate_accuse_reception()
         
-        # Gestion du fichier uploadé
+        # Gestion du fichier uploadé (maintenant obligatoire)
         file = request.files.get('fichier')
         fichier_nom = None
         fichier_chemin = None
         fichier_type = None
         
-        if file and file.filename and file.filename != '':
-            if allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Ajouter timestamp pour éviter les conflits
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                # Stocker le chemin relatif, pas absolu
-                fichier_chemin = os.path.join('uploads', filename)
-                # Créer le dossier uploads s'il n'existe pas
-                os.makedirs('uploads', exist_ok=True)
-                # Sauvegarder le fichier
-                file.save(fichier_chemin)
-                fichier_nom = file.filename
-                fichier_type = filename.rsplit('.', 1)[1].lower()
-            else:
-                flash('Type de fichier non autorisé. Utilisez PDF, JPG, PNG ou TIFF.', 'error')
-                statuts_disponibles = StatutCourrier.get_statuts_actifs()
-                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+        # Vérifier que le fichier est présent (obligatoire)
+        if not file or not file.filename or file.filename == '':
+            flash('La pièce jointe est obligatoire. Veuillez télécharger un fichier.', 'error')
+            statuts_disponibles = StatutCourrier.get_statuts_actifs()
+            types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+            return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
+                                 types_courrier_sortant=types_courrier_sortant)
+        
+        if allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Ajouter timestamp pour éviter les conflits
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{timestamp}_{filename}"
+            # Stocker le chemin relatif, pas absolu
+            fichier_chemin = os.path.join('uploads', filename)
+            # Créer le dossier uploads s'il n'existe pas
+            os.makedirs('uploads', exist_ok=True)
+            # Sauvegarder le fichier
+            file.save(fichier_chemin)
+            fichier_nom = file.filename
+            fichier_type = filename.rsplit('.', 1)[1].lower()
+        else:
+            flash('Type de fichier non autorisé. Utilisez PDF, JPG, PNG ou TIFF.', 'error')
+            statuts_disponibles = StatutCourrier.get_statuts_actifs()
+            types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+            return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
+                                 types_courrier_sortant=types_courrier_sortant)
         
         # Création du courrier
         courrier = Courrier(
@@ -266,7 +286,8 @@ def register_mail():
             fichier_chemin=fichier_chemin,
             fichier_type=fichier_type,
             utilisateur_id=current_user.id,
-            secretaire_general_copie=secretaire_general_copie
+            secretaire_general_copie=secretaire_general_copie,
+            autres_informations=autres_informations if type_courrier == 'SORTANT' else None
         )
         
         try:

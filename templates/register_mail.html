@@ -163,18 +163,36 @@
                                   placeholder="Décrivez l'objet de la lettre"></textarea>
                     </div>
                     
-                    <!-- Date de rédaction -->
+                    <!-- Date de rédaction/émission -->
                     <div>
                         <label for="date_redaction" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-calendar-edit mr-1 text-rdc-blue"></i>
-                            Date de Rédaction de la Lettre
+                            <span id="date-redaction-label">Date de Rédaction de la Lettre</span>
+                            <span id="date-emission-label" style="display: none;">Date d'Émission de la Lettre <span class="text-red-500">*</span></span>
                         </label>
                         <input type="date" 
                                id="date_redaction" 
                                name="date_redaction" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
                         <p class="mt-1 text-sm text-gray-500">
-                            Date à laquelle la lettre a été rédigée (optionnel)
+                            <span id="date-redaction-hint">Date à laquelle la lettre a été rédigée (optionnel)</span>
+                            <span id="date-emission-hint" style="display: none;">Date à laquelle la lettre a été émise (obligatoire)</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Autres Informations (pour courrier sortant seulement) -->
+                    <div id="autres-informations-section" style="display: none;">
+                        <label for="autres_informations" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-info-circle mr-1 text-rdc-blue"></i>
+                            Autres Informations
+                        </label>
+                        <textarea id="autres_informations" 
+                                  name="autres_informations" 
+                                  rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                                  placeholder="Informations supplémentaires concernant ce courrier sortant..."></textarea>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Informations complémentaires sur ce courrier sortant (optionnel)
                         </p>
                     </div>
                     
@@ -232,19 +250,20 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-paperclip mr-1 text-rdc-blue"></i>
-                            Pièce Jointe
+                            Pièce Jointe <span class="text-red-500">*</span>
                         </label>
                         
                         <!-- Zone de téléchargement -->
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
                             <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                            <p class="text-sm font-medium text-gray-700">Télécharger un fichier</p>
+                            <p class="text-sm font-medium text-gray-700">Télécharger un fichier <span class="text-red-500">*</span></p>
                             <p class="text-xs text-gray-500">PDF, JPG, PNG, TIFF</p>
                             <p class="text-xs text-gray-400 mt-2">Cliquez ou glissez-déposez</p>
                             <input id="fichier" 
                                    name="fichier" 
                                    type="file" 
                                    class="hidden" 
+                                   required
                                    accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
                         </div>
                         
@@ -671,6 +690,16 @@ function toggleContactField() {
     const typeCourrierSortantSection = document.getElementById('type-courrier-sortant-section');
     const typeCourrierSortantSelect = document.getElementById('type_courrier_sortant_id');
     
+    // Gestion du champ autres informations
+    const autresInfoSection = document.getElementById('autres-informations-section');
+    
+    // Gestion des labels et hints de date
+    const dateRedactionLabel = document.getElementById('date-redaction-label');
+    const dateEmissionLabel = document.getElementById('date-emission-label');
+    const dateRedactionHint = document.getElementById('date-redaction-hint');
+    const dateEmissionHint = document.getElementById('date-emission-hint');
+    const dateRedactionInput = document.getElementById('date_redaction');
+    
     if (typeSelected === 'ENTRANT') {
         contactLabel.textContent = 'Expéditeur';
         contactInput.placeholder = 'Nom de l\'expéditeur';
@@ -687,6 +716,18 @@ function toggleContactField() {
             typeCourrierSortantSelect.removeAttribute('required');
             typeCourrierSortantSelect.value = '';
         }
+        
+        // Cacher le champ autres informations
+        if (autresInfoSection) {
+            autresInfoSection.style.display = 'none';
+        }
+        
+        // Afficher le label "Date de Rédaction" (optionnel)
+        if (dateRedactionLabel) dateRedactionLabel.style.display = 'inline';
+        if (dateEmissionLabel) dateEmissionLabel.style.display = 'none';
+        if (dateRedactionHint) dateRedactionHint.style.display = 'inline';
+        if (dateEmissionHint) dateEmissionHint.style.display = 'none';
+        dateRedactionInput.removeAttribute('required');
     } else {
         contactLabel.textContent = 'Destinataire';
         contactInput.placeholder = 'Nom du destinataire';
@@ -702,6 +743,18 @@ function toggleContactField() {
             typeCourrierSortantSection.style.display = 'block';
             typeCourrierSortantSelect.setAttribute('required', 'required');
         }
+        
+        // Afficher le champ autres informations
+        if (autresInfoSection) {
+            autresInfoSection.style.display = 'block';
+        }
+        
+        // Afficher le label "Date d'Émission" (obligatoire)
+        if (dateRedactionLabel) dateRedactionLabel.style.display = 'none';
+        if (dateEmissionLabel) dateEmissionLabel.style.display = 'inline';
+        if (dateRedactionHint) dateRedactionHint.style.display = 'none';
+        if (dateEmissionHint) dateEmissionHint.style.display = 'inline';
+        dateRedactionInput.setAttribute('required', 'required');
     }
 }
 
