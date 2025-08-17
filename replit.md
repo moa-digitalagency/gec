@@ -85,3 +85,6 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **CLEANED**: Removed all test and temporary files for production
 - **DOCUMENTED**: Complete documentation in docs/ folder (4 files: Technical/Commercial in FR/EN)
 - **ORGANIZED**: All documentation moved to docs/ folder with clean structure
+- **ADDED**: Analytics Dashboard with real-time statistics, interactive charts (Chart.js), PDF/Excel export
+- **ADDED**: Multi-language support (French/English) with JSON translation files
+- **CREATED**: project-dependencies.txt file listing all Python dependencies

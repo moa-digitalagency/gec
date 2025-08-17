@@ -1,0 +1,66 @@
+# GEC Mines - Dépendances du Projet
+# =====================================
+# Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC Mines
+# Date: 17 Août 2025
+
+# Framework Web Principal
+# -----------------------
+Flask                    # Framework web Python
+Flask-SQLAlchemy        # Extension ORM pour Flask
+Flask-Login             # Gestion de l'authentification
+Werkzeug                # Utilitaires WSGI et sécurité
+gunicorn                # Serveur WSGI pour production
+
+# Base de Données
+# ---------------
+SQLAlchemy              # ORM Python
+psycopg2-binary         # Adaptateur PostgreSQL
+
+# Sécurité et Chiffrement
+# -----------------------
+cryptography            # Chiffrement AES-256
+bcrypt                  # Hachage sécurisé des mots de passe
+pycryptodome            # Opérations cryptographiques supplémentaires
+
+# Génération de Documents
+# -----------------------
+ReportLab               # Génération de PDF
+Pillow                  # Traitement d'images (PIL)
+opencv-python           # Vision par ordinateur et traitement d'images
+
+# Traitement et Export de Données
+# --------------------------------
+pandas                  # Analyse et manipulation de données
+xlsxwriter              # Création de fichiers Excel
+
+# Utilitaires
+# -----------
+python-dotenv           # Gestion des variables d'environnement
+email-validator         # Validation des adresses email
+
+# Dépendances Automatiques
+# ------------------------
+# Ces packages sont installés automatiquement avec les dépendances ci-dessus:
+# - Jinja2 (moteur de templates)
+# - MarkupSafe (échappement HTML sécurisé)
+# - click (interface ligne de commande)
+# - itsdangerous (sérialisation sécurisée)
+# - numpy (calculs numériques)
+# - python-dateutil (manipulation de dates)
+# - pytz (gestion des fuseaux horaires)
+# - six (compatibilité Python 2/3)
+
+# Notes d'Installation
+# --------------------
+# Pour installer toutes les dépendances dans Replit, utilisez l'outil de gestion
+# de packages intégré ou la commande packager_tool dans l'agent.
+#
+# Pour un déploiement externe, créez un environnement virtuel et installez
+# les packages listés ci-dessus avec pip.
+
+# Configuration Requise
+# ---------------------
+# Python: 3.11+
+# PostgreSQL: 14+ (pour la base de données de production)
+# Mémoire: Minimum 512MB RAM
+# Stockage: 100MB pour l'application + espace pour les fichiers uploadés
