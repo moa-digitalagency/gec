@@ -334,6 +334,7 @@ def view_mail():
     date_redaction_to = request.args.get('date_redaction_to', '')
     statut = request.args.get('statut', '')
     type_courrier_sortant_id = request.args.get('type_courrier_sortant_id', '')
+    sg_copie = request.args.get('sg_copie', '')  # Nouveau filtre SG en copie
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
@@ -377,7 +378,7 @@ def view_mail():
     # Ajout du filtre pour type de courrier
     type_courrier = request.args.get('type_courrier', '')
     
-    # Enhanced search with performance optimization
+    # Enhanced search with performance optimization - indexing all metadata
     if search:
         with PerformanceMonitor("search_query"):
             # Sanitize search input for security
@@ -395,6 +396,13 @@ def view_mail():
     # Filtre par type de courrier sortant
     if type_courrier_sortant_id:
         query = query.filter(Courrier.type_courrier_sortant_id == type_courrier_sortant_id)
+    
+    # Filtre par SG en copie (pour courriers entrants)
+    if sg_copie:
+        if sg_copie == 'oui':
+            query = query.filter(Courrier.secretaire_general_copie == True)
+        elif sg_copie == 'non':
+            query = query.filter(Courrier.secretaire_general_copie == False)
     
     # Filtre par statut
     if statut:
@@ -457,6 +465,7 @@ def view_mail():
                          type_courrier=type_courrier,
                          type_courrier_sortant_id=type_courrier_sortant_id,
                          types_courrier_sortant=types_courrier_sortant,
+                         sg_copie=sg_copie,
                          sort_by=sort_by,
                          sort_order=sort_order)
 

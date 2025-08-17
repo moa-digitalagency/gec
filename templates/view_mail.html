@@ -128,6 +128,21 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
                 </div>
                 
+                <!-- SG en Copie Filter -->
+                <div>
+                    <label for="sg_copie" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-copy mr-1 text-indigo-500"></i>
+                        SG en Copie
+                    </label>
+                    <select id="sg_copie" 
+                            name="sg_copie"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="">Tous</option>
+                        <option value="oui" {% if sg_copie == 'oui' %}selected{% endif %}>Oui</option>
+                        <option value="non" {% if sg_copie == 'non' %}selected{% endif %}>Non</option>
+                    </select>
+                </div>
+                
                 <!-- Sort By -->
                 <div>
                     <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">

@@ -131,7 +131,7 @@ def optimize_search_query(search_term, query_class):
     
     search_conditions = []
     
-    # Add conditions for each word
+    # Add conditions for each word - including all metadata fields
     for word in words:
         if len(word) >= 2:  # Only search words with 2+ characters
             word_pattern = f"%{word}%"
@@ -140,8 +140,13 @@ def optimize_search_query(search_term, query_class):
                 query_class.numero_reference.ilike(word_pattern),
                 query_class.objet.ilike(word_pattern),
                 query_class.expediteur.ilike(word_pattern),
-                query_class.destinataire.ilike(word_pattern)
+                query_class.destinataire.ilike(word_pattern),
+                query_class.statut.ilike(word_pattern),
+                query_class.autres_informations.ilike(word_pattern) if hasattr(query_class, 'autres_informations') else None,
+                query_class.fichier_nom.ilike(word_pattern) if hasattr(query_class, 'fichier_nom') else None
             ])
+            # Remove None values from search conditions
+            search_conditions = [c for c in search_conditions if c is not None]
     
     if search_conditions:
         from sqlalchemy import or_
