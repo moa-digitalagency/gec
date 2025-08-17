@@ -77,10 +77,11 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - Database optimized with full indexing
 - Security suite fully operational
 - **COMPLETED**: Enhanced search with full metadata indexing (including autres_informations, statut, fichier_nom)
-- **COMPLETED**: SG en copie filter added to search interface
+- **COMPLETED**: SG en copie filter added to search interface - only shows for ENTRANT mail type
 - **COMPLETED**: Mandatory file attachments for all mail types
 - **COMPLETED**: Outgoing mail enhancements (Date d'Émission mandatory, autres informations field)
 - **COMPLETED**: Removed "Fichier" column from mail consultation view
 - **FIXED**: All upload/export PDF links optimized for external deployment
 - **CLEANED**: Removed all test and temporary files for production
-- **DOCUMENTED**: Complete README.md and user documentation
+- **DOCUMENTED**: Complete documentation in docs/ folder (4 files: Technical/Commercial in FR/EN)
+- **ORGANIZED**: All documentation moved to docs/ folder with clean structure

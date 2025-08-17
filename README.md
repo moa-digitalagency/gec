@@ -5,12 +5,12 @@
 ### 📖 Documentation
 
 #### 🇫🇷 Français
-- [📚 Documentation Technique](README_TECHNICAL_FR.md) - Architecture, déploiement, API
-- [💼 Documentation Commerciale](README_COMMERCIAL_FR.md) - Fonctionnalités, tarifs, témoignages
+- [📚 Documentation Technique](docs/README_TECHNICAL_FR.md) - Architecture, déploiement, API
+- [💼 Documentation Commerciale](docs/README_COMMERCIAL_FR.md) - Fonctionnalités, tarifs, témoignages
 
 #### 🇬🇧 English
-- [📚 Technical Documentation](README_TECHNICAL_EN.md) - Architecture, deployment, API
-- [💼 Commercial Documentation](README_COMMERCIAL_EN.md) - Features, pricing, testimonials
+- [📚 Technical Documentation](docs/README_TECHNICAL_EN.md) - Architecture, deployment, API
+- [💼 Commercial Documentation](docs/README_COMMERCIAL_EN.md) - Features, pricing, testimonials
 
 ---
 
@@ -115,6 +115,6 @@ Use code: **GECMINES2025**
 
 **Choose your documentation language above to get started!**
 
-[🇫🇷 Français](README_COMMERCIAL_FR.md) | [🇬🇧 English](README_COMMERCIAL_EN.md)
+[🇫🇷 Français](docs/README_COMMERCIAL_FR.md) | [🇬🇧 English](docs/README_COMMERCIAL_EN.md)
 
 </div>
