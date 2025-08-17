@@ -143,11 +143,15 @@ def dashboard():
 @login_required
 @rate_limit(max_requests=50, per_minutes=15)  # Prevent spam registration
 def register_mail():
+    # Import TypeCourrierSortant
+    from models import TypeCourrierSortant
+    
     if request.method == 'POST':
         # Récupération des données du formulaire
         numero_reference = request.form.get('numero_reference', '').strip()
         objet = request.form['objet'].strip()
         type_courrier = request.form.get('type_courrier', 'ENTRANT')
+        type_courrier_sortant_id = request.form.get('type_courrier_sortant_id', '')
         statut = request.form.get('statut', 'RECU')
         date_redaction_str = request.form.get('date_redaction', '')
         
@@ -184,7 +188,17 @@ def register_mail():
             if not objet or not destinataire:
                 flash('L\'objet et le destinataire sont obligatoires pour un courrier sortant.', 'error')
                 statuts_disponibles = StatutCourrier.get_statuts_actifs()
-                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
+                types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+                                     types_courrier_sortant=types_courrier_sortant)
+            
+            # Vérifier le type de courrier sortant (obligatoire)
+            if not type_courrier_sortant_id:
+                flash('Le type de courrier sortant est obligatoire.', 'error')
+                statuts_disponibles = StatutCourrier.get_statuts_actifs()
+                types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+                return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
+                                     types_courrier_sortant=types_courrier_sortant)
         
         # Génération ou récupération du numéro d'accusé de réception
         parametres = ParametresSysteme.get_parametres()
@@ -243,6 +257,7 @@ def register_mail():
             numero_reference=numero_reference if numero_reference else None,
             objet=objet,
             type_courrier=type_courrier,
+            type_courrier_sortant_id=int(type_courrier_sortant_id) if type_courrier == 'SORTANT' and type_courrier_sortant_id else None,
             expediteur=expediteur,
             destinataire=destinataire,
             date_redaction=date_redaction,
@@ -274,14 +289,19 @@ def register_mail():
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     # Récupérer les départements pour le formulaire
     departements = Departement.get_departements_actifs()
+    # Récupérer les types de courrier sortant pour le formulaire
+    types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
     # Récupérer les paramètres système pour le mode de numéro d'accusé
     parametres = ParametresSysteme.get_parametres()
     return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
-                         departements=departements, parametres=parametres)
+                         departements=departements, parametres=parametres,
+                         types_courrier_sortant=types_courrier_sortant)
 
 @app.route('/view_mail')
 @login_required
 def view_mail():
+    from models import TypeCourrierSortant
+    
     page = request.args.get('page', 1, type=int)
     per_page = 25  # Increased from 20 for better performance
     
@@ -292,6 +312,7 @@ def view_mail():
     date_redaction_from = request.args.get('date_redaction_from', '')
     date_redaction_to = request.args.get('date_redaction_to', '')
     statut = request.args.get('statut', '')
+    type_courrier_sortant_id = request.args.get('type_courrier_sortant_id', '')
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
@@ -350,6 +371,10 @@ def view_mail():
     if type_courrier:
         query = query.filter(Courrier.type_courrier == type_courrier)
     
+    # Filtre par type de courrier sortant
+    if type_courrier_sortant_id:
+        query = query.filter(Courrier.type_courrier_sortant_id == type_courrier_sortant_id)
+    
     # Filtre par statut
     if statut:
         query = query.filter(Courrier.statut == statut)
@@ -396,6 +421,9 @@ def view_mail():
     courriers_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
     courriers = courriers_paginated.items
     
+    # Récupérer les types de courrier sortant pour le filtre
+    types_courrier_sortant = TypeCourrierSortant.query.filter_by(actif=True).order_by(TypeCourrierSortant.ordre_affichage).all()
+    
     return render_template('view_mail.html', 
                          courriers=courriers,
                          pagination=courriers_paginated,
@@ -406,6 +434,8 @@ def view_mail():
                          date_redaction_to=date_redaction_to,
                          statut=statut,
                          type_courrier=type_courrier,
+                         type_courrier_sortant_id=type_courrier_sortant_id,
+                         types_courrier_sortant=types_courrier_sortant,
                          sort_by=sort_by,
                          sort_order=sort_order)
 
@@ -812,7 +842,9 @@ def download_file(id):
 @rate_limit(max_requests=20, per_minutes=15)
 def settings():
     with PerformanceMonitor("settings_page"):
+        from models import TypeCourrierSortant
         parametres = ParametresSysteme.get_parametres()
+        types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
         if request.method == 'POST':
             # Sanitize and update parameters
@@ -910,7 +942,93 @@ def settings():
         return render_template('settings.html', 
                               parametres=parametres,
                               format_preview=format_preview,
-                              backup_files=backup_files)
+                              backup_files=backup_files,
+                              types_courrier_sortant=types_courrier_sortant)
+
+@app.route('/manage_mail_types', methods=['POST'])
+@login_required
+def manage_mail_types():
+    """Gérer les types de courrier sortant"""
+    from models import TypeCourrierSortant
+    
+    # Vérifier les permissions
+    if not current_user.has_permission('manage_system_settings'):
+        flash('Accès refusé. Vous n\'avez pas les permissions nécessaires.', 'error')
+        return redirect(url_for('settings'))
+    
+    action = request.form.get('action')
+    
+    if action == 'add':
+        nom = request.form.get('nom', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        if not nom:
+            flash('Le nom du type est obligatoire.', 'error')
+            return redirect(url_for('settings'))
+        
+        # Vérifier l'unicité du nom
+        existing = TypeCourrierSortant.query.filter_by(nom=nom).first()
+        if existing:
+            flash(f'Un type avec le nom "{nom}" existe déjà.', 'error')
+            return redirect(url_for('settings'))
+        
+        try:
+            # Obtenir le prochain ordre d'affichage
+            max_ordre = db.session.query(db.func.max(TypeCourrierSortant.ordre_affichage)).scalar() or 0
+            
+            new_type = TypeCourrierSortant(
+                nom=nom,
+                description=description,
+                ordre_affichage=max_ordre + 1,
+                cree_par_id=current_user.id
+            )
+            db.session.add(new_type)
+            db.session.commit()
+            
+            log_activity(current_user.id, "AJOUT_TYPE_COURRIER", 
+                        f"Ajout du type de courrier sortant: {nom}")
+            flash(f'Type "{nom}" ajouté avec succès!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erreur lors de l'ajout du type: {e}")
+            flash('Erreur lors de l\'ajout du type.', 'error')
+    
+    elif action == 'toggle':
+        type_id = request.form.get('type_id')
+        mail_type = TypeCourrierSortant.query.get(type_id)
+        
+        if mail_type:
+            mail_type.actif = not mail_type.actif
+            db.session.commit()
+            
+            status = 'activé' if mail_type.actif else 'désactivé'
+            log_activity(current_user.id, "MODIFICATION_TYPE_COURRIER", 
+                        f"Type {mail_type.nom} {status}")
+            flash(f'Type "{mail_type.nom}" {status}!', 'success')
+        else:
+            flash('Type non trouvé.', 'error')
+    
+    elif action == 'delete':
+        type_id = request.form.get('type_id')
+        mail_type = TypeCourrierSortant.query.get(type_id)
+        
+        if mail_type:
+            # Vérifier s'il y a des courriers associés
+            count = mail_type.courriers.count()
+            if count > 0:
+                flash(f'Impossible de supprimer ce type. {count} courrier(s) associé(s).', 'error')
+            else:
+                nom = mail_type.nom
+                db.session.delete(mail_type)
+                db.session.commit()
+                
+                log_activity(current_user.id, "SUPPRESSION_TYPE_COURRIER", 
+                            f"Suppression du type de courrier sortant: {nom}")
+                flash(f'Type "{nom}" supprimé avec succès!', 'success')
+        else:
+            flash('Type non trouvé.', 'error')
+    
+    return redirect(url_for('settings'))
 
 @app.route('/backup_system', methods=['POST'])
 @login_required

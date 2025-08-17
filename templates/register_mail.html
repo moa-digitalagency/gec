@@ -81,6 +81,23 @@
                         </div>
                     </div>
                     
+                    <!-- Type de Courrier Sortant (si courrier sortant sélectionné) -->
+                    <div id="type-courrier-sortant-section" style="display: none;">
+                        <label for="type_courrier_sortant_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tags mr-1 text-rdc-blue"></i>
+                            Type de Courrier Sortant <span class="text-red-500">*</span>
+                        </label>
+                        <select id="type_courrier_sortant_id" 
+                                name="type_courrier_sortant_id"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">-- Sélectionner un type --</option>
+                            {% for type in types_courrier_sortant %}
+                                <option value="{{ type.id }}">{{ type.nom }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Sélectionnez le type spécifique de courrier sortant</p>
+                    </div>
+                    
                     <!-- Numéro d'accusé de réception manuel (si configuré) -->
                     {% if parametres and parametres.mode_numero_accuse == 'manuel' %}
                     <div>
@@ -650,6 +667,10 @@ function toggleContactField() {
     const sgSection = document.getElementById('sg-copie-section');
     const sgSelect = document.getElementById('secretaire_general_copie');
     
+    // Gestion du champ type de courrier sortant
+    const typeCourrierSortantSection = document.getElementById('type-courrier-sortant-section');
+    const typeCourrierSortantSelect = document.getElementById('type_courrier_sortant_id');
+    
     if (typeSelected === 'ENTRANT') {
         contactLabel.textContent = 'Expéditeur';
         contactInput.placeholder = 'Nom de l\'expéditeur';
@@ -659,6 +680,13 @@ function toggleContactField() {
         // Afficher le champ SG en copie pour les courriers entrants
         sgSection.style.display = 'block';
         sgSelect.setAttribute('required', 'required');
+        
+        // Cacher le champ type de courrier sortant
+        if (typeCourrierSortantSection) {
+            typeCourrierSortantSection.style.display = 'none';
+            typeCourrierSortantSelect.removeAttribute('required');
+            typeCourrierSortantSelect.value = '';
+        }
     } else {
         contactLabel.textContent = 'Destinataire';
         contactInput.placeholder = 'Nom du destinataire';
@@ -668,6 +696,12 @@ function toggleContactField() {
         sgSection.style.display = 'none';
         sgSelect.removeAttribute('required');
         sgSelect.value = '';
+        
+        // Afficher le champ type de courrier sortant
+        if (typeCourrierSortantSection) {
+            typeCourrierSortantSection.style.display = 'block';
+            typeCourrierSortantSelect.setAttribute('required', 'required');
+        }
     }
 }
 

@@ -95,6 +95,25 @@
                     </div>
                 </div>
                 
+                <!-- Type de Courrier Sortant (pour courriers sortants) -->
+                {% if courrier.type_courrier == 'SORTANT' and courrier.type_courrier_sortant %}
+                <div class="mt-6">
+                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-2 text-rdc-green"></i>
+                        Type de Courrier Sortant
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <i class="fas fa-tag mr-2"></i>
+                            {{ courrier.type_courrier_sortant.nom }}
+                        </span>
+                        {% if courrier.type_courrier_sortant.description %}
+                        <p class="text-sm text-gray-600 mt-2">{{ courrier.type_courrier_sortant.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
                 <!-- Secrétaire Général en copie (pour courriers entrants) -->
                 {% if courrier.type_courrier == 'ENTRANT' %}
                 <div class="mt-6">

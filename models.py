@@ -255,12 +255,67 @@ class User(UserMixin, db.Model):
                 return f'/static/uploads/profiles/{self.photo_profile}'
         return '/static/images/default-profile.svg'
 
+class TypeCourrierSortant(db.Model):
+    """Modèle pour les types de courrier sortant"""
+    __tablename__ = 'type_courrier_sortant'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+    ordre_affichage = db.Column(db.Integer, default=0)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    cree_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    # Relations
+    cree_par = db.relationship('User', backref='types_courrier_crees')
+    courriers = db.relationship('Courrier', backref='type_sortant', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<TypeCourrierSortant {self.nom}>'
+    
+    @staticmethod
+    def get_types_actifs():
+        """Récupère tous les types actifs triés par ordre d'affichage"""
+        return TypeCourrierSortant.query.filter_by(actif=True).order_by(TypeCourrierSortant.ordre_affichage, TypeCourrierSortant.nom).all()
+    
+    @staticmethod
+    def init_default_types():
+        """Initialise les types de courrier sortant par défaut"""
+        from app import db
+        
+        # Vérifier si des types existent déjà
+        if TypeCourrierSortant.query.count() > 0:
+            return
+        
+        types_defaut = [
+            {'nom': 'Note circulaire', 'description': 'Note circulaire à diffusion large', 'ordre_affichage': 1},
+            {'nom': 'Note télégramme', 'description': 'Note télégramme urgente', 'ordre_affichage': 2},
+            {'nom': 'Lettre officielle', 'description': 'Lettre officielle standard', 'ordre_affichage': 3},
+            {'nom': 'Mémorandum', 'description': 'Mémorandum interne', 'ordre_affichage': 4},
+            {'nom': 'Convocation', 'description': 'Convocation à une réunion ou événement', 'ordre_affichage': 5},
+            {'nom': 'Rapport', 'description': 'Rapport officiel', 'ordre_affichage': 6},
+            {'nom': 'Note de service', 'description': 'Note de service interne', 'ordre_affichage': 7},
+            {'nom': 'Autre', 'description': 'Autre type de courrier sortant', 'ordre_affichage': 99}
+        ]
+        
+        for type_data in types_defaut:
+            type_courrier = TypeCourrierSortant(**type_data)
+            db.session.add(type_courrier)
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erreur lors de l'initialisation des types de courrier sortant: {e}")
+
 class Courrier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     numero_accuse_reception = db.Column(db.String(50), unique=True, nullable=False, index=True)
     numero_reference = db.Column(db.String(100), nullable=True, index=True)
     objet = db.Column(db.Text, nullable=False)
     type_courrier = db.Column(db.String(20), nullable=False, default='ENTRANT', index=True)  # ENTRANT ou SORTANT
+    type_courrier_sortant_id = db.Column(db.Integer, db.ForeignKey('type_courrier_sortant.id'), nullable=True, index=True)  # Type spécifique pour courrier sortant
     expediteur = db.Column(db.String(200), nullable=True, index=True)  # Pour courrier entrant
     destinataire = db.Column(db.String(200), nullable=True, index=True)  # Pour courrier sortant
     date_redaction = db.Column(db.Date, nullable=True, index=True)  # Date de rédaction de la lettre
