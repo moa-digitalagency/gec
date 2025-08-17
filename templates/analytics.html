@@ -1,0 +1,285 @@
+{% extends "new_base.html" %}
+
+{% block title %}Tableau de Bord Analytique - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="mb-8 flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-chart-bar mr-3 text-rdc-blue"></i>
+            Tableau de Bord Analytique
+        </h1>
+        <div class="flex space-x-4">
+            <a href="{{ url_for('export_analytics', format='excel') }}" 
+               class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                <i class="fas fa-file-excel mr-2"></i>Export Excel
+            </a>
+            <a href="{{ url_for('export_analytics', format='pdf') }}"
+               class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                <i class="fas fa-file-pdf mr-2"></i>Export PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Courriers</p>
+                    <p class="text-3xl font-bold text-gray-900">{{ total_courriers }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-full">
+                    <i class="fas fa-envelope text-2xl text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Courriers Entrants</p>
+                    <p class="text-3xl font-bold text-green-600">{{ courriers_entrants }}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-full">
+                    <i class="fas fa-inbox text-2xl text-green-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Courriers Sortants</p>
+                    <p class="text-3xl font-bold text-yellow-600">{{ courriers_sortants }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                    <i class="fas fa-paper-plane text-2xl text-yellow-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Temps Moyen Traitement</p>
+                    <p class="text-3xl font-bold text-purple-600">{{ avg_processing_time }} j</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-full">
+                    <i class="fas fa-clock text-2xl text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques par période -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-calendar-week mr-2 text-blue-600"></i>
+                7 Derniers Jours
+            </h3>
+            <p class="text-4xl font-bold text-blue-600">{{ courriers_7_days }}</p>
+            <p class="text-sm text-gray-600">courriers enregistrés</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-calendar-alt mr-2 text-green-600"></i>
+                30 Derniers Jours
+            </h3>
+            <p class="text-4xl font-bold text-green-600">{{ courriers_30_days }}</p>
+            <p class="text-sm text-gray-600">courriers enregistrés</p>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Graphique volume par jour -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+                Volume par Jour (30 derniers jours)
+            </h3>
+            <canvas id="dailyChart" height="200"></canvas>
+        </div>
+
+        <!-- Graphique répartition par statut -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-chart-pie mr-2 text-green-600"></i>
+                Répartition par Statut
+            </h3>
+            <canvas id="statusChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Volume mensuel -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">
+            <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
+            Volume par Mois (12 derniers mois)
+        </h3>
+        <canvas id="monthlyChart" height="100"></canvas>
+    </div>
+
+    <!-- Top expéditeurs et destinataires -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Top expéditeurs -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-user-tie mr-2 text-blue-600"></i>
+                Top 10 Expéditeurs
+            </h3>
+            <div class="space-y-2">
+                {% for sender in top_senders %}
+                <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <span class="text-sm text-gray-700">{{ sender.expediteur }}</span>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-semibold">
+                        {{ sender.count }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% if not top_senders %}
+                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top destinataires -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-users mr-2 text-green-600"></i>
+                Top 10 Destinataires
+            </h3>
+            <div class="space-y-2">
+                {% for recipient in top_recipients %}
+                <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                    <span class="text-sm text-gray-700">{{ recipient.destinataire }}</span>
+                    <span class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs font-semibold">
+                        {{ recipient.count }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% if not top_recipients %}
+                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Données depuis le backend
+const dailyData = {{ daily_data|safe }};
+const statusData = {{ status_data|safe }};
+const monthlyVolumes = {{ monthly_volumes|tojson }};
+
+// Configuration des couleurs RDC
+const rdcColors = {
+    blue: '#003087',
+    yellow: '#FFD700',
+    red: '#CE1126',
+    green: '#009639'
+};
+
+// Graphique volume par jour
+const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+        labels: dailyData.dates,
+        datasets: [{
+            label: 'Nombre de courriers',
+            data: dailyData.counts,
+            borderColor: rdcColors.blue,
+            backgroundColor: 'rgba(0, 48, 135, 0.1)',
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Graphique répartition par statut
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: statusData.labels,
+        datasets: [{
+            data: statusData.counts,
+            backgroundColor: [
+                rdcColors.blue,
+                rdcColors.green,
+                rdcColors.yellow,
+                rdcColors.red,
+                '#6B7280',
+                '#9333EA',
+                '#F59E0B',
+                '#10B981'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Graphique volume mensuel
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: monthlyVolumes.map(v => v.month),
+        datasets: [{
+            label: 'Nombre de courriers',
+            data: monthlyVolumes.map(v => v.count),
+            backgroundColor: rdcColors.green,
+            borderColor: rdcColors.green,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

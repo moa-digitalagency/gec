@@ -2669,3 +2669,227 @@ def export_security_logs(level, event_type, date_start, date_end):
         }
     )
 
+@app.route('/analytics')
+@login_required
+def analytics():
+    """Tableau de bord analytique avec statistiques et graphiques"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    import json
+    
+    # Statistiques générales
+    total_courriers = Courrier.query.filter_by(is_deleted=False).count()
+    courriers_entrants = Courrier.query.filter_by(type_courrier='ENTRANT', is_deleted=False).count()
+    courriers_sortants = Courrier.query.filter_by(type_courrier='SORTANT', is_deleted=False).count()
+    
+    # Statistiques par période (7 derniers jours)
+    date_7_days_ago = datetime.now() - timedelta(days=7)
+    courriers_7_days = Courrier.query.filter(
+        Courrier.date_enregistrement >= date_7_days_ago,
+        Courrier.is_deleted == False
+    ).count()
+    
+    # Statistiques par période (30 derniers jours)
+    date_30_days_ago = datetime.now() - timedelta(days=30)
+    courriers_30_days = Courrier.query.filter(
+        Courrier.date_enregistrement >= date_30_days_ago,
+        Courrier.is_deleted == False
+    ).count()
+    
+    # Volume par jour (30 derniers jours)
+    daily_volumes = db.session.query(
+        func.date(Courrier.date_enregistrement).label('date'),
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.date_enregistrement >= date_30_days_ago,
+        Courrier.is_deleted == False
+    ).group_by(func.date(Courrier.date_enregistrement)).all()
+    
+    daily_data = {
+        'dates': [str(d.date) for d in daily_volumes],
+        'counts': [d.count for d in daily_volumes]
+    }
+    
+    # Répartition par statut
+    status_distribution = db.session.query(
+        Courrier.statut,
+        func.count(Courrier.id).label('count')
+    ).filter_by(is_deleted=False).group_by(Courrier.statut).all()
+    
+    status_data = {
+        'labels': [s.statut or 'Non défini' for s in status_distribution],
+        'counts': [s.count for s in status_distribution]
+    }
+    
+    # Top 10 expéditeurs
+    top_senders = db.session.query(
+        Courrier.expediteur,
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.expediteur != None,
+        Courrier.expediteur != '',
+        Courrier.is_deleted == False
+    ).group_by(Courrier.expediteur).order_by(func.count(Courrier.id).desc()).limit(10).all()
+    
+    # Top 10 destinataires
+    top_recipients = db.session.query(
+        Courrier.destinataire,
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.destinataire != None,
+        Courrier.destinataire != '',
+        Courrier.is_deleted == False
+    ).group_by(Courrier.destinataire).order_by(func.count(Courrier.id).desc()).limit(10).all()
+    
+    # Temps moyen de traitement (courriers avec statut "TRAITE")
+    processed_mails = Courrier.query.filter_by(statut='TRAITE', is_deleted=False).all()
+    avg_processing_time = 0
+    if processed_mails:
+        total_time = sum([(m.date_enregistrement - m.date_redaction).days 
+                         for m in processed_mails if m.date_redaction])
+        avg_processing_time = total_time / len(processed_mails) if processed_mails else 0
+    
+    # Volume par mois (12 derniers mois)
+    monthly_volumes = []
+    for i in range(12):
+        month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        count = Courrier.query.filter(
+            Courrier.date_enregistrement >= month_start,
+            Courrier.date_enregistrement < month_end,
+            Courrier.is_deleted == False
+        ).count()
+        monthly_volumes.append({
+            'month': month_start.strftime('%B %Y'),
+            'count': count
+        })
+    monthly_volumes.reverse()
+    
+    return render_template('analytics.html',
+                         total_courriers=total_courriers,
+                         courriers_entrants=courriers_entrants,
+                         courriers_sortants=courriers_sortants,
+                         courriers_7_days=courriers_7_days,
+                         courriers_30_days=courriers_30_days,
+                         daily_data=json.dumps(daily_data),
+                         status_data=json.dumps(status_data),
+                         top_senders=top_senders,
+                         top_recipients=top_recipients,
+                         avg_processing_time=round(avg_processing_time, 1),
+                         monthly_volumes=monthly_volumes)
+
+@app.route('/set_language/<lang>')
+def set_language(lang):
+    """Change la langue de l'interface"""
+    if lang in ['fr', 'en']:
+        session['language'] = lang
+        flash('Language changed successfully' if lang == 'en' else 'Langue changée avec succès', 'success')
+    else:
+        flash('Invalid language selection', 'error')
+    
+    # Rediriger vers la page précédente ou dashboard
+    return redirect(request.referrer or url_for('dashboard'))
+
+@app.route('/export_analytics/<format>')
+@login_required
+def export_analytics(format):
+    """Export des données analytiques en PDF ou Excel"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    import io
+    
+    if format not in ['pdf', 'excel']:
+        flash('Format d\'export invalide', 'error')
+        return redirect(url_for('analytics'))
+    
+    # Collecter les mêmes données que pour la page analytics
+    total_courriers = Courrier.query.filter_by(is_deleted=False).count()
+    courriers_entrants = Courrier.query.filter_by(type_courrier='ENTRANT', is_deleted=False).count()
+    courriers_sortants = Courrier.query.filter_by(type_courrier='SORTANT', is_deleted=False).count()
+    
+    if format == 'excel':
+        import pandas as pd
+        from flask import send_file
+        
+        # Créer un fichier Excel avec plusieurs feuilles
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            # Feuille 1 : Statistiques générales
+            stats_df = pd.DataFrame({
+                'Métrique': ['Total Courriers', 'Courriers Entrants', 'Courriers Sortants'],
+                'Valeur': [total_courriers, courriers_entrants, courriers_sortants]
+            })
+            stats_df.to_excel(writer, sheet_name='Statistiques', index=False)
+            
+            # Feuille 2 : Volume par jour
+            date_30_days_ago = datetime.now() - timedelta(days=30)
+            daily_volumes = db.session.query(
+                func.date(Courrier.date_enregistrement).label('date'),
+                func.count(Courrier.id).label('count')
+            ).filter(
+                Courrier.date_enregistrement >= date_30_days_ago,
+                Courrier.is_deleted == False
+            ).group_by(func.date(Courrier.date_enregistrement)).all()
+            
+            if daily_volumes:
+                daily_df = pd.DataFrame([(str(d.date), d.count) for d in daily_volumes],
+                                       columns=['Date', 'Nombre de Courriers'])
+                daily_df.to_excel(writer, sheet_name='Volume Quotidien', index=False)
+        
+        output.seek(0)
+        return send_file(output, 
+                        mimetype='application/vnd.ms-excel',
+                        as_attachment=True,
+                        download_name=f'analytics_export_{datetime.now().strftime("%Y%m%d")}.xlsx')
+    
+    elif format == 'pdf':
+        # Export PDF avec ReportLab
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Titre
+        title = Paragraph("Rapport Analytique - GEC Mines", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 20))
+        
+        # Date du rapport
+        date_para = Paragraph(f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal'])
+        elements.append(date_para)
+        elements.append(Spacer(1, 20))
+        
+        # Tableau des statistiques
+        data = [
+            ['Métrique', 'Valeur'],
+            ['Total Courriers', str(total_courriers)],
+            ['Courriers Entrants', str(courriers_entrants)],
+            ['Courriers Sortants', str(courriers_sortants)]
+        ]
+        
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        
+        buffer.seek(0)
+        return send_file(buffer,
+                        mimetype='application/pdf',
+                        as_attachment=True,
+                        download_name=f'analytics_report_{datetime.now().strftime("%Y%m%d")}.pdf')
+

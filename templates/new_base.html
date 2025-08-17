@@ -180,6 +180,10 @@
                             <i class="fas fa-search" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
                             Recherche Avancée
                         </a>
+                        <a href="{{ url_for('analytics') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fas fa-chart-bar" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                            Tableau de Bord Analytique
+                        </a>
                         {% if current_user.has_permission('view_trash') %}
                         <a href="{{ url_for('trash') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-trash-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
@@ -243,6 +247,21 @@
                     
                     <!-- Spacer to push logout to bottom -->
                     <div style="flex-grow: 1;"></div>
+                    
+                    <!-- Language Switch -->
+                    <div style="border-top: 1px solid #009639; padding-top: 1rem;">
+                        <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
+                            Langue / Language
+                        </div>
+                        <a href="{{ url_for('set_language', lang='fr') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fas fa-flag" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                            🇫🇷 Français
+                        </a>
+                        <a href="{{ url_for('set_language', lang='en') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fas fa-flag" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                            🇬🇧 English
+                        </a>
+                    </div>
                     
                     <!-- Déconnexion -->
                     <div style="border-top: 1px solid #009639; padding-top: 1rem; margin-top: auto;">
