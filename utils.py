@@ -40,6 +40,34 @@ def get_current_language():
         return session['language']
     return 'fr'
 
+def format_date(date_obj, include_time=False):
+    """Formate une date selon la langue courante"""
+    if date_obj is None:
+        return 'Non renseignée'
+    
+    lang = get_current_language()
+    
+    # Mois en français
+    mois_fr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+               'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+    
+    # Mois en anglais (abrégé)
+    mois_en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    
+    if lang == 'fr':
+        # Format français : DD/MM/YYYY ou DD mois YYYY
+        if include_time:
+            return date_obj.strftime('%d/%m/%Y à %H:%M')
+        else:
+            return date_obj.strftime('%d/%m/%Y')
+    else:
+        # Format anglais : MM/DD/YYYY ou Month DD, YYYY
+        if include_time:
+            return date_obj.strftime('%m/%d/%Y at %I:%M %p')
+        else:
+            return date_obj.strftime('%m/%d/%Y')
+
 def set_language(lang_code):
     """Définit la langue dans la session"""
     if lang_code in get_available_languages():
@@ -518,10 +546,13 @@ def export_courrier_pdf(courrier):
             sg_copie_text = 'Non renseigné'
         data.append([Paragraph('Secrétaire Général en copie:', label_style), Paragraph(sg_copie_text, text_style)])
     
+    # Utiliser le bon label selon le type de courrier
+    date_label = "Date d'Émission:" if courrier.type_courrier == 'SORTANT' else "Date de Rédaction:"
+    
     data.extend([
         [Paragraph('Objet:', label_style), Paragraph(courrier.objet, text_style)],
-        [Paragraph('Date de Rédaction:', label_style), Paragraph(courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée', text_style)],
-        [Paragraph('Date d\'Enregistrement:', label_style), Paragraph(courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M'), text_style)],
+        [Paragraph(date_label, label_style), Paragraph(format_date(courrier.date_redaction), text_style)],
+        [Paragraph('Date d\'Enregistrement:', label_style), Paragraph(format_date(courrier.date_enregistrement, include_time=True), text_style)],
         [Paragraph('Enregistré par:', label_style), Paragraph(courrier.utilisateur_enregistrement.nom_complet, text_style)],
         [Paragraph('Statut:', label_style), Paragraph(courrier.statut, text_style)],
         [Paragraph('Fichier Joint:', label_style), Paragraph(courrier.fichier_nom if courrier.fichier_nom else 'Aucun', text_style)],
@@ -554,7 +585,7 @@ def export_courrier_pdf(courrier):
         footer_lines.append(parametres.texte_footer)
     
     # Date de génération
-    footer_lines.append(f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} par le système GEC")
+    footer_lines.append(f"Document généré le {format_date(datetime.now(), include_time=True)} par le système GEC")
     
     # Copyright dynamique
     copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
@@ -706,7 +737,7 @@ def export_mail_list_pdf(courriers, filters):
     
     # Informations sur le rapport
     count = len(courriers)
-    date_generation = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    date_generation = format_date(datetime.now(), include_time=True)
     info_para = Paragraph(f"Total: {count} courrier{'s' if count > 1 else ''} | Généré le: {date_generation}", styles['Normal'])
     story.append(info_para)
     story.append(Spacer(1, 15))
@@ -740,6 +771,19 @@ def export_mail_list_pdf(courriers, filters):
             rightIndent=2
         )
         
+        # Déterminer si on a des courriers sortants pour ajuster le label de date
+        has_sortant = any(c.type_courrier == 'SORTANT' for c in courriers)
+        has_entrant = any(c.type_courrier == 'ENTRANT' for c in courriers)
+        
+        # Choisir le label approprié
+        if has_sortant and not has_entrant:
+            date_header = 'Date d\'Émission'
+        elif has_entrant and not has_sortant:
+            date_header = 'Date de Rédaction'
+        else:
+            # Mix des deux types
+            date_header = 'Date Réd./Émission'
+        
         # Créer le tableau des courriers avec le nouveau champ Observation
         headers = [
             Paragraph('N° Accusé de Réception', header_style),
@@ -747,7 +791,7 @@ def export_mail_list_pdf(courriers, filters):
             Paragraph('N° de Référence', header_style),
             Paragraph('Contact Principal', header_style),
             Paragraph('Objet', header_style),
-            Paragraph('Date de Rédaction', header_style),
+            Paragraph(date_header, header_style),
             Paragraph('Date d\'Enregistrement', header_style),
             Paragraph('Statut', header_style),
             Paragraph('SG Copie', header_style),
@@ -767,11 +811,11 @@ def export_mail_list_pdf(courriers, filters):
             # Objet - texte complet avec wrapping
             objet_text = courrier.objet
             
-            # Date de rédaction formatée
-            date_redaction_str = courrier.date_redaction.strftime('%d/%m/%Y') if courrier.date_redaction else 'Non renseignée'
+            # Date de rédaction/émission formatée
+            date_redaction_str = format_date(courrier.date_redaction)
             
             # Date d'enregistrement formatée
-            date_enr_str = courrier.date_enregistrement.strftime('%d/%m/%Y<br/>%H:%M')
+            date_enr_str = format_date(courrier.date_enregistrement, include_time=True).replace(' à ', '<br/>')
             
             # Type complet
             type_text = 'Courrier Entrant' if courrier.type_courrier == 'ENTRANT' else 'Courrier Sortant'
