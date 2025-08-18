@@ -94,3 +94,4 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **PERMISSIONS**: Added role-based permissions for system updates (manage_updates, manage_backup)
 - **CLEANED 18/08**: Removed __pycache__, test PDFs from exports, and .DS_Store files
 - **UNIFIED**: Single project-dependencies.txt file with all Python dependencies and exact versions
+- **FIXED 18/08**: Removed duplicate "Numéro d'Accusé de Réception" field in manual mode
