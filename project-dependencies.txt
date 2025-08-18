@@ -3,41 +3,45 @@
 # Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC Mines
 # Date de mise à jour: 18 Août 2025
 # Version: 1.0.0
+# Python Version: 3.11+
+#
+# Installation:
+# pip install -r project-dependencies.txt
 
 # Framework Web Principal
 # -----------------------
-Flask                    # Framework web Python
-Flask-SQLAlchemy        # Extension ORM pour Flask
-Flask-Login             # Gestion de l'authentification
-Werkzeug                # Utilitaires WSGI et sécurité
-gunicorn                # Serveur WSGI pour production
+Flask==3.1.0                    # Framework web Python
+Flask-SQLAlchemy==3.1.1        # Extension ORM pour Flask
+Flask-Login==0.6.3             # Gestion de l'authentification
+Werkzeug==3.1.3                # Utilitaires WSGI et sécurité
+gunicorn==23.0.0               # Serveur WSGI pour production
 
 # Base de Données
 # ---------------
-SQLAlchemy              # ORM Python
-psycopg2-binary         # Adaptateur PostgreSQL
+SQLAlchemy==2.0.35              # ORM Python
+psycopg2-binary==2.9.10         # Adaptateur PostgreSQL
 
 # Sécurité et Chiffrement
 # -----------------------
-cryptography            # Chiffrement AES-256
-bcrypt                  # Hachage sécurisé des mots de passe
-pycryptodome            # Opérations cryptographiques supplémentaires
+cryptography==43.0.3            # Chiffrement AES-256
+bcrypt==4.2.1                  # Hachage sécurisé des mots de passe
+pycryptodome==3.21.0            # Opérations cryptographiques supplémentaires
+email-validator==2.2.0         # Validation des adresses email
 
 # Génération de Documents
 # -----------------------
-ReportLab               # Génération de PDF
-Pillow                  # Traitement d'images (PIL)
-opencv-python           # Vision par ordinateur et traitement d'images
+reportlab==4.2.5               # Génération de PDF
+Pillow==11.0.0                  # Traitement d'images (PIL)
+opencv-python==4.10.0.84           # Vision par ordinateur et traitement d'images
 
 # Traitement et Export de Données
 # --------------------------------
-pandas                  # Analyse et manipulation de données
-xlsxwriter              # Création de fichiers Excel
+pandas==2.2.3                  # Analyse et manipulation de données
+xlsxwriter==3.2.0              # Création de fichiers Excel
 
-# Utilitaires
+# Configuration
 # -----------
-python-dotenv           # Gestion des variables d'environnement
-email-validator         # Validation des adresses email
+python-dotenv==1.0.1           # Gestion des variables d'environnement
 
 # Dépendances Système (pour les mises à jour)
 # --------------------------------------------
@@ -58,11 +62,18 @@ email-validator         # Validation des adresses email
 
 # Notes d'Installation
 # --------------------
-# Pour installer toutes les dépendances dans Replit, utilisez l'outil de gestion
-# de packages intégré ou la commande packager_tool dans l'agent.
+# Pour installer toutes les dépendances:
+# 1. Créez un environnement virtuel: python -m venv venv
+# 2. Activez l'environnement:
+#    - Linux/Mac: source venv/bin/activate
+#    - Windows: venv\Scripts\activate
+# 3. Installez les dépendances: pip install -r project-dependencies.txt
 #
-# Pour un déploiement externe, créez un environnement virtuel et installez
-# les packages listés ci-dessus avec pip.
+# Variables d'environnement requises (fichier .env):
+# DATABASE_URL=postgresql://user:password@localhost/gecmines
+# SESSION_SECRET=your-secret-key-here
+# GEC_MASTER_KEY=your-encryption-key
+# GEC_PASSWORD_SALT=your-password-salt
 
 # Fonctionnalités Récentes Ajoutées
 # ----------------------------------

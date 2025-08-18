@@ -93,4 +93,4 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **CLEANED**: Removed test files and old exports to optimize project structure
 - **PERMISSIONS**: Added role-based permissions for system updates (manage_updates, manage_backup)
 - **CLEANED 18/08**: Removed __pycache__, test PDFs from exports, and .DS_Store files
-- **UNIFIED**: Single requirements.txt file for all deployments (removed duplicate requirements files)
+- **UNIFIED**: Single project-dependencies.txt file with all Python dependencies and exact versions
