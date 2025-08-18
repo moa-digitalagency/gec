@@ -72,7 +72,7 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Input Sanitization**: Advanced input validation and sanitization
 - **Secure File Handling**: Path traversal protection and secure file operations
 
-### Status (August 17, 2025)
+### Status (August 18, 2025)
 - Application ready for production deployment
 - Database optimized with full indexing
 - Security suite fully operational
@@ -88,3 +88,6 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **ADDED**: Analytics Dashboard with real-time statistics, interactive charts (Chart.js), PDF/Excel export
 - **ADDED**: Multi-language support (French/English) with JSON translation files
 - **CREATED**: project-dependencies.txt file listing all Python dependencies
+- **FIXED**: Date formatting now displays in French throughout the application (e.g., "18 août 2025")
+- **UPDATED**: All templates now use format_date() function for consistent French date display
+- **CLEANED**: Removed test files and old exports to optimize project structure
