@@ -301,14 +301,14 @@
                             {% if courrier.date_redaction %}
                                 <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                     <i class="fas fa-calendar-edit mr-1"></i>
-                                    {{ courrier.date_redaction.strftime('%d/%m/%Y') }}
+                                    {{ format_date(courrier.date_redaction) }}
                                 </span>
                             {% else %}
                                 <span class="text-gray-400 text-sm">Non renseignée</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') if courrier.date_enregistrement else 'N/A' }}
+                            {{ format_date(courrier.date_enregistrement, include_time=True) if courrier.date_enregistrement else 'N/A' }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ courrier.statut_color }}">

@@ -141,7 +141,7 @@
                         <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
                             {% if courrier.date_redaction %}
                             <p class="text-gray-900 font-medium">
-                                {{ courrier.date_redaction.strftime('%d/%m/%Y') }}
+                                {{ format_date(courrier.date_redaction) }}
                             </p>
                             {% else %}
                             <p class="text-gray-500 italic">Non renseignée</p>
@@ -158,7 +158,7 @@
                         <div class="p-3 bg-gray-50 rounded-lg">
                             {% if courrier.date_enregistrement %}
                             <p class="text-gray-900 font-medium">
-                                {{ courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M') }}
+                                {{ format_date(courrier.date_enregistrement, include_time=True) }}
                             </p>
                             {% else %}
                             <p class="text-gray-500 italic">Date non disponible</p>
@@ -203,7 +203,7 @@
                         {% if courrier.modifie_par %}
                         <p class="text-xs text-gray-500 mt-2">
                             Dernière modification par {{ courrier.modifie_par.nom_complet }}
-                            le {{ courrier.date_modification_statut.strftime('%d/%m/%Y à %H:%M') }}
+                            le {{ format_date(courrier.date_modification_statut, include_time=True) }}
                         </p>
                         {% endif %}
                     </div>
@@ -382,7 +382,7 @@
                 {% if courrier.modifie_par %}
                 <div class="text-xs text-gray-500 pt-2 border-t">
                     Modifié par {{ courrier.modifie_par.nom_complet }}<br>
-                    le {{ courrier.date_modification_statut.strftime('%d/%m/%Y') }}
+                    le {{ format_date(courrier.date_modification_statut) }}
                 </div>
                 {% endif %}
                 

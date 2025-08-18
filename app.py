@@ -69,6 +69,10 @@ with app.app_context():
     
     # Initialize language support - will be done in views.py
     
+    # Ajouter la fonction format_date au contexte Jinja2
+    from utils import format_date
+    app.jinja_env.globals.update(format_date=format_date)
+    
     # Context processor pour les paramètres système
     @app.context_processor
     def inject_parametres():

@@ -47,26 +47,38 @@ def format_date(date_obj, include_time=False):
     
     lang = get_current_language()
     
+    # Noms des jours en français
+    jours_fr = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+    
     # Mois en français
     mois_fr = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
                'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
     
-    # Mois en anglais (abrégé)
-    mois_en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    # Noms des jours en anglais
+    jours_en = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    
+    # Mois en anglais
+    mois_en = ['January', 'February', 'March', 'April', 'May', 'June', 
+               'July', 'August', 'September', 'October', 'November', 'December']
     
     if lang == 'fr':
-        # Format français : DD/MM/YYYY ou DD mois YYYY
+        # Format français : Jour DD mois YYYY
+        jour_idx = date_obj.weekday()  # 0 = Lundi, 6 = Dimanche
+        mois_idx = date_obj.month - 1  # 0-11 pour l'index
+        
         if include_time:
-            return date_obj.strftime('%d/%m/%Y à %H:%M')
+            return f"{jours_fr[jour_idx]} {date_obj.day} {mois_fr[mois_idx]} {date_obj.year} à {date_obj.strftime('%H:%M')}"
         else:
-            return date_obj.strftime('%d/%m/%Y')
+            return f"{date_obj.day} {mois_fr[mois_idx]} {date_obj.year}"
     else:
-        # Format anglais : MM/DD/YYYY ou Month DD, YYYY
+        # Format anglais : Day, Month DD, YYYY
+        jour_idx = date_obj.weekday()
+        mois_idx = date_obj.month - 1
+        
         if include_time:
-            return date_obj.strftime('%m/%d/%Y at %I:%M %p')
+            return f"{jours_en[jour_idx]}, {mois_en[mois_idx]} {date_obj.day}, {date_obj.year} at {date_obj.strftime('%I:%M %p')}"
         else:
-            return date_obj.strftime('%m/%d/%Y')
+            return f"{mois_en[mois_idx]} {date_obj.day}, {date_obj.year}"
 
 def set_language(lang_code):
     """Définit la langue dans la session"""
