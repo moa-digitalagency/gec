@@ -91,3 +91,5 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **FIXED**: Date formatting now displays in French throughout the application (e.g., "18 août 2025")
 - **UPDATED**: All templates now use format_date() function for consistent French date display
 - **CLEANED**: Removed test files and old exports to optimize project structure
+- **PERMISSIONS**: Added role-based permissions for system updates (manage_updates, manage_backup)
+- **CLEANED 18/08**: Removed __pycache__, test PDFs from exports, and .DS_Store files
