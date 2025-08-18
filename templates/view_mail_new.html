@@ -213,7 +213,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {% if courrier.date_enregistrement %}
-                                {{ courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') }}
+                                {{ format_date(courrier.date_enregistrement, include_time=True) }}
                             {% else %}
                                 <span class="text-gray-400 italic">Date non disponible</span>
                             {% endif %}

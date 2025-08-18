@@ -157,7 +157,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {% if log.date_action %}
                                     <div class="font-medium">{{ log.date_action.strftime('%d/%m/%Y') }}</div>
-                                    <div class="text-gray-500">{{ log.date_action.strftime('%H:%M:%S') }}</div>
+                                    <div class="text-gray-500">{{ format_date(log.date_action, include_time=True) }}</div>
                                 {% else %}
                                     <span class="text-gray-400 italic">Date non disponible</span>
                                 {% endif %}

@@ -184,7 +184,7 @@
                         <div class="p-3 bg-purple-50 rounded-lg">
                             {% if courrier.date_redaction %}
                                 <p class="text-gray-900 font-medium">
-                                    {{ courrier.date_redaction.strftime('%A %d %B %Y') }}
+                                    {{ format_date(courrier.date_redaction) }}
                                 </p>
                                 <p class="text-sm text-gray-500">
                                     Date de la lettre
@@ -205,10 +205,10 @@
                         </div>
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <p class="text-gray-900 font-medium">
-                                {{ courrier.date_enregistrement.strftime('%A %d %B %Y') }}
+                                {{ format_date(courrier.date_enregistrement, include_time=True) }}
                             </p>
                             <p class="text-sm text-gray-500">
-                                à {{ courrier.date_enregistrement.strftime('%H:%M') }}
+                                Heure d'enregistrement
                             </p>
                         </div>
                     </div>
