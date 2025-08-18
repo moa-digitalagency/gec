@@ -776,7 +776,8 @@ class RolePermission(db.Model):
                 'manage_users', 'manage_roles', 'manage_system_settings', 
                 'view_all_logs', 'manage_statuses', 'manage_departments',
                 'register_mail', 'view_mail', 'search_mail', 'export_data', 
-                'delete_mail', 'view_trash', 'restore_mail', 'view_all', 'edit_all', 'read_all_mail'
+                'delete_mail', 'view_trash', 'restore_mail', 'view_all', 'edit_all', 'read_all_mail',
+                'manage_updates', 'manage_backup'
             ],
             'admin': [
                 'manage_statuses', 'register_mail', 'view_mail', 

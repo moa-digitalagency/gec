@@ -1219,8 +1219,8 @@ def restore_system():
 @login_required
 def update_system():
     """Page de mise à jour du système"""
-    if not current_user.is_super_admin():
-        flash('Accès non autorisé.', 'error')
+    if not current_user.has_permission('manage_updates'):
+        flash('Accès non autorisé. Permission requise: Gestion des mises à jour.', 'error')
         return redirect(url_for('dashboard'))
     
     # Vérifier la version actuelle
@@ -1236,8 +1236,8 @@ def update_system():
 @login_required
 def update_online():
     """Mise à jour online via Git"""
-    if not current_user.is_super_admin():
-        flash('Accès non autorisé.', 'error')
+    if not current_user.has_permission('manage_updates'):
+        flash('Accès non autorisé. Permission requise: Gestion des mises à jour.', 'error')
         return redirect(url_for('dashboard'))
     
     try:
@@ -1293,8 +1293,8 @@ def update_online():
 @login_required
 def update_offline():
     """Mise à jour offline via fichier ZIP"""
-    if not current_user.is_super_admin():
-        flash('Accès non autorisé.', 'error')
+    if not current_user.has_permission('manage_updates'):
+        flash('Accès non autorisé. Permission requise: Gestion des mises à jour.', 'error')
         return redirect(url_for('dashboard'))
     
     try:
@@ -2055,6 +2055,16 @@ def manage_roles():
             'name': 'Lire ses propres courriers',
             'description': 'Accès uniquement aux courriers enregistrés par soi-même',
             'category': 'Accès Courrier'
+        },
+        'manage_updates': {
+            'name': 'Gérer les mises à jour système',
+            'description': 'Effectuer des mises à jour en ligne ou hors ligne du système',
+            'category': 'Administration'
+        },
+        'manage_backup': {
+            'name': 'Gérer les sauvegardes',
+            'description': 'Créer et restaurer des sauvegardes du système',
+            'category': 'Administration'
         }
     }
     
@@ -2134,7 +2144,9 @@ def add_role():
         'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
-        'read_own_mail': 'Lire ses propres courriers'
+        'read_own_mail': 'Lire ses propres courriers',
+        'manage_updates': 'Gérer les mises à jour système',
+        'manage_backup': 'Gérer les sauvegardes'
     }
     
     couleurs_disponibles = [
@@ -2217,7 +2229,9 @@ def edit_role(role_id):
         'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
-        'read_own_mail': 'Lire ses propres courriers'
+        'read_own_mail': 'Lire ses propres courriers',
+        'manage_updates': 'Gérer les mises à jour système',
+        'manage_backup': 'Gérer les sauvegardes'
     }
     
     couleurs_disponibles = [

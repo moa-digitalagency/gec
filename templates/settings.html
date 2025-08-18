@@ -546,6 +546,7 @@
     </div>
     
     <!-- Bouton Mise à Jour du Système -->
+    {% if current_user.has_permission('manage_updates') %}
     <div class="mt-8 border-t pt-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <i class="fas fa-sync-alt mr-2 text-purple-600"></i>
@@ -559,6 +560,7 @@
             Accéder aux Mises à Jour
         </a>
     </div>
+    {% endif %}
     
     <!-- Liste des sauvegardes disponibles -->
     {% if backup_files %}
