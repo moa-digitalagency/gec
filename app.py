@@ -110,6 +110,16 @@ with app.app_context():
     # Initialize default statuses
     models.StatutCourrier.init_default_statuts()
     
+    # Initialize default roles and permissions
+    models.Role.init_default_roles()
+    models.RolePermission.init_default_permissions()
+    
+    # Initialize default departments
+    models.Departement.init_default_departments()
+    
+    # Initialize default outgoing mail types
+    models.TypeCourrierSortant.init_default_types()
+    
     logging.info("System parameters and statuses initialized")
 
 @login_manager.user_loader

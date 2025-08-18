@@ -160,6 +160,10 @@ class User(UserMixin, db.Model):
     
     def has_permission(self, permission):
         """Vérifie si l'utilisateur a une permission spécifique"""
+        # Le super admin a TOUTES les permissions
+        if self.role == 'super_admin':
+            return True
+            
         # Obtenir le rôle de l'utilisateur
         role = Role.query.filter_by(nom=self.role).first()
         if role:
@@ -167,8 +171,7 @@ class User(UserMixin, db.Model):
         
         # Fallback sur l'ancien système si pas de rôle en base
         permissions = {
-            'super_admin': ['manage_users', 'manage_system', 'manage_statuses', 'manage_departments', 'view_all', 'edit_all', 'read_all_mail'],
-            'admin': ['manage_statuses', 'view_department', 'edit_department', 'read_department_mail'],
+            'admin': ['manage_statuses', 'view_department', 'edit_department', 'read_department_mail', 'view_trash'],
             'user': ['view_own', 'edit_own', 'read_own_mail']
         }
         return permission in permissions.get(self.role, [])
@@ -254,6 +257,48 @@ class User(UserMixin, db.Model):
             if os.path.exists(static_path):
                 return f'/static/uploads/profiles/{self.photo_profile}'
         return '/static/images/default-profile.svg'
+    
+    @staticmethod
+    def init_super_admin():
+        """Crée le premier utilisateur super admin s'il n'existe pas"""
+        from werkzeug.security import generate_password_hash
+        from app import db
+        
+        # Vérifier s'il existe déjà des utilisateurs
+        if User.query.count() > 0:
+            # Vérifier s'il y a au moins un super admin
+            super_admin = User.query.filter_by(role='super_admin').first()
+            if not super_admin:
+                # S'il n'y a pas de super admin, promouvoir le premier utilisateur
+                first_user = User.query.order_by(User.id).first()
+                if first_user:
+                    first_user.role = 'super_admin'
+                    db.session.commit()
+                    print(f"Utilisateur {first_user.username} promu super admin")
+            return
+        
+        # Créer le super admin par défaut
+        super_admin = User(
+            username='admin',
+            email='admin@gecmines.cd',
+            nom_complet='Super Administrateur',
+            password_hash=generate_password_hash('Admin2025!'),
+            role='super_admin',
+            langue='fr',
+            actif=True
+        )
+        
+        db.session.add(super_admin)
+        
+        try:
+            db.session.commit()
+            print("Super administrateur créé avec succès!")
+            print("Username: admin")
+            print("Password: Admin2025!")
+            print("IMPORTANT: Changez ce mot de passe immédiatement!")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erreur lors de la création du super admin: {e}")
 
 class TypeCourrierSortant(db.Model):
     """Modèle pour les types de courrier sortant"""
