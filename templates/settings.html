@@ -545,6 +545,21 @@
         </div>
     </div>
     
+    <!-- Bouton Mise à Jour du Système -->
+    <div class="mt-8 border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-sync-alt mr-2 text-purple-600"></i>
+            Mise à Jour du Système
+        </h3>
+        <p class="text-sm text-gray-600 mb-4">
+            Mettez à jour le système avec les dernières fonctionnalités et corrections.
+        </p>
+        <a href="{{ url_for('update_system') }}" class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition duration-200">
+            <i class="fas fa-sync-alt mr-2"></i>
+            Accéder aux Mises à Jour
+        </a>
+    </div>
+    
     <!-- Liste des sauvegardes disponibles -->
     {% if backup_files %}
     <div class="mt-8">

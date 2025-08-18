@@ -1,11 +1,13 @@
 import os
 import uuid
+import io
+import csv
 import zipfile
 import shutil
 import tempfile
 import subprocess
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, flash, session, send_file, abort, send_from_directory
+from flask import render_template, request, redirect, url_for, flash, session, send_file, abort, send_from_directory, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -13,7 +15,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement
+from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
@@ -473,6 +475,89 @@ def view_mail():
 @login_required
 def search():
     return render_template('search.html')
+
+@app.route('/api/search_suggestions')
+@login_required
+def search_suggestions():
+    """API endpoint pour l'autocomplete de recherche"""
+    try:
+        q = request.args.get('q', '').strip()
+        if len(q) < 2:  # Ne pas suggérer pour moins de 2 caractères
+            return jsonify([])
+        
+        # Sanitize input
+        q = sanitize_input(q)
+        
+        # Construire la requête de base avec restrictions selon le rôle
+        query = Courrier.query.filter_by(is_deleted=False)
+        
+        # Appliquer les restrictions de permissions
+        if current_user.has_permission('read_all_mail'):
+            pass
+        elif current_user.has_permission('read_department_mail'):
+            if current_user.departement_id:
+                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                    User.departement_id == current_user.departement_id
+                )
+            else:
+                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        elif current_user.has_permission('read_own_mail'):
+            query = query.filter(Courrier.utilisateur_id == current_user.id)
+        else:
+            # Fallback
+            if current_user.role == 'super_admin':
+                pass
+            elif current_user.role == 'admin':
+                if current_user.departement_id:
+                    query = query.join(User, Courrier.utilisateur_id == User.id).filter(
+                        User.departement_id == current_user.departement_id
+                    )
+                else:
+                    query = query.filter(Courrier.utilisateur_id == current_user.id)
+            else:
+                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        
+        # Recherche dans tous les champs indexés
+        suggestions = set()  # Utiliser un set pour éviter les doublons
+        
+        # Rechercher dans les numéros d'accusé
+        results = query.filter(Courrier.numero_accuse_reception.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            suggestions.add(r.numero_accuse_reception)
+        
+        # Rechercher dans les références
+        results = query.filter(Courrier.numero_reference.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            if r.numero_reference:
+                suggestions.add(r.numero_reference)
+        
+        # Rechercher dans les objets
+        results = query.filter(Courrier.objet.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            if len(r.objet) <= 100:  # Limiter la longueur des suggestions
+                suggestions.add(r.objet)
+            else:
+                suggestions.add(r.objet[:97] + '...')
+        
+        # Rechercher dans les expéditeurs
+        results = query.filter(Courrier.expediteur.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            if r.expediteur:
+                suggestions.add(r.expediteur)
+        
+        # Rechercher dans les destinataires
+        results = query.filter(Courrier.destinataire.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            if r.destinataire:
+                suggestions.add(r.destinataire)
+        
+        # Convertir en liste et limiter à 10 suggestions
+        suggestions_list = list(suggestions)[:10]
+        
+        return jsonify(suggestions_list)
+    except Exception as e:
+        app.logger.error(f"Erreur dans search_suggestions: {str(e)}")
+        return jsonify([])
 
 @app.route('/mail/<int:id>')
 @login_required
@@ -1129,6 +1214,181 @@ def restore_system():
         flash('Format de fichier invalide. Utilisez un fichier .zip.', 'error')
     
     return redirect(url_for('settings'))
+
+@app.route('/update_system')
+@login_required
+def update_system():
+    """Page de mise à jour du système"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Vérifier la version actuelle
+    version_file = 'version.txt'
+    current_version = 'Unknown'
+    if os.path.exists(version_file):
+        with open(version_file, 'r') as f:
+            current_version = f.read().strip()
+    
+    return render_template('update_system.html', current_version=current_version)
+
+@app.route('/update_online', methods=['POST'])
+@login_required
+def update_online():
+    """Mise à jour online via Git"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Créer une sauvegarde avant la mise à jour
+        backup_dir = 'backups/before_update'
+        os.makedirs(backup_dir, exist_ok=True)
+        backup_file = os.path.join(backup_dir, f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+        
+        # Fichiers à préserver
+        preserve_files = [
+            'instance/gecmines.db',
+            'uploads',
+            '.env',
+            'version.txt'
+        ]
+        
+        # Créer une sauvegarde des fichiers importants
+        with zipfile.ZipFile(backup_file, 'w') as zipf:
+            for file_or_dir in preserve_files:
+                if os.path.exists(file_or_dir):
+                    if os.path.isdir(file_or_dir):
+                        for root, dirs, files in os.walk(file_or_dir):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arcname = os.path.relpath(file_path)
+                                zipf.write(file_path, arcname)
+                    else:
+                        zipf.write(file_or_dir, os.path.basename(file_or_dir))
+        
+        # Exécuter git pull
+        result = subprocess.run(['git', 'pull', 'origin', 'main'], 
+                              capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            # Mettre à jour la version
+            with open('version.txt', 'w') as f:
+                f.write(f'Updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+            
+            log_activity('UPDATE', f'Mise à jour online réussie')
+            flash('Mise à jour réussie ! Le système a été mis à jour depuis le dépôt Git.', 'success')
+        else:
+            error_msg = result.stderr if result.stderr else result.stdout
+            log_activity('UPDATE_ERROR', f'Échec de la mise à jour online: {error_msg}')
+            flash(f'Erreur lors de la mise à jour : {error_msg}', 'error')
+            
+    except Exception as e:
+        log_activity('UPDATE_ERROR', f'Erreur lors de la mise à jour online: {str(e)}')
+        flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
+    
+    return redirect(url_for('update_system'))
+
+@app.route('/update_offline', methods=['POST'])
+@login_required
+def update_offline():
+    """Mise à jour offline via fichier ZIP"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Vérifier qu'un fichier a été uploadé
+        if 'update_file' not in request.files:
+            flash('Aucun fichier sélectionné.', 'error')
+            return redirect(url_for('update_system'))
+        
+        file = request.files['update_file']
+        if file.filename == '':
+            flash('Aucun fichier sélectionné.', 'error')
+            return redirect(url_for('update_system'))
+        
+        if not file.filename.endswith('.zip'):
+            flash('Le fichier doit être un fichier ZIP.', 'error')
+            return redirect(url_for('update_system'))
+        
+        # Créer une sauvegarde avant la mise à jour
+        backup_dir = 'backups/before_update'
+        os.makedirs(backup_dir, exist_ok=True)
+        backup_file = os.path.join(backup_dir, f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+        
+        # Fichiers à préserver
+        preserve_files = [
+            'instance/gecmines.db',
+            'uploads',
+            '.env',
+            'version.txt'
+        ]
+        
+        # Créer une sauvegarde des fichiers importants
+        with zipfile.ZipFile(backup_file, 'w') as zipf:
+            for file_or_dir in preserve_files:
+                if os.path.exists(file_or_dir):
+                    if os.path.isdir(file_or_dir):
+                        for root, dirs, files in os.walk(file_or_dir):
+                            for f in files:
+                                file_path = os.path.join(root, f)
+                                arcname = os.path.relpath(file_path)
+                                zipf.write(file_path, arcname)
+                    else:
+                        zipf.write(file_or_dir, os.path.basename(file_or_dir))
+        
+        # Sauvegarder le fichier ZIP uploadé temporairement
+        temp_dir = tempfile.mkdtemp()
+        update_zip_path = os.path.join(temp_dir, 'update.zip')
+        file.save(update_zip_path)
+        
+        # Extraire le ZIP dans un dossier temporaire
+        extract_dir = os.path.join(temp_dir, 'extracted')
+        os.makedirs(extract_dir, exist_ok=True)
+        
+        with zipfile.ZipFile(update_zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_dir)
+        
+        # Copier les fichiers extraits, en préservant les fichiers importants
+        for root, dirs, files in os.walk(extract_dir):
+            for file_name in files:
+                src_path = os.path.join(root, file_name)
+                # Calculer le chemin relatif depuis extract_dir
+                rel_path = os.path.relpath(src_path, extract_dir)
+                dest_path = rel_path
+                
+                # Ne pas écraser certains fichiers
+                if dest_path in ['instance/gecmines.db', '.env']:
+                    continue
+                
+                # Ne pas écraser le dossier uploads
+                if dest_path.startswith('uploads/'):
+                    continue
+                
+                # Créer les dossiers si nécessaire
+                dest_dir = os.path.dirname(dest_path)
+                if dest_dir:
+                    os.makedirs(dest_dir, exist_ok=True)
+                
+                # Copier le fichier
+                shutil.copy2(src_path, dest_path)
+        
+        # Nettoyer les fichiers temporaires
+        shutil.rmtree(temp_dir)
+        
+        # Mettre à jour la version
+        with open('version.txt', 'w') as f:
+            f.write(f'Updated (offline): {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        
+        log_activity('UPDATE', f'Mise à jour offline réussie')
+        flash('Mise à jour réussie ! Le système a été mis à jour depuis le fichier ZIP.', 'success')
+        
+    except Exception as e:
+        log_activity('UPDATE_ERROR', f'Erreur lors de la mise à jour offline: {str(e)}')
+        flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
+    
+    return redirect(url_for('update_system'))
 
 def generate_format_preview(format_string):
     """Génère un aperçu du format de numéro d'accusé"""

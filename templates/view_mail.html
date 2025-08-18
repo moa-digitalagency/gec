@@ -33,12 +33,18 @@
                         <i class="fas fa-search mr-1 text-rdc-blue"></i>
                         Recherche Textuelle
                     </label>
-                    <input type="text" 
-                           id="search" 
-                           name="search" 
-                           value="{{ search }}" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                           placeholder="N° accusé, référence, objet, expéditeur, destinataire...">
+                    <div class="relative">
+                        <input type="text" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search }}" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
+                               placeholder="N° accusé, référence, objet, expéditeur, destinataire..."
+                               autocomplete="off">
+                        <div id="searchSuggestions" class="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg hidden">
+                            <!-- Les suggestions apparaîtront ici -->
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Type Filter -->
@@ -550,6 +556,85 @@ $(document).ready(function() {
                 { "targets": -1, "orderable": false, "className": "actions-column" } // Make actions column non-sortable
             ]
         });
+    }
+});
+
+// Autocomplete pour la recherche
+const searchInput = document.getElementById('search');
+const suggestionsDiv = document.getElementById('searchSuggestions');
+let debounceTimer;
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        suggestionsDiv.classList.add('hidden');
+        return;
+    }
+    
+    debounceTimer = setTimeout(() => {
+        fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions.length > 0) {
+                    suggestionsDiv.innerHTML = '';
+                    suggestions.forEach(suggestion => {
+                        const div = document.createElement('div');
+                        div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 text-sm';
+                        div.textContent = suggestion;
+                        div.addEventListener('click', function() {
+                            searchInput.value = suggestion;
+                            suggestionsDiv.classList.add('hidden');
+                            // Soumettre le formulaire automatiquement
+                            searchInput.form.submit();
+                        });
+                        suggestionsDiv.appendChild(div);
+                    });
+                    suggestionsDiv.classList.remove('hidden');
+                } else {
+                    suggestionsDiv.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des suggestions:', error);
+                suggestionsDiv.classList.add('hidden');
+            });
+    }, 300); // Délai de 300ms avant d'envoyer la requête
+});
+
+// Cacher les suggestions quand on clique ailleurs
+document.addEventListener('click', function(event) {
+    if (!searchInput.contains(event.target) && !suggestionsDiv.contains(event.target)) {
+        suggestionsDiv.classList.add('hidden');
+    }
+});
+
+// Navigation au clavier dans les suggestions
+searchInput.addEventListener('keydown', function(event) {
+    const suggestions = suggestionsDiv.querySelectorAll('div');
+    const activeSuggestion = suggestionsDiv.querySelector('.bg-gray-100');
+    let index = Array.from(suggestions).indexOf(activeSuggestion);
+    
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (index < suggestions.length - 1) {
+            if (activeSuggestion) activeSuggestion.classList.remove('bg-gray-100');
+            suggestions[index + 1].classList.add('bg-gray-100');
+        }
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (index > 0) {
+            if (activeSuggestion) activeSuggestion.classList.remove('bg-gray-100');
+            suggestions[index - 1].classList.add('bg-gray-100');
+        }
+    } else if (event.key === 'Enter' && activeSuggestion) {
+        event.preventDefault();
+        searchInput.value = activeSuggestion.textContent;
+        suggestionsDiv.classList.add('hidden');
+        searchInput.form.submit();
+    } else if (event.key === 'Escape') {
+        suggestionsDiv.classList.add('hidden');
     }
 });
 </script>
