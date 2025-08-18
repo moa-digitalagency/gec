@@ -1,7 +1,8 @@
 # GEC Mines - Dépendances du Projet
 # =====================================
 # Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC Mines
-# Date: 17 Août 2025
+# Date de mise à jour: 18 Août 2025
+# Version: 1.0.0
 
 # Framework Web Principal
 # -----------------------
@@ -38,6 +39,11 @@ xlsxwriter              # Création de fichiers Excel
 python-dotenv           # Gestion des variables d'environnement
 email-validator         # Validation des adresses email
 
+# Dépendances Système (pour les mises à jour)
+# --------------------------------------------
+# git                   # Pour les mises à jour en ligne (installé au niveau système)
+# zip/unzip            # Pour les mises à jour hors ligne (généralement préinstallé)
+
 # Dépendances Automatiques
 # ------------------------
 # Ces packages sont installés automatiquement avec les dépendances ci-dessus:
@@ -58,9 +64,19 @@ email-validator         # Validation des adresses email
 # Pour un déploiement externe, créez un environnement virtuel et installez
 # les packages listés ci-dessus avec pip.
 
+# Fonctionnalités Récentes Ajoutées
+# ----------------------------------
+# - Autocomplete de recherche avec suggestions basées sur le texte indexé
+# - Mise à jour du système en ligne (Git) et hors ligne (ZIP)
+# - API REST pour les suggestions de recherche (/api/search_suggestions)
+# - Navigation au clavier dans les suggestions d'autocomplete
+# - Sauvegarde automatique avant les mises à jour
+# - Préservation de la configuration lors des mises à jour
+
 # Configuration Requise
 # ---------------------
 # Python: 3.11+
 # PostgreSQL: 14+ (pour la base de données de production)
 # Mémoire: Minimum 512MB RAM
 # Stockage: 100MB pour l'application + espace pour les fichiers uploadés
+# Git: Pour les mises à jour en ligne (optionnel)
