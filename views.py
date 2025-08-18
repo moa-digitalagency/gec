@@ -1276,15 +1276,15 @@ def update_online():
             with open('version.txt', 'w') as f:
                 f.write(f'Updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
             
-            log_activity('UPDATE', f'Mise à jour online réussie')
+            log_activity(current_user.id, 'UPDATE', f'Mise à jour online réussie')
             flash('Mise à jour réussie ! Le système a été mis à jour depuis le dépôt Git.', 'success')
         else:
             error_msg = result.stderr if result.stderr else result.stdout
-            log_activity('UPDATE_ERROR', f'Échec de la mise à jour online: {error_msg}')
+            log_activity(current_user.id, 'UPDATE_ERROR', f'Échec de la mise à jour online: {error_msg}')
             flash(f'Erreur lors de la mise à jour : {error_msg}', 'error')
             
     except Exception as e:
-        log_activity('UPDATE_ERROR', f'Erreur lors de la mise à jour online: {str(e)}')
+        log_activity(current_user.id, 'UPDATE_ERROR', f'Erreur lors de la mise à jour online: {str(e)}')
         flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
     
     return redirect(url_for('update_system'))
@@ -1381,11 +1381,11 @@ def update_offline():
         with open('version.txt', 'w') as f:
             f.write(f'Updated (offline): {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
         
-        log_activity('UPDATE', f'Mise à jour offline réussie')
+        log_activity(current_user.id, 'UPDATE', f'Mise à jour offline réussie')
         flash('Mise à jour réussie ! Le système a été mis à jour depuis le fichier ZIP.', 'success')
         
     except Exception as e:
-        log_activity('UPDATE_ERROR', f'Erreur lors de la mise à jour offline: {str(e)}')
+        log_activity(current_user.id, 'UPDATE_ERROR', f'Erreur lors de la mise à jour offline: {str(e)}')
         flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
     
     return redirect(url_for('update_system'))

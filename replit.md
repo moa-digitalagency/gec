@@ -95,3 +95,4 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **CLEANED 18/08**: Removed __pycache__, test PDFs from exports, and .DS_Store files
 - **UNIFIED**: Single project-dependencies.txt file with all Python dependencies and exact versions
 - **FIXED 18/08**: Removed duplicate "Numéro d'Accusé de Réception" field in manual mode
+- **FIXED 18/08**: Corrected log_activity calls in update functions - added missing user_id parameter
