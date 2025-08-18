@@ -1292,10 +1292,25 @@ def update_online():
 @app.route('/update_offline', methods=['POST'])
 @login_required
 def update_offline():
-    """Mise à jour offline via fichier ZIP"""
+    """Mise à jour offline intelligente via fichier ZIP"""
     if not current_user.has_permission('manage_updates'):
         flash('Accès non autorisé. Permission requise: Gestion des mises à jour.', 'error')
         return redirect(url_for('dashboard'))
+    
+    import hashlib
+    
+    def get_file_hash(filepath):
+        """Calcule le hash MD5 d'un fichier"""
+        if not os.path.exists(filepath):
+            return None
+        hash_md5 = hashlib.md5()
+        try:
+            with open(filepath, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except:
+            return None
     
     try:
         # Vérifier qu'un fichier a été uploadé
@@ -1317,26 +1332,32 @@ def update_offline():
         os.makedirs(backup_dir, exist_ok=True)
         backup_file = os.path.join(backup_dir, f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
         
-        # Fichiers à préserver
-        preserve_files = [
+        # Fichiers et dossiers à préserver (ne jamais remplacer)
+        preserve_patterns = [
             'instance/gecmines.db',
-            'uploads',
+            'uploads/',
             '.env',
-            'version.txt'
+            'backups/',
+            'exports/',
+            '__pycache__/',
+            '.git/',
+            '*.pyc',
+            '*.pyo',
+            '.DS_Store'
         ]
         
         # Créer une sauvegarde des fichiers importants
         with zipfile.ZipFile(backup_file, 'w') as zipf:
-            for file_or_dir in preserve_files:
-                if os.path.exists(file_or_dir):
-                    if os.path.isdir(file_or_dir):
-                        for root, dirs, files in os.walk(file_or_dir):
+            for file_pattern in ['instance/gecmines.db', '.env', 'uploads']:
+                if os.path.exists(file_pattern):
+                    if os.path.isdir(file_pattern):
+                        for root, dirs, files in os.walk(file_pattern):
                             for f in files:
                                 file_path = os.path.join(root, f)
                                 arcname = os.path.relpath(file_path)
                                 zipf.write(file_path, arcname)
                     else:
-                        zipf.write(file_or_dir, os.path.basename(file_or_dir))
+                        zipf.write(file_pattern, os.path.basename(file_pattern))
         
         # Sauvegarder le fichier ZIP uploadé temporairement
         temp_dir = tempfile.mkdtemp()
@@ -1350,20 +1371,43 @@ def update_offline():
         with zipfile.ZipFile(update_zip_path, 'r') as zip_ref:
             zip_ref.extractall(extract_dir)
         
-        # Copier les fichiers extraits, en préservant les fichiers importants
+        # Statistiques de mise à jour
+        files_updated = 0
+        files_added = 0
+        files_skipped = 0
+        files_cleaned = 0
+        
+        # Parcourir les fichiers extraits et les comparer avec les existants
         for root, dirs, files in os.walk(extract_dir):
+            # Exclure les dossiers à préserver
+            dirs[:] = [d for d in dirs if d not in ['__pycache__', '.git', 'uploads', 'instance', 'backups', 'exports']]
+            
             for file_name in files:
+                # Ignorer les fichiers temporaires
+                if file_name.endswith(('.pyc', '.pyo', '.DS_Store', '.tmp', '.bak')):
+                    continue
+                    
                 src_path = os.path.join(root, file_name)
-                # Calculer le chemin relatif depuis extract_dir
                 rel_path = os.path.relpath(src_path, extract_dir)
                 dest_path = rel_path
                 
-                # Ne pas écraser certains fichiers
-                if dest_path in ['instance/gecmines.db', '.env']:
-                    continue
+                # Vérifier si le fichier doit être préservé
+                should_preserve = False
+                for pattern in preserve_patterns:
+                    if pattern.endswith('/'):
+                        if dest_path.startswith(pattern):
+                            should_preserve = True
+                            break
+                    elif pattern.startswith('*'):
+                        if dest_path.endswith(pattern[1:]):
+                            should_preserve = True
+                            break
+                    elif dest_path == pattern:
+                        should_preserve = True
+                        break
                 
-                # Ne pas écraser le dossier uploads
-                if dest_path.startswith('uploads/'):
+                if should_preserve:
+                    files_skipped += 1
                     continue
                 
                 # Créer les dossiers si nécessaire
@@ -1371,18 +1415,55 @@ def update_offline():
                 if dest_dir:
                     os.makedirs(dest_dir, exist_ok=True)
                 
-                # Copier le fichier
-                shutil.copy2(src_path, dest_path)
+                # Comparer les hash pour voir si le fichier a changé
+                src_hash = get_file_hash(src_path)
+                dest_hash = get_file_hash(dest_path)
+                
+                if dest_hash is None:
+                    # Le fichier n'existe pas, l'ajouter
+                    shutil.copy2(src_path, dest_path)
+                    files_added += 1
+                elif src_hash != dest_hash:
+                    # Le fichier existe mais a changé, le remplacer
+                    shutil.copy2(src_path, dest_path)
+                    files_updated += 1
+                else:
+                    # Le fichier est identique, le passer
+                    files_skipped += 1
+        
+        # Nettoyer les fichiers inutiles (__pycache__, *.pyc, etc.)
+        for root, dirs, files in os.walk('.'):
+            # Supprimer les dossiers __pycache__
+            if '__pycache__' in dirs:
+                shutil.rmtree(os.path.join(root, '__pycache__'), ignore_errors=True)
+                files_cleaned += 1
+            
+            # Supprimer les fichiers temporaires
+            for file_name in files:
+                if file_name.endswith(('.pyc', '.pyo', '.tmp', '.bak', '.swp', '.DS_Store')):
+                    try:
+                        os.remove(os.path.join(root, file_name))
+                        files_cleaned += 1
+                    except:
+                        pass
         
         # Nettoyer les fichiers temporaires
         shutil.rmtree(temp_dir)
         
-        # Mettre à jour la version
+        # Mettre à jour la version avec les statistiques
         with open('version.txt', 'w') as f:
-            f.write(f'Updated (offline): {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+            f.write(f'Updated (offline): {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
+            f.write(f'Files updated: {files_updated}, added: {files_added}, skipped: {files_skipped}, cleaned: {files_cleaned}')
         
-        log_activity(current_user.id, 'UPDATE', f'Mise à jour offline réussie')
-        flash('Mise à jour réussie ! Le système a été mis à jour depuis le fichier ZIP.', 'success')
+        # Message de succès détaillé
+        update_msg = f'Mise à jour intelligente réussie ! '
+        update_msg += f'{files_updated} fichiers modifiés, '
+        update_msg += f'{files_added} nouveaux fichiers, '
+        update_msg += f'{files_skipped} fichiers préservés, '
+        update_msg += f'{files_cleaned} fichiers nettoyés.'
+        
+        log_activity(current_user.id, 'UPDATE', update_msg)
+        flash(update_msg, 'success')
         
     except Exception as e:
         log_activity(current_user.id, 'UPDATE_ERROR', f'Erreur lors de la mise à jour offline: {str(e)}')
