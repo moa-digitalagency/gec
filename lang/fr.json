@@ -112,5 +112,101 @@
   "received": "Reçu",
   
   "copyright": "© 2025 GEC Mines - Secrétariat Général des Mines",
-  "all_rights_reserved": "Tous droits réservés"
+  "all_rights_reserved": "Tous droits réservés",
+  
+  "backup": {
+    "title": "Système de Sauvegarde et Restauration",
+    "create_backup": "Créer une Sauvegarde",
+    "restore_backup": "Restaurer une Sauvegarde",
+    "backup_system": "Système de Sauvegarde",
+    "backup_created": "Sauvegarde créée avec succès",
+    "backup_restored": "Sauvegarde restaurée avec succès",
+    "backup_failed": "Échec de la sauvegarde",
+    "restore_failed": "Échec de la restauration",
+    "confirm_restore": "Êtes-vous sûr de vouloir restaurer cette sauvegarde?",
+    "backup_date": "Date de Sauvegarde",
+    "backup_size": "Taille de la Sauvegarde",
+    "backup_description": "Description de la Sauvegarde",
+    "download_backup": "Télécharger la Sauvegarde",
+    "upload_backup": "Téléverser une Sauvegarde",
+    "select_backup": "Sélectionner une Sauvegarde",
+    "no_backups": "Aucune sauvegarde disponible",
+    "create_description": "Créer une sauvegarde complète du système",
+    "includes_database": "Base de données complète",
+    "includes_files": "Fichiers de configuration",
+    "includes_uploads": "Documents téléversés",
+    "includes_config": "Paramètres système",
+    "confirm_create": "Confirmer la création de la sauvegarde?",
+    "create_now": "Créer la Sauvegarde Maintenant",
+    "restore_system": "Restaurer le Système",
+    "restore_description": "Restaurer le système à partir d'une sauvegarde existante",
+    "restore_warning": "La restauration remplacera toutes les données actuelles. Cette action est irréversible!",
+    "select_backup_file": "Sélectionner le fichier de sauvegarde",
+    "restore_now": "Restaurer Maintenant",
+    "available_backups": "Sauvegardes Disponibles"
+  },
+  
+  "common": {
+    "warning": "Avertissement",
+    "info": "Information",
+    "success": "Succès",
+    "error": "Erreur"
+  },
+  
+  "manage_outgoing_types": "Gérer Types Courrier Sortant",
+  "outgoing_mail_types": "Types de Courrier Sortant",
+  "add_type": "Ajouter un Type",
+  "edit_type": "Modifier le Type",
+  "type_name": "Nom du Type",
+  "type_description": "Description du Type",
+  "display_order": "Ordre d'Affichage",
+  
+  "full_name": "Nom Complet",
+  "department": "Département",
+  "role": "Rôle",
+  "registration_number": "Matricule",
+  "function": "Fonction",
+  "profile_photo": "Photo de Profil",
+  "last_login": "Dernière Connexion",
+  "date_created": "Date de Création",
+  
+  "actions": "Actions",
+  "details": "Détails",
+  "statistics": "Statistiques",
+  "reports": "Rapports",
+  "export": "Exporter",
+  "import": "Importer",
+  "print": "Imprimer",
+  "refresh": "Actualiser",
+  
+  "from": "De",
+  "to": "À",
+  "date_from": "Date Début",
+  "date_to": "Date Fin",
+  "date_range": "Plage de Dates",
+  
+  "confirm_delete": "Êtes-vous sûr de vouloir supprimer?",
+  "confirm_action": "Confirmer l'action",
+  "operation_successful": "Opération réussie",
+  "operation_failed": "Opération échouée",
+  
+  "select_file": "Sélectionner un fichier",
+  "upload_file": "Téléverser un fichier",
+  "file_type": "Type de fichier",
+  "file_size": "Taille du fichier",
+  "max_file_size": "Taille maximale du fichier",
+  
+  "sorting": "Tri",
+  "sort_by": "Trier par",
+  "ascending": "Croissant",
+  "descending": "Décroissant",
+  
+  "pagination": {
+    "first": "Premier",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "last": "Dernier",
+    "page": "Page",
+    "per_page": "Par page"
+  }
 }

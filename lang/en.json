@@ -112,5 +112,101 @@
   "received": "Received",
   
   "copyright": "© 2025 GEC Mines - General Secretariat of Mines",
-  "all_rights_reserved": "All rights reserved"
+  "all_rights_reserved": "All rights reserved",
+  
+  "backup": {
+    "title": "Backup and Restore System",
+    "create_backup": "Create Backup",
+    "restore_backup": "Restore Backup",
+    "backup_system": "Backup System",
+    "backup_created": "Backup created successfully",
+    "backup_restored": "Backup restored successfully",
+    "backup_failed": "Backup failed",
+    "restore_failed": "Restore failed",
+    "confirm_restore": "Are you sure you want to restore this backup?",
+    "backup_date": "Backup Date",
+    "backup_size": "Backup Size",
+    "backup_description": "Backup Description",
+    "download_backup": "Download Backup",
+    "upload_backup": "Upload Backup",
+    "select_backup": "Select Backup",
+    "no_backups": "No backups available",
+    "create_description": "Create a complete system backup",
+    "includes_database": "Complete database",
+    "includes_files": "Configuration files",
+    "includes_uploads": "Uploaded documents",
+    "includes_config": "System settings",
+    "confirm_create": "Confirm backup creation?",
+    "create_now": "Create Backup Now",
+    "restore_system": "Restore System",
+    "restore_description": "Restore the system from an existing backup",
+    "restore_warning": "Restoration will replace all current data. This action is irreversible!",
+    "select_backup_file": "Select backup file",
+    "restore_now": "Restore Now",
+    "available_backups": "Available Backups"
+  },
+  
+  "common": {
+    "warning": "Warning",
+    "info": "Information",
+    "success": "Success",
+    "error": "Error"
+  },
+  
+  "manage_outgoing_types": "Manage Outgoing Mail Types",
+  "outgoing_mail_types": "Outgoing Mail Types",
+  "add_type": "Add Type",
+  "edit_type": "Edit Type",
+  "type_name": "Type Name",
+  "type_description": "Type Description",
+  "display_order": "Display Order",
+  
+  "full_name": "Full Name",
+  "department": "Department",
+  "role": "Role",
+  "registration_number": "Registration Number",
+  "function": "Function",
+  "profile_photo": "Profile Photo",
+  "last_login": "Last Login",
+  "date_created": "Date Created",
+  
+  "actions": "Actions",
+  "details": "Details",
+  "statistics": "Statistics",
+  "reports": "Reports",
+  "export": "Export",
+  "import": "Import",
+  "print": "Print",
+  "refresh": "Refresh",
+  
+  "from": "From",
+  "to": "To",
+  "date_from": "Date From",
+  "date_to": "Date To",
+  "date_range": "Date Range",
+  
+  "confirm_delete": "Are you sure you want to delete?",
+  "confirm_action": "Confirm action",
+  "operation_successful": "Operation successful",
+  "operation_failed": "Operation failed",
+  
+  "select_file": "Select file",
+  "upload_file": "Upload file",
+  "file_type": "File type",
+  "file_size": "File size",
+  "max_file_size": "Maximum file size",
+  
+  "sorting": "Sorting",
+  "sort_by": "Sort by",
+  "ascending": "Ascending",
+  "descending": "Descending",
+  
+  "pagination": {
+    "first": "First",
+    "previous": "Previous",
+    "next": "Next",
+    "last": "Last",
+    "page": "Page",
+    "per_page": "Per page"
+  }
 }
