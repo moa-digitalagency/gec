@@ -401,10 +401,10 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Cropperjs CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
-<!-- Cropperjs JS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+<!-- Cropperjs CSS (local) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/cropperjs/cropper.min.css') }}">
+<!-- Cropperjs JS (local) -->
+<script src="{{ url_for('static', filename='vendor/cropperjs/cropper.min.js') }}"></script>
 
 <script>
 // Variables globales

@@ -26,7 +26,7 @@ function initializeDataTables() {
         if (table && typeof $.fn.DataTable !== 'undefined') {
             $(table).DataTable({
                 language: {
-                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json'
+                    url: '/static/vendor/datatables/i18n/fr-FR.json'
                 },
                 pageLength: 25,
                 responsive: true,
