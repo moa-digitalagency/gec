@@ -1,8 +1,8 @@
 # GEC Mines - Dépendances du Projet
 # =====================================
 # Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC Mines
-# Date de mise à jour: 18 Août 2025
-# Version: 1.0.0
+# Date de mise à jour: 29 Août 2025
+# Version: 1.0.1
 # Python Version: 3.11+
 #
 # Installation:
@@ -10,7 +10,7 @@
 
 # Framework Web Principal
 # -----------------------
-Flask==3.1.0                    # Framework web Python
+Flask==3.1.1                    # Framework web Python
 Flask-SQLAlchemy==3.1.1        # Extension ORM pour Flask
 Flask-Login==0.6.3             # Gestion de l'authentification
 Werkzeug==3.1.3                # Utilitaires WSGI et sécurité
@@ -18,30 +18,35 @@ gunicorn==23.0.0               # Serveur WSGI pour production
 
 # Base de Données
 # ---------------
-SQLAlchemy==2.0.35              # ORM Python
+SQLAlchemy==2.0.41              # ORM Python (version mise à jour)
 psycopg2-binary==2.9.10         # Adaptateur PostgreSQL
 
 # Sécurité et Chiffrement
 # -----------------------
-cryptography==43.0.3            # Chiffrement AES-256
-bcrypt==4.2.1                  # Hachage sécurisé des mots de passe
-pycryptodome==3.21.0            # Opérations cryptographiques supplémentaires
+cryptography==45.0.6            # Chiffrement AES-256 (version mise à jour)
+bcrypt==4.3.0                  # Hachage sécurisé des mots de passe (version mise à jour)
+pycryptodome==3.23.0            # Opérations cryptographiques supplémentaires (version mise à jour)
 email-validator==2.2.0         # Validation des adresses email
 
 # Génération de Documents
 # -----------------------
-reportlab==4.2.5               # Génération de PDF
-Pillow==11.0.0                  # Traitement d'images (PIL)
-opencv-python==4.10.0.84           # Vision par ordinateur et traitement d'images
+reportlab==4.4.2               # Génération de PDF (version mise à jour)
+Pillow==11.3.0                  # Traitement d'images (PIL) (version mise à jour)
+opencv-python==4.12.0.88           # Vision par ordinateur et traitement d'images (version mise à jour)
 
 # Traitement et Export de Données
 # --------------------------------
-pandas==2.2.3                  # Analyse et manipulation de données
-xlsxwriter==3.2.0              # Création de fichiers Excel
+pandas==2.3.1                  # Analyse et manipulation de données (version mise à jour)
+xlsxwriter==3.2.5              # Création de fichiers Excel (version mise à jour)
 
-# Configuration
-# -----------
-python-dotenv==1.0.1           # Gestion des variables d'environnement
+# Notifications Email
+# -------------------
+sendgrid==6.12.4               # Service d'envoi d'emails SendGrid
+
+# Configuration et Outils
+# ------------------------
+requests==2.32.4               # Client HTTP pour API externes
+PyYAML==6.0.2                  # Parsing de fichiers YAML
 
 # Dépendances Système (pour les mises à jour)
 # --------------------------------------------
@@ -75,14 +80,20 @@ python-dotenv==1.0.1           # Gestion des variables d'environnement
 # GEC_MASTER_KEY=your-encryption-key
 # GEC_PASSWORD_SALT=your-password-salt
 
-# Fonctionnalités Récentes Ajoutées
-# ----------------------------------
+# Fonctionnalités Récentes Ajoutées (Août 2025)
+# -----------------------------------------------
+# - Templates d'email multi-langues configurables (Français/Anglais)
+# - Variables dynamiques dans les emails ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
+# - Interface d'administration pour gestion des templates email
+# - Test SMTP intégré dans l'interface des paramètres système  
+# - Permissions granulaires pour gestion des templates (manage_email_templates)
 # - Autocomplete de recherche avec suggestions basées sur le texte indexé
-# - Mise à jour du système en ligne (Git) et hors ligne (ZIP)
+# - Mise à jour du système en ligne (Git) et hors ligne (ZIP) sécurisées
 # - API REST pour les suggestions de recherche (/api/search_suggestions)
 # - Navigation au clavier dans les suggestions d'autocomplete
-# - Sauvegarde automatique avant les mises à jour
-# - Préservation de la configuration lors des mises à jour
+# - Sauvegarde automatique avant les mises à jour avec préservation complète des données
+# - Préservation intelligente de la configuration et structure de base de données
+# - Support SendGrid pour notifications email professionnelles
 
 # Configuration Requise
 # ---------------------
