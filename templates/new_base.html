@@ -247,6 +247,12 @@
                             Paramètres de Sécurité
                         </a>
                         {% endif %}
+                        {% if current_user.has_permission('manage_email_templates') or current_user.is_super_admin() %}
+                        <a href="{{ url_for('manage_email_templates') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fas fa-envelope-open-text" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                            Templates Email
+                        </a>
+                        {% endif %}
                         {% if current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_roles') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-user-shield" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>

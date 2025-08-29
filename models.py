@@ -721,6 +721,26 @@ class ParametresSysteme(db.Model):
                 parametres.pays_pdf = "République Démocratique du Congo"
             db.session.commit()
         return parametres
+    
+    @staticmethod
+    def get_valeur(param_name, default_value=None):
+        """Récupère une valeur spécifique des paramètres système"""
+        parametres = ParametresSysteme.get_parametres()
+        
+        # Gérer les cas spéciaux pour les paramètres SMTP
+        if param_name == 'smtp_password':
+            return parametres.get_smtp_password_decrypted()
+        elif param_name == 'smtp_email':
+            return parametres.smtp_username  # Dans le modèle, smtp_username contient l'email
+        elif param_name == 'smtp_use_tls':
+            return str(parametres.smtp_use_tls).lower() if parametres.smtp_use_tls is not None else default_value
+        
+        # Gestion générale des paramètres
+        if hasattr(parametres, param_name):
+            value = getattr(parametres, param_name)
+            return value if value is not None else default_value
+        
+        return default_value
 
 class StatutCourrier(db.Model):
     """Statuts possibles pour les courriers"""
@@ -1004,6 +1024,192 @@ class CourrierForward(db.Model):
         self.date_lecture = datetime.utcnow()
         db.session.commit()
 
+class EmailTemplate(db.Model):
+    """Templates d'email pour les notifications multi-langues"""
+    __tablename__ = 'email_template'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    type_template = db.Column(db.String(50), nullable=False)  # new_mail, mail_forwarded, etc.
+    langue = db.Column(db.String(5), nullable=False, default='fr')  # fr, en
+    
+    # Contenu du template
+    sujet = db.Column(db.String(200), nullable=False)
+    contenu_html = db.Column(db.Text, nullable=False)
+    contenu_texte = db.Column(db.Text, nullable=True)
+    
+    # Métadonnées
+    actif = db.Column(db.Boolean, nullable=False, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relations
+    cree_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
+    cree_par = db.relationship('User', foreign_keys=[cree_par_id], backref='templates_crees')
+    modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='templates_modifies')
+    
+    __table_args__ = (
+        db.UniqueConstraint('type_template', 'langue', name='unique_template_lang'),
+    )
+    
+    def __repr__(self):
+        return f'<EmailTemplate {self.type_template}:{self.langue}>'
+    
+    @staticmethod
+    def get_template(type_template, langue='fr'):
+        """Récupère un template par type et langue"""
+        template = EmailTemplate.query.filter_by(
+            type_template=type_template,
+            langue=langue,
+            actif=True
+        ).first()
+        
+        # Fallback vers français si template non trouvé dans la langue demandée
+        if not template and langue != 'fr':
+            template = EmailTemplate.query.filter_by(
+                type_template=type_template,
+                langue='fr',
+                actif=True
+            ).first()
+        
+        return template
+    
+    @staticmethod
+    def init_default_templates():
+        """Initialise les templates par défaut"""
+        try:
+            # Template notification nouveau courrier - Français
+            if not EmailTemplate.query.filter_by(type_template='new_mail', langue='fr').first():
+                template_fr = EmailTemplate(
+                    type_template='new_mail',
+                    langue='fr',
+                    sujet='Nouveau courrier enregistré - {numero_accuse_reception}',
+                    contenu_html='''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #003087; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .footer { background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>GEC Mines - Notification de Nouveau Courrier</h2>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>Un nouveau courrier a été enregistré dans le système GEC Mines.</p>
+        
+        <div class="details">
+            <h3>Détails du courrier :</h3>
+            <p><strong>Numéro d'accusé de réception :</strong> {numero_accuse_reception}</p>
+            <p><strong>Type :</strong> {type_courrier}</p>
+            <p><strong>Objet :</strong> {objet}</p>
+            <p><strong>Expéditeur :</strong> {expediteur}</p>
+            <p><strong>Date d'enregistrement :</strong> {date_enregistrement}</p>
+            <p><strong>Enregistré par :</strong> {created_by}</p>
+        </div>
+        
+        <p>Vous pouvez consulter ce courrier en vous connectant au système GEC Mines.</p>
+    </div>
+    <div class="footer">
+        <p>GEC Mines - Système de Gestion des Courriers<br>
+        Secrétariat Général des Mines - République Démocratique du Congo</p>
+    </div>
+</body>
+</html>''',
+                    contenu_texte='''GEC Mines - Notification de Nouveau Courrier
+
+Un nouveau courrier a été enregistré dans le système.
+
+Détails du courrier :
+- Numéro d'accusé de réception : {numero_accuse_reception}
+- Type : {type_courrier}
+- Objet : {objet}
+- Expéditeur : {expediteur}
+- Date d'enregistrement : {date_enregistrement}
+- Enregistré par : {created_by}
+
+Connectez-vous au système GEC Mines pour consulter ce courrier.
+
+GEC Mines - Système de Gestion des Courriers
+Secrétariat Général des Mines - République Démocratique du Congo''',
+                    cree_par_id=1  # Admin system
+                )
+                db.session.add(template_fr)
+            
+            # Template transmission courrier - Français
+            if not EmailTemplate.query.filter_by(type_template='mail_forwarded', langue='fr').first():
+                template_forward_fr = EmailTemplate(
+                    type_template='mail_forwarded',
+                    langue='fr',
+                    sujet='Courrier transmis - {numero_accuse_reception}',
+                    contenu_html='''<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #009639; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .footer { background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>GEC Mines - Courrier Transmis</h2>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>Un courrier vous a été transmis par <strong>{forwarded_by}</strong>.</p>
+        
+        <div class="details">
+            <h3>Détails du courrier :</h3>
+            <p><strong>Numéro d'accusé de réception :</strong> {numero_accuse_reception}</p>
+            <p><strong>Type :</strong> {type_courrier}</p>
+            <p><strong>Objet :</strong> {objet}</p>
+            <p><strong>Expéditeur :</strong> {expediteur}</p>
+            <p><strong>Date de transmission :</strong> {date_transmission}</p>
+        </div>
+        
+        <p>Veuillez vous connecter au système GEC Mines pour consulter ce courrier.</p>
+    </div>
+    <div class="footer">
+        <p>GEC Mines - Système de Gestion des Courriers<br>
+        Secrétariat Général des Mines - République Démocratique du Congo</p>
+    </div>
+</body>
+</html>''',
+                    contenu_texte='''GEC Mines - Courrier Transmis
+
+Un courrier vous a été transmis par {forwarded_by}.
+
+Détails du courrier :
+- Numéro d'accusé de réception : {numero_accuse_reception}
+- Type : {type_courrier}
+- Objet : {objet}
+- Expéditeur : {expediteur}
+- Date de transmission : {date_transmission}
+
+Connectez-vous au système GEC Mines pour consulter ce courrier.
+
+GEC Mines - Système de Gestion des Courriers
+Secrétariat Général des Mines - République Démocratique du Congo''',
+                    cree_par_id=1  # Admin system
+                )
+                db.session.add(template_forward_fr)
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Erreur lors de l'initialisation des templates email: {e}")
+            db.session.rollback()
+
 # Fonction d'initialisation globale
 def init_default_data():
     """Initialise toutes les données par défaut"""
@@ -1011,3 +1217,4 @@ def init_default_data():
     Role.init_default_roles()
     RolePermission.init_default_permissions()
     Departement.init_default_departments()
+    EmailTemplate.init_default_templates()

@@ -114,7 +114,244 @@ def logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/manage_email_templates')
+@login_required
+@rate_limit(max_requests=30, per_minutes=15)
+def manage_email_templates():
+    """Gestion des templates d'email"""
+    if not current_user.has_permission('manage_email_templates') and not current_user.is_super_admin():
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    from models import EmailTemplate
+    templates = EmailTemplate.query.order_by(EmailTemplate.type_template, EmailTemplate.langue).all()
+    
+    log_activity(current_user.id, "CONSULTATION_TEMPLATES_EMAIL", "Consultation de la page de gestion des templates email")
+    return render_template('manage_email_templates.html', templates=templates)
 
+@app.route('/add_email_template', methods=['GET', 'POST'])
+@login_required
+@rate_limit(max_requests=20, per_minutes=15)
+def add_email_template():
+    """Ajouter un nouveau template d'email"""
+    if not current_user.has_permission('manage_email_templates') and not current_user.is_super_admin():
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        from models import EmailTemplate
+        
+        type_template = sanitize_input(request.form.get('type_template', '').strip())
+        langue = sanitize_input(request.form.get('langue', 'fr').strip())
+        sujet = sanitize_input(request.form.get('sujet', '').strip())
+        contenu_html = request.form.get('contenu_html', '').strip()
+        contenu_texte = request.form.get('contenu_texte', '').strip()
+        
+        if not type_template or not sujet or not contenu_html:
+            flash('Le type de template, le sujet et le contenu HTML sont obligatoires.', 'error')
+            return render_template('add_email_template.html')
+        
+        # Vérifier que le template n'existe pas déjà
+        existing = EmailTemplate.query.filter_by(type_template=type_template, langue=langue).first()
+        if existing:
+            flash(f'Un template de type "{type_template}" existe déjà pour la langue "{langue}".', 'error')
+            return render_template('add_email_template.html')
+        
+        try:
+            template = EmailTemplate(
+                type_template=type_template,
+                langue=langue,
+                sujet=sujet,
+                contenu_html=contenu_html,
+                contenu_texte=contenu_texte if contenu_texte else None,
+                cree_par_id=current_user.id
+            )
+            
+            db.session.add(template)
+            db.session.commit()
+            
+            log_activity(current_user.id, "CREATION_TEMPLATE_EMAIL", 
+                        f"Création du template email {type_template}:{langue}")
+            flash('Template d\'email créé avec succès!', 'success')
+            return redirect(url_for('manage_email_templates'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erreur lors de la création du template: {e}")
+            flash('Erreur lors de la création du template.', 'error')
+    
+    return render_template('add_email_template.html')
+
+@app.route('/edit_email_template/<int:template_id>', methods=['GET', 'POST'])
+@login_required
+@rate_limit(max_requests=20, per_minutes=15)
+def edit_email_template(template_id):
+    """Modifier un template d'email"""
+    if not current_user.has_permission('manage_email_templates') and not current_user.is_super_admin():
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    from models import EmailTemplate
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    if request.method == 'POST':
+        sujet = sanitize_input(request.form.get('sujet', '').strip())
+        contenu_html = request.form.get('contenu_html', '').strip()
+        contenu_texte = request.form.get('contenu_texte', '').strip()
+        actif = request.form.get('actif') == 'on'
+        
+        if not sujet or not contenu_html:
+            flash('Le sujet et le contenu HTML sont obligatoires.', 'error')
+            return render_template('edit_email_template.html', template=template)
+        
+        try:
+            template.sujet = sujet
+            template.contenu_html = contenu_html
+            template.contenu_texte = contenu_texte if contenu_texte else None
+            template.actif = actif
+            template.modifie_par_id = current_user.id
+            
+            db.session.commit()
+            
+            log_activity(current_user.id, "MODIFICATION_TEMPLATE_EMAIL", 
+                        f"Modification du template email {template.type_template}:{template.langue}")
+            flash('Template d\'email modifié avec succès!', 'success')
+            return redirect(url_for('manage_email_templates'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erreur lors de la modification du template: {e}")
+            flash('Erreur lors de la modification du template.', 'error')
+    
+    return render_template('edit_email_template.html', template=template)
+
+@app.route('/delete_email_template/<int:template_id>', methods=['POST'])
+@login_required
+@rate_limit(max_requests=10, per_minutes=15)
+def delete_email_template(template_id):
+    """Supprimer un template d'email"""
+    if not current_user.has_permission('manage_email_templates') and not current_user.is_super_admin():
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    from models import EmailTemplate
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    try:
+        template_info = f"{template.type_template}:{template.langue}"
+        db.session.delete(template)
+        db.session.commit()
+        
+        log_activity(current_user.id, "SUPPRESSION_TEMPLATE_EMAIL", 
+                    f"Suppression du template email {template_info}")
+        flash('Template d\'email supprimé avec succès!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de la suppression du template: {e}")
+        flash('Erreur lors de la suppression du template.', 'error')
+    
+    return redirect(url_for('manage_email_templates'))
+
+@app.route('/test_smtp_config', methods=['POST'])
+@login_required
+@rate_limit(max_requests=5, per_minutes=15)
+def test_smtp_config():
+    """Teste la configuration SMTP en envoyant un email de test"""
+    if not current_user.has_permission('manage_system_settings') and not current_user.is_super_admin():
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette fonctionnalité.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from email_utils import send_email_from_system_config
+        from models import ParametresSysteme
+        
+        # Email de test
+        test_email = sanitize_input(request.form.get('test_email', '').strip())
+        if not test_email:
+            flash('Veuillez saisir un email de test.', 'error')
+            return redirect(url_for('settings'))
+        
+        # Récupérer le nom du logiciel
+        nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC Mines')
+        
+        # Contenu de l'email de test
+        subject = f"Test de configuration SMTP - {nom_logiciel}"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .header {{ background-color: #003087; color: white; padding: 20px; text-align: center; }}
+                .content {{ padding: 20px; }}
+                .success {{ background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                .footer {{ background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>{nom_logiciel} - Test SMTP</h2>
+            </div>
+            <div class="content">
+                <div class="success">
+                    <h3>✅ Configuration SMTP Fonctionnelle</h3>
+                    <p>Ce message confirme que la configuration SMTP de votre système {nom_logiciel} fonctionne correctement.</p>
+                </div>
+                
+                <p><strong>Détails du test :</strong></p>
+                <ul>
+                    <li><strong>Date et heure :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}</li>
+                    <li><strong>Testé par :</strong> {current_user.nom_complet}</li>
+                    <li><strong>Email de test :</strong> {test_email}</li>
+                </ul>
+                
+                <p>Vous pouvez maintenant utiliser les fonctionnalités de notification par email en toute confiance.</p>
+            </div>
+            <div class="footer">
+                <p>{nom_logiciel} - Système de Gestion des Courriers<br>
+                Test automatique de configuration SMTP</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        {nom_logiciel} - Test SMTP
+        
+        ✅ Configuration SMTP Fonctionnelle
+        
+        Ce message confirme que la configuration SMTP de votre système {nom_logiciel} fonctionne correctement.
+        
+        Détails du test :
+        - Date et heure : {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}
+        - Testé par : {current_user.nom_complet}
+        - Email de test : {test_email}
+        
+        Vous pouvez maintenant utiliser les fonctionnalités de notification par email en toute confiance.
+        
+        {nom_logiciel} - Système de Gestion des Courriers
+        Test automatique de configuration SMTP
+        """
+        
+        # Envoyer l'email de test
+        if send_email_from_system_config(test_email, subject, html_content, text_content):
+            log_activity(current_user.id, "TEST_SMTP_SUCCESS", 
+                        f"Test SMTP réussi vers {test_email}")
+            flash(f'✅ Email de test envoyé avec succès à {test_email}! Vérifiez votre boîte de réception.', 'success')
+        else:
+            log_activity(current_user.id, "TEST_SMTP_FAILED", 
+                        f"Échec du test SMTP vers {test_email}")
+            flash('❌ Erreur lors de l\'envoi de l\'email de test. Vérifiez votre configuration SMTP.', 'error')
+    
+    except Exception as e:
+        logging.error(f"Erreur lors du test SMTP: {e}")
+        log_activity(current_user.id, "TEST_SMTP_ERROR", 
+                    f"Erreur lors du test SMTP: {str(e)}")
+        flash('❌ Erreur lors du test de configuration SMTP.', 'error')
+    
+    return redirect(url_for('settings'))
 
 @app.route('/dashboard')
 @login_required

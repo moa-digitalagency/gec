@@ -1,0 +1,236 @@
+{% extends "new_base.html" %}
+
+{% block title %}Modifier Template Email - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-edit mr-3 text-rdc-blue"></i>
+                Modifier Template Email
+            </h1>
+            <p class="mt-2 text-gray-600">
+                Modifiez le template 
+                <span class="font-medium">
+                    {% if template.type_template == 'new_mail' %}
+                        "Nouveau Courrier"
+                    {% elif template.type_template == 'mail_forwarded' %}
+                        "Transmission Courrier"
+                    {% else %}
+                        "{{ template.type_template.title() }}"
+                    {% endif %}
+                </span>
+                en 
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                    {% if template.langue == 'fr' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                    {% if template.langue == 'fr' %}
+                        🇫🇷 Français
+                    {% else %}
+                        🇺🇸 English
+                    {% endif %}
+                </span>
+            </p>
+        </div>
+        <a href="{{ url_for('manage_email_templates') }}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Retour
+        </a>
+    </div>
+</div>
+
+<!-- Form -->
+<div class="max-w-4xl mx-auto">
+    <form method="POST" class="space-y-6">
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <!-- Template Info (read-only) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type de Template</label>
+                    <div class="text-sm text-gray-900 flex items-center">
+                        {% if template.type_template == 'new_mail' %}
+                            <i class="fas fa-bell mr-2 text-rdc-blue"></i>
+                            Notification Nouveau Courrier
+                        {% elif template.type_template == 'mail_forwarded' %}
+                            <i class="fas fa-share mr-2 text-rdc-green"></i>
+                            Transmission de Courrier
+                        {% else %}
+                            <i class="fas fa-envelope mr-2 text-gray-500"></i>
+                            {{ template.type_template.title() }}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Langue</label>
+                    <div class="text-sm text-gray-900">
+                        {% if template.langue == 'fr' %}
+                            🇫🇷 Français
+                        {% else %}
+                            🇺🇸 English
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statut Actif -->
+            <div class="mb-6">
+                <div class="flex items-center">
+                    <input id="actif" name="actif" type="checkbox" 
+                           {% if template.actif %}checked{% endif %}
+                           class="h-4 w-4 text-rdc-blue focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="actif" class="ml-2 block text-sm text-gray-900">
+                        Template actif (utilisé pour les notifications)
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                    Décochez pour désactiver temporairement ce template sans le supprimer
+                </p>
+            </div>
+            
+            <!-- Sujet -->
+            <div class="mb-6">
+                <label for="sujet" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-heading mr-1 text-rdc-blue"></i>
+                    Sujet de l'Email *
+                </label>
+                <input type="text" id="sujet" name="sujet" value="{{ template.sujet }}" required
+                       class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                <p class="mt-1 text-xs text-gray-500">
+                    Variables disponibles: {{numero_courrier}}, {{objet}}, {{expediteur}}, {{nom_utilisateur}}, {{nom_logiciel}}
+                </p>
+            </div>
+            
+            <!-- Contenu HTML -->
+            <div class="mb-6">
+                <label for="contenu_html" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-code mr-1 text-rdc-blue"></i>
+                    Contenu HTML *
+                </label>
+                <textarea id="contenu_html" name="contenu_html" rows="15" required
+                          class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md font-mono text-sm">{{ template.contenu_html }}</textarea>
+                <div class="mt-2 flex items-start text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1 mt-0.5 text-blue-500"></i>
+                    <div>
+                        <p><strong>Variables disponibles :</strong></p>
+                        <ul class="list-disc list-inside mt-1 space-y-1">
+                            <li><code>{{numero_courrier}}</code> - Numéro du courrier</li>
+                            <li><code>{{objet}}</code> - Objet du courrier</li>
+                            <li><code>{{expediteur}}</code> - Expéditeur</li>
+                            <li><code>{{type_courrier}}</code> - Type de courrier</li>
+                            <li><code>{{date_reception}}</code> - Date de réception</li>
+                            <li><code>{{nom_utilisateur}}</code> - Nom de l'utilisateur</li>
+                            <li><code>{{nom_logiciel}}</code> - Nom du logiciel</li>
+                            <li><code>{{url_courrier}}</code> - Lien vers le courrier</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenu Texte (optionnel) -->
+            <div class="mb-6">
+                <label for="contenu_texte" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-align-left mr-1 text-rdc-blue"></i>
+                    Contenu Texte (optionnel)
+                </label>
+                <textarea id="contenu_texte" name="contenu_texte" rows="8"
+                          class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">{{ template.contenu_texte or '' }}</textarea>
+                <p class="mt-1 text-xs text-gray-500">
+                    Si non renseigné, une version texte sera générée automatiquement à partir du HTML
+                </p>
+            </div>
+        </div>
+        
+        <!-- Preview Section -->
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-eye mr-2 text-rdc-blue"></i>
+                Aperçu
+            </h3>
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Sujet :</label>
+                        <div id="preview-sujet" class="text-sm text-gray-900 bg-white px-2 py-1 rounded border">
+                            {{ template.sujet }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Contenu HTML :</label>
+                        <div id="preview-html" class="text-sm bg-white border rounded p-2 max-h-40 overflow-y-auto">
+                            {{ template.contenu_html|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
+                Informations
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div>
+                    <span class="font-medium">Créé par :</span> {{ template.cree_par.nom_complet }}
+                </div>
+                <div>
+                    <span class="font-medium">Date de création :</span> {{ template.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                </div>
+                {% if template.date_modification > template.date_creation %}
+                <div>
+                    <span class="font-medium">Modifié par :</span> 
+                    {% if template.modifie_par %}{{ template.modifie_par.nom_complet }}{% else %}--{% endif %}
+                </div>
+                <div>
+                    <span class="font-medium">Dernière modification :</span> {{ template.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center justify-end space-x-4 pt-6">
+            <a href="{{ url_for('manage_email_templates') }}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                <i class="fas fa-save mr-2"></i>
+                Enregistrer les Modifications
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live preview functionality
+function updatePreview() {
+    const sujet = document.getElementById('sujet').value || '--';
+    const contenuHtml = document.getElementById('contenu_html').value || '--';
+    
+    document.getElementById('preview-sujet').textContent = sujet;
+    
+    if (contenuHtml !== '--') {
+        // Simple HTML preview (be careful with XSS in real implementation)
+        document.getElementById('preview-html').innerHTML = contenuHtml;
+    } else {
+        document.getElementById('preview-html').textContent = '--';
+    }
+}
+
+// Add event listeners for live preview
+document.getElementById('sujet').addEventListener('input', updatePreview);
+document.getElementById('contenu_html').addEventListener('input', updatePreview);
+
+// Initialize preview
+updatePreview();
+</script>
+{% endblock %}

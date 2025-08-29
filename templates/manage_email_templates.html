@@ -1,0 +1,199 @@
+{% extends "new_base.html" %}
+
+{% block title %}Gestion des Templates Email - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex justify-between items-start">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-envelope-open-text mr-3 text-rdc-blue"></i>
+                Gestion des Templates Email
+            </h1>
+            <p class="mt-2 text-gray-600">Configurez les templates d'email pour les notifications en français et anglais</p>
+        </div>
+        <a href="{{ url_for('add_email_template') }}" 
+           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            Nouveau Template
+        </a>
+    </div>
+</div>
+
+<!-- Templates Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {% for template in templates %}
+    <div class="bg-white shadow-rdc rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        {% if template.type_template == 'new_mail' %}
+                            <i class="fas fa-bell text-2xl text-rdc-blue"></i>
+                        {% elif template.type_template == 'mail_forwarded' %}
+                            <i class="fas fa-share text-2xl text-rdc-green"></i>
+                        {% else %}
+                            <i class="fas fa-envelope text-2xl text-gray-500"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-medium text-gray-900">
+                            {% if template.type_template == 'new_mail' %}
+                                Nouveau Courrier
+                            {% elif template.type_template == 'mail_forwarded' %}
+                                Transmission Courrier
+                            {% else %}
+                                {{ template.type_template.title() }}
+                            {% endif %}
+                        </h3>
+                        <div class="flex items-center mt-1">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if template.langue == 'fr' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                {% if template.langue == 'fr' %}
+                                    🇫🇷 Français
+                                {% else %}
+                                    🇺🇸 English
+                                {% endif %}
+                            </span>
+                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if template.actif %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if template.actif %}
+                                    <i class="fas fa-check-circle mr-1"></i>Actif
+                                {% else %}
+                                    <i class="fas fa-times-circle mr-1"></i>Inactif
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="{{ url_for('edit_email_template', template_id=template.id) }}" 
+                       class="text-rdc-blue hover:text-blue-700 transition-colors"
+                       title="Modifier">
+                        <i class="fas fa-edit text-lg"></i>
+                    </a>
+                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template }}', '{{ template.langue }}')" 
+                            class="text-red-600 hover:text-red-700 transition-colors"
+                            title="Supprimer">
+                        <i class="fas fa-trash text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4">
+            <div class="space-y-3">
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Sujet :</label>
+                    <p class="text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ template.sujet }}</p>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Aperçu HTML :</label>
+                    <div class="mt-1 border border-gray-200 rounded bg-gray-50 p-2 max-h-32 overflow-y-auto">
+                        <div class="text-xs text-gray-600">
+                            {{ template.contenu_html[:200] }}{% if template.contenu_html|length > 200 %}...{% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-gray-500 flex items-center justify-between">
+                    <span>Créé par {{ template.cree_par.nom_complet }} le {{ template.date_creation.strftime('%d/%m/%Y') }}</span>
+                    {% if template.date_modification > template.date_creation %}
+                        <span>Modifié le {{ template.date_modification.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="lg:col-span-2">
+        <div class="text-center py-12">
+            <i class="fas fa-envelope-open-text text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun template email</h3>
+            <p class="text-gray-500 mb-6">Commencez par créer votre premier template d'email pour les notifications.</p>
+            <a href="{{ url_for('add_email_template') }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>
+                Créer un Template
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-2">Confirmer la suppression</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="deleteMessage">
+                    Êtes-vous sûr de vouloir supprimer ce template ?
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="confirmDelete" 
+                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Supprimer
+                </button>
+                <button onclick="closeDeleteModal()" 
+                        class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let deleteTemplateId = null;
+
+function confirmDelete(templateId, typeTemplate, langue) {
+    deleteTemplateId = templateId;
+    const message = `Êtes-vous sûr de vouloir supprimer le template "${typeTemplate}" en ${langue === 'fr' ? 'français' : 'anglais'} ?`;
+    document.getElementById('deleteMessage').textContent = message;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    deleteTemplateId = null;
+}
+
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    if (deleteTemplateId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/delete_email_template/${deleteTemplateId}`;
+        
+        // Add CSRF token if needed
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'csrf_token';
+            tokenInput.value = csrfToken.getAttribute('content');
+            form.appendChild(tokenInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

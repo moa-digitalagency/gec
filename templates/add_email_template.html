@@ -1,0 +1,358 @@
+{% extends "new_base.html" %}
+
+{% block title %}Ajouter Template Email - GEC Mines{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-plus-circle mr-3 text-rdc-blue"></i>
+                Nouveau Template Email
+            </h1>
+            <p class="mt-2 text-gray-600">Créez un nouveau template d'email pour les notifications</p>
+        </div>
+        <a href="{{ url_for('manage_email_templates') }}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Retour
+        </a>
+    </div>
+</div>
+
+<!-- Form -->
+<div class="max-w-4xl mx-auto">
+    <form method="POST" class="space-y-6">
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Type de Template -->
+                <div>
+                    <label for="type_template" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-1 text-rdc-blue"></i>
+                        Type de Template *
+                    </label>
+                    <select id="type_template" name="type_template" required
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md">
+                        <option value="">Sélectionner un type</option>
+                        <option value="new_mail">Notification Nouveau Courrier</option>
+                        <option value="mail_forwarded">Transmission de Courrier</option>
+                        <option value="mail_reminder">Rappel de Courrier</option>
+                        <option value="mail_archived">Archivage de Courrier</option>
+                    </select>
+                </div>
+                
+                <!-- Langue -->
+                <div>
+                    <label for="langue" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-language mr-1 text-rdc-blue"></i>
+                        Langue *
+                    </label>
+                    <select id="langue" name="langue" required
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md">
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="en">🇺🇸 English</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Sujet -->
+            <div class="mt-6">
+                <label for="sujet" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-heading mr-1 text-rdc-blue"></i>
+                    Sujet de l'Email *
+                </label>
+                <input type="text" id="sujet" name="sujet" required
+                       class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                       placeholder="Ex: Nouveau courrier reçu - {{numero_courrier}}">
+                <p class="mt-1 text-xs text-gray-500">
+                    Variables disponibles: {{numero_courrier}}, {{objet}}, {{expediteur}}, {{nom_utilisateur}}, {{nom_logiciel}}
+                </p>
+            </div>
+            
+            <!-- Contenu HTML -->
+            <div class="mt-6">
+                <label for="contenu_html" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-code mr-1 text-rdc-blue"></i>
+                    Contenu HTML *
+                </label>
+                <textarea id="contenu_html" name="contenu_html" rows="15" required
+                          class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md font-mono text-sm"
+                          placeholder="Saisissez le contenu HTML de l'email..."></textarea>
+                <div class="mt-2 flex items-start text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1 mt-0.5 text-blue-500"></i>
+                    <div>
+                        <p><strong>Variables disponibles :</strong></p>
+                        <ul class="list-disc list-inside mt-1 space-y-1">
+                            <li><code>{{numero_courrier}}</code> - Numéro du courrier</li>
+                            <li><code>{{objet}}</code> - Objet du courrier</li>
+                            <li><code>{{expediteur}}</code> - Expéditeur</li>
+                            <li><code>{{type_courrier}}</code> - Type de courrier</li>
+                            <li><code>{{date_reception}}</code> - Date de réception</li>
+                            <li><code>{{nom_utilisateur}}</code> - Nom de l'utilisateur</li>
+                            <li><code>{{nom_logiciel}}</code> - Nom du logiciel</li>
+                            <li><code>{{url_courrier}}</code> - Lien vers le courrier</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenu Texte (optionnel) -->
+            <div class="mt-6">
+                <label for="contenu_texte" class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-align-left mr-1 text-rdc-blue"></i>
+                    Contenu Texte (optionnel)
+                </label>
+                <textarea id="contenu_texte" name="contenu_texte" rows="8"
+                          class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          placeholder="Version texte pour les clients email qui ne supportent pas HTML..."></textarea>
+                <p class="mt-1 text-xs text-gray-500">
+                    Si non renseigné, une version texte sera générée automatiquement à partir du HTML
+                </p>
+            </div>
+        </div>
+        
+        <!-- Preview Section -->
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-eye mr-2 text-rdc-blue"></i>
+                Aperçu
+            </h3>
+            <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Sujet :</label>
+                        <div id="preview-sujet" class="text-sm text-gray-900 bg-white px-2 py-1 rounded border">
+                            --
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Contenu HTML :</label>
+                        <div id="preview-html" class="text-sm bg-white border rounded p-2 max-h-40 overflow-y-auto">
+                            --
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center justify-end space-x-4 pt-6">
+            <a href="{{ url_for('manage_email_templates') }}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                Annuler
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                <i class="fas fa-save mr-2"></i>
+                Créer le Template
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Live preview functionality
+function updatePreview() {
+    const sujet = document.getElementById('sujet').value || '--';
+    const contenuHtml = document.getElementById('contenu_html').value || '--';
+    
+    document.getElementById('preview-sujet').textContent = sujet;
+    
+    if (contenuHtml !== '--') {
+        // Simple HTML preview (be careful with XSS in real implementation)
+        document.getElementById('preview-html').innerHTML = contenuHtml;
+    } else {
+        document.getElementById('preview-html').textContent = '--';
+    }
+}
+
+// Add event listeners for live preview
+document.getElementById('sujet').addEventListener('input', updatePreview);
+document.getElementById('contenu_html').addEventListener('input', updatePreview);
+
+// Template examples based on type
+const templateExamples = {
+    'new_mail': {
+        'fr': {
+            sujet: 'Nouveau courrier reçu - {{numero_courrier}}',
+            html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #003087; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; }
+        .button { background-color: #009639; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{nom_logiciel}}</h1>
+        <p>Notification de nouveau courrier</p>
+    </div>
+    <div class="content">
+        <h2>Bonjour {{nom_utilisateur}},</h2>
+        <p>Un nouveau courrier a été enregistré dans le système :</p>
+        <ul>
+            <li><strong>Numéro :</strong> {{numero_courrier}}</li>
+            <li><strong>Objet :</strong> {{objet}}</li>
+            <li><strong>Expéditeur :</strong> {{expediteur}}</li>
+            <li><strong>Type :</strong> {{type_courrier}}</li>
+            <li><strong>Date de réception :</strong> {{date_reception}}</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+            <a href="{{url_courrier}}" class="button">Consulter le courrier</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>Ceci est un message automatique du système {{nom_logiciel}}.</p>
+    </div>
+</body>
+</html>`
+        },
+        'en': {
+            sujet: 'New mail received - {{numero_courrier}}',
+            html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #003087; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; }
+        .button { background-color: #009639; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{nom_logiciel}}</h1>
+        <p>New mail notification</p>
+    </div>
+    <div class="content">
+        <h2>Hello {{nom_utilisateur}},</h2>
+        <p>A new mail has been registered in the system:</p>
+        <ul>
+            <li><strong>Number:</strong> {{numero_courrier}}</li>
+            <li><strong>Subject:</strong> {{objet}}</li>
+            <li><strong>Sender:</strong> {{expediteur}}</li>
+            <li><strong>Type:</strong> {{type_courrier}}</li>
+            <li><strong>Reception date:</strong> {{date_reception}}</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+            <a href="{{url_courrier}}" class="button">View mail</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>This is an automatic message from {{nom_logiciel}} system.</p>
+    </div>
+</body>
+</html>`
+        }
+    },
+    'mail_forwarded': {
+        'fr': {
+            sujet: 'Courrier transmis - {{numero_courrier}}',
+            html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #009639; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; }
+        .button { background-color: #003087; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{nom_logiciel}}</h1>
+        <p>Transmission de courrier</p>
+    </div>
+    <div class="content">
+        <h2>Bonjour {{nom_utilisateur}},</h2>
+        <p>Un courrier vous a été transmis :</p>
+        <ul>
+            <li><strong>Numéro :</strong> {{numero_courrier}}</li>
+            <li><strong>Objet :</strong> {{objet}}</li>
+            <li><strong>Expéditeur :</strong> {{expediteur}}</li>
+            <li><strong>Type :</strong> {{type_courrier}}</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+            <a href="{{url_courrier}}" class="button">Consulter le courrier</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>Ceci est un message automatique du système {{nom_logiciel}}.</p>
+    </div>
+</body>
+</html>`
+        },
+        'en': {
+            sujet: 'Mail forwarded - {{numero_courrier}}',
+            html: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #009639; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        .footer { background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; }
+        .button { background-color: #003087; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{nom_logiciel}}</h1>
+        <p>Mail forwarding</p>
+    </div>
+    <div class="content">
+        <h2>Hello {{nom_utilisateur}},</h2>
+        <p>A mail has been forwarded to you:</p>
+        <ul>
+            <li><strong>Number:</strong> {{numero_courrier}}</li>
+            <li><strong>Subject:</strong> {{objet}}</li>
+            <li><strong>Sender:</strong> {{expediteur}}</li>
+            <li><strong>Type:</strong> {{type_courrier}}</li>
+        </ul>
+        <p style="text-align: center; margin: 30px 0;">
+            <a href="{{url_courrier}}" class="button">View mail</a>
+        </p>
+    </div>
+    <div class="footer">
+        <p>This is an automatic message from {{nom_logiciel}} system.</p>
+    </div>
+</body>
+</html>`
+        }
+    }
+};
+
+// Auto-fill template based on type and language selection
+function updateTemplate() {
+    const typeTemplate = document.getElementById('type_template').value;
+    const langue = document.getElementById('langue').value;
+    
+    if (typeTemplate && templateExamples[typeTemplate] && templateExamples[typeTemplate][langue]) {
+        const example = templateExamples[typeTemplate][langue];
+        document.getElementById('sujet').value = example.sujet;
+        document.getElementById('contenu_html').value = example.html;
+        updatePreview();
+    }
+}
+
+document.getElementById('type_template').addEventListener('change', updateTemplate);
+document.getElementById('langue').addEventListener('change', updateTemplate);
+
+// Initialize
+updatePreview();
+</script>
+{% endblock %}
