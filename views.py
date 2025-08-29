@@ -1035,6 +1035,9 @@ def settings():
             parametres.pays_pdf = sanitize_input(request.form.get('pays_pdf', '').strip()) or "République Démocratique du Congo"
             parametres.copyright_text = sanitize_input(request.form.get('copyright_text', '').strip()) or "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
             
+            # Paramètre d'appellation des départements
+            parametres.appellation_departement = sanitize_input(request.form.get('appellation_departement', '').strip()) or "Départements"
+            
             # Paramètres SMTP (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None

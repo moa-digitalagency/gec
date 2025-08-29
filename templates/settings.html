@@ -192,6 +192,28 @@
                         </p>
                     </div>
                     
+                    <!-- Appellation Départements -->
+                    <div>
+                        <label for="appellation_departement" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-building mr-1 text-rdc-blue"></i>
+                            Appellation des Entités Organisationnelles
+                        </label>
+                        <select id="appellation_departement" 
+                                name="appellation_departement" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="Départements" {% if parametres.appellation_departement == 'Départements' %}selected{% endif %}>Départements</option>
+                            <option value="Divisions" {% if parametres.appellation_departement == 'Divisions' %}selected{% endif %}>Divisions</option>
+                            <option value="Services" {% if parametres.appellation_departement == 'Services' %}selected{% endif %}>Services</option>
+                            <option value="Directions" {% if parametres.appellation_departement == 'Directions' %}selected{% endif %}>Directions</option>
+                            <option value="Bureaux" {% if parametres.appellation_departement == 'Bureaux' %}selected{% endif %}>Bureaux</option>
+                            <option value="Unités" {% if parametres.appellation_departement == 'Unités' %}selected{% endif %}>Unités</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Choisissez le terme utilisé dans votre organisation pour désigner les entités organisationnelles.
+                        </p>
+                    </div>
+                    
                     <!-- Paramètres PDF -->
                     <div class="border-t border-gray-200 pt-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">

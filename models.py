@@ -661,6 +661,9 @@ class ParametresSysteme(db.Model):
     smtp_username = db.Column(db.String(200), nullable=True)
     smtp_password = db.Column(db.String(500), nullable=True)  # Crypté
     
+    # Paramètres d'organisation - appellation des départements
+    appellation_departement = db.Column(db.String(100), nullable=False, default="Départements")
+    
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié
