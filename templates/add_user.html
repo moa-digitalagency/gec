@@ -119,9 +119,9 @@
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
                     <option value="">Sélectionner un rôle</option>
-                    <option value="user">Utilisateur</option>
-                    <option value="admin">Administrateur</option>
-                    <option value="super_admin">Super Administrateur</option>
+                    {% for role in roles %}
+                    <option value="{{ role.nom }}">{{ role.nom_affichage }}</option>
+                    {% endfor %}
                 </select>
                 <p class="text-xs text-gray-500 mt-1">
                     <strong>Utilisateur:</strong> Accès de base | 

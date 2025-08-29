@@ -1753,9 +1753,12 @@ def add_user():
         return redirect(url_for('manage_users'))
     
     departements = Departement.get_departements_actifs()
+    # Get all active roles from database
+    roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
     return render_template('add_user.html', 
                          available_languages=get_available_languages(),
-                         departements=departements)
+                         departements=departements,
+                         roles=roles)
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1820,9 +1823,12 @@ def edit_user(user_id):
         return redirect(url_for('manage_users'))
     
     departements = Departement.get_departements_actifs()
+    # Get all active roles from database
+    roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
     return render_template('edit_user.html', user=user, 
                          available_languages=get_available_languages(),
-                         departements=departements)
+                         departements=departements,
+                         roles=roles)
 
 @app.route('/delete_courrier/<int:id>', methods=['POST'])
 @login_required

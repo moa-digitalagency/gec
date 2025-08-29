@@ -118,9 +118,9 @@
                         id="role"
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    <option value="user" {% if user.role == 'user' %}selected{% endif %}>Utilisateur</option>
-                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Administrateur</option>
-                    <option value="super_admin" {% if user.role == 'super_admin' %}selected{% endif %}>Super Administrateur</option>
+                    {% for role in roles %}
+                    <option value="{{ role.nom }}" {% if user.role == role.nom %}selected{% endif %}>{{ role.nom_affichage }}</option>
+                    {% endfor %}
                 </select>
                 <p class="text-xs text-gray-500 mt-1">
                     <strong>Utilisateur:</strong> Accès de base | 
