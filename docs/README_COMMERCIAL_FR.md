@@ -185,16 +185,18 @@
 ## 📞 Contactez-Nous
 
 ### 🤝 Demandez une Démo Gratuite
-- 📧 **Email**: contact@gecmines.cd
-- 📱 **WhatsApp**: +243 999 999 999
-- 🌐 **Site Web**: www.gecmines.cd
-- 🏢 **Bureau**: Kinshasa, Avenue de la Justice 123
+**MOA Digital Agency LLC**
+- 📧 **Email**: moa@myoneart.com
+- 📧 **Email alternatif**: moa.myoneart@gmail.com
+- 📱 **Téléphone**: +212 699 14 000 1
+- 📱 **Téléphone RDC**: +243 86 049 33 45
+- 🌐 **Site Web**: [myoneart.com](https://myoneart.com)
 
-### 💬 Réseaux Sociaux
-- 🐦 Twitter: @GECMines
-- 💼 LinkedIn: GEC Mines Solutions
-- 📘 Facebook: GEC Mines Official
-- 📷 Instagram: @gecmines_rdc
+### 👨‍💻 Développeur Principal
+**AIsance KALONJI wa KALONJI**
+- Architecte logiciel senior
+- Spécialiste en solutions gouvernementales
+- Expert en sécurité et chiffrement
 
 ## 🎁 Offre Spéciale
 
@@ -236,10 +238,14 @@
 
 <div align="center">
 
-[**🎯 DEMANDER UNE DÉMO**](https://gecmines.cd/demo) | [**💬 NOUS CONTACTER**](https://gecmines.cd/contact) | [**📖 DOCUMENTATION**](https://docs.gecmines.cd)
+[**🎯 DEMANDER UNE DÉMO**](mailto:moa@myoneart.com) | [**💬 NOUS CONTACTER**](mailto:moa.myoneart@gmail.com) | [**🌐 SITE WEB**](https://myoneart.com)
 
 </div>
 
 ---
 
-© 2025 GEC Mines Solutions | Tous droits réservés | Made with ❤️ in RDC
+**© 2025 MOA Digital Agency LLC** | Tous droits réservés
+
+**Conception et Développement**: AIsance KALONJI wa KALONJI
+
+*Développé avec 💖 et ☕ par MOA Digital Agency LLC*

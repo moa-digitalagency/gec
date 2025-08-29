@@ -426,10 +426,18 @@ locust -f loadtest.py --host=https://gecmines.example.com
 
 ## Support Technique
 
-### Contacts
-- Email: support@gecmines.cd
-- Documentation: https://docs.gecmines.cd
-- Issues: https://github.com/gecmines/issues
+### Contacts MOA Digital Agency
+- **Email**: moa@myoneart.com
+- **Email alternatif**: moa.myoneart@gmail.com
+- **Téléphone**: +212 699 14 000 1
+- **Téléphone RDC**: +243 86 049 33 45
+- **Site web**: [myoneart.com](https://myoneart.com)
+
+### Développeur Principal
+**AIsance KALONJI wa KALONJI**
+- Architecte logiciel senior
+- Spécialiste sécurité et chiffrement
+- Expert solutions gouvernementales
 
 ### Versions
 - **Version actuelle**: 1.0.0 (Août 2025)
@@ -438,4 +446,8 @@ locust -f loadtest.py --host=https://gecmines.example.com
 - **Navigateurs supportés**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
 ---
-© 2025 GEC Mines - Secrétariat Général des Mines | Documentation Technique
+**© 2025 MOA Digital Agency LLC** | Documentation Technique
+
+**Conception et Développement**: AIsance KALONJI wa KALONJI
+
+*Développé avec 💖 et ☕ par MOA Digital Agency LLC*

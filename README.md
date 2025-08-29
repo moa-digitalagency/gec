@@ -1,4 +1,4 @@
-# 📮 GEC Mines - Mail Management System
+# 📮 GEC Mines - Système de Gestion Électronique du Courrier
 
 ## 🌍 Language / Langue
 
@@ -14,107 +14,121 @@
 
 ---
 
-## 🚀 Quick Overview
+## 🚀 Aperçu Général
 
-**GEC Mines** is a comprehensive web-based mail management system designed for the General Secretariat of Mines (Secrétariat Général des Mines) in the Democratic Republic of Congo. 
+**GEC Mines** est un système complet de gestion électronique du courrier développé pour le Secrétariat Général des Mines en République Démocratique du Congo.
 
-### ✨ Key Highlights
+### ✨ Fonctionnalités Clés
 
-- 📥 **Incoming/Outgoing Mail Management** with mandatory attachments
-- 🔍 **Advanced Full-Text Search** across all metadata fields
-- 🔐 **Bank-Level Security** with AES-256 encryption
-- 👥 **Multi-tier Access Control** (Super Admin, Admin, User)
-- 📊 **Real-time Analytics Dashboard**
-- 📱 **100% Responsive Design** with DRC colors
-- 🌍 **Multi-language Support** (French/English)
-- 📄 **PDF Generation** for official documents
+- 📥 **Gestion Courrier Entrant/Sortant** avec pièces jointes obligatoires
+- 🔍 **Recherche Avancée** dans tous les champs de métadonnées
+- 🔐 **Sécurité Bancaire** avec chiffrement AES-256
+- 👥 **Contrôle d'Accès Multi-niveaux** (Super Admin, Admin, Utilisateur)
+- 📊 **Tableau de Bord Analytics** en temps réel
+- 📱 **Design 100% Responsive** aux couleurs RDC
+- 🌍 **Support Multi-langues** (Français/Anglais)
+- 📄 **Génération PDF** pour documents officiels
+- 📧 **Templates Email Configurables** avec test SMTP
+- 💾 **Sauvegarde/Restauration** automatique
 
-### 🛠️ Technology Stack
+### 🛠️ Stack Technologique
 
-**Backend**: Flask, PostgreSQL, SQLAlchemy, AES-256 Encryption
-**Frontend**: Tailwind CSS, DataTables, Font Awesome
-**Deployment**: Replit, PythonAnywhere, Heroku, Docker
+**Backend**: Flask, PostgreSQL, SQLAlchemy, Chiffrement AES-256
+**Frontend**: Tailwind CSS, DataTables, Font Awesome, Chart.js
+**Sécurité**: bcrypt, cryptography, audit logging complet
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Installation Rapide
 
 ### 1️⃣ Installation
 ```bash
-# Clone repository
-git clone [REPOSITORY_URL]
+# Cloner le dépôt
+git clone [URL_REPOSITORY]
 cd gec-mines
 
-# Install dependencies
-pip install -r requirements.txt
+# Installer les dépendances
+pip install -r project-dependencies.txt
 ```
 
 ### 2️⃣ Configuration
 ```bash
-# Set environment variables
-cp .env.example .env
-# Edit .env with your settings
+# Variables d'environnement
+export DATABASE_URL="postgresql://..."
+export SESSION_SECRET="votre-clé-secrète"
+export GEC_MASTER_KEY="votre-clé-maître"
 ```
 
-### 3️⃣ Run
+### 3️⃣ Lancement
 ```bash
-# Start application
-python main.py
-# Access at http://localhost:5000
+# Démarrer l'application
+gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+# Accès via http://localhost:5000
 ```
 
 ---
 
-## 📋 Latest Updates (August 2025)
+## 📋 Dernières Mises à Jour (Août 2025)
 
-✅ **Enhanced Search System**
-- Full metadata indexing including "autres_informations", "statut", and "fichier_nom"
-- Dynamic filter display based on mail type
+✅ **Système de Templates Email**
+- Templates multi-langues configurables (Français/Anglais)
+- Variables dynamiques ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
+- Interface d'administration avec aperçu temps réel
+- Test SMTP intégré dans les paramètres
 
-✅ **Improved Mail Management**
-- "Secrétaire Général en Copie" filter for incoming mail only
-- Mandatory file attachments for all mail types
-- Outgoing mail enhancements with required emission date
+✅ **Sécurité Avancée**
+- Chiffrement AES-256-CBC pour toutes les données sensibles
+- Hachage bcrypt renforcé avec salts personnalisés
+- Protection contre les attaques par force brute
+- Journalisation complète des événements de sécurité
 
-✅ **Production Ready**
-- Removed all test/temporary files
-- Optimized for external deployment (PythonAnywhere compatible)
-- Complete documentation in French and English
+✅ **Recherche Améliorée**
+- Indexation complète des métadonnées (autres_informations, statut, fichier_nom)
+- Filtre "SG en copie" pour courrier entrant uniquement
+- Pièces jointes obligatoires pour tous types de courrier
 
-✅ **Security Suite**
-- AES-256-CBC encryption for all sensitive data
-- Enhanced bcrypt password hashing
-- Brute force protection with IP blocking
-- Comprehensive audit logging
-
----
-
-## 📞 Support & Contact
-
-- 📧 **Email**: contact@gecmines.cd
-- 📱 **WhatsApp**: +243 999 999 999
-- 🌐 **Website**: www.gecmines.cd
-- 📍 **Office**: Kinshasa, DRC
+✅ **Prêt pour Production**
+- Nettoyage de tous les fichiers temporaires/test
+- Optimisé pour déploiement externe
+- Documentation complète en français et anglais
 
 ---
 
-## 🎉 Special Offer
+## 🎯 Design et Copyright
 
-**Launch Promotion**: -50% for 3 months for the first 100 customers!
-Use code: **GECMINES2025**
+**© 2025 MOA Digital Agency LLC**
+
+### 👨‍💻 Concepteur et Développeur
+**AIsance KALONJI wa KALONJI**
+
+### 📞 Contact MOA Digital Agency
+- **📧 Email**: moa@myoneart.com
+- **📧 Email alternatif**: moa.myoneart@gmail.com  
+- **📱 Téléphone**: +212 699 14 000 1
+- **📱 Téléphone RDC**: +243 86 049 33 45
+- **🌐 Site web**: [myoneart.com](https://myoneart.com)
+
+### 🏢 À Propos de MOA Digital Agency
+MOA Digital Agency LLC est une agence de développement spécialisée dans la création de solutions digitales sur mesure pour les entreprises et institutions gouvernementales. Nous excellons dans le développement d'applications web robustes, sécurisées et évolutives.
 
 ---
 
-## 📜 License
+## 📜 Licence
 
-© 2025 GEC Mines - Secrétariat Général des Mines | All Rights Reserved
+**© 2025 MOA Digital Agency LLC** | Tous droits réservés
+
+Application conçue et développée par **AIsance KALONJI wa KALONJI** pour le Ministère des Mines de la République Démocratique du Congo.
 
 ---
 
 <div align="center">
 
-**Choose your documentation language above to get started!**
+**Choisissez votre langue de documentation ci-dessus pour commencer !**
 
-[🇫🇷 Français](docs/README_COMMERCIAL_FR.md) | [🇬🇧 English](docs/README_COMMERCIAL_EN.md)
+[🇫🇷 Documentation Française](docs/README_COMMERCIAL_FR.md) | [🇬🇧 English Documentation](docs/README_COMMERCIAL_EN.md)
+
+---
+
+*Développé avec 💖 et ☕ par **MOA Digital Agency LLC***
 
 </div>

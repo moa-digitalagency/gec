@@ -663,7 +663,7 @@
                 </ul>
             </div>
             
-            <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('{{ t('backup.confirm_create') }}')">
+            <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment créer une sauvegarde ?')">
                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
                     <i class="fas fa-download mr-2"></i>
                     {{ t('backup.create_now') }}
@@ -694,7 +694,7 @@
                 </div>
             </div>
             
-            <form action="{{ url_for('restore_system') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('{{ t('backup.confirm_restore') }}')">
+            <form action="{{ url_for('restore_system') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('Voulez-vous vraiment restaurer le système ? Toutes les données actuelles seront remplacées !')">
                 <div class="mb-4">
                     <label for="backup_file" class="block text-sm font-medium text-gray-700 mb-2">
                         {{ t('backup.select_backup_file') }}
