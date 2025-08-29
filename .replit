@@ -1,7 +1,7 @@
-modules = ["python-3.11", "postgresql-16"]
+modules = ["web", "python-3.11", "nodejs-20"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-25_05"
 packages = ["cargo", "freetype", "glibcLocales", "gmp", "libGL", "libGLU", "libiconv", "libxcrypt", "openssl", "pkg-config", "postgresql", "rustc"]
 
 [deployment]
