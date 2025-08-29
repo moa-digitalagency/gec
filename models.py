@@ -189,6 +189,29 @@ class User(UserMixin, db.Model):
         """Vérifie si l'utilisateur peut gérer les utilisateurs"""
         return self.role == 'super_admin'
     
+    def can_access_courrier(self, courrier):
+        """Vérifie si l'utilisateur peut accéder à un courrier donné"""
+        if not self.actif:
+            return False
+        
+        # Super admin et admin peuvent accéder à tous les courriers
+        if self.role in ['super_admin', 'admin']:
+            return True
+        
+        # L'utilisateur peut accéder aux courriers qu'il a créés
+        if courrier.utilisateur_id == self.id:
+            return True
+        
+        # Vérifier les permissions spécifiques
+        if self.has_permission('read_all_mail'):
+            return True
+        elif self.has_permission('read_department_mail') and self.departement_id:
+            courrier_creator = User.query.get(courrier.utilisateur_id)
+            if courrier_creator and courrier_creator.departement_id == self.departement_id:
+                return True
+        
+        return False
+    
     def can_view_courrier(self, courrier):
         """Vérifie si l'utilisateur peut voir ce courrier"""
         # Vérifier les permissions spécifiques aux courriers
@@ -856,6 +879,109 @@ class RolePermission(db.Model):
             db.session.rollback()
             print(f"Erreur lors de l'initialisation des permissions: {e}")
 
+
+class Notification(db.Model):
+    """Modèle pour les notifications dans l'application"""
+    __tablename__ = 'notification'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    type_notification = db.Column(db.String(50), nullable=False, index=True)  # 'new_mail', 'mail_forwarded', 'comment_added'
+    titre = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=True, index=True)
+    lu = db.Column(db.Boolean, default=False, index=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    date_lecture = db.Column(db.DateTime, nullable=True)
+    
+    # Relations
+    user = db.relationship('User', backref='notifications')
+    courrier = db.relationship('Courrier', backref='notifications')
+    
+    def __repr__(self):
+        return f'<Notification {self.titre}>'
+    
+    def mark_as_read(self):
+        """Marquer la notification comme lue"""
+        self.lu = True
+        self.date_lecture = datetime.utcnow()
+        db.session.commit()
+    
+    @staticmethod
+    def create_notification(user_id, type_notification, titre, message, courrier_id=None):
+        """Créer une nouvelle notification"""
+        notification = Notification(
+            user_id=user_id,
+            type_notification=type_notification,
+            titre=titre,
+            message=message,
+            courrier_id=courrier_id
+        )
+        db.session.add(notification)
+        db.session.commit()
+        return notification
+    
+    @staticmethod
+    def get_unread_count(user_id):
+        """Obtenir le nombre de notifications non lues pour un utilisateur"""
+        return Notification.query.filter_by(user_id=user_id, lu=False).count()
+
+class CourrierComment(db.Model):
+    """Modèle pour les commentaires sur les courriers"""
+    __tablename__ = 'courrier_comment'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    commentaire = db.Column(db.Text, nullable=False)
+    type_comment = db.Column(db.String(50), default='comment', index=True)  # 'comment', 'annotation', 'instruction'
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    date_modification = db.Column(db.DateTime, nullable=True)
+    modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    actif = db.Column(db.Boolean, default=True, index=True)
+    
+    # Relations
+    courrier = db.relationship('Courrier', backref='comments')
+    user = db.relationship('User', foreign_keys=[user_id], backref='comments_created')
+    modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='comments_modified')
+    
+    def __repr__(self):
+        return f'<CourrierComment {self.id}>'
+    
+    def update_comment(self, new_comment, modified_by_id):
+        """Mettre à jour un commentaire"""
+        self.commentaire = new_comment
+        self.date_modification = datetime.utcnow()
+        self.modifie_par_id = modified_by_id
+        db.session.commit()
+
+class CourrierForward(db.Model):
+    """Modèle pour le suivi des transmissions de courriers"""
+    __tablename__ = 'courrier_forward'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    forwarded_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    forwarded_to_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    message = db.Column(db.Text, nullable=True)  # Message d'accompagnement
+    date_transmission = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    lu = db.Column(db.Boolean, default=False, index=True)
+    date_lecture = db.Column(db.DateTime, nullable=True)
+    email_sent = db.Column(db.Boolean, default=False, index=True)
+    
+    # Relations
+    courrier = db.relationship('Courrier', backref='forwards')
+    forwarded_by = db.relationship('User', foreign_keys=[forwarded_by_id], backref='forwards_sent')
+    forwarded_to = db.relationship('User', foreign_keys=[forwarded_to_id], backref='forwards_received')
+    
+    def __repr__(self):
+        return f'<CourrierForward {self.id}>'
+    
+    def mark_as_read(self):
+        """Marquer la transmission comme lue"""
+        self.lu = True
+        self.date_lecture = datetime.utcnow()
+        db.session.commit()
 
 # Fonction d'initialisation globale
 def init_default_data():

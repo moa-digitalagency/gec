@@ -20,4 +20,5 @@ dependencies = [
     "crypto>=1.4.1",
     "pandas>=2.3.1",
     "xlsxwriter>=3.2.5",
+    "sendgrid>=6.12.4",
 ]

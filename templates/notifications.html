@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% set active_page = 'notifications' %}
+
+{% block title %}Notifications - {{ config.APPLICATION_NAME }}{% endblock %}
+
+{% block header %}
+<div class="bg-gradient-to-r from-rdc-blue to-blue-600 text-white p-6">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold">
+            <i class="fas fa-bell mr-3"></i>Notifications
+        </h1>
+        <p class="text-blue-100 mt-2">Gérez vos notifications et alertes</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="border-b border-gray-200 p-4">
+            <h2 class="text-xl font-semibold text-gray-800">
+                <i class="fas fa-list mr-2 text-rdc-blue"></i>
+                Mes Notifications
+            </h2>
+        </div>
+        
+        {% if notifications.items %}
+        <div class="divide-y divide-gray-200">
+            {% for notification in notifications.items %}
+            <div class="p-4 hover:bg-gray-50 {% if not notification.lu %}bg-blue-50 border-l-4 border-l-blue-500{% endif %}">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            {% if notification.type_notification == 'new_mail' %}
+                                <i class="fas fa-envelope-open text-green-500 mr-2"></i>
+                            {% elif notification.type_notification == 'mail_forwarded' %}
+                                <i class="fas fa-share text-blue-500 mr-2"></i>
+                            {% elif notification.type_notification == 'comment_added' %}
+                                <i class="fas fa-comment text-orange-500 mr-2"></i>
+                            {% else %}
+                                <i class="fas fa-bell text-gray-500 mr-2"></i>
+                            {% endif %}
+                            
+                            <h3 class="font-semibold text-gray-900 {% if not notification.lu %}font-bold{% endif %}">
+                                {{ notification.titre }}
+                            </h3>
+                            
+                            {% if not notification.lu %}
+                                <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-circle text-blue-500 mr-1" style="font-size: 6px;"></i>
+                                    Nouveau
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <p class="text-gray-600 mb-2">{{ notification.message }}</p>
+                        
+                        <div class="flex items-center text-sm text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            <span>{{ notification.date_creation.strftime('%d/%m/%Y à %H:%M') }}</span>
+                            
+                            {% if notification.lu and notification.date_lecture %}
+                                <span class="ml-4">
+                                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                    Lu le {{ notification.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2 ml-4">
+                        {% if notification.courrier_id %}
+                            <a href="{{ url_for('mail_detail', id=notification.courrier_id) }}" 
+                               class="inline-flex items-center px-3 py-1 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                <i class="fas fa-eye mr-1"></i>
+                                Voir le courrier
+                            </a>
+                        {% endif %}
+                        
+                        {% if not notification.lu %}
+                            <form method="POST" action="{{ url_for('mark_notification_read', notification_id=notification.id) }}" class="inline">
+                                <button type="submit" 
+                                        class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Marquer comme lu
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if notifications.pages > 1 %}
+        <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Page {{ notifications.page }} sur {{ notifications.pages }} 
+                    ({{ notifications.total }} notification{{ 's' if notifications.total > 1 else '' }})
+                </div>
+                
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    {% if notifications.has_prev %}
+                        <a href="{{ url_for('notifications', page=notifications.prev_num) }}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for page_num in notifications.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != notifications.page %}
+                                <a href="{{ url_for('notifications', page=page_num) }}" 
+                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                            {% else %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-rdc-blue text-sm font-medium text-white">
+                                    {{ page_num }}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                ...
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if notifications.has_next %}
+                        <a href="{{ url_for('notifications', page=notifications.next_num) }}" 
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Aucune notification -->
+        <div class="text-center py-12">
+            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i class="fas fa-bell-slash text-gray-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune notification</h3>
+            <p class="text-gray-500">Vous n'avez pas encore de notifications.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

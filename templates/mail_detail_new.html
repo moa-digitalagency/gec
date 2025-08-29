@@ -435,6 +435,215 @@
         </div>
     </div>
 </div>
+
+<!-- Comments and Forwarding Section -->
+<div class="mt-8 space-y-6">
+    <!-- Mail Forwarding Section (Admin/Super Admin only) -->
+    {% if current_user.role in ['admin', 'super_admin'] and users %}
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200 bg-rdc-green">
+            <h2 class="text-xl font-semibold text-white flex items-center">
+                <i class="fas fa-share mr-2"></i>
+                Transmettre le Courrier
+            </h2>
+        </div>
+        <div class="p-6">
+            <form method="POST" action="{{ url_for('forward_mail', courrier_id=courrier.id) }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="user_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-1 text-rdc-blue"></i>
+                            Destinataire *
+                        </label>
+                        <select name="user_id" id="user_id" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">Sélectionner un utilisateur</option>
+                            {% for user in users %}
+                                {% if user.id != current_user.id %}
+                                <option value="{{ user.id }}">{{ user.nom_complet }} ({{ user.email }})</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-message mr-1 text-rdc-blue"></i>
+                            Message d'accompagnement (optionnel)
+                        </label>
+                        <textarea name="message" id="message" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
+                                  placeholder="Ajouter un message pour le destinataire..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Transmettre le Courrier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Forwarding History -->
+    {% if forwards %}
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-history mr-2"></i>
+                Historique des Transmissions
+            </h2>
+        </div>
+        <div class="divide-y divide-gray-200">
+            {% for forward in forwards %}
+            <div class="p-4 hover:bg-gray-50">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-share text-blue-500 mr-2"></i>
+                            <span class="font-medium text-gray-900">{{ forward.forwarded_by.nom_complet }}</span>
+                            <span class="mx-2 text-gray-400">→</span>
+                            <span class="font-medium text-gray-900">{{ forward.forwarded_to.nom_complet }}</span>
+                        </div>
+                        {% if forward.message %}
+                        <p class="text-gray-600 mb-2">{{ forward.message }}</p>
+                        {% endif %}
+                        <div class="flex items-center text-sm text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>
+                            <span>{{ forward.date_transmission.strftime('%d/%m/%Y à %H:%M') }}</span>
+                            {% if forward.lu %}
+                                <span class="ml-4">
+                                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                    Lu le {{ forward.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
+                                </span>
+                            {% else %}
+                                <span class="ml-4">
+                                    <i class="fas fa-circle text-orange-500 mr-1"></i>
+                                    Non lu
+                                </span>
+                            {% endif %}
+                            {% if forward.email_sent %}
+                                <span class="ml-4">
+                                    <i class="fas fa-envelope text-blue-500 mr-1"></i>
+                                    Email envoyé
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Comments Section -->
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200 bg-rdc-yellow">
+            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-comments mr-2"></i>
+                Commentaires et Annotations
+            </h2>
+        </div>
+        
+        <!-- Add Comment Form -->
+        {% if current_user.can_access_courrier(courrier) %}
+        <div class="p-6 border-b border-gray-200 bg-yellow-50">
+            <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-3">
+                            <label for="commentaire" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-comment mr-1 text-rdc-blue"></i>
+                                Votre commentaire *
+                            </label>
+                            <textarea name="commentaire" id="commentaire" rows="3" required 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
+                                      placeholder="Ajouter un commentaire ou une annotation..."></textarea>
+                        </div>
+                        <div>
+                            <label for="type_comment" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-tag mr-1 text-rdc-blue"></i>
+                                Type
+                            </label>
+                            <select name="type_comment" id="type_comment" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
+                                <option value="comment">Commentaire</option>
+                                <option value="annotation">Annotation</option>
+                                <option value="instruction">Instruction</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="submit" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajouter le Commentaire
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Comments List -->
+        {% if comments %}
+        <div class="divide-y divide-gray-200">
+            {% for comment in comments %}
+            <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-rdc-blue rounded-full flex items-center justify-center">
+                            <span class="text-white font-semibold text-sm">{{ comment.user.nom_complet[:2].upper() }}</span>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-semibold text-gray-900">{{ comment.user.nom_complet }}</span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                    {% if comment.type_comment == 'comment' %}bg-blue-100 text-blue-800
+                                    {% elif comment.type_comment == 'annotation' %}bg-green-100 text-green-800
+                                    {% elif comment.type_comment == 'instruction' %}bg-red-100 text-red-800
+                                    {% endif %}">
+                                    {% if comment.type_comment == 'comment' %}
+                                        <i class="fas fa-comment mr-1"></i>Commentaire
+                                    {% elif comment.type_comment == 'annotation' %}
+                                        <i class="fas fa-sticky-note mr-1"></i>Annotation
+                                    {% elif comment.type_comment == 'instruction' %}
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>Instruction
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <span class="text-sm text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ comment.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                                {% if comment.date_modification %}
+                                    <span class="ml-2 text-xs text-gray-400">
+                                        (modifié le {{ comment.date_modification.strftime('%d/%m/%Y à %H:%M') }})
+                                    </span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="text-gray-700">{{ comment.commentaire }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-500">
+            <i class="fas fa-comment-slash text-4xl mb-4"></i>
+            <p>Aucun commentaire pour ce courrier.</p>
+            {% if current_user.can_access_courrier(courrier) %}
+            <p class="text-sm">Soyez le premier à ajouter un commentaire !</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

@@ -15,8 +15,9 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant
+from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
+from email_utils import send_new_mail_notification, send_mail_forwarded_notification
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
 
@@ -300,6 +301,40 @@ def register_mail():
             log_activity(current_user.id, "ENREGISTREMENT_COURRIER", 
                         f"Enregistrement du courrier {numero_accuse}", courrier.id)
             
+            # Notifications pour les administrateurs et super administrateurs
+            try:
+                # Obtenir les administrateurs et super administrateurs actifs
+                admins = User.query.filter(
+                    User.actif == True,
+                    User.role.in_(['admin', 'super_admin'])
+                ).all()
+                
+                # Créer les notifications dans l'application
+                for admin in admins:
+                    Notification.create_notification(
+                        user_id=admin.id,
+                        type_notification='new_mail',
+                        titre=f'Nouveau courrier enregistré - {numero_accuse}',
+                        message=f'Un nouveau courrier "{objet}" a été enregistré par {current_user.nom_complet}.',
+                        courrier_id=courrier.id
+                    )
+                
+                # Envoyer les notifications par email (si Gmail est configuré)
+                admin_emails = [admin.email for admin in admins if admin.email]
+                if admin_emails:
+                    courrier_data = {
+                        'numero_accuse_reception': numero_accuse,
+                        'type_courrier': type_courrier,
+                        'objet': objet,
+                        'expediteur': expediteur or destinataire,
+                        'created_by': current_user.nom_complet
+                    }
+                    send_new_mail_notification(admin_emails, courrier_data)
+                
+            except Exception as e:
+                logging.error(f"Erreur lors de l'envoi des notifications: {e}")
+                # Ne pas interrompre le processus si les notifications échouent
+            
             flash(f'Courrier enregistré avec succès! N° d\'accusé: {numero_accuse}', 'success')
             return redirect(url_for('mail_detail', id=courrier.id))
             
@@ -570,11 +605,28 @@ def mail_detail(id):
         return redirect(url_for('view_mail'))
     
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
+    
+    # Récupérer les commentaires du courrier
+    comments = CourrierComment.query.filter_by(courrier_id=id, actif=True)\
+                                    .order_by(CourrierComment.date_creation.desc()).all()
+    
+    # Récupérer les transmissions du courrier
+    forwards = CourrierForward.query.filter_by(courrier_id=id)\
+                                    .order_by(CourrierForward.date_transmission.desc()).all()
+    
+    # Récupérer tous les utilisateurs actifs pour la transmission (admins seulement)
+    users = []
+    if current_user.role in ['admin', 'super_admin']:
+        users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
+    
     log_activity(current_user.id, "CONSULTATION_COURRIER", 
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
     return render_template('mail_detail_new.html', 
                           courrier=courrier,
-                          statuts_disponibles=statuts_disponibles)
+                          statuts_disponibles=statuts_disponibles,
+                          comments=comments,
+                          forwards=forwards,
+                          users=users)
 
 @app.route('/export_pdf/<int:id>')
 @login_required
@@ -3253,4 +3305,152 @@ def export_analytics(format):
                         mimetype='application/pdf',
                         as_attachment=True,
                         download_name=f'analytics_report_{datetime.now().strftime("%Y%m%d")}.pdf')
+
+@app.route('/forward_mail/<int:courrier_id>', methods=['POST'])
+@login_required
+def forward_mail(courrier_id):
+    """Transmettre un courrier à un utilisateur"""
+    courrier = Courrier.query.get_or_404(courrier_id)
+    
+    # Vérifier les permissions (seuls les admins et super admins peuvent transmettre)
+    if not current_user.role in ['admin', 'super_admin']:
+        flash('Vous n\'avez pas l\'autorisation de transmettre des courriers.', 'error')
+        return redirect(url_for('mail_detail', id=courrier_id))
+    
+    user_id = request.form.get('user_id')
+    message = request.form.get('message', '').strip()
+    
+    if not user_id:
+        flash('Veuillez sélectionner un utilisateur destinataire.', 'error')
+        return redirect(url_for('mail_detail', id=courrier_id))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Créer l'enregistrement de transmission
+    forward = CourrierForward(
+        courrier_id=courrier_id,
+        forwarded_by_id=current_user.id,
+        forwarded_to_id=user_id,
+        message=message
+    )
+    
+    try:
+        db.session.add(forward)
+        db.session.commit()
+        
+        # Créer une notification dans l'application
+        Notification.create_notification(
+            user_id=user_id,
+            type_notification='mail_forwarded',
+            titre=f'Courrier transmis - {courrier.numero_accuse_reception}',
+            message=f'Le courrier "{courrier.objet}" vous a été transmis par {current_user.nom_complet}.',
+            courrier_id=courrier_id
+        )
+        
+        # Envoyer une notification par email
+        try:
+            courrier_data = {
+                'numero_accuse_reception': courrier.numero_accuse_reception,
+                'type_courrier': courrier.type_courrier,
+                'objet': courrier.objet,
+                'expediteur': courrier.expediteur or courrier.destinataire
+            }
+            if send_mail_forwarded_notification(user.email, courrier_data, current_user.nom_complet):
+                forward.email_sent = True
+                db.session.commit()
+        except Exception as e:
+            logging.error(f"Erreur lors de l'envoi de l'email de transmission: {e}")
+        
+        # Log de l'activité
+        log_activity(current_user.id, "TRANSMISSION_COURRIER", 
+                    f"Transmission du courrier {courrier.numero_accuse_reception} à {user.nom_complet}", courrier_id)
+        
+        flash(f'Courrier transmis avec succès à {user.nom_complet}.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de la transmission: {e}")
+        flash('Erreur lors de la transmission du courrier.', 'error')
+    
+    return redirect(url_for('mail_detail', id=courrier_id))
+
+@app.route('/add_comment/<int:courrier_id>', methods=['POST'])
+@login_required
+def add_comment(courrier_id):
+    """Ajouter un commentaire à un courrier"""
+    courrier = Courrier.query.get_or_404(courrier_id)
+    
+    # Vérifier l'accès au courrier
+    if not current_user.can_access_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de commenter ce courrier.', 'error')
+        return redirect(url_for('view_mail'))
+    
+    commentaire = request.form.get('commentaire', '').strip()
+    type_comment = request.form.get('type_comment', 'comment')
+    
+    if not commentaire:
+        flash('Le commentaire ne peut pas être vide.', 'error')
+        return redirect(url_for('mail_detail', id=courrier_id))
+    
+    # Créer le commentaire
+    comment = CourrierComment(
+        courrier_id=courrier_id,
+        user_id=current_user.id,
+        commentaire=commentaire,
+        type_comment=type_comment
+    )
+    
+    try:
+        db.session.add(comment)
+        db.session.commit()
+        
+        # Créer une notification pour le propriétaire du courrier (s'il est différent)
+        if current_user.id != courrier.utilisateur_id:
+            Notification.create_notification(
+                user_id=courrier.utilisateur_id,
+                type_notification='comment_added',
+                titre=f'Nouveau commentaire - {courrier.numero_accuse_reception}',
+                message=f'{current_user.nom_complet} a ajouté un commentaire sur le courrier "{courrier.objet}".',
+                courrier_id=courrier_id
+            )
+        
+        # Log de l'activité
+        log_activity(current_user.id, "AJOUT_COMMENTAIRE", 
+                    f"Ajout d'un commentaire sur le courrier {courrier.numero_accuse_reception}", courrier_id)
+        
+        flash('Commentaire ajouté avec succès.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de l'ajout du commentaire: {e}")
+        flash('Erreur lors de l\'ajout du commentaire.', 'error')
+    
+    return redirect(url_for('mail_detail', id=courrier_id))
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    """Afficher les notifications de l'utilisateur"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    notifications = Notification.query.filter_by(user_id=current_user.id)\
+                                    .order_by(Notification.date_creation.desc())\
+                                    .paginate(page=page, per_page=per_page, error_out=False)
+    
+    return render_template('notifications.html', notifications=notifications)
+
+@app.route('/mark_notification_read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Marquer une notification comme lue"""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    # Vérifier que la notification appartient à l'utilisateur actuel
+    if notification.user_id != current_user.id:
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('notifications'))
+    
+    notification.mark_as_read()
+    return redirect(url_for('notifications'))
 
