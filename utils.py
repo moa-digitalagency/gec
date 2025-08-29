@@ -589,6 +589,106 @@ def export_courrier_pdf(courrier):
     story.append(table)
     story.append(Spacer(1, 30))
     
+    # Ajouter les commentaires et annotations si présents
+    from models import CourrierComment, CourrierForward
+    comments = CourrierComment.query.filter_by(courrier_id=courrier.id, actif=True)\
+                                   .order_by(CourrierComment.date_creation.desc()).all()
+    
+    if comments:
+        # Titre section commentaires
+        comment_title = Paragraph('Commentaires et Annotations', title_style)
+        story.append(comment_title)
+        story.append(Spacer(1, 12))
+        
+        # Tableau des commentaires
+        comment_data = [['Utilisateur', 'Type', 'Commentaire', 'Date']]
+        
+        for comment in comments:
+            type_display = {
+                'comment': 'Commentaire',
+                'annotation': 'Annotation', 
+                'instruction': 'Instruction'
+            }.get(comment.type_comment, comment.type_comment)
+            
+            date_str = comment.date_creation.strftime('%d/%m/%Y %H:%M')
+            if comment.date_modification:
+                date_str += f" (modifié le {comment.date_modification.strftime('%d/%m/%Y %H:%M')})"
+            
+            comment_data.append([
+                Paragraph(comment.user.nom_complet, text_style),
+                Paragraph(type_display, text_style),
+                Paragraph(comment.commentaire, text_style),
+                Paragraph(date_str, text_style)
+            ])
+        
+        comment_table = Table(comment_data, colWidths=[1.3*inch, 1*inch, 3*inch, 1.2*inch])
+        comment_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkblue),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
+        ]))
+        
+        story.append(comment_table)
+        story.append(Spacer(1, 20))
+    
+    # Ajouter l'historique des transmissions si présent
+    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
+                                   .order_by(CourrierForward.date_transmission.desc()).all()
+    
+    if forwards:
+        # Titre section transmissions
+        forward_title = Paragraph('Historique des Transmissions', title_style)
+        story.append(forward_title)
+        story.append(Spacer(1, 12))
+        
+        # Tableau des transmissions
+        forward_data = [['Transmis par', 'Transmis à', 'Message', 'Date', 'Statut']]
+        
+        for forward in forwards:
+            date_str = forward.date_transmission.strftime('%d/%m/%Y %H:%M')
+            
+            status_parts = []
+            if forward.lu:
+                status_parts.append(f"Lu le {forward.date_lecture.strftime('%d/%m/%Y %H:%M')}")
+            else:
+                status_parts.append("Non lu")
+            
+            if forward.email_sent:
+                status_parts.append("Email envoyé")
+            
+            status_str = " | ".join(status_parts)
+            message_str = forward.message if forward.message else "-"
+            
+            forward_data.append([
+                Paragraph(forward.forwarded_by.nom_complet, text_style),
+                Paragraph(forward.forwarded_to.nom_complet, text_style),
+                Paragraph(message_str, text_style),
+                Paragraph(date_str, text_style),
+                Paragraph(status_str, text_style)
+            ])
+        
+        forward_table = Table(forward_data, colWidths=[1.3*inch, 1.3*inch, 2*inch, 1.2*inch, 1.2*inch])
+        forward_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
+        ]))
+        
+        story.append(forward_table)
+        story.append(Spacer(1, 20))
+    
     # Note de bas de page avec texte configurable
     footer_lines = []
     

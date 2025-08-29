@@ -431,6 +431,58 @@
             </div>
             {% endif %}
         </div>
+        
+        <!-- Transmission History -->
+        {% if forwards %}
+        <div class="bg-white shadow-rdc rounded-xl mt-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-history mr-2 text-rdc-blue"></i>
+                    Historique des Transmissions
+                </h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                {% for forward in forwards %}
+                <div class="p-6 hover:bg-gray-50">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-share text-blue-500 mr-2"></i>
+                                <span class="font-medium text-gray-900">{{ forward.forwarded_by.nom_complet }}</span>
+                                <span class="mx-2 text-gray-400">→</span>
+                                <span class="font-medium text-gray-900">{{ forward.forwarded_to.nom_complet }}</span>
+                            </div>
+                            {% if forward.message %}
+                            <p class="text-gray-600 mb-2">{{ forward.message }}</p>
+                            {% endif %}
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                <span>{{ forward.date_transmission.strftime('%d/%m/%Y à %H:%M') }}</span>
+                                {% if forward.lu %}
+                                    <span class="ml-4">
+                                        <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                        Lu le {{ forward.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
+                                    </span>
+                                {% else %}
+                                    <span class="ml-4">
+                                        <i class="fas fa-circle text-orange-500 mr-1"></i>
+                                        Non lu
+                                    </span>
+                                {% endif %}
+                                {% if forward.email_sent %}
+                                    <span class="ml-4">
+                                        <i class="fas fa-envelope text-blue-500 mr-1"></i>
+                                        Email envoyé
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
     </div>
     
