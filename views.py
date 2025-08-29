@@ -351,7 +351,7 @@ def register_mail():
     
     # Récupérer les statuts disponibles pour le formulaire
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
-    # Récupérer les départements pour le formulaire
+    # Récupérer les départements/divisions pour le formulaire
     departements = Departement.get_departements_actifs()
     # Récupérer les types de courrier sortant pour le formulaire
     types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
@@ -389,13 +389,13 @@ def view_mail():
         # Peut voir tous les courriers
         pass
     elif current_user.has_permission('read_department_mail'):
-        # Peut voir les courriers de son département
+        # Peut voir les courriers de son département/division
         if current_user.departement_id:
             query = query.join(User, Courrier.utilisateur_id == User.id).filter(
                 User.departement_id == current_user.departement_id
             )
         else:
-            # Si pas de département assigné, ne voir que ses propres courriers
+            # Si pas de département/division assigné, ne voir que ses propres courriers
             query = query.filter(Courrier.utilisateur_id == current_user.id)
     elif current_user.has_permission('read_own_mail'):
         # Peut voir seulement ses propres courriers
@@ -406,13 +406,13 @@ def view_mail():
             # Super admin voit tout
             pass
         elif current_user.role == 'admin':
-            # Admin voit les courriers de son département
+            # Admin voit les courriers de son département/division
             if current_user.departement_id:
                 query = query.join(User, Courrier.utilisateur_id == User.id).filter(
                     User.departement_id == current_user.departement_id
                 )
             else:
-                # Si admin n'a pas de département assigné, ne voir que ses propres courriers
+                # Si admin n'a pas de département/division assigné, ne voir que ses propres courriers
                 query = query.filter(Courrier.utilisateur_id == current_user.id)
         else:
             # Utilisateur normal voit seulement ses propres courriers
@@ -2207,7 +2207,7 @@ def manage_roles():
         },
         'read_department_mail': {
             'name': 'Lire courriers du département',
-            'description': 'Accès aux courriers du département uniquement',
+            'description': 'Accès aux courriers du département/division uniquement',
             'category': 'Accès Courrier'
         },
         'read_own_mail': {
@@ -2302,7 +2302,7 @@ def add_role():
         'view_trash': 'Accéder à la corbeille',
         'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
-        'read_department_mail': 'Lire courriers du département',
+        'read_department_mail': 'Lire courriers du département/division',
         'read_own_mail': 'Lire ses propres courriers',
         'manage_updates': 'Gérer les mises à jour système',
         'manage_backup': 'Gérer les sauvegardes'
@@ -2387,7 +2387,7 @@ def edit_role(role_id):
         'view_trash': 'Accéder à la corbeille',
         'restore_mail': 'Restaurer courriers supprimés',
         'read_all_mail': 'Lire tous les courriers',
-        'read_department_mail': 'Lire courriers du département',
+        'read_department_mail': 'Lire courriers du département/division',
         'read_own_mail': 'Lire ses propres courriers',
         'manage_updates': 'Gérer les mises à jour système',
         'manage_backup': 'Gérer les sauvegardes'
@@ -2446,7 +2446,7 @@ def delete_role(role_id):
 @app.route('/manage_departments')
 @login_required
 def manage_departments():
-    """Gestion des départements - accessible uniquement aux super admins"""
+    """Gestion des départements/divisions - accessible uniquement aux super admins"""
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
@@ -2457,7 +2457,7 @@ def manage_departments():
 @app.route('/add_department', methods=['GET', 'POST'])
 @login_required
 def add_department():
-    """Ajouter un nouveau département"""
+    """Ajouter un nouveau département/division"""
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
@@ -2479,8 +2479,8 @@ def add_department():
             db.session.commit()
             
             log_activity(current_user.id, "CREATION_DEPARTEMENT", 
-                        f"Création du département {nom}")
-            flash(f'Département "{nom}" créé avec succès!', 'success')
+                        f"Création du département/division {nom}")
+            flash(f'Département/Division "{nom}" créé avec succès!', 'success')
             return redirect(url_for('manage_departments'))
             
         except Exception as e:
@@ -2493,7 +2493,7 @@ def add_department():
 @app.route('/edit_department/<int:dept_id>', methods=['GET', 'POST'])
 @login_required
 def edit_department(dept_id):
-    """Modifier un département"""
+    """Modifier un département/division"""
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
@@ -2504,13 +2504,13 @@ def edit_department(dept_id):
         nom = request.form['nom'].strip()
         code = request.form['code'].strip().upper()
         
-        # Vérifier les doublons (sauf pour ce département)
+        # Vérifier les doublons (sauf pour ce département/division)
         if Departement.query.filter(Departement.nom == nom, Departement.id != dept_id).first():
-            flash('Ce nom de département existe déjà.', 'error')
+            flash('Ce nom de département/division existe déjà.', 'error')
             return redirect(url_for('edit_department', dept_id=dept_id))
         
         if Departement.query.filter(Departement.code == code, Departement.id != dept_id).first():
-            flash('Ce code de département existe déjà.', 'error')
+            flash('Ce code de département/division existe déjà.', 'error')
             return redirect(url_for('edit_department', dept_id=dept_id))
         
         try:
@@ -2522,8 +2522,8 @@ def edit_department(dept_id):
             
             db.session.commit()
             log_activity(current_user.id, "MODIFICATION_DEPARTEMENT", 
-                        f"Modification du département {nom}")
-            flash(f'Département "{nom}" modifié avec succès!', 'success')
+                        f"Modification du département/division {nom}")
+            flash(f'Département/Division "{nom}" modifié avec succès!', 'success')
             return redirect(url_for('manage_departments'))
             
         except Exception as e:
@@ -2536,17 +2536,17 @@ def edit_department(dept_id):
 @app.route('/delete_department/<int:dept_id>', methods=['POST'])
 @login_required
 def delete_department(dept_id):
-    """Supprimer un département"""
+    """Supprimer un département/division"""
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
     departement = Departement.query.get_or_404(dept_id)
     
-    # Vérifier si des utilisateurs sont assignés à ce département
+    # Vérifier si des utilisateurs sont assignés à ce département/division
     users_count = User.query.filter_by(departement_id=dept_id).count()
     if users_count > 0:
-        flash(f'Impossible de supprimer ce département. {users_count} utilisateur(s) y sont assignés.', 'error')
+        flash(f'Impossible de supprimer ce département/division. {users_count} utilisateur(s) y sont assignés.', 'error')
         return redirect(url_for('manage_departments'))
     
     try:
@@ -2555,8 +2555,8 @@ def delete_department(dept_id):
         db.session.commit()
         
         log_activity(current_user.id, "SUPPRESSION_DEPARTEMENT", 
-                    f"Suppression du département {nom}")
-        flash(f'Département "{nom}" supprimé avec succès!', 'success')
+                    f"Suppression du département/division {nom}")
+        flash(f'Département/Division "{nom}" supprimé avec succès!', 'success')
         
     except Exception as e:
         db.session.rollback()
@@ -2636,7 +2636,7 @@ def edit_profile():
         current_user.nom_complet = request.form['nom_complet']
         current_user.langue = request.form['langue']
         
-        # Seuls les super admins peuvent modifier email, département, matricule et fonction
+        # Seuls les super admins peuvent modifier email, département/division, matricule et fonction
         if current_user.is_super_admin():
             current_user.email = request.form['email']
             current_user.matricule = request.form.get('matricule', '')
@@ -2679,7 +2679,7 @@ def edit_profile():
             db.session.rollback()
             flash(f'Erreur lors de la mise à jour du profil: {str(e)}', 'error')
     
-    # Récupérer les départements pour le formulaire
+    # Récupérer les départements/divisions pour le formulaire
     departements = Departement.get_departements_actifs()
     return render_template('edit_profile.html', user=current_user, 
                          departements=departements,

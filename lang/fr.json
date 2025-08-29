@@ -14,7 +14,7 @@
   "security_logs": "Logs de Sécurité",
   "security_settings": "Paramètres de Sécurité",
   "manage_roles": "Gestion des Rôles",
-  "manage_departments": "Gestion des Départements",
+  "manage_departments": "Gestion des Départements/Divisions",
   "logout": "Déconnexion",
   "language": "Langue",
   "french": "Français",
@@ -162,7 +162,7 @@
   "display_order": "Ordre d'Affichage",
   
   "full_name": "Nom Complet",
-  "department": "Département",
+  "department": "Département/Division",
   "role": "Rôle",
   "registration_number": "Matricule",
   "function": "Fonction",
