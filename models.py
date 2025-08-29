@@ -27,23 +27,23 @@ class Departement(db.Model):
     
     @staticmethod
     def get_departements_actifs():
-        """Récupère la liste des départements/divisions actifs"""
+        """Récupère la liste des départements actifs"""
         return Departement.query.filter_by(actif=True).order_by(Departement.nom).all()
     
     @staticmethod
     def init_default_departments():
-        """Initialise les départements/divisions par défaut"""
+        """Initialise les départements par défaut"""
         from app import db
         
-        # Vérifier si des départements/divisions existent déjà
+        # Vérifier si des départements existent déjà
         if Departement.query.count() > 0:
             return
         
         departements_defaut = [
             {'nom': 'Administration Générale', 'code': 'ADM', 'description': 'Administration générale et ressources humaines'},
-            {'nom': 'Département/Division Juridique', 'code': 'JUR', 'description': 'Affaires juridiques et contentieux'},
-            {'nom': 'Département/Division Technique', 'code': 'TECH', 'description': 'Études techniques et supervision'},
-            {'nom': 'Département/Division Financière', 'code': 'FIN', 'description': 'Gestion financière et comptabilité'},
+            {'nom': 'Département Juridique', 'code': 'JUR', 'description': 'Affaires juridiques et contentieux'},
+            {'nom': 'Département Technique', 'code': 'TECH', 'description': 'Études techniques et supervision'},
+            {'nom': 'Département Financier', 'code': 'FIN', 'description': 'Gestion financière et comptabilité'},
             {'nom': 'Secrétariat Général', 'code': 'SG', 'description': 'Secrétariat général et courrier'},
         ]
         
@@ -55,7 +55,7 @@ class Departement(db.Model):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"Erreur lors de l'initialisation des départements/divisions: {e}")
+            print(f"Erreur lors de l'initialisation des départements: {e}")
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
