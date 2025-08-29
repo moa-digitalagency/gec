@@ -95,22 +95,19 @@ def get_client_ip():
 
 def is_ip_blocked(ip):
     """Check if IP is blocked"""
-    return ip in _blocked_ips
+    from models import IPBlock
+    return IPBlock.is_ip_blocked(ip)
 
 def block_ip(ip, duration_minutes=AUTO_BLOCK_DURATION):
-    """Block an IP address temporarily"""
-    _blocked_ips.add(ip)
-    logging.warning(f"IP blocked: {ip} for {duration_minutes} minutes")
-    
-    # Schedule unblock (in production, use a job queue)
-    def unblock_later():
-        import threading
-        import time
-        time.sleep(duration_minutes * 60)
-        _blocked_ips.discard(ip)
-        logging.info(f"IP unblocked: {ip}")
-    
-    threading.Thread(target=unblock_later, daemon=True).start()
+    """Block an IP address temporarily using database storage"""
+    from models import IPBlock
+    try:
+        IPBlock.block_ip(ip, duration_minutes, "Automatic block due to suspicious activity")
+        logging.warning(f"IP blocked: {ip} for {duration_minutes} minutes")
+    except Exception as e:
+        logging.error(f"Failed to block IP {ip}: {e}")
+        # Fallback to in-memory blocking
+        _blocked_ips.add(ip)
 
 def log_suspicious_activity(ip, activity_type, details=""):
     """Log suspicious activity"""

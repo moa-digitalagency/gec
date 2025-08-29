@@ -34,7 +34,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # type: ignore
 login_manager.login_message = 'Veuillez vous connecter pour accéder à cette page.'
 
 # Create upload directory if it doesn't exist
@@ -93,7 +93,7 @@ with app.app_context():
         if old_admin:
             # Just update the username
             old_admin.username = 'sa.gec001'
-            old_admin.password_hash = generate_password_hash('Xzf)psYv%')
+            old_admin.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
             db.session.commit()
             logging.info("Admin user updated (username: sa.gec001)")
         else:
@@ -102,7 +102,7 @@ with app.app_context():
             admin_user.username = 'sa.gec001'
             admin_user.email = 'admin@mines.gov.cd'
             admin_user.nom_complet = 'Administrateur Système'
-            admin_user.password_hash = generate_password_hash('Xzf)psYv%')
+            admin_user.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
             admin_user.role = 'super_admin'
             admin_user.langue = 'fr'
             db.session.add(admin_user)
@@ -142,13 +142,7 @@ def inject_language_functions():
         't': t
     }
 
-# Import security utilities
-from security_utils import add_security_headers
-
-# Add security headers to all responses
-@app.after_request
-def security_headers(response):
-    return add_security_headers(response)
+# Security headers are already handled in the after_request function above
 
 # Enhanced error handlers with security logging
 @app.errorhandler(429)

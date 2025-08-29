@@ -42,9 +42,9 @@ class EncryptionManager:
         master_key = secrets.token_bytes(32)  # 256 bits
         master_key_b64 = base64.b64encode(master_key).decode('utf-8')
         
-        # Avertir l'administrateur de sauvegarder cette clé
-        logging.warning(f"NOUVELLE CLÉ MAÎTRE GÉNÉRÉE: {master_key_b64}")
-        logging.warning("IMPORTANT: Sauvegardez cette clé dans la variable d'environnement GEC_MASTER_KEY")
+        # Avertir l'administrateur de sauvegarder cette clé - SANS EXPOSER LA CLÉ
+        logging.critical("NOUVELLE CLÉ MAÎTRE GÉNÉRÉE - Configurez GEC_MASTER_KEY dans les variables d'environnement")
+        logging.critical("IMPORTANT: Clé générée automatiquement - configurez GEC_MASTER_KEY pour la persistence")
         
         return master_key
     
@@ -58,8 +58,8 @@ class EncryptionManager:
         salt = secrets.token_bytes(32)
         salt_b64 = base64.b64encode(salt).decode('utf-8')
         
-        logging.warning(f"NOUVEAU SEL GÉNÉRÉ: {salt_b64}")
-        logging.warning("IMPORTANT: Sauvegardez ce sel dans la variable d'environnement GEC_PASSWORD_SALT")
+        logging.critical("NOUVEAU SEL GÉNÉRÉ - Configurez GEC_PASSWORD_SALT dans les variables d'environnement") 
+        logging.critical("IMPORTANT: Sel généré automatiquement - configurez GEC_PASSWORD_SALT pour la persistence")
         
         return salt
     

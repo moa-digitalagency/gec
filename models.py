@@ -1,8 +1,9 @@
 from app import db
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import os
+import logging
 from encryption_utils import encryption_manager, encrypt_sensitive_data, decrypt_sensitive_data
 import os
 
@@ -552,6 +553,58 @@ class LogActivite(db.Model):
     
     def __repr__(self):
         return f'<LogActivite {self.action} by {self.utilisateur.username}>'
+
+class IPBlock(db.Model):
+    """Model for storing blocked IP addresses"""
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False, unique=True, index=True)
+    reason = db.Column(db.String(200), nullable=False)
+    blocked_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    created_by = db.Column(db.String(100), default='system')
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    
+    @staticmethod
+    def is_ip_blocked(ip_address):
+        """Check if an IP is currently blocked"""
+        now = datetime.utcnow()
+        block = IPBlock.query.filter_by(
+            ip_address=ip_address, 
+            is_active=True
+        ).filter(IPBlock.expires_at > now).first()
+        return block is not None
+    
+    @staticmethod
+    def block_ip(ip_address, duration_minutes=30, reason="Suspicious activity"):
+        """Block an IP address for specified duration"""
+        from app import db
+        
+        # Remove any existing blocks for this IP
+        IPBlock.query.filter_by(ip_address=ip_address).delete()
+        
+        # Create new block
+        expires_at = datetime.utcnow() + timedelta(minutes=duration_minutes)
+        new_block = IPBlock(
+            ip_address=ip_address,
+            reason=reason,
+            expires_at=expires_at
+        )
+        db.session.add(new_block)
+        db.session.commit()
+        
+        return new_block
+    
+    @staticmethod
+    def cleanup_expired_blocks():
+        """Remove expired IP blocks"""
+        from app import db
+        now = datetime.utcnow()
+        expired_count = IPBlock.query.filter(IPBlock.expires_at <= now).delete()
+        db.session.commit()
+        return expired_count
+    
+    def __repr__(self):
+        return f'<IPBlock {self.ip_address} until {self.expires_at}>'
 
 class ParametresSysteme(db.Model):
     """Paramètres de configuration du système"""
