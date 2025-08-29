@@ -24,10 +24,16 @@ from performance_utils import cache_result, get_dashboard_statistics, optimize_s
 @app.context_processor
 def inject_system_context():
     """Inject system parameters and utility functions into all templates"""
+    def get_unread_notifications_count():
+        if current_user.is_authenticated:
+            return Notification.query.filter_by(user_id=current_user.id, lu=False).count()
+        return 0
+    
     return dict(
         get_system_params=lambda: ParametresSysteme.get_parametres(),
         get_current_language=get_current_language,
-        get_available_languages=get_available_languages
+        get_available_languages=get_available_languages,
+        get_unread_notifications_count=get_unread_notifications_count
     )
 
 @app.route('/')
@@ -1028,6 +1034,20 @@ def settings():
             parametres.sous_titre_pdf = sanitize_input(request.form.get('sous_titre_pdf', '').strip()) or "Secrétariat Général"
             parametres.pays_pdf = sanitize_input(request.form.get('pays_pdf', '').strip()) or "République Démocratique du Congo"
             parametres.copyright_text = sanitize_input(request.form.get('copyright_text', '').strip()) or "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            
+            # Paramètres SMTP (soumis aux permissions)
+            if current_user.has_permission('manage_system_settings'):
+                parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None
+                smtp_port = request.form.get('smtp_port', '').strip()
+                if smtp_port and smtp_port.isdigit():
+                    parametres.smtp_port = int(smtp_port)
+                parametres.smtp_use_tls = request.form.get('smtp_use_tls') == 'on'
+                parametres.smtp_username = sanitize_input(request.form.get('smtp_username', '').strip()) or None
+                smtp_password = request.form.get('smtp_password', '').strip()
+                if smtp_password:
+                    # Crypter le mot de passe SMTP
+                    from security_utils import encrypt_data
+                    parametres.smtp_password = encrypt_data(smtp_password)
             
             parametres.modifie_par_id = current_user.id
             

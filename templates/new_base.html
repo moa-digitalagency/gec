@@ -89,6 +89,20 @@
                         </div>
                     </div>
                     
+                    <!-- Notifications Icon -->
+                    <div class="relative">
+                        <a href="{{ url_for('notifications') }}" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
+                            <i class="fas fa-bell"></i>
+                            <span class="hidden sm:inline ml-1">Notifications</span>
+                            {% set unread_count = get_unread_notifications_count() %}
+                            {% if unread_count > 0 %}
+                                <span class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                    {{ unread_count if unread_count <= 99 else '99+' }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    
                     <!-- Profil utilisateur -->
                     <div class="relative">
                         <button type="button" class="px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu" style="color: #003087 !important; font-weight: bold;">

@@ -654,6 +654,13 @@ class ParametresSysteme(db.Model):
     pays_pdf = db.Column(db.String(200), nullable=True, default="République Démocratique du Congo")
     copyright_text = db.Column(db.Text, nullable=True, default="© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
     
+    # Paramètres SMTP pour les notifications email
+    smtp_server = db.Column(db.String(200), nullable=True)
+    smtp_port = db.Column(db.Integer, nullable=True, default=587)
+    smtp_use_tls = db.Column(db.Boolean, nullable=False, default=True)
+    smtp_username = db.Column(db.String(200), nullable=True)
+    smtp_password = db.Column(db.String(500), nullable=True)  # Crypté
+    
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié
@@ -680,6 +687,17 @@ class ParametresSysteme(db.Model):
         """Crypte et sauvegarde le copyright"""
         import base64
         self.copyright_crypte = base64.b64encode(copyright_text.encode()).decode('utf-8')
+    
+    def get_smtp_password_decrypted(self):
+        """Décrypte et retourne le mot de passe SMTP"""
+        if not self.smtp_password:
+            return None
+        try:
+            from security_utils import decrypt_data
+            return decrypt_data(self.smtp_password)
+        except Exception as e:
+            app.logger.error(f"Erreur lors du décryptage du mot de passe SMTP: {e}")
+            return None
     
     @staticmethod
     def get_parametres():

@@ -130,7 +130,7 @@
                     <li class="nav-item">
                         <a class="nav-link text-primary position-relative" href="{{ url_for('notifications') }}">
                             <i class="fas fa-bell me-1"></i>Notifications
-                            {% set unread_count = current_user.notifications.filter_by(lu=False).count() if current_user.is_authenticated %}
+                            {% set unread_count = get_unread_notifications_count() %}
                             {% if unread_count > 0 %}
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7em;">
                                     {{ unread_count if unread_count <= 99 else '99+' }}
