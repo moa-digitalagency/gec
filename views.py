@@ -2777,7 +2777,11 @@ def manage_departments():
         return redirect(url_for('dashboard'))
     
     departements = Departement.query.order_by(Departement.nom).all()
-    return render_template('manage_departments.html', departements=departements)
+    # Récupérer l'appellation depuis les paramètres système
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
+    return render_template('manage_departments.html', 
+                         departements=departements,
+                         appellation_entites=appellation_entites)
 
 @app.route('/add_department', methods=['GET', 'POST'])
 @login_required
@@ -2786,6 +2790,9 @@ def add_department():
     if not current_user.is_super_admin():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
+    
+    # Récupérer l'appellation depuis les paramètres système
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     
     if request.method == 'POST':
         nom = request.form['nom'].strip()
@@ -2813,7 +2820,7 @@ def add_department():
             flash(f'Erreur lors de la création: {str(e)}', 'error')
     
     users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
-    return render_template('add_department.html', users=users)
+    return render_template('add_department.html', users=users, appellation_entites=appellation_entites)
 
 @app.route('/edit_department/<int:dept_id>', methods=['GET', 'POST'])
 @login_required
@@ -2823,6 +2830,8 @@ def edit_department(dept_id):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
+    # Récupérer l'appellation depuis les paramètres système
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     departement = Departement.query.get_or_404(dept_id)
     
     if request.method == 'POST':
@@ -2856,7 +2865,7 @@ def edit_department(dept_id):
             flash(f'Erreur lors de la modification: {str(e)}', 'error')
     
     users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
-    return render_template('edit_department.html', departement=departement, users=users)
+    return render_template('edit_department.html', departement=departement, users=users, appellation_entites=appellation_entites)
 
 @app.route('/delete_department/<int:dept_id>', methods=['POST'])
 @login_required
