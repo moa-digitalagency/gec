@@ -69,13 +69,17 @@ def get_email_template(template_type, language='fr', variables=None):
         
         # Remplacer les variables avec protection contre les erreurs
         for var_name, var_value in variables.items():
-            # Convertir None en chaîne vide et échapper les valeurs
+            # Convertir None en chaîne vide et échapper les valeurs HTML
             safe_value = str(var_value) if var_value is not None else ''
+            # Échappement basique pour HTML
+            safe_value = safe_value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
             
             # Remplacer les variables dans le format {{variable}}
             pattern = f'{{{{{var_name}}}}}'
-            subject = subject.replace(pattern, safe_value)
-            html_content = html_content.replace(pattern, safe_value)
+            if subject:
+                subject = subject.replace(pattern, safe_value)
+            if html_content:
+                html_content = html_content.replace(pattern, safe_value)
             if text_content:
                 text_content = text_content.replace(pattern, safe_value)
         
@@ -845,7 +849,7 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
         # Fallback vers le template par défaut si aucun template trouvé
         subject = f"Courrier transmis - {courrier_data.get('numero_accuse_reception', 'N/A')}"
         
-        # Template HTML par défaut
+        # Template HTML par défaut  
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -865,7 +869,7 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
                 <h2>{nom_logiciel} - Courrier Transmis</h2>
             </div>
             <div class="content">
-                <p>Bonjour {user_name or ''},</p>
+                <p>Bonjour {user_name or 'utilisateur'},</p>
                 <p>Un courrier vous a été transmis par <strong>{forwarded_by}</strong>.</p>
                 
                 <div class="details">

@@ -1145,7 +1145,7 @@ class EmailTemplate(db.Model):
                 template_fr = EmailTemplate(
                     type_template='new_mail',
                     langue='fr',
-                    sujet='Nouveau courrier enregistré - {numero_accuse_reception}',
+                    sujet='Nouveau courrier enregistré - {{numero_accuse_reception}}',
                     contenu_html='''<!DOCTYPE html>
 <html>
 <head>
@@ -1168,12 +1168,12 @@ class EmailTemplate(db.Model):
         
         <div class="details">
             <h3>Détails du courrier :</h3>
-            <p><strong>Numéro d'accusé de réception :</strong> {numero_accuse_reception}</p>
-            <p><strong>Type :</strong> {type_courrier}</p>
-            <p><strong>Objet :</strong> {objet}</p>
-            <p><strong>Expéditeur :</strong> {expediteur}</p>
-            <p><strong>Date d'enregistrement :</strong> {date_enregistrement}</p>
-            <p><strong>Enregistré par :</strong> {created_by}</p>
+            <p><strong>Numéro d'accusé de réception :</strong> {{numero_accuse_reception}}</p>
+            <p><strong>Type :</strong> {{type_courrier}}</p>
+            <p><strong>Objet :</strong> {{objet}}</p>
+            <p><strong>Expéditeur :</strong> {{expediteur}}</p>
+            <p><strong>Date d'enregistrement :</strong> {{date_enregistrement}}</p>
+            <p><strong>Enregistré par :</strong> {{created_by}}</p>
         </div>
         
         <p>Vous pouvez consulter ce courrier en vous connectant au système GEC.</p>
@@ -1189,12 +1189,12 @@ class EmailTemplate(db.Model):
 Un nouveau courrier a été enregistré dans le système.
 
 Détails du courrier :
-- Numéro d'accusé de réception : {numero_accuse_reception}
-- Type : {type_courrier}
-- Objet : {objet}
-- Expéditeur : {expediteur}
-- Date d'enregistrement : {date_enregistrement}
-- Enregistré par : {created_by}
+- Numéro d'accusé de réception : {{numero_accuse_reception}}
+- Type : {{type_courrier}}
+- Objet : {{objet}}
+- Expéditeur : {{expediteur}}
+- Date d'enregistrement : {{date_enregistrement}}
+- Enregistré par : {{created_by}}
 
 Connectez-vous au système GEC pour consulter ce courrier.
 
@@ -1209,7 +1209,7 @@ Secrétariat Général - République Démocratique du Congo''',
                 template_forward_fr = EmailTemplate(
                     type_template='mail_forwarded',
                     langue='fr',
-                    sujet='Courrier transmis - {numero_accuse_reception}',
+                    sujet='Courrier transmis - {{numero_accuse_reception}}',
                     contenu_html='''<!DOCTYPE html>
 <html>
 <head>
@@ -1228,15 +1228,15 @@ Secrétariat Général - République Démocratique du Congo''',
     </div>
     <div class="content">
         <p>Bonjour,</p>
-        <p>Un courrier vous a été transmis par <strong>{forwarded_by}</strong>.</p>
+        <p>Un courrier vous a été transmis par <strong>{{transmis_par}}</strong>.</p>
         
         <div class="details">
             <h3>Détails du courrier :</h3>
-            <p><strong>Numéro d'accusé de réception :</strong> {numero_accuse_reception}</p>
-            <p><strong>Type :</strong> {type_courrier}</p>
-            <p><strong>Objet :</strong> {objet}</p>
-            <p><strong>Expéditeur :</strong> {expediteur}</p>
-            <p><strong>Date de transmission :</strong> {date_transmission}</p>
+            <p><strong>Numéro d'accusé de réception :</strong> {{numero_courrier}}</p>
+            <p><strong>Type :</strong> {{type_courrier}}</p>
+            <p><strong>Objet :</strong> {{objet}}</p>
+            <p><strong>Expéditeur :</strong> {{expediteur}}</p>
+            <p><strong>Date de transmission :</strong> {{date_reception}}</p>
         </div>
         
         <p>Veuillez vous connecter au système GEC pour consulter ce courrier.</p>
@@ -1249,14 +1249,14 @@ Secrétariat Général - République Démocratique du Congo''',
 </html>''',
                     contenu_texte='''GEC - Courrier Transmis
 
-Un courrier vous a été transmis par {forwarded_by}.
+Un courrier vous a été transmis par {{transmis_par}}.
 
 Détails du courrier :
-- Numéro d'accusé de réception : {numero_accuse_reception}
-- Type : {type_courrier}
-- Objet : {objet}
-- Expéditeur : {expediteur}
-- Date de transmission : {date_transmission}
+- Numéro d'accusé de réception : {{numero_courrier}}
+- Type : {{type_courrier}}
+- Objet : {{objet}}
+- Expéditeur : {{expediteur}}
+- Date de transmission : {{date_reception}}
 
 Connectez-vous au système GEC pour consulter ce courrier.
 

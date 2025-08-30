@@ -73,9 +73,10 @@
                        title="Modifier">
                         <i class="fas fa-edit text-lg"></i>
                     </a>
-                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template|e }}', '{{ template.langue|e }}')" 
+                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template|safe }}', '{{ template.langue|safe }}')" 
                             class="text-red-600 hover:text-red-700 transition-colors"
-                            title="Supprimer">
+                            title="Supprimer"
+                            type="button">
                         <i class="fas fa-trash text-lg"></i>
                     </button>
                 </div>
