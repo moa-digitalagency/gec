@@ -519,7 +519,7 @@
                     {% endif %}
                     
                     {% if current_user.has_permission('delete_mail') or current_user.is_super_admin() %}
-                    <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                    <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception|e }}')" 
                             class="flex items-center p-4 border-2 border-dashed border-red-500 rounded-lg hover:bg-red-50 transition-colors group w-full text-left">
                         <i class="fas fa-trash text-2xl text-red-500 mr-3 group-hover:scale-110 transition-transform"></i>
                         <div>

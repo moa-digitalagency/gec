@@ -334,7 +334,7 @@
                                     PDF
                                 </a>
                                 {% if current_user.has_permission('delete_mail') %}
-                                <button onclick="confirmDelete({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                                <button onclick="confirmDelete({{ courrier.id }}, '{{ courrier.numero_accuse_reception|e }}')" 
                                    class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-red-600 hover:bg-red-700 transition-colors">
                                     <i class="fas fa-trash mr-1"></i>
                                     Supprimer

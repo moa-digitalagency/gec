@@ -73,7 +73,7 @@
                        title="Modifier">
                         <i class="fas fa-edit text-lg"></i>
                     </a>
-                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template }}', '{{ template.langue }}')" 
+                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template|e }}', '{{ template.langue|e }}')" 
                             class="text-red-600 hover:text-red-700 transition-colors"
                             title="Supprimer">
                         <i class="fas fa-trash text-lg"></i>
@@ -107,7 +107,7 @@
             </div>
         </div>
     </div>
-    {% empty %}
+    {% else %}
     <div class="lg:col-span-2">
         <div class="text-center py-12">
             <i class="fas fa-envelope-open-text text-6xl text-gray-300 mb-4"></i>
