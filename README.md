@@ -164,6 +164,55 @@ GEC_MASTER_KEY=votre-clé-de-chiffrement-32-caractères
 GEC_PASSWORD_SALT=votre-sel-de-mot-de-passe
 ```
 
+### 🌐 Configuration Domaine Personnalisé (Replit/Production)
+
+#### Pour Replit Deployments
+
+Si vous déployez sur Replit et souhaitez utiliser votre propre domaine au lieu de l'adresse IP locale :
+
+1. **Déployez votre application** via l'onglet `Deployments`
+2. **Allez dans Settings** de votre déploiement
+3. **Cliquez sur "Link a domain"** ou "Manually connect from another registrar"
+4. **Entrez votre domaine** (ex: `www.votre-app.com`)
+5. **Copiez les enregistrements DNS** fournis par Replit :
+   - Enregistrement `A` (pointe vers l'IP de Replit)
+   - Enregistrement `TXT` (pour la vérification)
+6. **Ajoutez ces enregistrements** dans la gestion DNS de votre registraire
+7. **Attendez la propagation DNS** (jusqu'à 48h)
+
+**Avantages** :
+✅ Certificat SSL/TLS automatique  
+✅ Protection WHOIS incluse  
+✅ Configuration automatique si domaine acheté via Replit  
+
+#### Pour Déploiement Local/Serveur
+
+Pour accéder à l'application via un nom de domaine local :
+
+1. **Modifiez le fichier hosts** :
+   ```bash
+   # Windows: C:\Windows\System32\drivers\etc\hosts
+   # Linux/Mac: /etc/hosts
+   127.0.0.1    gec.local
+   127.0.0.1    www.gec.local
+   ```
+
+2. **Configurez un proxy inverse** (Nginx) :
+   ```nginx
+   server {
+       listen 80;
+       server_name gec.local www.gec.local;
+       
+       location / {
+           proxy_pass http://127.0.0.1:5000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+       }
+   }
+   ```
+
+3. **Accédez à** `http://gec.local` au lieu de `http://127.0.0.1:5000`
+
 ---
 
 ## 📋 Dernières Mises à Jour (Août 2025)

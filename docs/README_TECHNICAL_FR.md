@@ -71,6 +71,113 @@ CREATE TABLE user (
 );
 ```
 
+## Configuration Déploiement et Domaines
+
+### Configuration Domaine Personnalisé
+
+#### Déploiement Replit avec Domaine Personnalisé
+
+Pour remplacer l'adresse IP locale par un domaine personnalisé sur Replit :
+
+1. **Déploiement Initial**
+   ```bash
+   # L'application se lance sur 0.0.0.0:5000
+   gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+   ```
+
+2. **Configuration Domaine via Replit**
+   - Onglet `Deployments` → `Settings`
+   - "Link a domain" ou "Manually connect from another registrar"
+   - Entrer le domaine (ex: `gec.votreentreprise.com`)
+
+3. **Configuration DNS**
+   ```dns
+   # Enregistrements à ajouter chez votre registraire :
+   Type: A     | Nom: @     | Valeur: [IP fournie par Replit]
+   Type: A     | Nom: www   | Valeur: [IP fournie par Replit]
+   Type: TXT   | Nom: @     | Valeur: [Token fourni par Replit]
+   ```
+
+4. **Vérification SSL/TLS**
+   ```bash
+   # Replit fournit automatiquement :
+   ✅ Certificat SSL/TLS Let's Encrypt
+   ✅ Redirection HTTP → HTTPS
+   ✅ Protection WHOIS
+   ```
+
+#### Déploiement Serveur Local avec Domaine
+
+Pour un déploiement sur serveur privé avec domaine personnalisé :
+
+1. **Configuration Nginx**
+   ```nginx
+   # /etc/nginx/sites-available/gec
+   server {
+       listen 80;
+       server_name gec.votredomaine.com www.gec.votredomaine.com;
+       
+       # Redirection HTTPS
+       return 301 https://$server_name$request_uri;
+   }
+   
+   server {
+       listen 443 ssl;
+       server_name gec.votredomaine.com www.gec.votredomaine.com;
+       
+       ssl_certificate /path/to/ssl/certificate.crt;
+       ssl_certificate_key /path/to/ssl/private.key;
+       
+       location / {
+           proxy_pass http://127.0.0.1:5000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+
+2. **Configuration Systemd Service**
+   ```ini
+   # /etc/systemd/system/gec.service
+   [Unit]
+   Description=GEC Courrier Application
+   After=network.target
+   
+   [Service]
+   Type=exec
+   User=gec
+   WorkingDirectory=/opt/gec
+   Environment=PATH=/opt/gec/.venv/bin
+   ExecStart=/opt/gec/.venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 4 main:app
+   Restart=always
+   
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. **Configuration Variables d'Environnement**
+   ```bash
+   # /opt/gec/.env
+   DATABASE_URL=postgresql://gec_user:password@localhost/gec_prod
+   SESSION_SECRET=production-secret-key-very-long
+   GEC_MASTER_KEY=production-encryption-key-32-chars
+   GEC_PASSWORD_SALT=production-salt
+   FLASK_ENV=production
+   ```
+
+#### Configuration DNS pour Production
+
+```dns
+# Configuration DNS complète
+Type: A      | Nom: @              | Valeur: [IP serveur]     | TTL: 3600
+Type: A      | Nom: www            | Valeur: [IP serveur]     | TTL: 3600
+Type: CNAME  | Nom: gec            | Valeur: votredomaine.com | TTL: 3600
+Type: MX     | Nom: @              | Valeur: mail.domain.com  | TTL: 3600
+Type: TXT    | Nom: @              | Valeur: "v=spf1 include:_spf.domain.com ~all"
+```
+
 ### Optimisations Performance
 
 #### Indexation
