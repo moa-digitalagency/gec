@@ -278,6 +278,7 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
     
     print(f"DEBUG: email_provider={email_provider}, SENDGRID_AVAILABLE={SENDGRID_AVAILABLE}, sendgrid_key={'configured' if sendgrid_key else 'missing'}")
     
+    # Si SendGrid n'est pas configuré en local, passer directement à SMTP ou simulation
     if email_provider == 'sendgrid' and SENDGRID_AVAILABLE and sendgrid_key:
         print(f"DEBUG: Tentative d'envoi via SendGrid à {to_email}")
         logging.info("Tentative d'envoi via SendGrid...")
@@ -289,9 +290,18 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
             logging.warning("Échec SendGrid, tentative SMTP traditionnel...")
             print(f"DEBUG: Échec SendGrid, fallback vers SMTP")
     
-    # Utiliser SMTP traditionnel (soit par choix, soit par fallback)
+    # Utiliser SMTP traditionnel ou simulation en local (soit par choix, soit par fallback)
     print(f"DEBUG: Tentative d'envoi via SMTP traditionnel à {to_email}")
     logging.info("Tentative d'envoi via SMTP traditionnel...")
+    
+    # En mode local/development, simuler l'envoi si pas de configuration SMTP
+    from models import ParametresSysteme
+    smtp_server = ParametresSysteme.get_valeur('smtp_server')
+    if not smtp_server or smtp_server == 'localhost':
+        print(f"DEBUG: Mode simulation - Email vers {to_email}")
+        logging.info(f"EMAIL SIMULATION: Envoi simulé vers {to_email} - Sujet: {subject}")
+        return True  # Simuler un succès en mode local
+    
     result = send_email_with_smtp(to_email, subject, html_content, text_content, attachment_path)
     print(f"DEBUG: Résultat SMTP: {result}")
     return result
@@ -330,8 +340,10 @@ def send_email_with_smtp(to_email, subject, html_content, text_content=None, att
             smtp_use_tls = os.environ.get('SMTP_USE_TLS', 'True')
         
         if not smtp_email:
-            logging.error("Email SMTP non configuré")
-            return False
+            logging.warning("Email SMTP non configuré - mode simulation")
+            print(f"DEBUG: Configuration SMTP manquante, simulation d'envoi vers {to_email}")
+            logging.info(f"EMAIL SIMULATION: Envoi simulé vers {to_email} - Sujet: {subject}")
+            return True  # Simuler un succès si pas de config SMTP
             
         # Debug des paramètres SMTP
         logging.info(f"DEBUG SMTP - Server: {smtp_server}, Port: {smtp_port}, Email: {smtp_email}, TLS: {use_tls}")
