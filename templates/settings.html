@@ -366,7 +366,8 @@
                                        name="sendgrid_api_key" 
                                        value="{{ '●●●●●●●●●●●●●●●●●●●●' if parametres.sendgrid_api_key else '' }}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                       placeholder="Saisir votre clé API SendGrid...">
+                                       placeholder="Saisir votre clé API SendGrid..."
+                                       autocomplete="off">
                                 <p class="mt-1 text-xs text-gray-500">
                                     Format: SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                                     {% if parametres.sendgrid_api_key %}
