@@ -151,6 +151,15 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
         
         # Se connecter seulement si un mot de passe est fourni
         if smtp_password:
+            # Déchiffrer le mot de passe s'il est crypté
+            try:
+                if smtp_password.startswith('encrypted:'):
+                    from encryption_utils import EncryptionManager
+                    encryption_manager = EncryptionManager()
+                    smtp_password = encryption_manager.decrypt_data(smtp_password)
+            except Exception as e:
+                logging.warning(f"Impossible de déchiffrer le mot de passe SMTP: {e}")
+            
             server.login(smtp_email, smtp_password)
         
         server.send_message(msg)

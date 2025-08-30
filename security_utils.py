@@ -26,14 +26,16 @@ _suspicious_activities = defaultdict(list)
 _session_tokens = {}
 _security_logs = []  # Store security logs in memory
 
-# SQL injection patterns
+# SQL injection patterns - Plus précis
 SQL_INJECTION_PATTERNS = [
-    r"(\\'|(\\\\)+\')|(--)|(;)|(\\|)|(\\*)|(union)|(select)|(insert)|(drop)|(delete)|(update)|(create)|(alter)|(exec)|(execute)",
-    r"(script.*?/script)|(javascript)|(vbscript)|(onload)|(onerror)|(onclick)",
-    r"(<|%3C).*?(>|%3E)",
-    r"(eval\s*\(.*?\))",
-    r"(expression\s*\(.*?\))",
-    r"(url\s*\(.*?\))",
+    r"(\\'|(\\\\)+\')|(--;)|(-\s*-)",  # SQL comments et échappements 
+    r"\b(union\s+select|union\s+all\s+select)\b",  # UNION attacks
+    r"\b(drop\s+table|drop\s+database|truncate\s+table)\b",  # Destructive operations
+    r"\b(exec\s*\(|execute\s*\(|sp_executesql)\b",  # Stored procedures
+    r"(0x[0-9a-fA-F]+)|(\bhex\s*\()",  # Hex encoding
+    r"(\bor\s+1\s*=\s*1)|(\band\s+1\s*=\s*0)",  # Boolean SQL injection
+    r"(script.*?/script)|(javascript\s*:)|(vbscript\s*:)",  # Script injections
+    r"(eval\s*\(.*?\))|(expression\s*\(.*?\))",  # Code execution
 ]
 
 # XSS patterns
