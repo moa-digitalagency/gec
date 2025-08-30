@@ -589,11 +589,42 @@ def export_courrier_pdf(courrier):
     story.append(table)
     story.append(Spacer(1, 30))
     
-    # Ajouter les commentaires et annotations si présents
+    # Ajouter une note qui indique que les commentaires et transmissions sont en page 2
     from models import CourrierComment, CourrierForward
     comments = CourrierComment.query.filter_by(courrier_id=courrier.id, actif=True)\
                                    .order_by(CourrierComment.date_creation.desc()).all()
+    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
+                                   .order_by(CourrierForward.date_transmission.desc()).all()
     
+    # Note d'information si il y a des commentaires ou transmissions
+    if comments or forwards:
+        info_note_style = ParagraphStyle(
+            'InfoNote',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=12,
+            textColor=colors.darkblue,
+            fontName='Helvetica-Oblique',
+            alignment=1  # Centré
+        )
+        
+        elements_page2 = []
+        if comments:
+            elements_page2.append("commentaires")
+        if forwards:
+            elements_page2.append("historique des transmissions")
+        
+        note_text = f"Voir page suivante pour : {' et '.join(elements_page2)}"
+        info_note = Paragraph(note_text, info_note_style)
+        story.append(info_note)
+        story.append(Spacer(1, 20))
+    
+    # Saut de page vers page 2 pour les commentaires et transmissions
+    from reportlab.platypus import PageBreak
+    if comments or forwards:
+        story.append(PageBreak())
+    
+    # PAGE 2 : Commentaires et transmissions
     if comments:
         # Titre section commentaires
         comment_title = Paragraph('Commentaires et Annotations', title_style)
@@ -614,10 +645,21 @@ def export_courrier_pdf(courrier):
             if comment.date_modification:
                 date_str += f" (modifié le {comment.date_modification.strftime('%d/%m/%Y %H:%M')})"
             
+            # Style spécial pour les commentaires avec meilleur contrôle des retours à la ligne
+            comment_text_style = ParagraphStyle(
+                'CommentText',
+                parent=text_style,
+                wordWrap='CJK',
+                splitLongWords=False,  # Éviter de couper les mots courts
+                allowWidows=0,
+                allowOrphans=0,
+                breakLongWords=False  # Ne pas casser les mots courts comme "commentaire"
+            )
+            
             comment_data.append([
                 Paragraph(comment.user.nom_complet, text_style),
                 Paragraph(type_display, text_style),
-                Paragraph(comment.commentaire, text_style),
+                Paragraph(comment.commentaire, comment_text_style),
                 Paragraph(date_str, text_style)
             ])
         
@@ -688,6 +730,10 @@ def export_courrier_pdf(courrier):
         
         story.append(forward_table)
         story.append(Spacer(1, 20))
+    
+    # Si commentaires ou transmissions étaient sur la page 2, ajouter un saut de page avant le footer
+    if comments or forwards:
+        story.append(PageBreak())
     
     # Note de bas de page avec texte configurable
     footer_lines = []

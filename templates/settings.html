@@ -479,6 +479,31 @@
                             </div>
                         </div>
                         </div> <!-- Fermeture de smtp-section -->
+                        
+                        <!-- Paramètres de notification pour Super Admin -->
+                        {% if current_user.is_super_admin() %}
+                        <div class="border-t border-gray-200 pt-6 mt-6">
+                            <h4 class="text-md font-medium text-gray-800 mb-3">
+                                <i class="fas fa-user-shield mr-2 text-purple-500"></i>
+                                Notifications Super Administrateur
+                            </h4>
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" 
+                                           id="notify_superadmin_new_mail" 
+                                           name="notify_superadmin_new_mail" 
+                                           {% if parametres.notify_superadmin_new_mail %}checked{% endif %}
+                                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                    <label for="notify_superadmin_new_mail" class="ml-3 block text-sm text-gray-700">
+                                        <span class="font-medium">Recevoir les notifications de nouveaux courriers</span>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            Les super administrateurs recevront une notification pour chaque nouveau courrier enregistré
+                                        </p>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endif %}
                     

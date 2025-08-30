@@ -667,6 +667,9 @@ class ParametresSysteme(db.Model):
     # Choix du fournisseur email
     email_provider = db.Column(db.String(20), nullable=False, default="sendgrid")  # 'sendgrid' ou 'smtp'
     
+    # Notifications pour super admin
+    notify_superadmin_new_mail = db.Column(db.Boolean, nullable=False, default=True)  # Super admin reçoit notifications nouveaux courriers
+    
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié

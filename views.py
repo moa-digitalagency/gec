@@ -546,11 +546,22 @@ def register_mail():
             
             # Notifications pour les administrateurs et super administrateurs
             try:
-                # Obtenir les administrateurs et super administrateurs actifs
+                # Obtenir les paramètres système pour vérifier les notifications super admin
+                parametres_notif = ParametresSysteme.get_parametres()
+                
+                # Obtenir les administrateurs actifs
                 admins = User.query.filter(
                     User.actif == True,
-                    User.role.in_(['admin', 'super_admin'])
+                    User.role == 'admin'
                 ).all()
+                
+                # Ajouter les super administrateurs seulement si autorisé dans les paramètres
+                if parametres_notif.notify_superadmin_new_mail:
+                    super_admins = User.query.filter(
+                        User.actif == True,
+                        User.role == 'super_admin'
+                    ).all()
+                    admins.extend(super_admins)
                 
                 # Créer les notifications dans l'application
                 for admin in admins:
@@ -1275,6 +1286,10 @@ def settings():
             
             # Choix du fournisseur email
             parametres.email_provider = sanitize_input(request.form.get('email_provider', 'sendgrid').strip())
+            
+            # Notifications pour super admin (seuls les super admin peuvent modifier)
+            if current_user.is_super_admin():
+                parametres.notify_superadmin_new_mail = bool(request.form.get('notify_superadmin_new_mail'))
             
             # Paramètres SMTP (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
@@ -3715,4 +3730,37 @@ def mark_notification_read(notification_id):
     
     notification.mark_as_read()
     return redirect(url_for('notifications'))
+
+@app.route('/mark_all_notifications_read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Marquer toutes les notifications de l'utilisateur comme lues"""
+    try:
+        notifications = Notification.query.filter_by(user_id=current_user.id, lu=False).all()
+        for notification in notifications:
+            notification.mark_as_read()
+        
+        flash(f'{len(notifications)} notification(s) marquée(s) comme lue(s).', 'success')
+    except Exception as e:
+        logging.error(f"Erreur lors du marquage des notifications: {e}")
+        flash('Erreur lors du marquage des notifications.', 'error')
+    
+    return redirect(url_for('notifications'))
+
+@app.route('/mark_notification_read_ajax/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read_ajax(notification_id):
+    """Marquer une notification comme lue via AJAX"""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    # Vérifier que la notification appartient à l'utilisateur actuel
+    if notification.user_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Accès refusé'}), 403
+    
+    try:
+        notification.mark_as_read()
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Erreur AJAX marquage notification: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
