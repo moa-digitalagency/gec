@@ -857,10 +857,8 @@ def mail_detail(id):
     forwards = CourrierForward.query.filter_by(courrier_id=id)\
                                     .order_by(CourrierForward.date_transmission.desc()).all()
     
-    # Récupérer tous les utilisateurs actifs pour la transmission (admins seulement)
-    users = []
-    if current_user.role in ['admin', 'super_admin']:
-        users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
+    # Récupérer tous les utilisateurs actifs pour la transmission (disponible à tous)
+    users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
     
     log_activity(current_user.id, "CONSULTATION_COURRIER", 
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
@@ -3576,10 +3574,10 @@ def forward_mail(courrier_id):
     """Transmettre un courrier à un utilisateur"""
     courrier = Courrier.query.get_or_404(courrier_id)
     
-    # Vérifier les permissions (seuls les admins et super admins peuvent transmettre)
-    if not current_user.role in ['admin', 'super_admin']:
-        flash('Vous n\'avez pas l\'autorisation de transmettre des courriers.', 'error')
-        return redirect(url_for('mail_detail', id=courrier_id))
+    # Vérifier que l'utilisateur peut consulter le courrier
+    if not current_user.can_view_courrier(courrier):
+        flash('Vous n\'avez pas l\'autorisation de consulter ce courrier.', 'error')
+        return redirect(url_for('view_mail'))
     
     user_id = request.form.get('user_id')
     message = request.form.get('message', '').strip()

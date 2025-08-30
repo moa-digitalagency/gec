@@ -529,8 +529,8 @@
                     </button>
                     {% endif %}
                     
-                    <!-- Forward Mail (Admin/Super Admin only) -->
-                    {% if current_user.role in ['admin', 'super_admin'] and users %}
+                    <!-- Forward Mail (Available to all users) -->
+                    {% if users %}
                     <div class="border-2 border-dashed border-rdc-green rounded-lg p-4 hover:bg-green-50 transition-colors">
                         <div class="flex items-center mb-3">
                             <i class="fas fa-share text-2xl text-rdc-green mr-3"></i>
