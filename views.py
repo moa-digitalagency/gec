@@ -1265,6 +1265,9 @@ def settings():
         parametres = ParametresSysteme.get_parametres()
         types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
+        print(f"DEBUG: Settings request method: {request.method}")
+        print(f"DEBUG: Form data: {dict(request.form)}")
+        
         if request.method == 'POST':
             # Sanitize and update parameters
             parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
