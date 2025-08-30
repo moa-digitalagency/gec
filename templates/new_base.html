@@ -84,10 +84,10 @@
                         </button>
                         <div class="absolute right-0 w-36 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-1">
-                                <a href="{{ url_for('set_user_language', lang_code='fr') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
+                                <a href="{{ url_for('set_language_route', lang_code='fr') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
                                     🇫🇷 Français
                                 </a>
-                                <a href="{{ url_for('set_user_language', lang_code='en') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
+                                <a href="{{ url_for('set_language_route', lang_code='en') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
                                     🇺🇸 English
                                 </a>
                             </div>
