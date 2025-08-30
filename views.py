@@ -1288,6 +1288,39 @@ def settings():
         types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
         if request.method == 'POST':
+            print(f"DEBUG: POST received with form keys: {list(request.form.keys())}")
+            
+            # Gestion du test d'email SendGrid en premier
+            if request.form.get('test_email'):
+                test_email = request.form.get('test_email', '').strip()
+                print(f"DEBUG: Test email requested for: {test_email}")
+                
+                if not test_email:
+                    flash('Veuillez saisir une adresse email pour le test.', 'error')
+                    return redirect(url_for('settings'))
+                
+                # Valider l'email
+                import re
+                email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                if not re.match(email_pattern, test_email):
+                    flash('Veuillez saisir une adresse email valide.', 'error')
+                    return redirect(url_for('settings'))
+                
+                # Effectuer le test SendGrid
+                from email_utils import test_sendgrid_configuration
+                result = test_sendgrid_configuration(test_email)
+                
+                if result['success']:
+                    flash(result['message'], 'success')
+                    log_activity(current_user.id, "TEST_EMAIL_SENDGRID", 
+                                f"Test email SendGrid envoyé à {test_email}")
+                else:
+                    flash(result['message'], 'error')
+                    log_activity(current_user.id, "TEST_EMAIL_SENDGRID_ECHEC", 
+                                f"Échec test email SendGrid: {result['message']}")
+                
+                return redirect(url_for('settings'))
+            
             # Sanitize and update parameters
             parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
             parametres.mode_numero_accuse = sanitize_input(request.form.get('mode_numero_accuse', 'automatique').strip())
@@ -1396,36 +1429,6 @@ def settings():
                 db.session.rollback()
                 flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
                 log_security_event("SETTINGS_ERROR", f"Failed to save settings: {str(e)}")
-            
-            return redirect(url_for('settings'))
-        
-        # Gestion du test d'email SendGrid
-        elif 'test_email' in request.form:
-            test_email = request.form.get('test_email', '').strip()
-            
-            if not test_email:
-                flash('Veuillez saisir une adresse email pour le test.', 'error')
-                return redirect(url_for('settings'))
-            
-            # Valider l'email
-            import re
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-            if not re.match(email_pattern, test_email):
-                flash('Veuillez saisir une adresse email valide.', 'error')
-                return redirect(url_for('settings'))
-            
-            # Effectuer le test SendGrid
-            from email_utils import test_sendgrid_configuration
-            result = test_sendgrid_configuration(test_email)
-            
-            if result['success']:
-                flash(result['message'], 'success')
-                log_activity(current_user.id, "TEST_EMAIL_SENDGRID", 
-                            f"Test email SendGrid envoyé à {test_email}")
-            else:
-                flash(result['message'], 'error')
-                log_activity(current_user.id, "TEST_EMAIL_SENDGRID_ECHEC", 
-                            f"Échec test email SendGrid: {result['message']}")
             
             return redirect(url_for('settings'))
         
