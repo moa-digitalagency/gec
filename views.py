@@ -1365,11 +1365,15 @@ def settings():
                 
                 # Paramètres SendGrid
                 sendgrid_api_key = request.form.get('sendgrid_api_key', '').strip()
-                if sendgrid_api_key and sendgrid_api_key != '●●●●●●●●●●●●●●●●●●●●':
+                # Sauvegarder la clé si elle est fournie et n'est pas le placeholder
+                if sendgrid_api_key and sendgrid_api_key != '●●●●●●●●●●●●●●●●●●●●' and len(sendgrid_api_key) > 10:
                     # Crypter la clé API SendGrid
                     from encryption_utils import EncryptionManager
                     encryption_manager = EncryptionManager()
                     parametres.sendgrid_api_key = encryption_manager.encrypt_data(sendgrid_api_key)
+                    logging.info(f"DEBUG: Clé SendGrid sauvegardée et cryptée (longueur: {len(sendgrid_api_key)})")
+                elif sendgrid_api_key and len(sendgrid_api_key) <= 10:
+                    logging.warning(f"DEBUG: Clé SendGrid trop courte ignorée (longueur: {len(sendgrid_api_key)})")
             
             parametres.modifie_par_id = current_user.id
             
