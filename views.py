@@ -3549,6 +3549,139 @@ def analytics():
         })
     monthly_volumes.reverse()
     
+    # === NOUVELLES STATISTIQUES DÉTAILLÉES ===
+    
+    # 1. Statistiques par département
+    dept_stats = db.session.query(
+        Departement.nom.label('departement'),
+        func.count(Courrier.id).label('total'),
+        func.sum(func.case((Courrier.type_courrier == 'ENTRANT', 1), else_=0)).label('entrants'),
+        func.sum(func.case((Courrier.type_courrier == 'SORTANT', 1), else_=0)).label('sortants')
+    ).join(User, Courrier.utilisateur_id == User.id)\
+     .join(Departement, User.departement_id == Departement.id)\
+     .filter(Courrier.is_deleted == False)\
+     .group_by(Departement.nom)\
+     .order_by(func.count(Courrier.id).desc()).all()
+    
+    # 2. Statistiques par utilisateur (top 10)
+    user_stats = db.session.query(
+        User.nom_complet,
+        func.count(Courrier.id).label('total'),
+        func.sum(func.case((Courrier.type_courrier == 'ENTRANT', 1), else_=0)).label('entrants'),
+        func.sum(func.case((Courrier.type_courrier == 'SORTANT', 1), else_=0)).label('sortants')
+    ).join(Courrier, Courrier.utilisateur_id == User.id)\
+     .filter(Courrier.is_deleted == False)\
+     .group_by(User.nom_complet)\
+     .order_by(func.count(Courrier.id).desc()).limit(10).all()
+    
+    # 3. Évolution des statuts par semaine (8 dernières semaines)
+    weekly_status = {}
+    for i in range(8):
+        week_start = datetime.now() - timedelta(weeks=i+1)
+        week_end = datetime.now() - timedelta(weeks=i)
+        
+        week_stats = db.session.query(
+            Courrier.statut,
+            func.count(Courrier.id).label('count')
+        ).filter(
+            Courrier.date_enregistrement >= week_start,
+            Courrier.date_enregistrement < week_end,
+            Courrier.is_deleted == False
+        ).group_by(Courrier.statut).all()
+        
+        week_key = f"Semaine {8-i}"
+        weekly_status[week_key] = {stat.statut or 'Non défini': stat.count for stat in week_stats}
+    
+    # 4. Statistiques par type de courrier avec évolution mensuelle
+    type_evolution = {}
+    for i in range(6):  # 6 derniers mois
+        month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        
+        month_types = db.session.query(
+            Courrier.type_courrier,
+            func.count(Courrier.id).label('count')
+        ).filter(
+            Courrier.date_enregistrement >= month_start,
+            Courrier.date_enregistrement < month_end,
+            Courrier.is_deleted == False
+        ).group_by(Courrier.type_courrier).all()
+        
+        month_key = month_start.strftime('%B %Y')
+        type_evolution[month_key] = {typ.type_courrier: typ.count for typ in month_types}
+    
+    # 5. Performance par département (temps moyen de traitement)
+    dept_performance = db.session.query(
+        Departement.nom.label('departement'),
+        func.count(Courrier.id).label('total'),
+        func.avg(
+            func.extract('day', Courrier.date_enregistrement - func.coalesce(Courrier.date_redaction, Courrier.date_enregistrement))
+        ).label('temps_moyen')
+    ).join(User, Courrier.utilisateur_id == User.id)\
+     .join(Departement, User.departement_id == Departement.id)\
+     .filter(
+         Courrier.is_deleted == False,
+         Courrier.statut.in_(['TRAITE', 'CLOS'])
+     )\
+     .group_by(Departement.nom).all()
+    
+    # 6. Analyse temporelle détaillée - Courriers par jour de la semaine
+    weekday_stats = db.session.query(
+        func.extract('dow', Courrier.date_enregistrement).label('day_of_week'),
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.date_enregistrement >= date_30_days_ago,
+        Courrier.is_deleted == False
+    ).group_by(func.extract('dow', Courrier.date_enregistrement)).all()
+    
+    weekdays = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+    weekday_data = {
+        'labels': [weekdays[int(stat.day_of_week)] for stat in weekday_stats],
+        'counts': [stat.count for stat in weekday_stats]
+    }
+    
+    # 7. Analyse par heure de la journée
+    hourly_stats = db.session.query(
+        func.extract('hour', Courrier.date_enregistrement).label('hour'),
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.date_enregistrement >= date_30_days_ago,
+        Courrier.is_deleted == False
+    ).group_by(func.extract('hour', Courrier.date_enregistrement)).all()
+    
+    hourly_data = {
+        'hours': [f"{int(stat.hour):02d}h" for stat in hourly_stats],
+        'counts': [stat.count for stat in hourly_stats]
+    }
+    
+    # 8. Évolution annuelle (24 derniers mois pour voir la tendance)
+    yearly_evolution = []
+    for i in range(24):
+        month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+        month_end = (month_start + timedelta(days=32)).replace(day=1)
+        
+        entrants = Courrier.query.filter(
+            Courrier.date_enregistrement >= month_start,
+            Courrier.date_enregistrement < month_end,
+            Courrier.type_courrier == 'ENTRANT',
+            Courrier.is_deleted == False
+        ).count()
+        
+        sortants = Courrier.query.filter(
+            Courrier.date_enregistrement >= month_start,
+            Courrier.date_enregistrement < month_end,
+            Courrier.type_courrier == 'SORTANT',
+            Courrier.is_deleted == False
+        ).count()
+        
+        yearly_evolution.append({
+            'month': month_start.strftime('%m/%Y'),
+            'entrants': entrants,
+            'sortants': sortants,
+            'total': entrants + sortants
+        })
+    yearly_evolution.reverse()
+    
     return render_template('analytics.html',
                          total_courriers=total_courriers,
                          courriers_entrants=courriers_entrants,
@@ -3560,7 +3693,17 @@ def analytics():
                          top_senders=top_senders,
                          top_recipients=top_recipients,
                          avg_processing_time=round(avg_processing_time, 1),
-                         monthly_volumes=monthly_volumes)
+                         monthly_volumes=monthly_volumes,
+                         
+                         # Nouvelles statistiques détaillées
+                         dept_stats=dept_stats,
+                         user_stats=user_stats,
+                         weekly_status=json.dumps(weekly_status),
+                         type_evolution=json.dumps(type_evolution),
+                         dept_performance=dept_performance,
+                         weekday_data=json.dumps(weekday_data),
+                         hourly_data=json.dumps(hourly_data),
+                         yearly_evolution=json.dumps(yearly_evolution))
 
 
 @app.route('/export_analytics/<format>')

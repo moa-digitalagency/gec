@@ -129,6 +129,145 @@
         </div>
     </div>
 
+    <!-- === NOUVELLES STATISTIQUES DÉTAILLÉES === -->
+    
+    <!-- Statistiques par département -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">
+            <i class="fas fa-building mr-2 text-indigo-600"></i>
+            Statistiques par Département
+        </h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-3">
+                {% for dept in dept_stats %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-700">{{ dept.departement }}</span>
+                        <div class="flex space-x-4 mt-1">
+                            <span class="text-xs text-green-600">↗ {{ dept.entrants }}</span>
+                            <span class="text-xs text-yellow-600">↗ {{ dept.sortants }}</span>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full font-semibold">{{ dept.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="height: 300px;">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques par utilisateur et Performance -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Top utilisateurs -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-user-friends mr-2 text-purple-600"></i>
+                Top 10 Utilisateurs Actifs
+            </h3>
+            <div class="space-y-3">
+                {% for user in user_stats %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-700">{{ user.nom_complet }}</span>
+                        <div class="flex space-x-4 mt-1">
+                            <span class="text-xs text-green-600">E: {{ user.entrants }}</span>
+                            <span class="text-xs text-yellow-600">S: {{ user.sortants }}</span>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full font-semibold">{{ user.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Performance par département -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-clock mr-2 text-orange-600"></i>
+                Performance par Département
+            </h3>
+            <div class="space-y-3">
+                {% for dept in dept_performance %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                    <div class="flex-1">
+                        <span class="text-sm font-medium text-gray-700">{{ dept.departement }}</span>
+                        <div class="text-xs text-gray-500 mt-1">{{ dept.total }} courriers traités</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full font-semibold">
+                            {{ "%.1f"|format(dept.temps_moyen or 0) }}j
+                        </span>
+                        <div class="text-xs text-gray-500 mt-1">temps moyen</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analyses temporelles avancées -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Répartition par jour de la semaine -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-calendar-week mr-2 text-teal-600"></i>
+                Par Jour de la Semaine
+            </h3>
+            <div style="height: 250px;">
+                <canvas id="weekdayChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Répartition par heure -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-clock mr-2 text-pink-600"></i>
+                Par Heure de la Journée
+            </h3>
+            <div style="height: 250px;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Évolution des statuts -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-chart-line mr-2 text-cyan-600"></i>
+                Évolution des Statuts
+            </h3>
+            <div style="height: 250px;">
+                <canvas id="weeklyStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Évolutions à long terme -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Évolution des types sur 6 mois -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-exchange-alt mr-2 text-emerald-600"></i>
+                Évolution Types (6 mois)
+            </h3>
+            <div style="height: 300px;">
+                <canvas id="typeEvolutionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Tendance annuelle -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4">
+                <i class="fas fa-chart-area mr-2 text-rose-600"></i>
+                Tendance sur 24 Mois
+            </h3>
+            <div style="height: 300px;">
+                <canvas id="yearlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Top expéditeurs et destinataires -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Top expéditeurs -->
@@ -182,12 +321,27 @@ const dailyData = {{ daily_data|safe }};
 const statusData = {{ status_data|safe }};
 const monthlyVolumes = {{ monthly_volumes|tojson }};
 
+// Nouvelles données détaillées
+const weeklyStatus = {{ weekly_status|safe }};
+const typeEvolution = {{ type_evolution|safe }};
+const weekdayData = {{ weekday_data|safe }};
+const hourlyData = {{ hourly_data|safe }};
+const yearlyEvolution = {{ yearly_evolution|safe }};
+
 // Configuration des couleurs RDC
 const rdcColors = {
     blue: '#003087',
     yellow: '#FFD700',
     red: '#CE1126',
-    green: '#009639'
+    green: '#009639',
+    indigo: '#4F46E5',
+    purple: '#7C3AED',
+    pink: '#EC4899',
+    teal: '#0D9488',
+    orange: '#EA580C',
+    emerald: '#059669',
+    rose: '#E11D48',
+    cyan: '#0891B2'
 };
 
 // Graphique volume par jour
@@ -284,6 +438,216 @@ new Chart(monthlyCtx, {
                     stepSize: 1
                 }
             }
+        }
+    }
+});
+
+// === NOUVEAUX GRAPHIQUES DÉTAILLÉS ===
+
+// 1. Graphique par département
+const deptCtx = document.getElementById('deptChart').getContext('2d');
+const deptLabels = {{ dept_stats | map(attribute='departement') | list | tojson }};
+const deptCounts = {{ dept_stats | map(attribute='total') | list | tojson }};
+
+new Chart(deptCtx, {
+    type: 'bar',
+    data: {
+        labels: deptLabels,
+        datasets: [{
+            label: 'Total Courriers',
+            data: deptCounts,
+            backgroundColor: rdcColors.indigo + '80',
+            borderColor: rdcColors.indigo,
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 2. Graphique par jour de la semaine
+const weekdayCtx = document.getElementById('weekdayChart').getContext('2d');
+new Chart(weekdayCtx, {
+    type: 'radar',
+    data: {
+        labels: weekdayData.labels,
+        datasets: [{
+            label: 'Courriers',
+            data: weekdayData.counts,
+            borderColor: rdcColors.teal,
+            backgroundColor: rdcColors.teal + '40',
+            pointBackgroundColor: rdcColors.teal,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            r: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 3. Graphique par heure de la journée
+const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+        labels: hourlyData.hours,
+        datasets: [{
+            label: 'Volume par heure',
+            data: hourlyData.counts,
+            backgroundColor: rdcColors.pink + '80',
+            borderColor: rdcColors.pink,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 4. Évolution hebdomadaire des statuts
+const weeklyStatusCtx = document.getElementById('weeklyStatusChart').getContext('2d');
+const statusLabels = Object.keys(weeklyStatus);
+const statusTypes = ['ENTRANT', 'SORTANT', 'EN_COURS', 'TRAITE'];
+const statusDatasets = statusTypes.map((status, index) => ({
+    label: status,
+    data: statusLabels.map(week => weeklyStatus[week][status] || 0),
+    borderColor: [rdcColors.blue, rdcColors.green, rdcColors.yellow, rdcColors.red][index],
+    backgroundColor: [rdcColors.blue, rdcColors.green, rdcColors.yellow, rdcColors.red][index] + '40',
+    tension: 0.4
+}));
+
+new Chart(weeklyStatusCtx, {
+    type: 'line',
+    data: {
+        labels: statusLabels,
+        datasets: statusDatasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 5. Évolution des types sur 6 mois
+const typeEvolutionCtx = document.getElementById('typeEvolutionChart').getContext('2d');
+const typeMonths = Object.keys(typeEvolution);
+const typeDatasets = [{
+    label: 'ENTRANT',
+    data: typeMonths.map(month => typeEvolution[month]['ENTRANT'] || 0),
+    borderColor: rdcColors.emerald,
+    backgroundColor: rdcColors.emerald + '40',
+    fill: false
+}, {
+    label: 'SORTANT', 
+    data: typeMonths.map(month => typeEvolution[month]['SORTANT'] || 0),
+    borderColor: rdcColors.orange,
+    backgroundColor: rdcColors.orange + '40',
+    fill: false
+}];
+
+new Chart(typeEvolutionCtx, {
+    type: 'line',
+    data: {
+        labels: typeMonths,
+        datasets: typeDatasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 6. Tendance annuelle sur 24 mois
+const yearlyTrendCtx = document.getElementById('yearlyTrendChart').getContext('2d');
+new Chart(yearlyTrendCtx, {
+    type: 'line',
+    data: {
+        labels: yearlyEvolution.map(d => d.month),
+        datasets: [{
+            label: 'Entrants',
+            data: yearlyEvolution.map(d => d.entrants),
+            borderColor: rdcColors.rose,
+            backgroundColor: rdcColors.rose + '20',
+            fill: '+1'
+        }, {
+            label: 'Sortants',
+            data: yearlyEvolution.map(d => d.sortants),
+            borderColor: rdcColors.cyan,
+            backgroundColor: rdcColors.cyan + '20',
+            fill: 'origin'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                stacked: false
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
         }
     }
 });
