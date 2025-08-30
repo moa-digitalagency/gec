@@ -3557,17 +3557,6 @@ def analytics():
                          avg_processing_time=round(avg_processing_time, 1),
                          monthly_volumes=monthly_volumes)
 
-@app.route('/set_language/<lang>')
-def set_language(lang):
-    """Change la langue de l'interface"""
-    if lang in ['fr', 'en']:
-        session['language'] = lang
-        flash('Language changed successfully' if lang == 'en' else 'Langue changée avec succès', 'success')
-    else:
-        flash('Invalid language selection', 'error')
-    
-    # Rediriger vers la page précédente ou dashboard
-    return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/export_analytics/<format>')
 @login_required
