@@ -422,128 +422,426 @@ def get_all_senders():
         return []
 
 def export_courrier_pdf(courrier):
-    """Exporter un courrier en PDF avec ses métadonnées - Optimisé pour compatibilité universelle"""
-    try:
-        # Créer le dossier exports s'il n'existe pas
-        exports_dir = 'exports'
-        os.makedirs(exports_dir, exist_ok=True)
-        
-        # Nom du fichier PDF simplifié pour éviter les conflits
-        import time
-        timestamp = int(time.time())
-        filename = f"courrier_{courrier.numero_accuse_reception}_{timestamp}.pdf"
-        pdf_path = os.path.join(exports_dir, filename)
-        
-        # Mode simple pour compatibilité maximale
-        return create_optimized_pdf(courrier, pdf_path)
-        
-    except Exception as e:
-        print(f"Erreur lors de la génération PDF: {e}")
-        # Fallback : PDF minimal d'urgence
-        return create_emergency_pdf(courrier, pdf_path)
-
-def create_optimized_pdf(courrier, pdf_path):
-    """Créer un PDF optimisé pour tous systèmes"""
-    try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib import colors
-        from reportlab.lib.units import inch
-        from reportlab.pdfgen import canvas
-        from datetime import datetime
-        from models import ParametresSysteme
-        
-        # Configuration simplifiée pour performance optimale
-        doc = SimpleDocTemplate(pdf_path, pagesize=A4, 
-                              topMargin=1*inch, bottomMargin=1*inch,
-                              leftMargin=0.75*inch, rightMargin=0.75*inch)
-        styles = getSampleStyleSheet()
-        story = []
-        
-        # Récupérer les paramètres système
-        parametres = ParametresSysteme.get_parametres()
-        
-        # Style pour le titre
-        title_style = ParagraphStyle(
-            'Title', parent=styles['Heading1'],
-            fontSize=14, spaceAfter=20, alignment=1, textColor=colors.darkblue
+    """Exporter un courrier en PDF avec ses métadonnées"""
+    # Créer le dossier exports s'il n'existe pas
+    exports_dir = 'exports'
+    os.makedirs(exports_dir, exist_ok=True)
+    
+    # Nom du fichier PDF
+    filename = f"courrier_{courrier.numero_accuse_reception}.pdf"
+    pdf_path = os.path.join(exports_dir, filename)
+    
+    # Classe personnalisée pour les numéros de page
+    class NumberedCanvas(canvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            canvas.Canvas.__init__(self, *args, **kwargs)
+            self._saved_page_states = []
+            
+        def showPage(self):
+            self._saved_page_states.append(dict(self.__dict__))
+            self._startPage()
+            
+        def save(self):
+            """Add page info to each page (page x of y)"""
+            num_pages = len(self._saved_page_states)
+            for (page_num, page_state) in enumerate(self._saved_page_states):
+                self.__dict__.update(page_state)
+                self.draw_page_number(page_num + 1, num_pages)
+                canvas.Canvas.showPage(self)
+            canvas.Canvas.save(self)
+            
+        def draw_page_number(self, page_num, total_pages):
+            """Draw the footer with copyright and page number at the bottom on two lines"""
+            from models import ParametresSysteme
+            from flask_login import current_user
+            parametres = ParametresSysteme.get_parametres()
+            
+            # Première ligne : Système et Copyright
+            line1_parts = []
+            if parametres.texte_footer:
+                line1_parts.append(parametres.texte_footer)
+            
+            copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
+            line1_parts.append(copyright)
+            
+            line1_text = " | ".join(line1_parts)
+            
+            # Deuxième ligne : Date, utilisateur et pagination
+            line2_parts = []
+            
+            # Date de génération
+            now = datetime.now()
+            date_str = now.strftime('%A %d %B %Y à %H:%M')
+            # Traduire en français
+            mois_fr = {
+                'January': 'janvier', 'February': 'février', 'March': 'mars', 'April': 'avril',
+                'May': 'mai', 'June': 'juin', 'July': 'juillet', 'August': 'août',
+                'September': 'septembre', 'October': 'octobre', 'November': 'novembre', 'December': 'décembre'
+            }
+            jours_fr = {
+                'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi', 'Thursday': 'Jeudi',
+                'Friday': 'Vendredi', 'Saturday': 'Samedi', 'Sunday': 'Dimanche'
+            }
+            for en, fr in mois_fr.items():
+                date_str = date_str.replace(en, fr)
+            for en, fr in jours_fr.items():
+                date_str = date_str.replace(en, fr)
+            
+            # Essayer d'obtenir l'utilisateur actuel
+            try:
+                if current_user and current_user.is_authenticated:
+                    user_info = f"par {current_user.nom_complet}"
+                else:
+                    user_info = "par le système GEC"
+            except:
+                user_info = "par le système GEC"
+            
+            line2_parts.append(f"Document généré le {date_str} {user_info}")
+            line2_parts.append(f"Page {page_num} sur {total_pages}")
+            
+            line2_text = " | ".join(line2_parts)
+            
+            # Configuration du texte
+            self.setFont("Helvetica", 8)
+            page_width = A4[0]
+            left_margin = 0.75*inch
+            right_margin = 0.75*inch
+            text_width = page_width - left_margin - right_margin
+            
+            # Dessiner la première ligne
+            line1_width = self.stringWidth(line1_text, "Helvetica", 8)
+            if line1_width <= text_width:
+                x_position1 = (page_width - line1_width) / 2
+            else:
+                x_position1 = left_margin
+            self.drawString(x_position1, 0.6*inch, line1_text)
+            
+            # Dessiner la deuxième ligne
+            line2_width = self.stringWidth(line2_text, "Helvetica", 8)
+            if line2_width <= text_width:
+                x_position2 = (page_width - line2_width) / 2
+            else:
+                x_position2 = left_margin
+            self.drawString(x_position2, 0.4*inch, line2_text)
+    
+    # Créer le document PDF avec la classe personnalisée
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1.2*inch, 
+                          leftMargin=0.75*inch, rightMargin=0.75*inch)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Style personnalisé pour le titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=30,
+        alignment=1,  # Centré
+        textColor=colors.darkblue
+    )
+    
+    # Style pour le texte avec wrap automatique
+    text_style = ParagraphStyle(
+        'CustomText',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=12,
+        wordWrap='CJK',  # Permettre le wrap sur les mots longs
+        splitLongWords=True,
+        allowWidows=1,
+        allowOrphans=1
+    )
+    
+    # Style pour les labels
+    label_style = ParagraphStyle(
+        'LabelStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6,
+        textColor=colors.darkblue,
+        fontName='Helvetica-Bold'
+    )
+    
+    # Récupérer les paramètres système pour le PDF
+    from models import ParametresSysteme
+    parametres = ParametresSysteme.get_parametres()
+    
+    # Ajouter le logo s'il existe
+    logo_path = None
+    if parametres.logo_pdf:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_pdf.startswith('/uploads/'):
+            logo_file_path = parametres.logo_pdf[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    elif parametres.logo_url:
+        # Convertir l'URL relative en chemin de fichier absolu
+        if parametres.logo_url.startswith('/uploads/'):
+            logo_file_path = parametres.logo_url[9:]  # Enlever '/uploads/'
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    
+    if logo_path:
+        try:
+            # Charger l'image pour obtenir ses dimensions originales
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(logo_path)
+            original_width, original_height = pil_img.size
+            
+            # Calculer les dimensions en préservant le ratio
+            max_width = 1.5*inch
+            max_height = 1*inch
+            
+            # Calculer le ratio de redimensionnement
+            width_ratio = max_width / original_width
+            height_ratio = max_height / original_height
+            ratio = min(width_ratio, height_ratio)
+            
+            # Nouvelles dimensions préservant le ratio
+            new_width = original_width * ratio
+            new_height = original_height * ratio
+            
+            logo = Image(logo_path, width=new_width, height=new_height)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 10))
+        except Exception as e:
+            print(f"Erreur chargement logo: {e}")  # Pour debug
+    
+    # Titre configuré du document
+    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
+    
+    # En-tête pays - PREMIER ÉLÉMENT
+    pays_style = ParagraphStyle(
+        'PaysStyle',
+        parent=styles['Normal'],
+        fontSize=16,
+        fontName='Helvetica-Bold',
+        alignment=1,  # Center
+        spaceAfter=10,
+        textColor=colors.darkblue
+    )
+    pays_text = parametres.pays_pdf or "République Démocratique du Congo"
+    story.append(Paragraph(pays_text, pays_style))
+    
+    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)
+    story.append(title)
+    story.append(Spacer(1, 20))
+    
+    # Sous-titre selon le type
+    type_display = "COURRIER ENTRANT" if courrier.type_courrier == 'ENTRANT' else "COURRIER SORTANT"
+    subtitle = Paragraph(f"ACCUSÉ DE RÉCEPTION - {type_display}", styles['Heading2'])
+    story.append(subtitle)
+    story.append(Spacer(1, 20))
+    
+    # Tableau des métadonnées avec text wrapping pour les champs longs
+    data = [
+        [Paragraph('N° d\'Accusé de Réception:', label_style), Paragraph(courrier.numero_accuse_reception, text_style)],
+        [Paragraph('Type de Courrier:', label_style), Paragraph(courrier.type_courrier, text_style)],
+        [Paragraph('N° de Référence:', label_style), Paragraph(courrier.numero_reference if courrier.numero_reference else 'Non référencé', text_style)],
+        [Paragraph(courrier.get_label_contact() + ':', label_style), Paragraph(courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié', text_style)],
+    ]
+    
+    # Ajouter le champ SG en copie seulement pour les courriers entrants
+    if courrier.type_courrier == 'ENTRANT' and hasattr(courrier, 'secretaire_general_copie'):
+        sg_copie_text = 'Oui' if courrier.secretaire_general_copie else 'Non'
+        if courrier.secretaire_general_copie is None:
+            sg_copie_text = 'Non renseigné'
+        data.append([Paragraph('Secrétaire Général en copie:', label_style), Paragraph(sg_copie_text, text_style)])
+    
+    # Utiliser le bon label selon le type de courrier
+    date_label = "Date d'Émission:" if courrier.type_courrier == 'SORTANT' else "Date de Rédaction:"
+    
+    data.extend([
+        [Paragraph('Objet:', label_style), Paragraph(courrier.objet, text_style)],
+        [Paragraph(date_label, label_style), Paragraph(format_date(courrier.date_redaction), text_style)],
+        [Paragraph('Date d\'Enregistrement:', label_style), Paragraph(format_date(courrier.date_enregistrement, include_time=True), text_style)],
+        [Paragraph('Enregistré par:', label_style), Paragraph(courrier.utilisateur_enregistrement.nom_complet, text_style)],
+        [Paragraph('Statut:', label_style), Paragraph(courrier.statut, text_style)],
+        [Paragraph('Fichier Joint:', label_style), Paragraph(courrier.fichier_nom if courrier.fichier_nom else 'Aucun', text_style)],
+    ])
+    
+    table = Table(data, colWidths=[2.5*inch, 4*inch], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Alignement vertical en haut
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (1, 0), (1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('WORDWRAP', (1, 0), (1, -1), 'CJK')  # Permettre le wrap des mots dans la colonne de droite
+    ]))
+    
+    story.append(table)
+    story.append(Spacer(1, 30))
+    
+    # Ajouter une note qui indique que les commentaires et transmissions sont en page 2
+    from models import CourrierComment, CourrierForward
+    comments = CourrierComment.query.filter_by(courrier_id=courrier.id, actif=True)\
+                                   .order_by(CourrierComment.date_creation.desc()).all()
+    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
+                                   .order_by(CourrierForward.date_transmission.desc()).all()
+    
+    # Note d'information si il y a des commentaires ou transmissions
+    if comments or forwards:
+        info_note_style = ParagraphStyle(
+            'InfoNote',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=12,
+            textColor=colors.darkblue,
+            fontName='Helvetica-Oblique',
+            alignment=1  # Centré
         )
         
-        # Style pour le texte
-        normal_style = ParagraphStyle(
-            'Normal', parent=styles['Normal'],
-            fontSize=10, spaceAfter=8
-        )
+        elements_page2 = []
+        if comments:
+            elements_page2.append("commentaires")
+        if forwards:
+            elements_page2.append("historique des transmissions")
         
-        # Ajouter le titre
-        story.append(Paragraph("COURRIER ÉLECTRONIQUE", title_style))
+        note_text = f"Voir page suivante pour : {' et '.join(elements_page2)}"
+        info_note = Paragraph(note_text, info_note_style)
+        story.append(info_note)
+        story.append(Spacer(1, 20))
+    
+    # Saut de page vers page 2 pour les commentaires et transmissions
+    from reportlab.platypus import PageBreak
+    if comments or forwards:
+        story.append(PageBreak())
+    
+    # PAGE 2 : Commentaires et transmissions
+    if comments:
+        # Titre section commentaires
+        comment_title = Paragraph('Commentaires et Annotations', title_style)
+        story.append(comment_title)
         story.append(Spacer(1, 12))
         
-        # Informations de base du courrier
-        info_data = [
-            ["N° Accusé de Réception:", courrier.numero_accuse_reception],
-            ["Type:", courrier.type_courrier],
-            ["Objet:", courrier.objet],
-            ["Date d'enregistrement:", courrier.date_enregistrement.strftime('%d/%m/%Y') if courrier.date_enregistrement else 'N/A']
-        ]
+        # Tableau des commentaires
+        comment_data = [['Utilisateur', 'Type', 'Commentaire', 'Date']]
         
-        if courrier.expediteur:
-            info_data.append(["Expéditeur:", courrier.expediteur])
-        if courrier.destinataire:
-            info_data.append(["Destinataire:", courrier.destinataire])
-        if courrier.autres_informations:
-            info_data.append(["Autres informations:", courrier.autres_informations])
+        for comment in comments:
+            type_display = {
+                'comment': 'Commentaire',
+                'annotation': 'Annotation', 
+                'instruction': 'Instruction'
+            }.get(comment.type_comment, comment.type_comment)
             
-        # Créer tableau simple et efficace
-        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
-        info_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            date_str = comment.date_creation.strftime('%d/%m/%Y %H:%M')
+            if comment.date_modification:
+                date_str += f" (modifié le {comment.date_modification.strftime('%d/%m/%Y %H:%M')})"
+            
+            # Style spécial pour les commentaires avec meilleur contrôle des retours à la ligne
+            comment_text_style = ParagraphStyle(
+                'CommentText',
+                parent=text_style,
+                wordWrap='CJK',
+                splitLongWords=False,  # Éviter de couper les mots courts
+                allowWidows=1,
+                allowOrphans=1,
+                breakLongWords=False,  # Ne pas casser les mots courts comme "commentaire"
+                fontSize=9,
+                leading=11
+            )
+            
+            comment_data.append([
+                Paragraph(comment.user.nom_complet, text_style),
+                Paragraph(type_display, text_style),
+                Paragraph(comment.commentaire, comment_text_style),
+                Paragraph(date_str, text_style)
+            ])
+        
+        comment_table = Table(comment_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
+        comment_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkblue),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
         ]))
         
-        story.append(info_table)
+        story.append(comment_table)
         story.append(Spacer(1, 20))
+    
+    # Ajouter l'historique des transmissions si présent
+    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
+                                   .order_by(CourrierForward.date_transmission.desc()).all()
+    
+    if forwards:
+        # Titre section transmissions
+        forward_title = Paragraph('Historique des Transmissions', title_style)
+        story.append(forward_title)
+        story.append(Spacer(1, 12))
         
-        # Footer simple intégré
-        footer_text = f"Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')} - {parametres.copyright_text or 'GEC Système'}"
-        story.append(Spacer(1, 50))
-        story.append(Paragraph(footer_text, normal_style))
+        # Tableau des transmissions avec mêmes colonnes que commentaires
+        forward_data = [['Transmis par', 'Transmis à', 'Message', 'Date']]
         
-        # Construire le PDF de manière simple
-        doc.build(story)
-        return pdf_path
+        for forward in forwards:
+            date_str = forward.date_transmission.strftime('%d/%m/%Y %H:%M')
+            
+            status_parts = []
+            if forward.lu:
+                status_parts.append(f"Lu le {forward.date_lecture.strftime('%d/%m/%Y %H:%M')}")
+            else:
+                status_parts.append("Non lu")
+            
+            if forward.email_sent:
+                status_parts.append("Email envoyé")
+            
+            status_str = " | ".join(status_parts)
+            message_str = forward.message if forward.message else "-"
+            
+            # Combiner message et statut pour garder 4 colonnes comme les commentaires
+            message_status = f"{message_str}"
+            if status_str != "Non lu":
+                message_status += f" ({status_str})"
+            
+            forward_data.append([
+                Paragraph(forward.forwarded_by.nom_complet, text_style),
+                Paragraph(forward.forwarded_to.nom_complet, text_style),
+                Paragraph(message_status, text_style),
+                Paragraph(date_str, text_style)
+            ])
         
-    except Exception as e:
-        print(f"Erreur PDF optimisé: {e}")
-        return create_emergency_pdf(courrier, pdf_path)
-
-def create_emergency_pdf(courrier, pdf_path):
-    """PDF d'urgence minimal en cas d'échec total"""
-    try:
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.pagesizes import A4
+        forward_table = Table(forward_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
+        forward_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
+        ]))
         
-        c = canvas.Canvas(pdf_path, pagesize=A4)
-        c.setFont("Helvetica", 12)
-        
-        y_position = 750
-        c.drawString(100, y_position, "COURRIER ÉLECTRONIQUE")
-        y_position -= 30
-        c.drawString(100, y_position, f"N° Accusé: {courrier.numero_accuse_reception}")
-        y_position -= 20
-        c.drawString(100, y_position, f"Objet: {courrier.objet[:80]}...")  # Limiter la longueur
-        
-        c.save()
-        return pdf_path
-    except:
-        # En dernier recours, retourner None
-        return None
+        story.append(forward_table)
+        story.append(Spacer(1, 20))
+    
+    # Si commentaires ou transmissions étaient sur la page 2, ajouter un saut de page avant le footer
+    if comments or forwards:
+        story.append(PageBreak())
+    
+    # Le footer est maintenant géré automatiquement par la classe NumberedCanvas
+    # sur chaque page, donc on n'ajoute plus rien ici
+    
+    # Construire le PDF avec numérotation des pages
+    doc.build(story, canvasmaker=NumberedCanvas)
+    
+    return pdf_path
 
 def export_mail_list_pdf(courriers, filters):
     """Exporter une liste de courriers en PDF"""

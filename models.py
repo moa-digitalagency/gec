@@ -682,9 +682,6 @@ class ParametresSysteme(db.Model):
     # Paramètres d'organisation - appellation des départements
     appellation_departement = db.Column(db.String(100), nullable=False, default="Départements")
     
-    # Titre du responsable (Secrétaire Général, Directeur, etc.)
-    titre_responsable = db.Column(db.String(100), nullable=False, default="Secrétaire Général")
-    
     # Choix du fournisseur email
     email_provider = db.Column(db.String(20), nullable=False, default="sendgrid")  # 'sendgrid' ou 'smtp'
     

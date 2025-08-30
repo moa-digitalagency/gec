@@ -424,10 +424,7 @@ def register_mail():
             
             # Valider les champs obligatoires
             if not objet or not expediteur or not sg_copie_value:
-                # Récupérer le titre du responsable pour le message d'erreur
-                parametres = ParametresSysteme.get_parametres()
-                titre_responsable = parametres.titre_responsable or 'Secrétaire Général'
-                flash(f'L\'objet, l\'expéditeur et le statut de copie au {titre_responsable} sont obligatoires pour un courrier entrant.', 'error')
+                flash('L\'objet, l\'expéditeur et le statut de copie au Secrétaire Général sont obligatoires pour un courrier entrant.', 'error')
                 statuts_disponibles = StatutCourrier.get_statuts_actifs()
                 return render_template('register_mail.html', statuts_disponibles=statuts_disponibles)
             
@@ -1342,9 +1339,6 @@ def settings():
             
             # Paramètre d'appellation des départements
             parametres.appellation_departement = sanitize_input(request.form.get('appellation_departement', '').strip()) or "Départements"
-            
-            # Paramètre du titre du responsable
-            parametres.titre_responsable = sanitize_input(request.form.get('titre_responsable', '').strip()) or "Secrétaire Général"
             
             # Choix du fournisseur email
             parametres.email_provider = sanitize_input(request.form.get('email_provider', 'sendgrid').strip())

@@ -80,7 +80,6 @@ def run_automatic_migrations(app, db):
         critical_columns = [
             ('parametres_systeme', 'email_provider', 'VARCHAR(20) DEFAULT \'sendgrid\''),
             ('parametres_systeme', 'notify_superadmin_new_mail', 'BOOLEAN DEFAULT 1'),
-            ('parametres_systeme', 'titre_responsable', 'VARCHAR(100) DEFAULT \'Secrétaire Général\''),
         ]
         
         for table, column, definition in critical_columns:
