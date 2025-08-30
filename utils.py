@@ -131,6 +131,15 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_titre_responsable():
+    """Récupère le titre du responsable de structure depuis les paramètres système"""
+    try:
+        from models import ParametresSysteme
+        parametres = ParametresSysteme.get_parametres()
+        return parametres.titre_responsable_structure if parametres.titre_responsable_structure else "Secrétaire Général"
+    except:
+        return "Secrétaire Général"
+
 def generate_accuse_reception():
     """Générer un numéro d'accusé de réception unique selon le format configuré"""
     import re
@@ -650,7 +659,8 @@ def export_courrier_pdf(courrier):
         sg_copie_text = 'Oui' if courrier.secretaire_general_copie else 'Non'
         if courrier.secretaire_general_copie is None:
             sg_copie_text = 'Non renseigné'
-        data.append([Paragraph('Secrétaire Général en copie:', label_style), Paragraph(sg_copie_text, text_style)])
+        titre_responsable = get_titre_responsable()
+        data.append([Paragraph(f'{titre_responsable} en copie:', label_style), Paragraph(sg_copie_text, text_style)])
     
     # Utiliser le bon label selon le type de courrier
     date_label = "Date d'Émission:" if courrier.type_courrier == 'SORTANT' else "Date de Rédaction:"

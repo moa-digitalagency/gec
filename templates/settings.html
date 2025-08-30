@@ -213,6 +213,30 @@
                         </p>
                     </div>
                     
+                    <!-- Titre du responsable de structure -->
+                    <div>
+                        <label for="titre_responsable_structure" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user-tie mr-1 text-rdc-blue"></i>
+                            Titre du Responsable de Structure
+                        </label>
+                        <select id="titre_responsable_structure" 
+                                name="titre_responsable_structure" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="Secrétaire Général" {% if parametres.titre_responsable_structure == 'Secrétaire Général' %}selected{% endif %}>Secrétaire Général</option>
+                            <option value="Directeur Général" {% if parametres.titre_responsable_structure == 'Directeur Général' %}selected{% endif %}>Directeur Général</option>
+                            <option value="Directeur" {% if parametres.titre_responsable_structure == 'Directeur' %}selected{% endif %}>Directeur</option>
+                            <option value="Chef de Cabinet" {% if parametres.titre_responsable_structure == 'Chef de Cabinet' %}selected{% endif %}>Chef de Cabinet</option>
+                            <option value="Président" {% if parametres.titre_responsable_structure == 'Président' %}selected{% endif %}>Président</option>
+                            <option value="Recteur" {% if parametres.titre_responsable_structure == 'Recteur' %}selected{% endif %}>Recteur</option>
+                            <option value="Gouverneur" {% if parametres.titre_responsable_structure == 'Gouverneur' %}selected{% endif %}>Gouverneur</option>
+                            <option value="Ministre" {% if parametres.titre_responsable_structure == 'Ministre' %}selected{% endif %}>Ministre</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Titre affiché pour le responsable dans la fonctionnalité "en copie" et les documents PDF.
+                        </p>
+                    </div>
+                    
                     <!-- Paramètres PDF -->
                     <div class="border-t border-gray-200 pt-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-4">
