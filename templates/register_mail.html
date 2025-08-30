@@ -179,11 +179,11 @@
                         </p>
                     </div>
                     
-                    <!-- Secrétaire Général en copie (pour courrier entrant seulement) -->
+                    <!-- {{ parametres.titre_responsable or 'Secrétaire Général' }} en copie (pour courrier entrant seulement) -->
                     <div id="sg-copie-section" style="display: none;">
                         <label for="secretaire_general_copie" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-user-tie mr-1 text-rdc-blue"></i>
-                            Le Secrétaire Général est en copie sur le courrier <span class="text-red-500">*</span>
+                            Le {{ parametres.titre_responsable or 'Secrétaire Général' }} est en copie sur le courrier <span class="text-red-500">*</span>
                         </label>
                         <select id="secretaire_general_copie" 
                                 name="secretaire_general_copie"
@@ -193,7 +193,7 @@
                             <option value="non">Non</option>
                         </select>
                         <p class="mt-1 text-sm text-gray-500">
-                            Indiquez si le Secrétaire Général est mentionné en copie sur ce courrier
+                            Indiquez si le {{ parametres.titre_responsable or 'Secrétaire Général' }} est mentionné en copie sur ce courrier
                         </p>
                     </div>
                     

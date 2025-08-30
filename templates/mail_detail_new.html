@@ -114,12 +114,12 @@
                 </div>
                 {% endif %}
                 
-                <!-- Secrétaire Général en copie (pour courriers entrants) -->
+                <!-- {{ parametres.titre_responsable or 'Secrétaire Général' }} en copie (pour courriers entrants) -->
                 {% if courrier.type_courrier == 'ENTRANT' %}
                 <div class="mt-6">
                     <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-user-tie mr-2 text-rdc-blue"></i>
-                        Secrétaire Général en copie
+                        {{ parametres.titre_responsable or 'Secrétaire Général' }} en copie
                     </div>
                     <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
                         {% if courrier.secretaire_general_copie is not none %}

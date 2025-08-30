@@ -138,7 +138,7 @@
                 <div id="sg-copie-filter" style="{% if type_courrier != 'ENTRANT' %}display:none;{% endif %}">
                     <label for="sg_copie" class="block text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-copy mr-1 text-indigo-500"></i>
-                        Secrétaire Général en Copie
+                        {{ parametres.titre_responsable or 'Secrétaire Général' }} en Copie
                     </label>
                     <select id="sg_copie" 
                             name="sg_copie"
