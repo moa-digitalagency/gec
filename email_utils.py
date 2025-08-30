@@ -11,6 +11,9 @@ import socket
 import urllib.request
 import urllib.error
 
+# Variable globale pour stocker la dernière erreur SendGrid
+_last_sendgrid_error = None
+
 # Import SendGrid
 try:
     from sendgrid import SendGridAPIClient
@@ -154,15 +157,29 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         return True
         
     except Exception as e:
-        logging.error(f"❌ ERREUR SendGrid détaillée: {str(e)}")
-        logging.error(f"❌ Type d'erreur: {type(e).__name__}")
+        error_details = []
+        error_details.append(f"❌ ERREUR SendGrid détaillée: {str(e)}")
+        error_details.append(f"❌ Type d'erreur: {type(e).__name__}")
+        
         if hasattr(e, 'body'):
-            logging.error(f"❌ Corps de l'erreur: {e.body}")
+            error_details.append(f"❌ Corps de l'erreur: {e.body}")
         if hasattr(e, 'status_code'):
-            logging.error(f"❌ Code de statut: {e.status_code}")
+            error_details.append(f"❌ Code de statut: {e.status_code}")
+        
         # Afficher aussi les détails de l'environnement
-        logging.error(f"❌ Clé API configurée: {'Oui' if sendgrid_api_key else 'Non'}")
-        logging.error(f"❌ Clé API commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
+        error_details.append(f"❌ Clé API configurée: {'Oui' if sendgrid_api_key else 'Non'}")
+        error_details.append(f"❌ Clé API commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
+        error_details.append(f"❌ Longueur clé: {len(sendgrid_api_key) if sendgrid_api_key else 0} caractères")
+        
+        # Log pour debugging
+        for detail in error_details:
+            logging.error(detail)
+            print(detail)  # Aussi dans la console
+        
+        # Sauvegarder les détails d'erreur pour les retourner à l'utilisateur
+        global _last_sendgrid_error
+        _last_sendgrid_error = "\n".join(error_details)
+        
         return False
 
 def check_internet_connection():
@@ -395,9 +412,16 @@ def test_sendgrid_configuration(test_email):
         else:
             # Échec même après vérifications OK - problème technique SendGrid
             failure_details = "\n".join(prerequisites['diagnostic_details'])
+            
+            # Récupérer l'erreur détaillée de SendGrid si disponible
+            global _last_sendgrid_error
+            sendgrid_error_info = ""
+            if _last_sendgrid_error:
+                sendgrid_error_info = f"\n\n🔍 ERREUR SENDGRID DÉTAILLÉE:\n{_last_sendgrid_error}"
+            
             return {
                 'success': False,
-                'message': f'❌ ÉCHEC TECHNIQUE: L\'envoi a échoué malgré une configuration correcte.\n\n📋 VÉRIFICATIONS EFFECTUÉES:\n{failure_details}\n\n🔧 PROBLÈME POSSIBLE:\n- Clé API expirée ou suspendue\n- Problème temporaire avec SendGrid\n- Restriction IP ou domaine\n- Quota dépassé'
+                'message': f'❌ ÉCHEC TECHNIQUE: L\'envoi a échoué malgré une configuration correcte.\n\n📋 VÉRIFICATIONS EFFECTUÉES:\n{failure_details}\n\n🔧 PROBLÈME POSSIBLE:\n- Clé API expirée ou suspendue\n- Problème temporaire avec SendGrid\n- Restriction IP ou domaine\n- Quota dépassé{sendgrid_error_info}'
             }
             
     except Exception as e:
