@@ -126,29 +126,222 @@ GEC (Gestion Électronique du Courrier) is a comprehensive Flask web application
 ## Installation and Deployment
 
 ### Prerequisites
-- Python 3.8+
-- PostgreSQL
-- Web server (recommended: Gunicorn)
+- Python 3.11+ (recommended)
+- Git
+- PostgreSQL (optional, SQLite by default)
+
+### 🪟 Windows Installation (10/11)
+
+```powershell
+# Install Python 3.11
+winget install --id Python.Python.3.11 -e
+
+# Install Git
+winget install --id Git.Git -e
+
+# Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Configure PowerShell for scripts
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+
+# Create virtual environment
+python -m venv .venv
+# If error, try: py -3.11 -m venv .venv
+
+# Activate environment
+.\.venv\Scripts\Activate.ps1
+
+# Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Launch application
+python .\main.py
+```
+
+### 🖥️ Windows Server Installation (2008/2012/2016/2019/2022)
+
+```cmd
+REM Download Python from python.org if winget unavailable
+REM Or use chocolatey: choco install python git
+
+REM Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+REM Create virtual environment
+python -m venv .venv
+
+REM Activate environment
+.venv\Scripts\activate.bat
+
+REM Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+REM Launch application
+python main.py
+```
+
+### 🍎 macOS Installation (10.15+)
+
+```bash
+# Install Homebrew if needed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Python 3.11 and Git
+brew install python@3.11 git
+
+# Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Create virtual environment
+python3.11 -m venv .venv
+
+# Activate environment
+source .venv/bin/activate
+
+# Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Launch application
+python main.py
+```
+
+### 🐧 Linux Installation
+
+#### Ubuntu/Debian
+```bash
+# Update system
+sudo apt update
+
+# Install Python 3.11 and dependencies
+sudo apt install python3.11 python3.11-venv python3.11-dev git postgresql-client -y
+
+# Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Create virtual environment
+python3.11 -m venv .venv
+
+# Activate environment
+source .venv/bin/activate
+
+# Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Launch application
+python main.py
+```
+
+#### CentOS/RHEL/Fedora
+```bash
+# For Fedora/CentOS Stream
+sudo dnf install python3.11 python3.11-devel git postgresql -y
+
+# For RHEL/CentOS 7-8 (older versions)
+sudo yum install python3.11 python3.11-devel git postgresql -y
+
+# Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Create virtual environment
+python3.11 -m venv .venv
+
+# Activate environment
+source .venv/bin/activate
+
+# Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Launch application
+python main.py
+```
+
+#### Arch Linux
+```bash
+# Install dependencies
+sudo pacman -S python git postgresql
+
+# Clone the project
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Create virtual environment
+python -m venv .venv
+
+# Activate environment
+source .venv/bin/activate
+
+# Install dependencies
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Launch application
+python main.py
+```
 
 ### Environment Variables
-```
+
+Create a `.env` file in the project folder:
+
+```bash
 DATABASE_URL=postgresql://user:password@host:port/database
-SESSION_SECRET=your_secret_key
+SESSION_SECRET=your_secret_key_here
 SENDGRID_API_KEY=your_sendgrid_key (optional)
-GEC_MASTER_KEY=your_encryption_key
+GEC_MASTER_KEY=your_encryption_key_32_chars
 GEC_PASSWORD_SALT=your_password_salt
 ```
 
-### Quick Start
+### Production Deployment
+
+#### With Gunicorn (Linux/macOS)
 ```bash
-# Install dependencies
-pip install -r project-dependencies.txt
+# Install Gunicorn
+pip install gunicorn
 
-# Database configuration
-# (Tables are created automatically)
+# Launch in production
+gunicorn --bind 0.0.0.0:5000 --workers 4 main:app
+```
 
-# Start the application
-gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+#### With Waitress (Windows)
+```powershell
+# Install Waitress
+pip install waitress
+
+# Launch in production
+waitress-serve --host=0.0.0.0 --port=5000 main:app
+```
+
+### 🔧 Troubleshooting
+
+**Python not found error (Windows)**:
+- Restart your terminal after installation
+- Use `py` instead of `python`
+- Check PATH in environment variables
+
+**PowerShell permissions error**:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+```
+
+**Pip outdated error**:
+```bash
+python -m pip install --upgrade pip
+```
+
+**Port 5000 in use**:
+```bash
+# Change port in main.py or use
+python main.py --port 8080
 ```
 
 ## New Features (August 2025)

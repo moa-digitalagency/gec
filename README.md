@@ -126,29 +126,222 @@ GEC (Gestion Électronique du Courrier) est une application web Flask complète 
 ## Installation et Déploiement
 
 ### Prérequis
-- Python 3.8+
-- PostgreSQL
-- Serveur web (recommandé : Gunicorn)
+- Python 3.11+ (recommandé)
+- Git
+- PostgreSQL (optionnel, SQLite par défaut)
+
+### 🪟 Installation Windows (10/11)
+
+```powershell
+# Installer Python 3.11
+winget install --id Python.Python.3.11 -e
+
+# Installer Git
+winget install --id Git.Git -e
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Configurer PowerShell pour les scripts
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+
+# Créer l'environnement virtuel
+python -m venv .venv
+# Si erreur, essayez : py -3.11 -m venv .venv
+
+# Activer l'environnement
+.\.venv\Scripts\Activate.ps1
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python .\main.py
+```
+
+### 🖥️ Installation Windows Server (2008/2012/2016/2019/2022)
+
+```cmd
+REM Télécharger Python depuis python.org si winget non disponible
+REM Ou utiliser chocolatey : choco install python git
+
+REM Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+REM Créer l'environnement virtuel
+python -m venv .venv
+
+REM Activer l'environnement
+.venv\Scripts\activate.bat
+
+REM Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+REM Lancer l'application
+python main.py
+```
+
+### 🍎 Installation macOS (10.15+)
+
+```bash
+# Installer Homebrew si nécessaire
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Installer Python 3.11 et Git
+brew install python@3.11 git
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Créer l'environnement virtuel
+python3.11 -m venv .venv
+
+# Activer l'environnement
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
+```
+
+### 🐧 Installation Linux
+
+#### Ubuntu/Debian
+```bash
+# Mettre à jour le système
+sudo apt update
+
+# Installer Python 3.11 et dépendances
+sudo apt install python3.11 python3.11-venv python3.11-dev git postgresql-client -y
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Créer l'environnement virtuel
+python3.11 -m venv .venv
+
+# Activer l'environnement
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
+```
+
+#### CentOS/RHEL/Fedora
+```bash
+# Pour Fedora/CentOS Stream
+sudo dnf install python3.11 python3.11-devel git postgresql -y
+
+# Pour RHEL/CentOS 7-8 (versions plus anciennes)
+sudo yum install python3.11 python3.11-devel git postgresql -y
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Créer l'environnement virtuel
+python3.11 -m venv .venv
+
+# Activer l'environnement
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
+```
+
+#### Arch Linux
+```bash
+# Installer les dépendances
+sudo pacman -S python git postgresql
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Créer l'environnement virtuel
+python -m venv .venv
+
+# Activer l'environnement
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
+```
 
 ### Variables d'Environnement
-```
+
+Créez un fichier `.env` dans le dossier du projet :
+
+```bash
 DATABASE_URL=postgresql://user:password@host:port/database
-SESSION_SECRET=your_secret_key
+SESSION_SECRET=your_secret_key_here
 SENDGRID_API_KEY=your_sendgrid_key (optionnel)
-GEC_MASTER_KEY=your_encryption_key
+GEC_MASTER_KEY=your_encryption_key_32_chars
 GEC_PASSWORD_SALT=your_password_salt
 ```
 
-### Démarrage Rapide
+### Déploiement Production
+
+#### Avec Gunicorn (Linux/macOS)
 ```bash
-# Installation des dépendances
-pip install -r project-dependencies.txt
+# Installer Gunicorn
+pip install gunicorn
 
-# Configuration de la base de données
-# (Les tables sont créées automatiquement)
+# Lancer en production
+gunicorn --bind 0.0.0.0:5000 --workers 4 main:app
+```
 
-# Démarrage de l'application
-gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+#### Avec Waitress (Windows)
+```powershell
+# Installer Waitress
+pip install waitress
+
+# Lancer en production
+waitress-serve --host=0.0.0.0 --port=5000 main:app
+```
+
+### 🔧 Dépannage
+
+**Erreur Python non trouvé (Windows)** :
+- Redémarrez votre terminal après installation
+- Utilisez `py` au lieu de `python`
+- Vérifiez PATH dans variables d'environnement
+
+**Erreur permissions PowerShell** :
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+```
+
+**Erreur pip outdated** :
+```bash
+python -m pip install --upgrade pip
+```
+
+**Port 5000 occupé** :
+```bash
+# Changer le port dans main.py ou utiliser
+python main.py --port 8080
 ```
 
 ## Nouvelles Fonctionnalités (Août 2025)
