@@ -8,6 +8,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.units import inch
 from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 
 # Imported locally to avoid circular imports
 from models import LogActivite
@@ -430,8 +431,37 @@ def export_courrier_pdf(courrier):
     filename = f"courrier_{courrier.numero_accuse_reception}.pdf"
     pdf_path = os.path.join(exports_dir, filename)
     
-    # Créer le document PDF
-    doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1*inch, 
+    # Classe personnalisée pour les numéros de page
+    class NumberedCanvas(canvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            canvas.Canvas.__init__(self, *args, **kwargs)
+            self._saved_page_states = []
+            
+        def showPage(self):
+            self._saved_page_states.append(dict(self.__dict__))
+            self._startPage()
+            
+        def save(self):
+            """Add page info to each page (page x of y)"""
+            num_pages = len(self._saved_page_states)
+            for (page_num, page_state) in enumerate(self._saved_page_states):
+                self.__dict__.update(page_state)
+                self.draw_page_number(page_num + 1, num_pages)
+                canvas.Canvas.showPage(self)
+            canvas.Canvas.save(self)
+            
+        def draw_page_number(self, page_num, total_pages):
+            """Draw the page number at the bottom of the page"""
+            self.setFont("Helvetica", 9)
+            page_text = f"Page {page_num} sur {total_pages}"
+            # Centrer le numéro de page
+            page_width = A4[0]
+            text_width = self.stringWidth(page_text, "Helvetica", 9)
+            x_position = (page_width - text_width) / 2
+            self.drawString(x_position, 0.5*inch, page_text)
+    
+    # Créer le document PDF avec la classe personnalisée
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1.2*inch, 
                           leftMargin=0.75*inch, rightMargin=0.75*inch)
     styles = getSampleStyleSheet()
     story = []
@@ -651,9 +681,11 @@ def export_courrier_pdf(courrier):
                 parent=text_style,
                 wordWrap='CJK',
                 splitLongWords=False,  # Éviter de couper les mots courts
-                allowWidows=0,
-                allowOrphans=0,
-                breakLongWords=False  # Ne pas casser les mots courts comme "commentaire"
+                allowWidows=1,
+                allowOrphans=1,
+                breakLongWords=False,  # Ne pas casser les mots courts comme "commentaire"
+                fontSize=9,
+                leading=11
             )
             
             comment_data.append([
@@ -663,7 +695,7 @@ def export_courrier_pdf(courrier):
                 Paragraph(date_str, text_style)
             ])
         
-        comment_table = Table(comment_data, colWidths=[1.3*inch, 1*inch, 3*inch, 1.2*inch])
+        comment_table = Table(comment_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
         comment_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkblue),
@@ -715,7 +747,7 @@ def export_courrier_pdf(courrier):
                 Paragraph(status_str, text_style)
             ])
         
-        forward_table = Table(forward_data, colWidths=[1.3*inch, 1.3*inch, 2*inch, 1.2*inch, 1.2*inch])
+        forward_table = Table(forward_data, colWidths=[1.5*inch, 1.5*inch, 2.2*inch, 1.3*inch, 1.5*inch])
         forward_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),
@@ -749,13 +781,13 @@ def export_courrier_pdf(courrier):
     copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
     footer_lines.append(copyright)
     
-    for line in footer_lines:
-        footer = Paragraph(line, styles['Normal'])
-        story.append(footer)
-        story.append(Spacer(1, 6))
+    # Joindre toutes les lignes du footer sur une seule ligne avec séparateurs
+    footer_text = " | ".join(footer_lines)
+    footer = Paragraph(footer_text, styles['Normal'])
+    story.append(footer)
     
-    # Construire le PDF
-    doc.build(story)
+    # Construire le PDF avec numérotation des pages
+    doc.build(story, canvasmaker=NumberedCanvas)
     
     return pdf_path
 
