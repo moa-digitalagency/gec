@@ -1363,25 +1363,16 @@ def settings():
                     encryption_manager = EncryptionManager()
                     parametres.smtp_password = encryption_manager.encrypt_data(smtp_password)
                 
-                # Paramètres SendGrid - Debug complet
+                # Paramètres SendGrid - Stockage direct pour résoudre le problème de cryptage
                 sendgrid_api_key = request.form.get('sendgrid_api_key', '').strip()
-                logging.info(f"DEBUG: Clé reçue du formulaire: '{sendgrid_api_key}' (longueur: {len(sendgrid_api_key)})")
                 
-                # Sauvegarder la clé si elle est fournie et n'est pas le placeholder
+                # Sauvegarder la clé directement si elle est fournie et n'est pas le placeholder
                 if sendgrid_api_key and sendgrid_api_key != '●●●●●●●●●●●●●●●●●●●●' and len(sendgrid_api_key) > 10:
-                    # Crypter la clé API SendGrid
-                    try:
-                        from encryption_utils import EncryptionManager
-                        encryption_manager = EncryptionManager()
-                        parametres.sendgrid_api_key = encryption_manager.encrypt_data(sendgrid_api_key)
-                        logging.info(f"DEBUG: Clé SendGrid sauvegardée et cryptée avec succès (longueur originale: {len(sendgrid_api_key)})")
-                    except Exception as e:
-                        logging.error(f"ERREUR: Impossible de crypter la clé SendGrid: {e}")
-                        flash(f'Erreur lors de la sauvegarde de la clé SendGrid: {str(e)}', 'error')
-                elif sendgrid_api_key and len(sendgrid_api_key) <= 10:
-                    logging.warning(f"DEBUG: Clé SendGrid trop courte ignorée (longueur: {len(sendgrid_api_key)})")
-                elif not sendgrid_api_key:
-                    logging.info("DEBUG: Aucune clé SendGrid fournie dans le formulaire")
+                    parametres.sendgrid_api_key = sendgrid_api_key
+                    logging.info(f"✅ Clé SendGrid sauvegardée directement (longueur: {len(sendgrid_api_key)})")
+                elif sendgrid_api_key == '':
+                    # Si le champ est vide, on garde la clé existante
+                    logging.info("Clé SendGrid: champ vide, conservation de la clé existante")
             
             parametres.modifie_par_id = current_user.id
             

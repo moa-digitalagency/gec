@@ -731,23 +731,8 @@ class ParametresSysteme(db.Model):
             return None
     
     def get_sendgrid_api_key_decrypted(self):
-        """Décrypte et retourne la clé API SendGrid"""
-        import logging
-        logging.info(f"DEBUG: sendgrid_api_key raw value: {self.sendgrid_api_key}")
-        
-        if not self.sendgrid_api_key:
-            logging.warning("DEBUG: sendgrid_api_key is None or empty")
-            return None
-        try:
-            from encryption_utils import EncryptionManager
-            encryption_manager = EncryptionManager()
-            decrypted = encryption_manager.decrypt_data(self.sendgrid_api_key)
-            logging.info(f"DEBUG: sendgrid_api_key decrypted successfully, length: {len(decrypted) if decrypted else 0}")
-            return decrypted
-        except Exception as e:
-            import logging
-            logging.error(f"Erreur lors du décryptage de la clé SendGrid: {e}")
-            return None
+        """Retourne la clé API SendGrid (stockage direct sans cryptage)"""
+        return self.sendgrid_api_key if self.sendgrid_api_key else None
     
     @staticmethod
     def get_parametres():
