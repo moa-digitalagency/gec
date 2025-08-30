@@ -721,8 +721,8 @@ def export_courrier_pdf(courrier):
         story.append(forward_title)
         story.append(Spacer(1, 12))
         
-        # Tableau des transmissions
-        forward_data = [['Transmis par', 'Transmis à', 'Message', 'Date', 'Statut']]
+        # Tableau des transmissions avec mêmes colonnes que commentaires
+        forward_data = [['Transmis par', 'Transmis à', 'Message', 'Date']]
         
         for forward in forwards:
             date_str = forward.date_transmission.strftime('%d/%m/%Y %H:%M')
@@ -739,15 +739,19 @@ def export_courrier_pdf(courrier):
             status_str = " | ".join(status_parts)
             message_str = forward.message if forward.message else "-"
             
+            # Combiner message et statut pour garder 4 colonnes comme les commentaires
+            message_status = f"{message_str}"
+            if status_str != "Non lu":
+                message_status += f" ({status_str})"
+            
             forward_data.append([
                 Paragraph(forward.forwarded_by.nom_complet, text_style),
                 Paragraph(forward.forwarded_to.nom_complet, text_style),
-                Paragraph(message_str, text_style),
-                Paragraph(date_str, text_style),
-                Paragraph(status_str, text_style)
+                Paragraph(message_status, text_style),
+                Paragraph(date_str, text_style)
             ])
         
-        forward_table = Table(forward_data, colWidths=[1.5*inch, 1.5*inch, 2.2*inch, 1.3*inch, 1.5*inch])
+        forward_table = Table(forward_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
         forward_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),

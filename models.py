@@ -670,7 +670,7 @@ class ParametresSysteme(db.Model):
     titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
     sous_titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
     pays_pdf = db.Column(db.String(200), nullable=True, default="République Démocratique du Congo")
-    copyright_text = db.Column(db.Text, nullable=True, default="© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
+    copyright_text = db.Column(db.Text, nullable=True, default="© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC")
     
     # Paramètres SMTP pour les notifications email
     smtp_server = db.Column(db.String(200), nullable=True)
@@ -709,9 +709,9 @@ class ParametresSysteme(db.Model):
             elif self.copyright_crypte:
                 return base64.b64decode(self.copyright_crypte.encode()).decode('utf-8')
             else:
-                return "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+                return "© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC"
         except:
-            return "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            return "© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC"
     
     def set_copyright_crypte(self, copyright_text):
         """Crypte et sauvegarde le copyright"""
@@ -741,14 +741,14 @@ class ParametresSysteme(db.Model):
         if not parametres:
             parametres = ParametresSysteme()
             # Initialiser les valeurs par défaut
-            parametres.copyright_text = "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            parametres.copyright_text = "© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC"
             parametres.pays_pdf = "République Démocratique du Congo"
-            parametres.set_copyright_crypte("© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
+            parametres.set_copyright_crypte("© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC")
             db.session.add(parametres)
             db.session.commit()
         elif not parametres.copyright_text:
             # Migrer depuis l'ancien système crypté
-            parametres.copyright_text = "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
+            parametres.copyright_text = "© 2025 GEC. Made with love and coffee by MOA-Digital Agency LLC"
             if not parametres.pays_pdf:
                 parametres.pays_pdf = "République Démocratique du Congo"
             db.session.commit()
