@@ -2052,13 +2052,16 @@ def manage_statuses():
                           couleurs_disponibles=couleurs_disponibles)
 
 @app.route('/set_language/<lang_code>')
-def set_user_language(lang_code):
+def set_language_route(lang_code):
     """Changer la langue de l'interface"""
     if set_language(lang_code):
         if current_user.is_authenticated:
             # Sauvegarder la préférence dans le profil utilisateur
             current_user.langue = lang_code
             db.session.commit()
+        flash('Langue changée avec succès' if lang_code == 'fr' else 'Language changed successfully', 'success')
+    else:
+        flash('Langue non supportée', 'error')
     
     # Rediriger vers la page précédente ou le dashboard
     return redirect(request.referrer or url_for('dashboard'))
