@@ -151,8 +151,15 @@ def inject_language_functions():
 @app.context_processor
 def inject_system_parameters():
     from models import ParametresSysteme
+    # Récupérer l'appellation depuis la base de données
+    try:
+        parametres = ParametresSysteme.get_parametres()
+        appellation = getattr(parametres, 'appellation_departement', 'Départements') or 'Départements'
+    except:
+        appellation = 'Départements'
+    
     return {
-        'get_appellation_entites': lambda: ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
+        'get_appellation_entites': lambda: appellation
     }
 
 # Security headers are already handled in the after_request function above

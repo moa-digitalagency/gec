@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Gestion des {{ appellation_entites }} - {{ t('app_name') }}{% endblock %}
+{% block title %}Gestion des {{ get_appellation_entites() }} - {{ t('app_name') }}{% endblock %}
 
 {% block content %}
 <!-- En-tête avec bouton d'ajout -->
@@ -8,15 +8,15 @@
     <div>
         <h1 class="text-3xl font-bold text-gray-900 flex items-center">
             <i class="fas fa-building mr-3 text-rdc-blue"></i>
-            Gestion des {{ appellation_entites }}
+            Gestion des {{ get_appellation_entites() }}
         </h1>
-        <p class="text-gray-600 mt-2">Gérez les {{ appellation_entites|lower }} et assignez les chefs de {{ appellation_entites[:-1]|lower }}</p>
+        <p class="text-gray-600 mt-2">Gérez les {{ get_appellation_entites()|lower }} et assignez les chefs de {{ get_appellation_entites()[:-1]|lower }}</p>
     </div>
     <div class="flex space-x-3">
         <a href="{{ url_for('add_department') }}" 
            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
             <i class="fas fa-plus mr-2"></i>
-            Nouveau {{ appellation_entites[:-1] }}
+            Nouveau {{ get_appellation_entites()[:-1] }}
         </a>
     </div>
 </div>
@@ -26,7 +26,7 @@
     <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
             <i class="fas fa-list mr-2 text-rdc-blue"></i>
-            {{ appellation_entites }} ({{ departements|length }})
+            {{ get_appellation_entites() }} ({{ departements|length }})
         </h2>
     </div>
     <div class="p-6">
@@ -36,13 +36,13 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ appellation_entites[:-1] }}
+                            {{ get_appellation_entites()[:-1] }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Code
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Chef de {{ appellation_entites[:-1] }}
+                            Chef de {{ get_appellation_entites()[:-1] }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Utilisateurs
