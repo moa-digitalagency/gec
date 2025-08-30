@@ -386,14 +386,18 @@ def test_sendgrid_configuration(test_email):
         print(f"📤 Résultat de l'envoi: {'✅ Succès' if success else '❌ Échec'}")
         
         if success:
+            # Succès avec détails des vérifications
+            success_details = "\n".join(prerequisites['diagnostic_details'])
             return {
                 'success': True,
-                'message': f'Email de test envoyé avec succès à {test_email}. Vérifiez votre boîte de réception.'
+                'message': f'✅ Email de test envoyé avec succès à {test_email}. Vérifiez votre boîte de réception.\n\n📋 VÉRIFICATIONS EFFECTUÉES:\n{success_details}'
             }
         else:
+            # Échec même après vérifications OK - problème technique SendGrid
+            failure_details = "\n".join(prerequisites['diagnostic_details'])
             return {
                 'success': False,
-                'message': 'Échec de l\'envoi de l\'email de test. Regardez les détails ci-dessus dans la console.'
+                'message': f'❌ ÉCHEC TECHNIQUE: L\'envoi a échoué malgré une configuration correcte.\n\n📋 VÉRIFICATIONS EFFECTUÉES:\n{failure_details}\n\n🔧 PROBLÈME POSSIBLE:\n- Clé API expirée ou suspendue\n- Problème temporaire avec SendGrid\n- Restriction IP ou domaine\n- Quota dépassé'
             }
             
     except Exception as e:
@@ -401,7 +405,7 @@ def test_sendgrid_configuration(test_email):
         logging.error(f"Erreur lors du test SendGrid: {str(e)}")
         return {
             'success': False,
-            'message': f'Erreur lors du test : {str(e)}'
+            'message': f'💥 ERREUR INATTENDUE: {str(e)}\n\nVeuillez vérifier :\n- Connexion Internet\n- Configuration SendGrid\n- Format de l\'email\n- Logs de l\'application'
         }
 
 def send_email_from_system_config(to_email, subject, html_content, text_content=None, attachment_path=None):
