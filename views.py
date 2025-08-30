@@ -1286,8 +1286,9 @@ def settings():
                 smtp_password = request.form.get('smtp_password', '').strip()
                 if smtp_password:
                     # Crypter le mot de passe SMTP
-                    from security_utils import encrypt_data
-                    parametres.smtp_password = encrypt_data(smtp_password)
+                    from encryption_utils import EncryptionManager
+                    encryption_manager = EncryptionManager()
+                    parametres.smtp_password = encryption_manager.encrypt_data(smtp_password)
             
             parametres.modifie_par_id = current_user.id
             
