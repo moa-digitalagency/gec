@@ -182,9 +182,16 @@ Type: TXT    | Nom: @              | Valeur: "v=spf1 include:_spf.domain.com ~al
 
 Pour changer l'adresse locale après avoir lancé l'application sur le port 5000 :
 
-**Windows PowerShell (Admin requis)** :
+**Windows** :
 ```powershell
+# PowerShell (Admin requis)
 Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`tgec.local`n127.0.0.1`twww.gec.local" -Encoding ASCII
+
+# CMD (Admin requis - Plus simple)
+echo 127.0.0.1 gec.local >> %SystemRoot%\System32\drivers\etc\hosts && echo 127.0.0.1 www.gec.local >> %SystemRoot%\System32\drivers\etc\hosts
+
+# Alternative sans admin (Port forwarding)
+netsh interface portproxy add v4tov4 listenport=80 listenaddress=gec.local connectport=5000 connectaddress=127.0.0.1
 ```
 
 **macOS Terminal** :

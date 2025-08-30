@@ -219,7 +219,16 @@ Pour changer l'adresse après avoir lancé l'application :
 
 **Windows (PowerShell - Admin requis)** :
 ```powershell
+# Option 1: Avec droits admin
 Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`tgec.local`n127.0.0.1`twww.gec.local" -Encoding ASCII
+
+# Option 2: Sans admin (recommandé) - Utiliser un serveur proxy local
+python -m http.server 8080 --bind gec.local
+```
+
+**Windows (CMD - Plus simple)** :
+```cmd
+echo 127.0.0.1 gec.local >> %SystemRoot%\System32\drivers\etc\hosts && echo 127.0.0.1 www.gec.local >> %SystemRoot%\System32\drivers\etc\hosts
 ```
 
 **macOS (Terminal)** :
