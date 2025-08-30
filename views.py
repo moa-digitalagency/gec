@@ -868,6 +868,20 @@ def mail_detail(id):
     forwards = CourrierForward.query.filter_by(courrier_id=id)\
                                     .order_by(CourrierForward.date_transmission.desc()).all()
     
+    # Récupérer les notifications liées à ce courrier
+    notifications = Notification.query.filter_by(courrier_id=id)\
+                                     .order_by(Notification.date_creation.desc()).all()
+    
+    # Marquer comme lues les notifications de l'utilisateur actuel pour ce courrier
+    user_notifications = Notification.query.filter_by(
+        courrier_id=id, 
+        user_id=current_user.id, 
+        lu=False
+    ).all()
+    
+    for notification in user_notifications:
+        notification.mark_as_read()
+    
     # Récupérer tous les utilisateurs actifs pour la transmission (disponible à tous)
     users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
     
@@ -878,6 +892,7 @@ def mail_detail(id):
                           statuts_disponibles=statuts_disponibles,
                           comments=comments,
                           forwards=forwards,
+                          notifications=notifications,
                           users=users)
 
 @app.route('/export_pdf/<int:id>')
@@ -1265,8 +1280,6 @@ def settings():
         parametres = ParametresSysteme.get_parametres()
         types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
-        print(f"DEBUG: Settings request method: {request.method}")
-        print(f"DEBUG: Form data: {dict(request.form)}")
         
         if request.method == 'POST':
             # Sanitize and update parameters
