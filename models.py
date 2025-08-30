@@ -726,7 +726,8 @@ class ParametresSysteme(db.Model):
             from security_utils import decrypt_data
             return decrypt_data(self.smtp_password)
         except Exception as e:
-            app.logger.error(f"Erreur lors du décryptage du mot de passe SMTP: {e}")
+            import logging
+            logging.error(f"Erreur lors du décryptage du mot de passe SMTP: {e}")
             return None
     
     def get_sendgrid_api_key_decrypted(self):
@@ -738,7 +739,8 @@ class ParametresSysteme(db.Model):
             encryption_manager = EncryptionManager()
             return encryption_manager.decrypt_data(self.sendgrid_api_key)
         except Exception as e:
-            app.logger.error(f"Erreur lors du décryptage de la clé SendGrid: {e}")
+            import logging
+            logging.error(f"Erreur lors du décryptage de la clé SendGrid: {e}")
             return None
     
     @staticmethod
