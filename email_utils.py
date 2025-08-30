@@ -267,22 +267,34 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
     Returns:
         bool: True si l'email a été envoyé avec succès, False sinon
     """
+    print(f"DEBUG: send_email_from_system_config appelée pour {to_email}")
+    
     # Import ici pour éviter les imports circulaires
     from models import ParametresSysteme
     
     # Vérifier le choix du fournisseur email dans les paramètres
     email_provider = ParametresSysteme.get_valeur('email_provider', 'sendgrid')
+    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
     
-    if email_provider == 'sendgrid' and SENDGRID_AVAILABLE and os.environ.get('SENDGRID_API_KEY'):
+    print(f"DEBUG: email_provider={email_provider}, SENDGRID_AVAILABLE={SENDGRID_AVAILABLE}, sendgrid_key={'configured' if sendgrid_key else 'missing'}")
+    
+    if email_provider == 'sendgrid' and SENDGRID_AVAILABLE and sendgrid_key:
+        print(f"DEBUG: Tentative d'envoi via SendGrid à {to_email}")
         logging.info("Tentative d'envoi via SendGrid...")
-        if send_email_with_sendgrid(to_email, subject, html_content, text_content, attachment_path):
+        result = send_email_with_sendgrid(to_email, subject, html_content, text_content, attachment_path)
+        print(f"DEBUG: Résultat SendGrid: {result}")
+        if result:
             return True
         else:
             logging.warning("Échec SendGrid, tentative SMTP traditionnel...")
+            print(f"DEBUG: Échec SendGrid, fallback vers SMTP")
     
     # Utiliser SMTP traditionnel (soit par choix, soit par fallback)
+    print(f"DEBUG: Tentative d'envoi via SMTP traditionnel à {to_email}")
     logging.info("Tentative d'envoi via SMTP traditionnel...")
-    return send_email_with_smtp(to_email, subject, html_content, text_content, attachment_path)
+    result = send_email_with_smtp(to_email, subject, html_content, text_content, attachment_path)
+    print(f"DEBUG: Résultat SMTP: {result}")
+    return result
 
 def send_email_with_smtp(to_email, subject, html_content, text_content=None, attachment_path=None):
     """
@@ -595,6 +607,11 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
     Returns:
         bool: True si l'email a été envoyé avec succès
     """
+    print(f"DEBUG: send_mail_forwarded_notification appelée avec email={user_email}, forwarded_by={forwarded_by}")
+    
+    if not user_email or not user_email.strip():
+        print(f"DEBUG: Email utilisateur vide ou invalide: '{user_email}'")
+        return False
     # Import ici pour éviter les imports circulaires
     from models import ParametresSysteme
     
@@ -687,4 +704,7 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
         Secrétariat Général des Mines - République Démocratique du Congo
         """
     
-    return send_email_from_system_config(user_email, subject, html_content, text_content)
+    print(f"DEBUG: Tentative d'envoi d'email de transmission via send_email_from_system_config à {user_email}")
+    result = send_email_from_system_config(user_email, subject, html_content, text_content)
+    print(f"DEBUG: Résultat de l'envoi d'email de transmission: {result}")
+    return result

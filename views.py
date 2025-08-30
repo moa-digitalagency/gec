@@ -3682,17 +3682,27 @@ def forward_mail(courrier_id):
         
         # Envoyer une notification par email
         try:
-            courrier_data = {
-                'numero_accuse_reception': courrier.numero_accuse_reception,
-                'type_courrier': courrier.type_courrier,
-                'objet': courrier.objet,
-                'expediteur': courrier.expediteur or courrier.destinataire
-            }
-            if send_mail_forwarded_notification(user.email, courrier_data, current_user.nom_complet):
-                forward.email_sent = True
-                db.session.commit()
+            # Vérifier si l'utilisateur a un email configuré
+            if user.email and user.email.strip():
+                print(f"DEBUG: Tentative d'envoi d'email de transmission à {user.email} pour l'utilisateur {user.nom_complet}")
+                courrier_data = {
+                    'numero_accuse_reception': courrier.numero_accuse_reception,
+                    'type_courrier': courrier.type_courrier,
+                    'objet': courrier.objet,
+                    'expediteur': courrier.expediteur or courrier.destinataire
+                }
+                if send_mail_forwarded_notification(user.email, courrier_data, current_user.nom_complet):
+                    forward.email_sent = True
+                    db.session.commit()
+                    print(f"DEBUG: Email de transmission envoyé avec succès à {user.email}")
+                else:
+                    print(f"DEBUG: Échec d'envoi de l'email de transmission à {user.email}")
+            else:
+                print(f"DEBUG: Pas d'email configuré pour l'utilisateur {user.nom_complet} (email: '{user.email}')")
+                logging.warning(f"Transmission courrier: utilisateur {user.nom_complet} n'a pas d'email configuré")
         except Exception as e:
             logging.error(f"Erreur lors de l'envoi de l'email de transmission: {e}")
+            print(f"DEBUG: Exception lors de l'envoi d'email: {e}")
         
         # Log de l'activité
         log_activity(current_user.id, "TRANSMISSION_COURRIER", 
