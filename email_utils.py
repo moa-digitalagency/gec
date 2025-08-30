@@ -8,6 +8,15 @@ import logging
 from datetime import datetime
 import re
 
+# Import SendGrid
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Email, To, Content
+    SENDGRID_AVAILABLE = True
+except ImportError:
+    SENDGRID_AVAILABLE = False
+    logging.warning("SendGrid non disponible, utilisation de SMTP traditionnel")
+
 def get_email_template(template_type, language='fr', variables=None):
     """
     Récupère et traite un template d'email avec les variables fournies
@@ -74,9 +83,105 @@ def get_email_template(template_type, language='fr', variables=None):
         logging.error(f"Erreur lors de la récupération du template {template_type}:{language}: {e}")
         return None
 
+def send_email_with_sendgrid(to_email, subject, html_content, text_content=None, attachment_path=None):
+    """
+    Envoie un email via SendGrid API
+    
+    Args:
+        to_email (str): Adresse email du destinataire
+        subject (str): Sujet de l'email
+        html_content (str): Contenu HTML de l'email
+        text_content (str, optional): Contenu texte alternatif
+        attachment_path (str, optional): Chemin vers le fichier à joindre
+    
+    Returns:
+        bool: True si l'email a été envoyé avec succès, False sinon
+    """
+    try:
+        # Import ici pour éviter les imports circulaires
+        from models import ParametresSysteme
+        
+        # Récupérer la clé API SendGrid
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_api_key:
+            logging.error("Clé API SendGrid non configurée")
+            return False
+        
+        # Récupérer l'email expéditeur depuis les paramètres système
+        sender_email = ParametresSysteme.get_valeur('smtp_username')
+        if not sender_email:
+            sender_email = os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
+        
+        # Créer le message SendGrid
+        message = Mail(
+            from_email=Email(sender_email),
+            to_emails=To(to_email),
+            subject=subject
+        )
+        
+        # Ajouter le contenu
+        if html_content:
+            message.content = Content("text/html", html_content)
+        elif text_content:
+            message.content = Content("text/plain", text_content)
+        
+        # Gérer les pièces jointes (SendGrid supporte les attachments)
+        if attachment_path and os.path.exists(attachment_path):
+            import base64
+            from sendgrid.helpers.mail import Attachment, FileContent, FileName, FileType, Disposition
+            
+            with open(attachment_path, 'rb') as f:
+                data = f.read()
+                encoded = base64.b64encode(data).decode()
+            
+            attached_file = Attachment(
+                FileContent(encoded),
+                FileName(os.path.basename(attachment_path)),
+                FileType('application/octet-stream'),
+                Disposition('attachment')
+            )
+            message.attachment = attached_file
+        
+        # Envoyer via SendGrid
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        
+        logging.info(f"Email envoyé avec succès via SendGrid à {to_email} (Status: {response.status_code})")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'envoi via SendGrid à {to_email}: {str(e)}")
+        return False
+
 def send_email_from_system_config(to_email, subject, html_content, text_content=None, attachment_path=None):
     """
-    Envoie un email en utilisant les paramètres SMTP configurés dans les paramètres système
+    Envoie un email en utilisant SendGrid (priorité) ou SMTP traditionnel (fallback)
+    
+    Args:
+        to_email (str): Adresse email du destinataire
+        subject (str): Sujet de l'email
+        html_content (str): Contenu HTML de l'email
+        text_content (str, optional): Contenu texte alternatif
+        attachment_path (str, optional): Chemin vers le fichier à joindre
+    
+    Returns:
+        bool: True si l'email a été envoyé avec succès, False sinon
+    """
+    # Essayer SendGrid en priorité
+    if SENDGRID_AVAILABLE and os.environ.get('SENDGRID_API_KEY'):
+        logging.info("Tentative d'envoi via SendGrid...")
+        if send_email_with_sendgrid(to_email, subject, html_content, text_content, attachment_path):
+            return True
+        else:
+            logging.warning("Échec SendGrid, tentative SMTP traditionnel...")
+    
+    # Fallback vers SMTP traditionnel
+    logging.info("Tentative d'envoi via SMTP traditionnel...")
+    return send_email_with_smtp(to_email, subject, html_content, text_content, attachment_path)
+
+def send_email_with_smtp(to_email, subject, html_content, text_content=None, attachment_path=None):
+    """
+    Envoie un email via SMTP traditionnel
     
     Args:
         to_email (str): Adresse email du destinataire
