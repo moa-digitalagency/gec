@@ -1323,7 +1323,7 @@ def settings():
                 return redirect(url_for('settings'))
             
             # Sanitize and update parameters
-            parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
+            parametres.nom_logiciel = sanitize_input(request.form.get('nom_logiciel', 'GEC').strip())
             parametres.mode_numero_accuse = sanitize_input(request.form.get('mode_numero_accuse', 'automatique').strip())
             parametres.format_numero_accuse = sanitize_input(request.form.get('format_numero_accuse', 'GEC-{year}-{counter:05d}').strip())
             parametres.telephone = sanitize_input(request.form.get('telephone', '').strip()) or None
