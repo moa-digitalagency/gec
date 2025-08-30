@@ -1,311 +1,187 @@
-# 📮 GEC - Système de Gestion Électronique du Courrier
+# GEC - Système de Gestion Électronique du Courrier
 
-## 🌍 Language / Langue
+**[English Version](README_EN.md)**
 
-### 📖 Documentation
+## Aperçu
 
-#### 🇫🇷 Français
-- [📚 Documentation Technique](docs/README_TECHNICAL_FR.md) - Architecture, déploiement, API
-- [💼 Documentation Commerciale](docs/README_COMMERCIAL_FR.md) - Fonctionnalités, tarifs, témoignages
+GEC (Gestion Électronique du Courrier) est une application web Flask complète pour la gestion numérique de la correspondance. Développée spécialement pour les administrations et entreprises, elle offre une solution sécurisée et auditable pour l'enregistrement, le suivi et la gestion des courriers avec fichiers joints.
 
-#### 🇬🇧 English
-- [📚 Technical Documentation](docs/README_TECHNICAL_EN.md) - Architecture, deployment, API
-- [💼 Commercial Documentation](docs/README_COMMERCIAL_EN.md) - Features, pricing, testimonials
+## Fonctionnalités Principales
+
+### 🔐 Authentification et Sécurité
+- **Authentification utilisateur sécurisée** avec Flask-Login
+- **Chiffrement AES-256** pour toutes les données sensibles
+- **Hachage bcrypt** avec sels personnalisés pour les mots de passe
+- **Protection contre les attaques** : brute force, injection SQL, XSS
+- **Blocage IP automatique** après tentatives de connexion échouées
+- **Vérification d'intégrité des fichiers** avec checksums
+- **Suppression sécurisée** des fichiers
+- **Journalisation complète** de sécurité et d'audit
+
+### 👥 Gestion des Utilisateurs et Rôles
+- **Système de rôles à trois niveaux** : Super Admin, Admin, Utilisateur
+- **Permissions granulaires** configurables
+- **Contrôle d'accès basé sur les rôles** (RBAC)
+- **Gestion des départements** et affectations
+- **Profils utilisateur** avec informations de contact
+
+### 📧 Gestion du Courrier
+- **Enregistrement de courriers** entrants et sortants
+- **Fichiers joints obligatoires** pour tous les types de courrier
+- **Numérotation automatique** avec accusés de réception
+- **Statuts configurables** : En attente, En cours, Traité, Archivé
+- **Recherche avancée** avec filtres multiples
+- **Types de courriers sortants** personnalisables
+- **Gestion des expéditeurs/destinataires**
+
+### 💬 Système de Commentaires et Annotations
+- **Commentaires, annotations et instructions** sur les courriers
+- **Notifications in-app** et par email
+- **Ciblage intelligent** : créateur + dernière personne ayant reçu le courrier
+- **Historique complet** des interactions
+
+### 🔄 Transmission et Suivi
+- **Transmission de courriers** entre utilisateurs
+- **Notifications automatiques** de transmission
+- **Historique des transmissions** avec dates et messages
+- **Marquage de lecture** automatique
+- **Suivi en temps réel** du statut
+
+### 🔔 Notifications
+- **Notifications in-app** en temps réel
+- **Notifications email** configurables
+- **Templates d'email** personnalisables
+- **Intégration SendGrid** et SMTP
+- **Notifications ciblées** selon les permissions
+
+### 📊 Tableaux de Bord et Rapports
+- **Tableau de bord analytique** avec statistiques temps réel
+- **Graphiques interactifs** (Chart.js)
+- **Export PDF et Excel** des rapports
+- **Métriques de performance** et KPI
+- **Statistiques par département** et utilisateur
+
+### 📄 Génération de Documents
+- **Export PDF** avec mise en page professionnelle
+- **Bordereaux d'enregistrement** automatiques
+- **Listes de courriers** formatées
+- **En-têtes et pieds de page** personnalisables
+- **Logos et signatures** dynamiques
+
+### ⚙️ Configuration Système
+- **Paramètres système** entièrement configurables
+- **Logos personnalisables** (en-tête et signature)
+- **Nomenclature organisationnelle** dynamique
+- **Formats de numérotation** personnalisables
+- **Configuration email** (SMTP/SendGrid)
+- **Gestion des statuts** et types de courriers
+
+### 🌍 Multi-langue
+- **Support français et anglais**
+- **Fichiers de traduction JSON**
+- **Commutation de langue** en temps réel
+- **Interface entièrement localisée**
+
+### 🔒 Sauvegarde et Migration
+- **Système de sauvegarde automatique**
+- **Migration automatique** de base de données
+- **Détection et ajout automatique** de nouvelles colonnes
+- **Préservation des données** existantes
+- **Système de rollback** avec checkpoints
+
+## Technologies Utilisées
+
+### Backend
+- **Flask** (Framework web Python)
+- **SQLAlchemy** avec Flask-SQLAlchemy (ORM)
+- **PostgreSQL** (Base de données principale)
+- **ReportLab** (Génération PDF)
+- **bcrypt + cryptography** (Sécurité)
+- **SendGrid** (Service email)
+
+### Frontend
+- **Jinja2** (Moteur de templates)
+- **Tailwind CSS** (Framework CSS)
+- **Font Awesome** (Icônes)
+- **DataTables** (Tableaux interactifs)
+- **Chart.js** (Graphiques)
+- **jQuery** (Interactions JavaScript)
+
+### Sécurité
+- **AES-256-CBC** pour le chiffrement des données
+- **bcrypt** pour le hachage des mots de passe
+- **Protection CSRF** et en-têtes de sécurité
+- **Validation et sanitisation** des entrées
+- **Audit logging** complet
+
+## Design et UX
+
+- **Couleurs RDC** : Bleu (#003087), Jaune (#FFD700), Rouge (#CE1126), Vert (#009639)
+- **Design responsive** adaptatif
+- **Interface intuitive** et ergonomique
+- **Menu hamburger universel**
+- **Préservation du ratio d'aspect** pour les logos
+- **Thème corporatif** cohérent
+
+## Installation et Déploiement
+
+### Prérequis
+- Python 3.8+
+- PostgreSQL
+- Serveur web (recommandé : Gunicorn)
+
+### Variables d'Environnement
+```
+DATABASE_URL=postgresql://user:password@host:port/database
+SESSION_SECRET=your_secret_key
+SENDGRID_API_KEY=your_sendgrid_key (optionnel)
+GEC_MASTER_KEY=your_encryption_key
+GEC_PASSWORD_SALT=your_password_salt
+```
+
+### Démarrage Rapide
+```bash
+# Installation des dépendances
+pip install -r project-dependencies.txt
+
+# Configuration de la base de données
+# (Les tables sont créées automatiquement)
+
+# Démarrage de l'application
+gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+```
+
+## Nouvelles Fonctionnalités (Août 2025)
+
+### Nomenclature Dynamique
+- **Titres de responsables configurables** (ex: Secrétaire Général, Directeur)
+- **Adaptation automatique** dans tous les templates et exports
+- **Interface de configuration** dans les paramètres système
+
+### Notifications Avancées
+- **Ciblage intelligent** pour commentaires/annotations/instructions
+- **Notifications à plusieurs destinataires** : créateur + dernier destinataire
+- **Templates email** spécialisés par type d'action
+- **Système de permissions** pour notifications
+
+### Améliorations PDF
+- **Texte "En Copie"** au lieu de "SG Copie" pour plus de flexibilité
+- **Adaptation automatique** à la nomenclature configurée
+- **Mise en page optimisée** pour tous types d'organisation
+
+### Système de Migration
+- **Migration automatique** des colonnes de base de données
+- **Détection intelligente** des changements de schéma
+- **Préservation des données** existantes
+- **Messages d'information** détaillés
+
+## Support et Contribution
+
+Ce système est développé pour répondre aux besoins spécifiques des administrations et peut être adapté selon les exigences organisationnelles.
+
+Pour plus d'informations techniques, consultez le code source ou contactez l'équipe de développement.
 
 ---
 
-## 🚀 Aperçu Général
-
-**GEC** est un système complet de gestion électronique du courrier développé pour les administrations et secrétariats généraux en République Démocratique du Congo.
-
-### ✨ Fonctionnalités Clés
-
-- 📥 **Gestion Courrier Entrant/Sortant** avec pièces jointes obligatoires
-- 🔍 **Recherche Avancée** dans tous les champs de métadonnées
-- 🔐 **Sécurité Bancaire** avec chiffrement AES-256
-- 👥 **Contrôle d'Accès Multi-niveaux** (Super Admin, Admin, Utilisateur)
-- 📊 **Tableau de Bord Analytics** en temps réel
-- 📱 **Design 100% Responsive** aux couleurs RDC
-- 🌍 **Support Multi-langues** (Français/Anglais)
-- 📄 **Génération PDF** pour documents officiels
-- 📧 **Templates Email Configurables** avec test SMTP
-- 💾 **Sauvegarde/Restauration** automatique
-
-### 🛠️ Stack Technologique
-
-**Backend**: Flask, PostgreSQL, SQLAlchemy, Chiffrement AES-256
-**Frontend**: Tailwind CSS, DataTables, Font Awesome, Chart.js
-**Sécurité**: bcrypt, cryptography, audit logging complet
-
----
-
-## ⚡ Installation Multi-Plateforme
-
-### 🪟 Windows (10/11/Server 2008+)
-```powershell
-# Installer Python 3.11
-winget install --id Python.Python.3.11 -e
-
-# Installer Git
-winget install --id Git.Git -e
-
-# Cloner le projet
-git clone https://github.com/moa-digitalagency/gec.git
-cd gec
-
-# Configurer l'environnement
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
-python -m venv .venv
-# Si erreur, essayez : py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# Installer les dépendances
-python -m pip install -U pip wheel
-python -m pip install -r project-dependencies.txt
-
-# Lancer l'application
-python .\main.py
-```
-
-### 🍎 macOS (10.15+)
-```bash
-# Installer Homebrew si nécessaire
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Installer Python 3.11 et Git
-brew install python@3.11 git
-
-# Cloner le projet
-git clone https://github.com/moa-digitalagency/gec.git
-cd gec
-
-# Configurer l'environnement
-python3.11 -m venv .venv
-source .venv/bin/activate
-
-# Installer les dépendances
-python -m pip install -U pip wheel
-python -m pip install -r project-dependencies.txt
-
-# Lancer l'application
-python main.py
-```
-
-### 🐧 Linux (Ubuntu/Debian/CentOS/RHEL)
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install python3.11 python3.11-venv python3.11-dev git postgresql-client -y
-
-# CentOS/RHEL/Fedora
-sudo dnf install python3.11 python3.11-devel git postgresql -y
-# ou pour les versions plus anciennes :
-# sudo yum install python3.11 python3.11-devel git postgresql
-
-# Cloner le projet
-git clone https://github.com/moa-digitalagency/gec.git
-cd gec
-
-# Configurer l'environnement
-python3.11 -m venv .venv
-source .venv/bin/activate
-
-# Installer les dépendances
-python -m pip install -U pip wheel
-python -m pip install -r project-dependencies.txt
-
-# Lancer l'application
-python main.py
-```
-
-### 🚀 Installation Automatique One-Click
-
-Téléchargez et exécutez les scripts d'installation automatique selon votre système :
-
-#### Windows 10/11
-```batch
-# Télécharger install-gec-windows.bat
-# Clic droit → "Exécuter en tant qu'administrateur"
-```
-
-#### Windows Server 2008/2012/2016+
-```batch
-# Télécharger install-gec-windows-server.bat
-# Clic droit → "Exécuter en tant qu'administrateur"
-# Installation complète avec service Windows
-```
-
-#### macOS (10.15+)
-```bash
-# Télécharger install-gec-macos.sh
-chmod +x install-gec-macos.sh
-./install-gec-macos.sh
-```
-
-#### Linux (Toutes distributions)
-```bash
-# Installation directe depuis internet
-curl -fsSL https://raw.githubusercontent.com/moa-digitalagency/gec/main/install-gec-linux.sh | bash
-
-# Ou téléchargement puis exécution
-chmod +x install-gec-linux.sh
-./install-gec-linux.sh
-```
-
-📖 **Documentation d'installation complète** : [docs/INSTALLATION_INDEX.md](docs/INSTALLATION_INDEX.md)
-
-### 🔧 Configuration Post-Installation
-
-Créez un fichier `.env` pour les variables d'environnement :
-```bash
-DATABASE_URL=postgresql://user:password@localhost/gecmines
-SESSION_SECRET=votre-clé-secrète-très-longue
-GEC_MASTER_KEY=votre-clé-de-chiffrement-32-caractères
-GEC_PASSWORD_SALT=votre-sel-de-mot-de-passe
-```
-
-### 🌐 Configuration Domaine Personnalisé (Replit/Production)
-
-#### Pour Replit Deployments
-
-Si vous déployez sur Replit et souhaitez utiliser votre propre domaine au lieu de l'adresse IP locale :
-
-1. **Déployez votre application** via l'onglet `Deployments`
-2. **Allez dans Settings** de votre déploiement
-3. **Cliquez sur "Link a domain"** ou "Manually connect from another registrar"
-4. **Entrez votre domaine** (ex: `www.votre-app.com`)
-5. **Copiez les enregistrements DNS** fournis par Replit :
-   - Enregistrement `A` (pointe vers l'IP de Replit)
-   - Enregistrement `TXT` (pour la vérification)
-6. **Ajoutez ces enregistrements** dans la gestion DNS de votre registraire
-7. **Attendez la propagation DNS** (jusqu'à 48h)
-
-**Avantages** :
-✅ Certificat SSL/TLS automatique  
-✅ Protection WHOIS incluse  
-✅ Configuration automatique si domaine acheté via Replit  
-
-#### Pour Déploiement Local/Serveur
-
-Pour accéder à l'application via un nom de domaine local :
-
-1. **Modifiez le fichier hosts** :
-   ```bash
-   # Windows: C:\Windows\System32\drivers\etc\hosts
-   # Linux/Mac: /etc/hosts
-   127.0.0.1    gec.local
-   127.0.0.1    www.gec.local
-   ```
-
-2. **Configurez un proxy inverse** (Nginx) :
-   ```nginx
-   server {
-       listen 80;
-       server_name gec.local www.gec.local;
-       
-       location / {
-           proxy_pass http://127.0.0.1:5000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-       }
-   }
-   ```
-
-3. **Accédez à** `http://gec.local` au lieu de `http://127.0.0.1:5000`
-
-#### 🖥️ Commandes Terminal Rapides (Une Ligne)
-
-Pour changer l'adresse après avoir lancé l'application :
-
-**Windows (PowerShell - Admin requis)** :
-```powershell
-# Option 1: Avec droits admin
-Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`tgec.local`n127.0.0.1`twww.gec.local" -Encoding ASCII
-
-# Option 2: Sans admin (recommandé) - Utiliser un serveur proxy local
-python -m http.server 8080 --bind gec.local
-```
-
-**Windows (CMD - Plus simple)** :
-```cmd
-echo 127.0.0.1 gec.local >> %SystemRoot%\System32\drivers\etc\hosts && echo 127.0.0.1 www.gec.local >> %SystemRoot%\System32\drivers\etc\hosts
-```
-
-**macOS (Terminal)** :
-```bash
-echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
-```
-
-**Linux (Ubuntu/Debian/CentOS)** :
-```bash
-echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
-```
-
-**Puis accédez à** : `http://gec.local:5000` ou `http://www.gec.local:5000`
-
----
-
-## 📋 Dernières Mises à Jour (Août 2025)
-
-✅ **Système de Templates Email**
-- Templates multi-langues configurables (Français/Anglais)
-- Variables dynamiques ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
-- Interface d'administration avec aperçu temps réel
-- Test SMTP intégré dans les paramètres
-
-✅ **Sécurité Avancée**
-- Chiffrement AES-256-CBC pour toutes les données sensibles
-- Hachage bcrypt renforcé avec salts personnalisés
-- Protection contre les attaques par force brute
-- Journalisation complète des événements de sécurité
-
-✅ **Recherche Améliorée**
-- Indexation complète des métadonnées (autres_informations, statut, fichier_nom)
-- Filtre "SG en copie" pour courrier entrant uniquement
-- Pièces jointes obligatoires pour tous types de courrier
-
-✅ **Prêt pour Production**
-- Nettoyage de tous les fichiers temporaires/test
-- Optimisé pour déploiement externe
-- Documentation complète en français et anglais
-
----
-
-## 🎯 Design et Copyright
-
-**© 2025 MOA Digital Agency LLC**
-
-### 👨‍💻 Concepteur et Développeur
-**AIsance KALONJI wa KALONJI**
-
-### 📞 Contact MOA Digital Agency
-- **📧 Email**: moa@myoneart.com
-- **📧 Email alternatif**: moa.myoneart@gmail.com  
-- **📱 Téléphone**: +212 699 14 000 1
-- **📱 Téléphone RDC**: +243 86 049 33 45
-- **🌐 Site web**: [myoneart.com](https://myoneart.com)
-
-### 🏢 À Propos de MOA Digital Agency
-MOA Digital Agency LLC est une agence de développement spécialisée dans la création de solutions digitales sur mesure pour les entreprises et institutions gouvernementales. Nous excellons dans le développement d'applications web robustes, sécurisées et évolutives.
-
----
-
-## 📜 Licence
-
-**© 2025 MOA Digital Agency LLC** | Tous droits réservés
-
-Application conçue et développée par **AIsance KALONJI wa KALONJI** pour le Ministère des Mines de la République Démocratique du Congo.
-
----
-
-<div align="center">
-
-**Choisissez votre langue de documentation ci-dessus pour commencer !**
-
-[🇫🇷 Documentation Française](docs/README_COMMERCIAL_FR.md) | [🇬🇧 English Documentation](docs/README_COMMERCIAL_EN.md)
-
----
-
-*Développé avec 💖 et ☕ par **MOA Digital Agency LLC***
-
-</div>
+**GEC - Système de Gestion du Courrier**  
+*Solution digitale pour l'administration moderne*
