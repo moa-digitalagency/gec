@@ -655,6 +655,59 @@
             </div>
         </div>
         
+        <!-- Test SendGrid Email -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                    <i class="fas fa-envelope mr-2 text-rdc-blue"></i>
+                    Test SendGrid
+                </h3>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Testez votre configuration SendGrid en envoyant un email de test.
+                </p>
+                
+                <form method="POST" action="{{ url_for('settings') }}" class="space-y-4">
+                    <div>
+                        <label for="test_email" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-at mr-1 text-rdc-blue"></i>
+                            Email de test
+                        </label>
+                        <input type="email" 
+                               id="test_email" 
+                               name="test_email" 
+                               required
+                               placeholder="votre@email.com"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <p class="mt-1 text-xs text-gray-500">
+                            L'email de test sera envoyé à cette adresse
+                        </p>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Envoyer un test
+                    </button>
+                </form>
+                
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div class="flex">
+                        <i class="fas fa-info-circle text-yellow-600 mr-2 mt-0.5"></i>
+                        <div class="text-xs text-yellow-700">
+                            <p class="font-medium">Configuration requise :</p>
+                            <ul class="mt-1 space-y-1">
+                                <li>• Variable SENDGRID_API_KEY configurée</li>
+                                <li>• Email expéditeur configuré</li>
+                                <li>• Package SendGrid installé</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Help -->
         <div class="bg-white shadow-rdc rounded-xl">
             <div class="px-6 py-4 border-b border-gray-200">

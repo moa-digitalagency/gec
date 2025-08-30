@@ -1399,6 +1399,36 @@ def settings():
             
             return redirect(url_for('settings'))
         
+        # Gestion du test d'email SendGrid
+        elif 'test_email' in request.form:
+            test_email = request.form.get('test_email', '').strip()
+            
+            if not test_email:
+                flash('Veuillez saisir une adresse email pour le test.', 'error')
+                return redirect(url_for('settings'))
+            
+            # Valider l'email
+            import re
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, test_email):
+                flash('Veuillez saisir une adresse email valide.', 'error')
+                return redirect(url_for('settings'))
+            
+            # Effectuer le test SendGrid
+            from email_utils import test_sendgrid_configuration
+            result = test_sendgrid_configuration(test_email)
+            
+            if result['success']:
+                flash(result['message'], 'success')
+                log_activity(current_user.id, "TEST_EMAIL_SENDGRID", 
+                            f"Test email SendGrid envoyé à {test_email}")
+            else:
+                flash(result['message'], 'error')
+                log_activity(current_user.id, "TEST_EMAIL_SENDGRID_ECHEC", 
+                            f"Échec test email SendGrid: {result['message']}")
+            
+            return redirect(url_for('settings'))
+        
         # Generate format preview with caching
         format_preview = generate_format_preview(parametres.format_numero_accuse)
         

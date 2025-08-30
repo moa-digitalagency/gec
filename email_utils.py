@@ -153,6 +153,106 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         logging.error(f"Erreur lors de l'envoi via SendGrid à {to_email}: {str(e)}")
         return False
 
+def test_sendgrid_configuration(test_email):
+    """
+    Teste la configuration SendGrid en envoyant un email de test
+    
+    Args:
+        test_email (str): Adresse email pour recevoir le test
+        
+    Returns:
+        dict: {'success': bool, 'message': str}
+    """
+    try:
+        # Vérifier que SendGrid est disponible
+        if not SENDGRID_AVAILABLE:
+            return {
+                'success': False,
+                'message': 'SendGrid n\'est pas installé. Veuillez installer le package sendgrid.'
+            }
+        
+        # Vérifier la clé API
+        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_api_key:
+            return {
+                'success': False,
+                'message': 'Clé API SendGrid non configurée. Veuillez configurer SENDGRID_API_KEY.'
+            }
+        
+        # Import ici pour éviter les imports circulaires
+        from models import ParametresSysteme
+        
+        # Récupérer l'email expéditeur
+        sender_email = ParametresSysteme.get_valeur('smtp_username')
+        if not sender_email:
+            sender_email = os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
+        
+        # Récupérer le nom du logiciel
+        software_name = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
+        
+        # Créer le contenu du test
+        subject = f"Test de configuration SendGrid - {software_name}"
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #003087; text-align: center;">✅ Test SendGrid Réussi</h2>
+                <p>Félicitations ! Votre configuration SendGrid fonctionne correctement.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #495057;">Détails du test :</h3>
+                    <ul>
+                        <li><strong>Système :</strong> {software_name}</li>
+                        <li><strong>Date :</strong> {datetime.now().strftime('%d/%m/%Y à %H:%M')}</li>
+                        <li><strong>Email expéditeur :</strong> {sender_email}</li>
+                        <li><strong>Email destinataire :</strong> {test_email}</li>
+                    </ul>
+                </div>
+                
+                <p style="color: #6c757d; font-size: 14px; margin-top: 30px;">
+                    Ce message a été envoyé automatiquement depuis votre système {software_name} 
+                    pour vérifier la configuration SendGrid.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
+        Test SendGrid Réussi - {software_name}
+        
+        Félicitations ! Votre configuration SendGrid fonctionne correctement.
+        
+        Détails du test :
+        - Système : {software_name}
+        - Date : {datetime.now().strftime('%d/%m/%Y à %H:%M')}
+        - Email expéditeur : {sender_email}
+        - Email destinataire : {test_email}
+        
+        Ce message a été envoyé automatiquement pour vérifier la configuration SendGrid.
+        """
+        
+        # Envoyer l'email de test
+        success = send_email_with_sendgrid(test_email, subject, html_content, text_content)
+        
+        if success:
+            return {
+                'success': True,
+                'message': f'Email de test envoyé avec succès à {test_email}. Vérifiez votre boîte de réception.'
+            }
+        else:
+            return {
+                'success': False,
+                'message': 'Échec de l\'envoi de l\'email de test. Vérifiez vos logs pour plus de détails.'
+            }
+            
+    except Exception as e:
+        logging.error(f"Erreur lors du test SendGrid: {str(e)}")
+        return {
+            'success': False,
+            'message': f'Erreur lors du test : {str(e)}'
+        }
+
 def send_email_from_system_config(to_email, subject, html_content, text_content=None, attachment_path=None):
     """
     Envoie un email en utilisant SendGrid (priorité) ou SMTP traditionnel (fallback)
