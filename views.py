@@ -3461,69 +3461,105 @@ def analytics():
     from sqlalchemy import func
     import json
     
-    # Statistiques générales
-    total_courriers = Courrier.query.filter_by(is_deleted=False).count()
-    courriers_entrants = Courrier.query.filter_by(type_courrier='ENTRANT', is_deleted=False).count()
-    courriers_sortants = Courrier.query.filter_by(type_courrier='SORTANT', is_deleted=False).count()
+    # Récupérer les paramètres de filtre temporel
+    period = request.args.get('period', 'all')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
     
-    # Statistiques par période (7 derniers jours)
+    # Calculer les dates de filtre
+    now = datetime.now()
+    if period == 'day':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+    elif period == 'week':
+        start_date = now - timedelta(days=now.weekday())
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+    elif period == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+    elif period == 'year':
+        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+    elif period == 'custom' and date_from and date_to:
+        start_date = datetime.strptime(date_from, '%Y-%m-%d')
+        end_date = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    else:
+        start_date = None
+        end_date = None
+    
+    # Construire le filtre de base
+    base_filter = [Courrier.is_deleted == False]
+    if start_date and end_date:
+        base_filter.append(Courrier.date_enregistrement >= start_date)
+        base_filter.append(Courrier.date_enregistrement <= end_date)
+    
+    # Statistiques générales avec filtre
+    total_courriers = Courrier.query.filter(*base_filter).count()
+    courriers_entrants = Courrier.query.filter(*base_filter, Courrier.type_courrier == 'ENTRANT').count()
+    courriers_sortants = Courrier.query.filter(*base_filter, Courrier.type_courrier == 'SORTANT').count()
+    
+    # Variables pour export PDF
     date_7_days_ago = datetime.now() - timedelta(days=7)
     courriers_7_days = Courrier.query.filter(
         Courrier.date_enregistrement >= date_7_days_ago,
         Courrier.is_deleted == False
     ).count()
     
-    # Statistiques par période (30 derniers jours)
     date_30_days_ago = datetime.now() - timedelta(days=30)
     courriers_30_days = Courrier.query.filter(
         Courrier.date_enregistrement >= date_30_days_ago,
         Courrier.is_deleted == False
     ).count()
     
-    # Volume par jour (30 derniers jours)
+    # Top expéditeurs avec filtre
+    sender_filter = base_filter + [
+        Courrier.expediteur != None,
+        Courrier.expediteur != ''
+    ]
+    top_senders = db.session.query(
+        Courrier.expediteur,
+        func.count(Courrier.id).label('count')
+    ).filter(*sender_filter).group_by(Courrier.expediteur).order_by(func.count(Courrier.id).desc()).limit(10).all()
+    
+    
+    # Volume par jour avec filtre
+    daily_filter = base_filter.copy()
+    if not start_date:  # Si pas de filtre spécifique, utiliser 30 derniers jours
+        daily_filter.append(Courrier.date_enregistrement >= date_30_days_ago)
+    
     daily_volumes = db.session.query(
         func.date(Courrier.date_enregistrement).label('date'),
         func.count(Courrier.id).label('count')
-    ).filter(
-        Courrier.date_enregistrement >= date_30_days_ago,
-        Courrier.is_deleted == False
-    ).group_by(func.date(Courrier.date_enregistrement)).all()
+    ).filter(*daily_filter).group_by(func.date(Courrier.date_enregistrement)).all()
     
     daily_data = {
         'dates': [str(d.date) for d in daily_volumes],
         'counts': [d.count for d in daily_volumes]
     }
     
-    # Répartition par statut
+    # Répartition par statut avec filtre
     status_distribution = db.session.query(
         Courrier.statut,
         func.count(Courrier.id).label('count')
-    ).filter_by(is_deleted=False).group_by(Courrier.statut).all()
+    ).filter(*base_filter).group_by(Courrier.statut).all()
     
     status_data = {
         'labels': [s.statut or 'Non défini' for s in status_distribution],
         'counts': [s.count for s in status_distribution]
     }
     
-    # Top 10 expéditeurs
-    top_senders = db.session.query(
-        Courrier.expediteur,
-        func.count(Courrier.id).label('count')
-    ).filter(
-        Courrier.expediteur != None,
-        Courrier.expediteur != '',
-        Courrier.is_deleted == False
-    ).group_by(Courrier.expediteur).order_by(func.count(Courrier.id).desc()).limit(10).all()
+    # Top 10 expéditeurs (déjà défini plus haut avec filtre)
     
-    # Top 10 destinataires
+    # Top 10 destinataires avec filtre
+    recipient_filter = base_filter + [
+        Courrier.destinataire != None,
+        Courrier.destinataire != ''
+    ]
     top_recipients = db.session.query(
         Courrier.destinataire,
         func.count(Courrier.id).label('count')
-    ).filter(
-        Courrier.destinataire != None,
-        Courrier.destinataire != '',
-        Courrier.is_deleted == False
-    ).group_by(Courrier.destinataire).order_by(func.count(Courrier.id).desc()).limit(10).all()
+    ).filter(*recipient_filter).group_by(Courrier.destinataire).order_by(func.count(Courrier.id).desc()).limit(10).all()
     
     # Temps moyen de traitement (courriers avec statut "TRAITE")
     processed_mails = Courrier.query.filter_by(statut='TRAITE', is_deleted=False).all()
@@ -3551,14 +3587,14 @@ def analytics():
     
     # === NOUVELLES STATISTIQUES DÉTAILLÉES ===
     
-    # 1. Statistiques par département  
+    # 1. Statistiques par département avec filtre
     dept_stats_raw = db.session.query(
         Departement.nom.label('departement'),
         Courrier.type_courrier,
         func.count(Courrier.id).label('count')
     ).join(User, Courrier.utilisateur_id == User.id)\
      .join(Departement, User.departement_id == Departement.id)\
-     .filter(Courrier.is_deleted == False)\
+     .filter(*base_filter)\
      .group_by(Departement.nom, Courrier.type_courrier).all()
     
     # Agrégation des résultats par département
@@ -3580,13 +3616,13 @@ def analytics():
         dept_stats.append(DeptStat(data['departement'], data['total'], data['entrants'], data['sortants']))
     dept_stats.sort(key=lambda x: x.total, reverse=True)
     
-    # 2. Statistiques par utilisateur (top 10)
+    # 2. Statistiques par utilisateur avec filtre (top 10)
     user_stats_raw = db.session.query(
         User.nom_complet,
         Courrier.type_courrier,
         func.count(Courrier.id).label('count')
     ).join(Courrier, Courrier.utilisateur_id == User.id)\
-     .filter(Courrier.is_deleted == False)\
+     .filter(*base_filter)\
      .group_by(User.nom_complet, Courrier.type_courrier).all()
     
     # Agrégation des résultats par utilisateur
@@ -3881,28 +3917,6 @@ def export_analytics(format):
             elements.append(senders_table)
             elements.append(Spacer(1, 20))
         
-        # Variables de données pour analytics
-        date_7_days_ago = datetime.now() - timedelta(days=7)
-        courriers_7_days = Courrier.query.filter(
-            Courrier.date_enregistrement >= date_7_days_ago,
-            Courrier.is_deleted == False
-        ).count()
-        
-        date_30_days_ago = datetime.now() - timedelta(days=30)
-        courriers_30_days = Courrier.query.filter(
-            Courrier.date_enregistrement >= date_30_days_ago,
-            Courrier.is_deleted == False
-        ).count()
-        
-        # Top expéditeurs
-        top_senders = db.session.query(
-            Courrier.expediteur,
-            func.count(Courrier.id).label('count')
-        ).filter(
-            Courrier.expediteur != None,
-            Courrier.expediteur != '',
-            Courrier.is_deleted == False
-        ).group_by(Courrier.expediteur).order_by(func.count(Courrier.id).desc()).limit(5).all()
         
         doc.build(elements)
         

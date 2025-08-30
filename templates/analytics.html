@@ -21,6 +21,42 @@
         </div>
     </div>
 
+    <!-- Filtre temporel -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-4">
+            <i class="fas fa-filter mr-2 text-purple-600"></i>
+            Filtre Temporel
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button onclick="filterByPeriod('day')" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors" data-period="day">
+                <i class="fas fa-calendar-day mr-2"></i>Aujourd'hui
+            </button>
+            <button onclick="filterByPeriod('week')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="week">
+                <i class="fas fa-calendar-week mr-2"></i>Cette Semaine
+            </button>
+            <button onclick="filterByPeriod('month')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="month">
+                <i class="fas fa-calendar-alt mr-2"></i>Ce Mois
+            </button>
+            <button onclick="filterByPeriod('year')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="year">
+                <i class="fas fa-calendar mr-2"></i>Cette Année
+            </button>
+        </div>
+        <div class="mt-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <label for="customDate" class="text-sm font-medium text-gray-700">Période personnalisée :</label>
+                <input type="date" id="dateFrom" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                <span class="text-gray-500">à</span>
+                <input type="date" id="dateTo" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                <button onclick="filterByCustom()" class="bg-green-500 text-white px-4 py-1 rounded text-sm hover:bg-green-600">
+                    Appliquer
+                </button>
+            </div>
+            <button onclick="resetFilter()" class="bg-gray-500 text-white px-4 py-1 rounded text-sm hover:bg-gray-600">
+                <i class="fas fa-undo mr-1"></i>Réinitialiser
+            </button>
+        </div>
+    </div>
+
     <!-- Statistiques principales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -648,6 +684,94 @@ new Chart(yearlyTrendCtx, {
         interaction: {
             intersect: false,
             mode: 'index'
+        }
+    }
+});
+
+// === FONCTIONS DE FILTRAGE TEMPOREL ===
+
+let currentPeriod = 'all';
+let originalData = {
+    dailyData: dailyData,
+    statusData: statusData,
+    monthlyVolumes: monthlyVolumes
+};
+
+function filterByPeriod(period) {
+    currentPeriod = period;
+    updateFilterButtons(period);
+    
+    // Redirection vers la page avec le paramètre de filtre
+    let url = new URL(window.location);
+    url.searchParams.set('period', period);
+    window.location = url;
+}
+
+function filterByCustom() {
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    if (!dateFrom || !dateTo) {
+        alert('Veuillez sélectionner les deux dates');
+        return;
+    }
+    
+    if (new Date(dateFrom) > new Date(dateTo)) {
+        alert('La date de début doit être antérieure à la date de fin');
+        return;
+    }
+    
+    currentPeriod = 'custom';
+    updateFilterButtons('custom');
+    
+    // Redirection avec dates personnalisées
+    let url = new URL(window.location);
+    url.searchParams.set('period', 'custom');
+    url.searchParams.set('date_from', dateFrom);
+    url.searchParams.set('date_to', dateTo);
+    window.location = url;
+}
+
+function resetFilter() {
+    currentPeriod = 'all';
+    updateFilterButtons('all');
+    
+    // Redirection sans paramètres de filtre
+    let url = new URL(window.location);
+    url.searchParams.delete('period');
+    url.searchParams.delete('date_from');
+    url.searchParams.delete('date_to');
+    window.location = url;
+}
+
+function updateFilterButtons(activePeriod) {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-500', 'text-white');
+        btn.classList.add('bg-gray-200', 'text-gray-700');
+    });
+    
+    if (activePeriod !== 'custom' && activePeriod !== 'all') {
+        const activeBtn = document.querySelector(`[data-period="${activePeriod}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+            activeBtn.classList.add('bg-blue-500', 'text-white');
+        }
+    }
+}
+
+// Initialiser l'état du filtre au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const period = urlParams.get('period');
+    
+    if (period) {
+        updateFilterButtons(period);
+        
+        if (period === 'custom') {
+            const dateFrom = urlParams.get('date_from');
+            const dateTo = urlParams.get('date_to');
+            if (dateFrom) document.getElementById('dateFrom').value = dateFrom;
+            if (dateTo) document.getElementById('dateTo').value = dateTo;
         }
     }
 });
