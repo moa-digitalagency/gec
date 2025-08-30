@@ -147,6 +147,14 @@ def inject_language_functions():
         't': t
     }
 
+# Add system parameters to template context
+@app.context_processor
+def inject_system_parameters():
+    from models import ParametresSysteme
+    return {
+        'get_appellation_entites': lambda: ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
+    }
+
 # Security headers are already handled in the after_request function above
 
 # Enhanced error handlers with security logging

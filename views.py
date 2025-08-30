@@ -2073,7 +2073,9 @@ def manage_users():
     
     users = User.query.order_by(User.date_creation.desc()).all()
     departements = Departement.get_departements_actifs()
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     return render_template('manage_users.html', users=users, departements=departements,
+                         appellation_entites=appellation_entites,
                          available_languages=get_available_languages())
 
 @app.route('/add_user', methods=['GET', 'POST'])
@@ -2150,11 +2152,13 @@ def add_user():
         return redirect(url_for('manage_users'))
     
     departements = Departement.get_departements_actifs()
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     # Get all active roles from database
     roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
     return render_template('add_user.html', 
                          available_languages=get_available_languages(),
                          departements=departements,
+                         appellation_entites=appellation_entites,
                          roles=roles)
 
 @app.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
@@ -2220,11 +2224,13 @@ def edit_user(user_id):
         return redirect(url_for('manage_users'))
     
     departements = Departement.get_departements_actifs()
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     # Get all active roles from database
     roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
     return render_template('edit_user.html', user=user, 
                          available_languages=get_available_languages(),
                          departements=departements,
+                         appellation_entites=appellation_entites,
                          roles=roles)
 
 @app.route('/delete_courrier/<int:id>', methods=['POST'])
@@ -2812,7 +2818,7 @@ def add_department():
             
             log_activity(current_user.id, "CREATION_DEPARTEMENT", 
                         f"Création du département {nom}")
-            flash(f'Département "{nom}" créé avec succès!', 'success')
+            flash(f'{appellation_entites[:-1]} "{nom}" créé avec succès!', 'success')
             return redirect(url_for('manage_departments'))
             
         except Exception as e:
@@ -2840,11 +2846,11 @@ def edit_department(dept_id):
         
         # Vérifier les doublons (sauf pour ce département)
         if Departement.query.filter(Departement.nom == nom, Departement.id != dept_id).first():
-            flash('Ce nom de département existe déjà.', 'error')
+            flash(f'Ce nom de {appellation_entites[:-1].lower()} existe déjà.', 'error')
             return redirect(url_for('edit_department', dept_id=dept_id))
         
         if Departement.query.filter(Departement.code == code, Departement.id != dept_id).first():
-            flash('Ce code de département existe déjà.', 'error')
+            flash(f'Ce code de {appellation_entites[:-1].lower()} existe déjà.', 'error')
             return redirect(url_for('edit_department', dept_id=dept_id))
         
         try:
@@ -2857,7 +2863,7 @@ def edit_department(dept_id):
             db.session.commit()
             log_activity(current_user.id, "MODIFICATION_DEPARTEMENT", 
                         f"Modification du département {nom}")
-            flash(f'Département "{nom}" modifié avec succès!', 'success')
+            flash(f'{appellation_entites[:-1]} "{nom}" modifié avec succès!', 'success')
             return redirect(url_for('manage_departments'))
             
         except Exception as e:
@@ -2880,7 +2886,7 @@ def delete_department(dept_id):
     # Vérifier si des utilisateurs sont assignés à ce département
     users_count = User.query.filter_by(departement_id=dept_id).count()
     if users_count > 0:
-        flash(f'Impossible de supprimer ce département. {users_count} utilisateur(s) y sont assignés.', 'error')
+        flash(f'Impossible de supprimer ce {appellation_entites[:-1].lower()}. {users_count} utilisateur(s) y sont assignés.', 'error')
         return redirect(url_for('manage_departments'))
     
     try:
@@ -2890,7 +2896,7 @@ def delete_department(dept_id):
         
         log_activity(current_user.id, "SUPPRESSION_DEPARTEMENT", 
                     f"Suppression du département {nom}")
-        flash(f'Département "{nom}" supprimé avec succès!', 'success')
+        flash(f'{appellation_entites[:-1]} "{nom}" supprimé avec succès!', 'success')
         
     except Exception as e:
         db.session.rollback()
@@ -2958,7 +2964,9 @@ def uploaded_file(filename):
 @login_required
 def profile():
     """Afficher le profil de l'utilisateur actuel"""
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     return render_template('profile.html', user=current_user, 
+                         appellation_entites=appellation_entites,
                          available_languages=get_available_languages())
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -3015,8 +3023,10 @@ def edit_profile():
     
     # Récupérer les départements pour le formulaire
     departements = Departement.get_departements_actifs()
+    appellation_entites = ParametresSysteme.get_valeur('appellation_entites_organisationnelles', 'Départements')
     return render_template('edit_profile.html', user=current_user, 
                          departements=departements,
+                         appellation_entites=appellation_entites,
                          available_languages=get_available_languages())
 
 @app.errorhandler(404)

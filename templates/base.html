@@ -108,7 +108,7 @@
                                 <i class="fas fa-user-shield me-1"></i>Gestion Rôles
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('manage_departments') }}">
-                                <i class="fas fa-building me-1"></i>Départements
+                                <i class="fas fa-building me-1"></i>{{ get_appellation_entites() }}
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('view_logs') }}">
