@@ -269,6 +269,24 @@ class User(UserMixin, db.Model):
         
         return False
     
+    def can_receive_new_mail_notifications(self):
+        """Vérifie si l'utilisateur peut recevoir les notifications de nouveaux courriers"""
+        if not self.actif or not self.email:
+            return False
+        
+        # Super admin peut toujours recevoir les notifications (sauf si désactivé dans les paramètres)
+        if self.role == 'super_admin':
+            return True
+            
+        # Vérifier les permissions spécifiques d'abord
+        if self.has_permission('receive_new_mail_notifications'):
+            return True
+        elif self.has_permission('manage_mail') or self.has_permission('read_all_mail'):
+            return True
+        
+        # Fallback sur les rôles par défaut pour la compatibilité
+        return self.role in ['admin', 'super_admin']
+    
     def get_profile_photo_url(self):
         """Retourne l'URL de la photo de profil ou une image par défaut"""
         if self.photo_profile:

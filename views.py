@@ -549,33 +549,37 @@ def register_mail():
                 # Obtenir les paramètres système pour vérifier les notifications super admin
                 parametres_notif = ParametresSysteme.get_parametres()
                 
-                # Obtenir les administrateurs actifs
-                admins = User.query.filter(
+                # Obtenir tous les utilisateurs pouvant recevoir des notifications
+                notification_users = []
+                
+                # Récupérer tous les utilisateurs actifs avec email
+                all_users = User.query.filter(
                     User.actif == True,
-                    User.role == 'admin'
+                    User.email.isnot(None),
+                    User.email != ''
                 ).all()
                 
-                # Ajouter les super administrateurs seulement si autorisé dans les paramètres
-                if parametres_notif.notify_superadmin_new_mail:
-                    super_admins = User.query.filter(
-                        User.actif == True,
-                        User.role == 'super_admin'
-                    ).all()
-                    admins.extend(super_admins)
+                for user in all_users:
+                    # Vérifier si l'utilisateur peut recevoir les notifications
+                    if user.can_receive_new_mail_notifications():
+                        # Pour les super admin, vérifier le paramètre système
+                        if user.role == 'super_admin' and not parametres_notif.notify_superadmin_new_mail:
+                            continue
+                        notification_users.append(user)
                 
                 # Créer les notifications dans l'application
-                for admin in admins:
+                for user in notification_users:
                     Notification.create_notification(
-                        user_id=admin.id,
+                        user_id=user.id,
                         type_notification='new_mail',
                         titre=f'Nouveau courrier enregistré - {numero_accuse}',
                         message=f'Un nouveau courrier "{objet}" a été enregistré par {current_user.nom_complet}.',
                         courrier_id=courrier.id
                     )
                 
-                # Envoyer les notifications par email (si Gmail est configuré)
-                admin_emails = [admin.email for admin in admins if admin.email]
-                if admin_emails:
+                # Envoyer les notifications par email (utilise l'email du profil de chaque utilisateur)
+                user_emails = [user.email for user in notification_users]
+                if user_emails:
                     courrier_data = {
                         'numero_accuse_reception': numero_accuse,
                         'type_courrier': type_courrier,
@@ -583,7 +587,7 @@ def register_mail():
                         'expediteur': expediteur or destinataire,
                         'created_by': current_user.nom_complet
                     }
-                    send_new_mail_notification(admin_emails, courrier_data)
+                    send_new_mail_notification(user_emails, courrier_data)
                 
             except Exception as e:
                 logging.error(f"Erreur lors de l'envoi des notifications: {e}")

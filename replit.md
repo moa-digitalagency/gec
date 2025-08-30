@@ -72,6 +72,13 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **Input Sanitization**: Advanced input validation and sanitization
 - **Secure File Handling**: Path traversal protection and secure file operations
 
+### Recent Updates (August 30, 2025)
+- **ENHANCED**: Email notification system now role-agnostic - uses permissions instead of fixed roles
+- **IMPROVED**: All users with appropriate permissions can receive notifications using their profile email
+- **EXTENDED**: System compatible with current and future custom roles
+- **FLEXIBLE**: Notification eligibility based on permissions like 'receive_new_mail_notifications', 'manage_mail', 'read_all_mail'
+- **MAINTAINED**: Backward compatibility with existing admin/super_admin roles
+
 ### Status (August 18, 2025)
 - Application ready for production deployment
 - Database optimized with full indexing
