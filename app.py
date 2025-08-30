@@ -47,6 +47,11 @@ with app.app_context():
     # Create all tables
     db.create_all()
     
+    # Execute automatic migrations to handle new columns
+    from migration_utils import run_automatic_migrations, apply_database_specific_fixes
+    run_automatic_migrations(app, db)
+    apply_database_specific_fixes(db.engine)
+    
     # Import security utilities
     from security_utils import add_security_headers, clean_security_storage, audit_log
     

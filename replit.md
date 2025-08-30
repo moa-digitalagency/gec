@@ -78,6 +78,10 @@ Dashboard design: User confirmed perfect and should not be changed ("le design e
 - **EXTENDED**: System compatible with current and future custom roles
 - **FLEXIBLE**: Notification eligibility based on permissions like 'receive_new_mail_notifications', 'manage_mail', 'read_all_mail'
 - **MAINTAINED**: Backward compatibility with existing admin/super_admin roles
+- **CRITICAL FIX**: Added automatic migration system to prevent "column does not exist" errors during updates
+- **SENDGRID INTEGRATION**: Added SendGrid API key configuration directly in system parameters with encrypted storage
+- **MIGRATION SYSTEM**: Created automatic column detection and addition system to preserve existing data during updates
+- **STABILITY**: Future updates will no longer require reinstallation or cause data loss
 
 ### Status (August 18, 2025)
 - Application ready for production deployment
