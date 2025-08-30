@@ -1370,8 +1370,12 @@ def settings():
                             f"Mise à jour des paramètres système par {current_user.username}")
                 log_security_event("SETTINGS_UPDATE", f"System settings updated by {current_user.username}")
                 flash('Paramètres sauvegardés avec succès!', 'success')
+                print("DEBUG: Settings saved successfully")
             except Exception as e:
                 db.session.rollback()
+                print(f"DEBUG: Error saving settings: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
                 log_security_event("SETTINGS_ERROR", f"Failed to save settings: {str(e)}")
             

@@ -1136,17 +1136,19 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             const submitButton = form.querySelector('button[type="submit"]');
             
-            // Validate all fields
+            // Validate all required fields only
             let isFormValid = true;
-            inputs.forEach(input => {
-                if (!validateField.call(input)) {
+            const requiredInputs = form.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                if (!input.value.trim()) {
                     isFormValid = false;
+                    input.classList.add('border-red-300');
                 }
             });
             
             if (!isFormValid) {
                 e.preventDefault();
-                showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+                showNotification('Veuillez remplir tous les champs obligatoires', 'error');
                 return;
             }
             
