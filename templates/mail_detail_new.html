@@ -540,15 +540,26 @@
                             </div>
                         </div>
                         <form method="POST" action="{{ url_for('forward_mail', courrier_id=courrier.id) }}" class="space-y-3">
-                            <select name="user_id" required 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-green focus:border-rdc-green text-sm">
-                                <option value="">Sélectionner un utilisateur</option>
-                                {% for user in users %}
-                                    {% if user.id != current_user.id %}
-                                    <option value="{{ user.id }}">{{ user.nom_complet }}</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
+                            <div class="relative">
+                                <input type="text" 
+                                       id="userSearch" 
+                                       placeholder="Taper pour rechercher un utilisateur..."
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-green focus:border-rdc-green text-sm"
+                                       autocomplete="off">
+                                <div id="userDropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto hidden">
+                                    {% for user in users %}
+                                        {% if user.id != current_user.id %}
+                                        <div class="user-option px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
+                                             data-user-id="{{ user.id }}" 
+                                             data-user-name="{{ user.nom_complet }}">
+                                            <i class="fas fa-user mr-2 text-gray-400"></i>
+                                            {{ user.nom_complet }}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <input type="hidden" name="user_id" id="selectedUserId" required>
+                            </div>
                             <textarea name="message" rows="2" 
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-green focus:border-rdc-green text-sm"
                                       placeholder="Message d'accompagnement (optionnel)"></textarea>
@@ -660,5 +671,78 @@ function confirmDeleteMail(id, numero) {
         form.submit();
     }
 }
+
+// User search functionality for transmission
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearch');
+    const dropdown = document.getElementById('userDropdown');
+    const hiddenInput = document.getElementById('selectedUserId');
+    const userOptions = document.querySelectorAll('.user-option');
+
+    if (!searchInput) return; // Exit if elements don't exist
+
+    // Show dropdown when clicking on input
+    searchInput.addEventListener('focus', function() {
+        dropdown.classList.remove('hidden');
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Filter users based on search input
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        let hasVisibleOptions = false;
+
+        userOptions.forEach(function(option) {
+            const userName = option.getAttribute('data-user-name').toLowerCase();
+            if (userName.includes(searchTerm)) {
+                option.style.display = 'block';
+                hasVisibleOptions = true;
+            } else {
+                option.style.display = 'none';
+            }
+        });
+
+        // Show dropdown if there are visible options and input is focused
+        if (hasVisibleOptions && searchTerm.length > 0) {
+            dropdown.classList.remove('hidden');
+        } else if (searchTerm.length === 0) {
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // Handle user selection
+    userOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const userName = this.getAttribute('data-user-name');
+            
+            searchInput.value = userName;
+            hiddenInput.value = userId;
+            dropdown.classList.add('hidden');
+            
+            // Add visual feedback
+            searchInput.classList.add('bg-green-50', 'border-green-300');
+            setTimeout(() => {
+                searchInput.classList.remove('bg-green-50', 'border-green-300');
+            }, 2000);
+        });
+    });
+
+    // Clear selection when input is cleared
+    searchInput.addEventListener('input', function() {
+        if (this.value === '') {
+            hiddenInput.value = '';
+            searchInput.classList.remove('bg-green-50', 'border-green-300');
+        }
+    });
+});
 </script>
 {% endblock %}
