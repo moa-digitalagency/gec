@@ -1,6 +1,6 @@
-# GEC Mines - Dépendances du Projet
+# GEC - Dépendances du Projet
 # =====================================
-# Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC Mines
+# Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC
 # Date de mise à jour: 29 Août 2025
 # Version: 1.0.1
 # Python Version: 3.11+

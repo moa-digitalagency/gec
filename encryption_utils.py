@@ -1,5 +1,5 @@
 """
-Module de cryptage avancé pour GEC Mines
+Module de cryptage avancé pour GEC
 Gère le cryptage des données sensibles et des fichiers
 """
 

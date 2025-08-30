@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ================================================================
-echo           Installation Automatique GEC Mines - Windows
+echo           Installation Automatique GEC - Windows
 echo ================================================================
 echo Developpe par: MOA Digital Agency LLC
 echo Auteur: AIsance KALONJI wa KALONJI
@@ -61,7 +61,7 @@ call refreshenv.cmd 2>nul || (
 )
 
 echo.
-echo [ETAPE 5/8] Telechargement du code source GEC Mines...
+echo [ETAPE 5/8] Telechargement du code source GEC...
 if exist "gec" (
     echo [INFO] Dossier gec existant, mise a jour...
     cd gec
@@ -129,7 +129,7 @@ echo cd /d "%%~dp0" >> start-gec.bat
 echo call .venv\Scripts\activate.bat >> start-gec.bat
 echo echo. >> start-gec.bat
 echo echo ============================================ >> start-gec.bat
-echo echo     GEC Mines - Systeme de Gestion du Courrier >> start-gec.bat
+echo echo     GEC - Systeme de Gestion du Courrier >> start-gec.bat
 echo echo     Acces: http://localhost:5000 >> start-gec.bat
 echo echo     Developpe par MOA Digital Agency LLC >> start-gec.bat
 echo echo ============================================ >> start-gec.bat
@@ -138,17 +138,17 @@ echo python main.py >> start-gec.bat
 echo pause >> start-gec.bat
 
 REM Creer un raccourci sur le bureau
-powershell.exe -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%USERPROFILE%\Desktop\GEC Mines.lnk'); $Shortcut.TargetPath = '%CD%\start-gec.bat'; $Shortcut.WorkingDirectory = '%CD%'; $Shortcut.Description = 'GEC Mines - Systeme de Gestion du Courrier'; $Shortcut.Save()"
+powershell.exe -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%USERPROFILE%\Desktop\GEC.lnk'); $Shortcut.TargetPath = '%CD%\start-gec.bat'; $Shortcut.WorkingDirectory = '%CD%'; $Shortcut.Description = 'GEC - Systeme de Gestion du Courrier'; $Shortcut.Save()"
 
 echo.
 echo ================================================================
 echo                    INSTALLATION TERMINEE !
 echo ================================================================
 echo.
-echo L'application GEC Mines a ete installee avec succes.
+echo L'application GEC a ete installee avec succes.
 echo.
 echo Pour demarrer l'application:
-echo   1. Double-cliquez sur "GEC Mines" sur votre bureau
+echo   1. Double-cliquez sur "GEC" sur votre bureau
 echo   2. Ou executez "start-gec.bat" dans ce dossier
 echo.
 echo L'application sera accessible a l'adresse:

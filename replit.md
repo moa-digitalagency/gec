@@ -1,7 +1,7 @@
-# GEC Mines - Mail Management System
+# GEC - Mail Management System
 
 ## Overview
-This Flask-based web application manages mail correspondence for GEC (Secrétariat Général des Mines). It provides a comprehensive digital solution for registering, viewing, searching, and tracking mail documents with attached files. The system aims to streamline mail management, improve efficiency, and ensure secure, auditable record-keeping for businesses and government agencies. Key capabilities include robust user authentication, detailed mail tracking, configurable system parameters, and advanced administration features like multi-tier access control, activity logging, and backup/restore functionality.
+This Flask-based web application manages mail correspondence for GEC (Secrétariat Général). It provides a comprehensive digital solution for registering, viewing, searching, and tracking mail documents with attached files. The system aims to streamline mail management, improve efficiency, and ensure secure, auditable record-keeping for businesses and government agencies. Key capabilities include robust user authentication, detailed mail tracking, configurable system parameters, and advanced administration features like multi-tier access control, activity logging, and backup/restore functionality.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

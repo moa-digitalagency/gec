@@ -1,5 +1,5 @@
 """
-Security utilities for the GEC Mines application
+Security utilities for the GEC application
 Includes advanced security measures against various attacks
 """
 import re

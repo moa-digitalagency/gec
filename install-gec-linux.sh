@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Installation Automatique GEC Mines - Linux
+# Installation Automatique GEC - Linux
 # Développé par: MOA Digital Agency LLC
 # Auteur: AIsance KALONJI wa KALONJI
 # Contact: moa@myoneart.com
@@ -8,7 +8,7 @@
 set -e
 
 echo "================================================================"
-echo "           Installation Automatique GEC Mines - Linux"
+echo "           Installation Automatique GEC - Linux"
 echo "================================================================"
 echo "Développé par: MOA Digital Agency LLC"
 echo "Auteur: AIsance KALONJI wa KALONJI"

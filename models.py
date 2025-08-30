@@ -304,7 +304,7 @@ class User(UserMixin, db.Model):
         # Créer le super admin par défaut
         super_admin = User(
             username='admin',
-            email='admin@gecmines.cd',
+            email='admin@gec.cd',
             nom_complet='Super Administrateur',
             password_hash=generate_password_hash('Admin2025!'),
             role='super_admin',
@@ -632,7 +632,7 @@ class IPBlock(db.Model):
 class ParametresSysteme(db.Model):
     """Paramètres de configuration du système"""
     id = db.Column(db.Integer, primary_key=True)
-    nom_logiciel = db.Column(db.String(100), nullable=False, default="GEC - Mines RDC")
+    nom_logiciel = db.Column(db.String(100), nullable=False, default="GEC - Gestion du Courrier")
     logo_url = db.Column(db.String(500), nullable=True)
     
     # Configuration du numéro d'accusé de réception
@@ -649,7 +649,7 @@ class ParametresSysteme(db.Model):
     
     # Paramètres PDF
     logo_pdf = db.Column(db.String(500), nullable=True)  # Logo spécifique pour PDF
-    titre_pdf = db.Column(db.String(200), nullable=True, default="Ministère des Mines")
+    titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
     sous_titre_pdf = db.Column(db.String(200), nullable=True, default="Secrétariat Général")
     pays_pdf = db.Column(db.String(200), nullable=True, default="République Démocratique du Congo")
     copyright_text = db.Column(db.Text, nullable=True, default="© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC")
@@ -1099,11 +1099,11 @@ class EmailTemplate(db.Model):
 </head>
 <body>
     <div class="header">
-        <h2>GEC Mines - Notification de Nouveau Courrier</h2>
+        <h2>GEC - Notification de Nouveau Courrier</h2>
     </div>
     <div class="content">
         <p>Bonjour,</p>
-        <p>Un nouveau courrier a été enregistré dans le système GEC Mines.</p>
+        <p>Un nouveau courrier a été enregistré dans le système GEC.</p>
         
         <div class="details">
             <h3>Détails du courrier :</h3>
@@ -1115,15 +1115,15 @@ class EmailTemplate(db.Model):
             <p><strong>Enregistré par :</strong> {created_by}</p>
         </div>
         
-        <p>Vous pouvez consulter ce courrier en vous connectant au système GEC Mines.</p>
+        <p>Vous pouvez consulter ce courrier en vous connectant au système GEC.</p>
     </div>
     <div class="footer">
-        <p>GEC Mines - Système de Gestion des Courriers<br>
-        Secrétariat Général des Mines - République Démocratique du Congo</p>
+        <p>GEC - Système de Gestion du Courrier<br>
+        Secrétariat Général - République Démocratique du Congo</p>
     </div>
 </body>
 </html>''',
-                    contenu_texte='''GEC Mines - Notification de Nouveau Courrier
+                    contenu_texte='''GEC - Notification de Nouveau Courrier
 
 Un nouveau courrier a été enregistré dans le système.
 
@@ -1135,10 +1135,10 @@ Détails du courrier :
 - Date d'enregistrement : {date_enregistrement}
 - Enregistré par : {created_by}
 
-Connectez-vous au système GEC Mines pour consulter ce courrier.
+Connectez-vous au système GEC pour consulter ce courrier.
 
-GEC Mines - Système de Gestion des Courriers
-Secrétariat Général des Mines - République Démocratique du Congo''',
+GEC - Système de Gestion du Courrier
+Secrétariat Général - République Démocratique du Congo''',
                     cree_par_id=1  # Admin system
                 )
                 db.session.add(template_fr)
@@ -1163,7 +1163,7 @@ Secrétariat Général des Mines - République Démocratique du Congo''',
 </head>
 <body>
     <div class="header">
-        <h2>GEC Mines - Courrier Transmis</h2>
+        <h2>GEC - Courrier Transmis</h2>
     </div>
     <div class="content">
         <p>Bonjour,</p>
@@ -1178,15 +1178,15 @@ Secrétariat Général des Mines - République Démocratique du Congo''',
             <p><strong>Date de transmission :</strong> {date_transmission}</p>
         </div>
         
-        <p>Veuillez vous connecter au système GEC Mines pour consulter ce courrier.</p>
+        <p>Veuillez vous connecter au système GEC pour consulter ce courrier.</p>
     </div>
     <div class="footer">
-        <p>GEC Mines - Système de Gestion des Courriers<br>
-        Secrétariat Général des Mines - République Démocratique du Congo</p>
+        <p>GEC - Système de Gestion du Courrier<br>
+        Secrétariat Général - République Démocratique du Congo</p>
     </div>
 </body>
 </html>''',
-                    contenu_texte='''GEC Mines - Courrier Transmis
+                    contenu_texte='''GEC - Courrier Transmis
 
 Un courrier vous a été transmis par {forwarded_by}.
 
@@ -1197,10 +1197,10 @@ Détails du courrier :
 - Expéditeur : {expediteur}
 - Date de transmission : {date_transmission}
 
-Connectez-vous au système GEC Mines pour consulter ce courrier.
+Connectez-vous au système GEC pour consulter ce courrier.
 
-GEC Mines - Système de Gestion des Courriers
-Secrétariat Général des Mines - République Démocratique du Congo''',
+GEC - Système de Gestion du Courrier
+Secrétariat Général - République Démocratique du Congo''',
                     cree_par_id=1  # Admin system
                 )
                 db.session.add(template_forward_fr)

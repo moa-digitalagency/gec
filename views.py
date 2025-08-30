@@ -273,7 +273,7 @@ def test_smtp_config():
             return redirect(url_for('settings'))
         
         # Récupérer le nom du logiciel
-        nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC Mines')
+        nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
         
         # Contenu de l'email de test
         subject = f"Test de configuration SMTP - {nom_logiciel}"
@@ -1267,7 +1267,7 @@ def settings():
             
             # Sanitize PDF parameters
             parametres.texte_footer = sanitize_input(request.form.get('texte_footer', '').strip()) or "Système de Gestion Électronique du Courrier"
-            parametres.titre_pdf = sanitize_input(request.form.get('titre_pdf', '').strip()) or "Ministère des Mines"
+            parametres.titre_pdf = sanitize_input(request.form.get('titre_pdf', '').strip()) or "Secrétariat Général"
             parametres.sous_titre_pdf = sanitize_input(request.form.get('sous_titre_pdf', '').strip()) or "Secrétariat Général"
             parametres.pays_pdf = sanitize_input(request.form.get('pays_pdf', '').strip()) or "République Démocratique du Congo"
             parametres.copyright_text = sanitize_input(request.form.get('copyright_text', '').strip()) or "© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC"
@@ -1560,7 +1560,7 @@ def update_online():
         
         # Fichiers à préserver
         preserve_files = [
-            'instance/gecmines.db',
+            'instance/gec.db',
             'uploads',
             '.env',
             'version.txt'
@@ -1646,7 +1646,7 @@ def update_offline():
         
         # Fichiers et dossiers à préserver (ne jamais remplacer)
         preserve_patterns = [
-            'instance/gecmines.db',
+            'instance/gec.db',
             'uploads/',
             '.env',
             'backups/',
@@ -3038,7 +3038,7 @@ def backup_database():
             
             with open(backup_file, 'w') as f:
                 # Export des données principales
-                f.write("-- GEC Mines Database Backup\n")
+                f.write("-- GEC Database Backup\n")
                 f.write(f"-- Created: {datetime.now()}\n\n")
                 
                 # Exporter les utilisateurs (sans mots de passe pour sécurité)
@@ -3528,7 +3528,7 @@ def export_analytics(format):
         styles = getSampleStyleSheet()
         
         # Titre
-        title = Paragraph("Rapport Analytique - GEC Mines", styles['Title'])
+        title = Paragraph("Rapport Analytique - GEC", styles['Title'])
         elements.append(title)
         elements.append(Spacer(1, 20))
         

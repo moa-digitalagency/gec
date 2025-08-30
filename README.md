@@ -1,4 +1,4 @@
-# 📮 GEC Mines - Système de Gestion Électronique du Courrier
+# 📮 GEC - Système de Gestion Électronique du Courrier
 
 ## 🌍 Language / Langue
 
@@ -16,7 +16,7 @@
 
 ## 🚀 Aperçu Général
 
-**GEC Mines** est un système complet de gestion électronique du courrier développé pour le Secrétariat Général des Mines en République Démocratique du Congo.
+**GEC** est un système complet de gestion électronique du courrier développé pour les administrations et secrétariats généraux en République Démocratique du Congo.
 
 ### ✨ Fonctionnalités Clés
 

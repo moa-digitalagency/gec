@@ -1,5 +1,5 @@
 """
-Performance utilities for GEC Mines application
+Performance utilities for GEC application
 """
 import time
 import functools
