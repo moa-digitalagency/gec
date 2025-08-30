@@ -73,27 +73,6 @@
                         <span class="hidden sm:inline">Menu</span>
                     </button>
                     
-                    <!-- Sélecteur de langue compact -->
-                    <div class="relative group">
-                        <button class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-2 py-2 rounded-md text-xs font-medium transition-colors flex items-center">
-                            {% if get_current_language() == 'fr' %}
-                                🇫🇷 <span class="hidden lg:inline ml-1">FR</span>
-                            {% else %}
-                                🇺🇸 <span class="hidden lg:inline ml-1">EN</span>
-                            {% endif %}
-                        </button>
-                        <div class="absolute right-0 w-36 mt-2 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                            <div class="py-1">
-                                <a href="{{ url_for('set_language_route', lang_code='fr') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'fr' %}bg-blue-50 text-blue-700{% endif %}">
-                                    🇫🇷 Français
-                                </a>
-                                <a href="{{ url_for('set_language_route', lang_code='en') }}" class="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 {% if get_current_language() == 'en' %}bg-blue-50 text-blue-700{% endif %}">
-                                    🇺🇸 English
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Notifications Icon -->
                     <div class="relative">
                         <a href="{{ url_for('notifications') }}" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
