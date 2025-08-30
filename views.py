@@ -3581,8 +3581,12 @@ def export_analytics(format):
     courriers_sortants = Courrier.query.filter_by(type_courrier='SORTANT', is_deleted=False).count()
     
     if format == 'excel':
-        import pandas as pd
-        from flask import send_file
+        try:
+            import pandas as pd
+            from flask import send_file
+        except ImportError:
+            flash('Pandas n\'est pas installé. Impossible d\'exporter en Excel.', 'error')
+            return redirect(url_for('analytics'))
         
         # Créer un fichier Excel avec plusieurs feuilles
         output = io.BytesIO()
@@ -3616,11 +3620,16 @@ def export_analytics(format):
                         download_name=f'analytics_export_{datetime.now().strftime("%Y%m%d")}.xlsx')
     
     elif format == 'pdf':
-        # Export PDF avec ReportLab
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import letter, A4
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet
+        try:
+            # Export PDF avec ReportLab
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.lib.units import cm
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+        except ImportError:
+            flash('ReportLab n\'est pas installé. Impossible d\'exporter en PDF.', 'error')
+            return redirect(url_for('analytics'))
         
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -3635,29 +3644,88 @@ def export_analytics(format):
         # Date du rapport
         date_para = Paragraph(f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal'])
         elements.append(date_para)
-        elements.append(Spacer(1, 20))
+        elements.append(Spacer(1, 30))
         
-        # Tableau des statistiques
-        data = [
+        # Section statistiques générales
+        stats_title = Paragraph("Statistiques Générales", styles['Heading2'])
+        elements.append(stats_title)
+        elements.append(Spacer(1, 10))
+        
+        # Tableau des statistiques principales
+        stats_data = [
             ['Métrique', 'Valeur'],
             ['Total Courriers', str(total_courriers)],
             ['Courriers Entrants', str(courriers_entrants)],
-            ['Courriers Sortants', str(courriers_sortants)]
+            ['Courriers Sortants', str(courriers_sortants)],
+            ['7 Derniers Jours', str(courriers_7_days)],
+            ['30 Derniers Jours', str(courriers_30_days)]
         ]
         
-        table = Table(data)
-        table.setStyle(TableStyle([
+        stats_table = Table(stats_data, colWidths=[8*cm, 4*cm])
+        stats_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 14),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
         ]))
         
-        elements.append(table)
+        elements.append(stats_table)
+        elements.append(Spacer(1, 30))
+        
+        # Section Top Expéditeurs
+        if top_senders:
+            senders_title = Paragraph("Top 10 Expéditeurs", styles['Heading2'])
+            elements.append(senders_title)
+            elements.append(Spacer(1, 10))
+            
+            senders_data = [['Expéditeur', 'Nombre de Courriers']]
+            for sender in top_senders[:5]:  # Limiter à 5 pour le PDF
+                senders_data.append([sender.expediteur[:50] + '...' if len(sender.expediteur) > 50 else sender.expediteur, str(sender.count)])
+            
+            senders_table = Table(senders_data, colWidths=[10*cm, 4*cm])
+            senders_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightblue),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(senders_table)
+            elements.append(Spacer(1, 20))
+        
+        # Variables de données pour analytics
+        date_7_days_ago = datetime.now() - timedelta(days=7)
+        courriers_7_days = Courrier.query.filter(
+            Courrier.date_enregistrement >= date_7_days_ago,
+            Courrier.is_deleted == False
+        ).count()
+        
+        date_30_days_ago = datetime.now() - timedelta(days=30)
+        courriers_30_days = Courrier.query.filter(
+            Courrier.date_enregistrement >= date_30_days_ago,
+            Courrier.is_deleted == False
+        ).count()
+        
+        # Top expéditeurs
+        top_senders = db.session.query(
+            Courrier.expediteur,
+            func.count(Courrier.id).label('count')
+        ).filter(
+            Courrier.expediteur != None,
+            Courrier.expediteur != '',
+            Courrier.is_deleted == False
+        ).group_by(Courrier.expediteur).order_by(func.count(Courrier.id).desc()).limit(5).all()
+        
         doc.build(elements)
         
         buffer.seek(0)
