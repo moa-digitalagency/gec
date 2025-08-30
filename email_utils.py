@@ -173,7 +173,10 @@ def test_sendgrid_configuration(test_email):
         dict: {'success': bool, 'message': str}
     """
     try:
+        print(f"🔍 DIAGNOSTIC LOCAL - Test SendGrid pour {test_email}")
+        
         # Vérifier que SendGrid est disponible
+        print(f"📦 SendGrid disponible: {SENDGRID_AVAILABLE}")
         if not SENDGRID_AVAILABLE:
             return {
                 'success': False,
@@ -184,6 +187,9 @@ def test_sendgrid_configuration(test_email):
         from models import ParametresSysteme
         parametres = ParametresSysteme.get_parametres()
         sendgrid_api_key = parametres.get_sendgrid_api_key_decrypted()
+        print(f"🔑 Clé API récupérée: {'Oui (' + str(len(sendgrid_api_key)) + ' caractères)' if sendgrid_api_key else 'Non'}")
+        print(f"🔑 Clé commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
+        
         if not sendgrid_api_key:
             return {
                 'success': False,
@@ -241,7 +247,9 @@ def test_sendgrid_configuration(test_email):
         """
         
         # Envoyer l'email de test
+        print(f"📤 Tentative d'envoi de l'email de test...")
         success = send_email_with_sendgrid(test_email, subject, html_content, text_content)
+        print(f"📤 Résultat de l'envoi: {'✅ Succès' if success else '❌ Échec'}")
         
         if success:
             return {
@@ -251,10 +259,11 @@ def test_sendgrid_configuration(test_email):
         else:
             return {
                 'success': False,
-                'message': 'Échec de l\'envoi de l\'email de test. Vérifiez vos logs pour plus de détails.'
+                'message': 'Échec de l\'envoi de l\'email de test. Regardez les détails ci-dessus dans la console.'
             }
             
     except Exception as e:
+        print(f"💥 ERREUR EXCEPTION: {str(e)}")
         logging.error(f"Erreur lors du test SendGrid: {str(e)}")
         return {
             'success': False,
