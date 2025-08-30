@@ -491,22 +491,45 @@ def export_courrier_pdf(courrier):
             # Joindre tout avec des séparateurs
             footer_text = " | ".join(footer_parts)
             
-            # Dessiner le footer centré
+            # Dessiner le footer centré avec gestion du débordement
             self.setFont("Helvetica", 8)
             page_width = A4[0]
             left_margin = 0.75*inch
             right_margin = 0.75*inch
             text_width = page_width - left_margin - right_margin
             
-            # Calculer la position pour centrer le texte
+            # Calculer la largeur du texte
             actual_text_width = self.stringWidth(footer_text, "Helvetica", 8)
+            
             if actual_text_width <= text_width:
                 # Le texte tient sur une ligne, le centrer
                 x_position = (page_width - actual_text_width) / 2
                 self.drawString(x_position, 0.5*inch, footer_text)
             else:
-                # Le texte est trop long, l'ajuster à la largeur disponible
-                self.drawString(left_margin, 0.5*inch, footer_text)
+                # Le texte est trop long, le raccourcir intelligemment
+                # Essayer d'abord avec une police plus petite
+                self.setFont("Helvetica", 7)
+                actual_text_width_small = self.stringWidth(footer_text, "Helvetica", 7)
+                
+                if actual_text_width_small <= text_width:
+                    # Avec police plus petite, centrer
+                    x_position = (page_width - actual_text_width_small) / 2
+                    self.drawString(x_position, 0.5*inch, footer_text)
+                else:
+                    # Même avec police plus petite, trop long - raccourcir le texte
+                    # Garder les parties essentielles
+                    short_footer = f"{parametres.texte_footer or 'GEC'} | {copyright} | Page {page_num} sur {total_pages}"
+                    short_text_width = self.stringWidth(short_footer, "Helvetica", 7)
+                    
+                    if short_text_width <= text_width:
+                        x_position = (page_width - short_text_width) / 2
+                        self.drawString(x_position, 0.5*inch, short_footer)
+                    else:
+                        # En dernier recours, juste copyright et page
+                        minimal_footer = f"{copyright} | Page {page_num} sur {total_pages}"
+                        minimal_width = self.stringWidth(minimal_footer, "Helvetica", 7)
+                        x_position = (page_width - minimal_width) / 2 if minimal_width <= text_width else left_margin
+                        self.drawString(x_position, 0.5*inch, minimal_footer)
     
     # Créer le document PDF avec la classe personnalisée
     doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1.2*inch, 
