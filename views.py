@@ -3551,28 +3551,63 @@ def analytics():
     
     # === NOUVELLES STATISTIQUES DÉTAILLÉES ===
     
-    # 1. Statistiques par département
-    dept_stats = db.session.query(
+    # 1. Statistiques par département  
+    dept_stats_raw = db.session.query(
         Departement.nom.label('departement'),
-        func.count(Courrier.id).label('total'),
-        func.sum(func.case([(Courrier.type_courrier == 'ENTRANT', 1)], else_=0)).label('entrants'),
-        func.sum(func.case([(Courrier.type_courrier == 'SORTANT', 1)], else_=0)).label('sortants')
+        Courrier.type_courrier,
+        func.count(Courrier.id).label('count')
     ).join(User, Courrier.utilisateur_id == User.id)\
      .join(Departement, User.departement_id == Departement.id)\
      .filter(Courrier.is_deleted == False)\
-     .group_by(Departement.nom)\
-     .order_by(func.count(Courrier.id).desc()).all()
+     .group_by(Departement.nom, Courrier.type_courrier).all()
     
-    # 2. Statistiques par utilisateur (top 10)  
-    user_stats = db.session.query(
+    # Agrégation des résultats par département
+    dept_dict = {}
+    for stat in dept_stats_raw:
+        if stat.departement not in dept_dict:
+            dept_dict[stat.departement] = {'departement': stat.departement, 'total': 0, 'entrants': 0, 'sortants': 0}
+        dept_dict[stat.departement]['total'] += stat.count
+        if stat.type_courrier == 'ENTRANT':
+            dept_dict[stat.departement]['entrants'] = stat.count
+        elif stat.type_courrier == 'SORTANT':
+            dept_dict[stat.departement]['sortants'] = stat.count
+    
+    # Conversion en liste triée par total
+    dept_stats = []
+    for dept_name, data in dept_dict.items():
+        from collections import namedtuple
+        DeptStat = namedtuple('DeptStat', ['departement', 'total', 'entrants', 'sortants'])
+        dept_stats.append(DeptStat(data['departement'], data['total'], data['entrants'], data['sortants']))
+    dept_stats.sort(key=lambda x: x.total, reverse=True)
+    
+    # 2. Statistiques par utilisateur (top 10)
+    user_stats_raw = db.session.query(
         User.nom_complet,
-        func.count(Courrier.id).label('total'),
-        func.sum(func.case([(Courrier.type_courrier == 'ENTRANT', 1)], else_=0)).label('entrants'),
-        func.sum(func.case([(Courrier.type_courrier == 'SORTANT', 1)], else_=0)).label('sortants')
+        Courrier.type_courrier,
+        func.count(Courrier.id).label('count')
     ).join(Courrier, Courrier.utilisateur_id == User.id)\
      .filter(Courrier.is_deleted == False)\
-     .group_by(User.nom_complet)\
-     .order_by(func.count(Courrier.id).desc()).limit(10).all()
+     .group_by(User.nom_complet, Courrier.type_courrier).all()
+    
+    # Agrégation des résultats par utilisateur
+    user_dict = {}
+    for stat in user_stats_raw:
+        if stat.nom_complet not in user_dict:
+            user_dict[stat.nom_complet] = {'nom_complet': stat.nom_complet, 'total': 0, 'entrants': 0, 'sortants': 0}
+        user_dict[stat.nom_complet]['total'] += stat.count
+        if stat.type_courrier == 'ENTRANT':
+            user_dict[stat.nom_complet]['entrants'] = stat.count
+        elif stat.type_courrier == 'SORTANT':
+            user_dict[stat.nom_complet]['sortants'] = stat.count
+    
+    # Conversion en liste triée par total (top 10)
+    user_stats = []
+    for user_name, data in user_dict.items():
+        from collections import namedtuple
+        UserStat = namedtuple('UserStat', ['nom_complet', 'total', 'entrants', 'sortants'])
+        user_stats.append(UserStat(data['nom_complet'], data['total'], data['entrants'], data['sortants']))
+    user_stats.sort(key=lambda x: x.total, reverse=True)
+    user_stats = user_stats[:10]  # Top 10
     
     # 3. Évolution des statuts par semaine (8 dernières semaines)
     weekly_status = {}
