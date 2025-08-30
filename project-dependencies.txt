@@ -65,20 +65,113 @@ PyYAML==6.0.2                  # Parsing de fichiers YAML
 # - pytz (gestion des fuseaux horaires)
 # - six (compatibilité Python 2/3)
 
-# Notes d'Installation
-# --------------------
-# Pour installer toutes les dépendances:
-# 1. Créez un environnement virtuel: python -m venv venv
-# 2. Activez l'environnement:
-#    - Linux/Mac: source venv/bin/activate
-#    - Windows: venv\Scripts\activate
-# 3. Installez les dépendances: pip install -r project-dependencies.txt
+# Guide d'Installation Multi-Plateforme
+# =====================================
+
+# 🪟 INSTALLATION WINDOWS (Server 2008+, Windows 10/11)
+# --------------------------------------------------------
+# 1. Installer Python 3.11:
+#    winget install --id Python.Python.3.11 -e
+#    # Ou télécharger depuis python.org si winget non disponible
 #
-# Variables d'environnement requises (fichier .env):
+# 2. Installer Git:
+#    winget install --id Git.Git -e
+#    # Ou télécharger depuis git-scm.com
+#
+# 3. Cloner le projet:
+#    git clone https://github.com/moa-digitalagency/gec.git
+#    cd gec
+#
+# 4. Configurer PowerShell (si nécessaire):
+#    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+#
+# 5. Créer l'environnement virtuel:
+#    python -m venv .venv
+#    # Ou si le premier ne marche pas: py -3.11 -m venv .venv
+#
+# 6. Activer l'environnement:
+#    .\.venv\Scripts\Activate.ps1
+#    # Ou dans CMD: .venv\Scripts\activate.bat
+#
+# 7. Installer les dépendances:
+#    python -m pip install -U pip wheel
+#    python -m pip install -r project-dependencies.txt
+#
+# 8. Lancer l'application:
+#    python .\main.py
+
+# 🍎 INSTALLATION macOS (10.14+)
+# -------------------------------
+# 1. Installer Homebrew (si pas installé):
+#    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+#
+# 2. Installer Python 3.11 et Git:
+#    brew install python@3.11 git
+#
+# 3. Cloner le projet:
+#    git clone https://github.com/moa-digitalagency/gec.git
+#    cd gec
+#
+# 4. Créer l'environnement virtuel:
+#    python3.11 -m venv .venv
+#
+# 5. Activer l'environnement:
+#    source .venv/bin/activate
+#
+# 6. Installer les dépendances:
+#    python -m pip install -U pip wheel
+#    pip install -r project-dependencies.txt
+#
+# 7. Lancer l'application:
+#    python main.py
+
+# 🐧 INSTALLATION LINUX (Ubuntu/Debian/CentOS)
+# ----------------------------------------------
+# Ubuntu/Debian:
+# 1. Mettre à jour le système:
+#    sudo apt update && sudo apt upgrade -y
+#
+# 2. Installer Python 3.11 et Git:
+#    sudo apt install python3.11 python3.11-venv python3-pip git -y
+#
+# 3. Cloner le projet:
+#    git clone https://github.com/moa-digitalagency/gec.git
+#    cd gec
+#
+# 4. Créer l'environnement virtuel:
+#    python3.11 -m venv .venv
+#
+# 5. Activer l'environnement:
+#    source .venv/bin/activate
+#
+# 6. Installer les dépendances:
+#    python -m pip install -U pip wheel
+#    pip install -r project-dependencies.txt
+#
+# 7. Lancer l'application:
+#    python main.py
+#
+# CentOS/RHEL:
+# 1. Installer les dépendances:
+#    sudo yum update -y
+#    sudo yum install python3.11 python3-pip git -y
+#    # Ou pour CentOS 8+: sudo dnf install python3.11 python3-pip git -y
+#
+# 2. Suivre les étapes 3-7 ci-dessus
+
+# ⚙️ CONFIGURATION REQUISE
+# -------------------------
+# Variables d'environnement (créer fichier .env):
 # DATABASE_URL=postgresql://user:password@localhost/gecmines
 # SESSION_SECRET=your-secret-key-here
 # GEC_MASTER_KEY=your-encryption-key
 # GEC_PASSWORD_SALT=your-password-salt
+#
+# Pour PostgreSQL (optionnel):
+# Windows: winget install --id PostgreSQL.PostgreSQL
+# macOS: brew install postgresql
+# Linux: sudo apt install postgresql postgresql-contrib (Ubuntu/Debian)
+#        sudo yum install postgresql-server postgresql-contrib (CentOS)
 
 # Fonctionnalités Récentes Ajoutées (Août 2025)
 # -----------------------------------------------
