@@ -151,7 +151,15 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         return True
         
     except Exception as e:
-        logging.error(f"Erreur lors de l'envoi via SendGrid à {to_email}: {str(e)}")
+        logging.error(f"❌ ERREUR SendGrid détaillée: {str(e)}")
+        logging.error(f"❌ Type d'erreur: {type(e).__name__}")
+        if hasattr(e, 'body'):
+            logging.error(f"❌ Corps de l'erreur: {e.body}")
+        if hasattr(e, 'status_code'):
+            logging.error(f"❌ Code de statut: {e.status_code}")
+        # Afficher aussi les détails de l'environnement
+        logging.error(f"❌ Clé API configurée: {'Oui' if sendgrid_api_key else 'Non'}")
+        logging.error(f"❌ Clé API commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
         return False
 
 def test_sendgrid_configuration(test_email):
