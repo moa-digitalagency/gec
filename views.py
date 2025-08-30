@@ -1347,8 +1347,9 @@ def settings():
             if current_user.is_super_admin():
                 parametres.notify_superadmin_new_mail = bool(request.form.get('notify_superadmin_new_mail'))
             
-            # Paramètres SMTP (soumis aux permissions)
+            # Paramètres SMTP et SendGrid (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
+                # Paramètres SMTP
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None
                 smtp_port = request.form.get('smtp_port', '').strip()
                 if smtp_port and smtp_port.isdigit():
@@ -1361,6 +1362,14 @@ def settings():
                     from encryption_utils import EncryptionManager
                     encryption_manager = EncryptionManager()
                     parametres.smtp_password = encryption_manager.encrypt_data(smtp_password)
+                
+                # Paramètres SendGrid
+                sendgrid_api_key = request.form.get('sendgrid_api_key', '').strip()
+                if sendgrid_api_key and sendgrid_api_key != '●●●●●●●●●●●●●●●●●●●●':
+                    # Crypter la clé API SendGrid
+                    from encryption_utils import EncryptionManager
+                    encryption_manager = EncryptionManager()
+                    parametres.sendgrid_api_key = encryption_manager.encrypt_data(sendgrid_api_key)
             
             parametres.modifie_par_id = current_user.id
             

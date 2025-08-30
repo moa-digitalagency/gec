@@ -685,6 +685,9 @@ class ParametresSysteme(db.Model):
     # Choix du fournisseur email
     email_provider = db.Column(db.String(20), nullable=False, default="sendgrid")  # 'sendgrid' ou 'smtp'
     
+    # Paramètres SendGrid
+    sendgrid_api_key = db.Column(db.String(500), nullable=True)  # Clé API SendGrid (cryptée)
+    
     # Notifications pour super admin
     notify_superadmin_new_mail = db.Column(db.Boolean, nullable=False, default=True)  # Super admin reçoit notifications nouveaux courriers
     
@@ -724,6 +727,18 @@ class ParametresSysteme(db.Model):
             return decrypt_data(self.smtp_password)
         except Exception as e:
             app.logger.error(f"Erreur lors du décryptage du mot de passe SMTP: {e}")
+            return None
+    
+    def get_sendgrid_api_key_decrypted(self):
+        """Décrypte et retourne la clé API SendGrid"""
+        if not self.sendgrid_api_key:
+            return None
+        try:
+            from encryption_utils import EncryptionManager
+            encryption_manager = EncryptionManager()
+            return encryption_manager.decrypt_data(self.sendgrid_api_key)
+        except Exception as e:
+            app.logger.error(f"Erreur lors du décryptage de la clé SendGrid: {e}")
             return None
     
     @staticmethod

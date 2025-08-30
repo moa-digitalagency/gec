@@ -101,10 +101,11 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         # Import ici pour éviter les imports circulaires
         from models import ParametresSysteme
         
-        # Récupérer la clé API SendGrid
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        # Récupérer la clé API SendGrid depuis les paramètres système
+        parametres = ParametresSysteme.get_parametres()
+        sendgrid_api_key = parametres.get_sendgrid_api_key_decrypted()
         if not sendgrid_api_key:
-            logging.error("Clé API SendGrid non configurée")
+            logging.error("Clé API SendGrid non configurée dans les paramètres système")
             return False
         
         # Récupérer l'email expéditeur depuis les paramètres système
@@ -172,15 +173,14 @@ def test_sendgrid_configuration(test_email):
             }
         
         # Vérifier la clé API
-        sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+        from models import ParametresSysteme
+        parametres = ParametresSysteme.get_parametres()
+        sendgrid_api_key = parametres.get_sendgrid_api_key_decrypted()
         if not sendgrid_api_key:
             return {
                 'success': False,
-                'message': 'Clé API SendGrid non configurée. Veuillez configurer SENDGRID_API_KEY.'
+                'message': 'Clé API SendGrid non configurée. Veuillez configurer la clé dans les paramètres système.'
             }
-        
-        # Import ici pour éviter les imports circulaires
-        from models import ParametresSysteme
         
         # Récupérer l'email expéditeur
         sender_email = ParametresSysteme.get_valeur('smtp_username')
@@ -274,7 +274,8 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
     
     # Vérifier le choix du fournisseur email dans les paramètres
     email_provider = ParametresSysteme.get_valeur('email_provider', 'sendgrid')
-    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+    parametres = ParametresSysteme.get_parametres()
+    sendgrid_key = parametres.get_sendgrid_api_key_decrypted()
     
     print(f"DEBUG: email_provider={email_provider}, SENDGRID_AVAILABLE={SENDGRID_AVAILABLE}, sendgrid_key={'configured' if sendgrid_key else 'missing'}")
     
