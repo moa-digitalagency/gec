@@ -95,7 +95,7 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
         # Récupérer les paramètres SMTP du système
         smtp_server = ParametresSysteme.get_valeur('smtp_server')
         smtp_port = ParametresSysteme.get_valeur('smtp_port', '587')
-        smtp_email = ParametresSysteme.get_valeur('smtp_email')
+        smtp_email = ParametresSysteme.get_valeur('smtp_username')  # Le champ est smtp_username
         smtp_password = ParametresSysteme.get_valeur('smtp_password')
         smtp_use_tls = ParametresSysteme.get_valeur('smtp_use_tls', 'True')
         
@@ -110,6 +110,10 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
         if not smtp_email:
             logging.error("Email SMTP non configuré")
             return False
+            
+        # Debug des paramètres SMTP
+        logging.info(f"DEBUG SMTP - Server: {smtp_server}, Port: {smtp_port}, Email: {smtp_email}, TLS: {use_tls}")
+        logging.info(f"DEBUG SMTP - Password configured: {'Oui' if smtp_password else 'Non'}")
         
         # Convertir les paramètres
         smtp_port = int(smtp_port) if smtp_port else 587
@@ -143,11 +147,15 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
             )
             msg.attach(part)
         
-        # Envoyer l'email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        
-        if use_tls:
-            server.starttls()
+        # Envoyer l'email - gérer SSL vs TLS selon le port
+        if smtp_port == 465:
+            # Port 465 utilise SSL direct
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+        else:
+            # Autres ports (587, 25) utilisent STARTTLS
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            if use_tls:
+                server.starttls()
         
         # Se connecter seulement si un mot de passe est fourni
         if smtp_password:
@@ -226,11 +234,15 @@ def send_email(to_email, subject, html_content, text_content=None, attachment_pa
             )
             msg.attach(part)
         
-        # Envoyer l'email
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        
-        if use_tls:
-            server.starttls()
+        # Envoyer l'email - gérer SSL vs TLS selon le port
+        if smtp_port == 465:
+            # Port 465 utilise SSL direct
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+        else:
+            # Autres ports (587, 25) utilisent STARTTLS
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            if use_tls:
+                server.starttls()
         
         # Se connecter seulement si un mot de passe est fourni
         if sender_password:
