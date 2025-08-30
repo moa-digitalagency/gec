@@ -1275,6 +1275,9 @@ def settings():
             # Paramètre d'appellation des départements
             parametres.appellation_departement = sanitize_input(request.form.get('appellation_departement', '').strip()) or "Départements"
             
+            # Choix du fournisseur email
+            parametres.email_provider = sanitize_input(request.form.get('email_provider', 'sendgrid').strip())
+            
             # Paramètres SMTP (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None

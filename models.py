@@ -664,6 +664,9 @@ class ParametresSysteme(db.Model):
     # Paramètres d'organisation - appellation des départements
     appellation_departement = db.Column(db.String(100), nullable=False, default="Départements")
     
+    # Choix du fournisseur email
+    email_provider = db.Column(db.String(20), nullable=False, default="sendgrid")  # 'sendgrid' ou 'smtp'
+    
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié

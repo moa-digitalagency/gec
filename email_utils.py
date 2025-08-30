@@ -167,15 +167,20 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
     Returns:
         bool: True si l'email a été envoyé avec succès, False sinon
     """
-    # Essayer SendGrid en priorité
-    if SENDGRID_AVAILABLE and os.environ.get('SENDGRID_API_KEY'):
+    # Import ici pour éviter les imports circulaires
+    from models import ParametresSysteme
+    
+    # Vérifier le choix du fournisseur email dans les paramètres
+    email_provider = ParametresSysteme.get_valeur('email_provider', 'sendgrid')
+    
+    if email_provider == 'sendgrid' and SENDGRID_AVAILABLE and os.environ.get('SENDGRID_API_KEY'):
         logging.info("Tentative d'envoi via SendGrid...")
         if send_email_with_sendgrid(to_email, subject, html_content, text_content, attachment_path):
             return True
         else:
             logging.warning("Échec SendGrid, tentative SMTP traditionnel...")
     
-    # Fallback vers SMTP traditionnel
+    # Utiliser SMTP traditionnel (soit par choix, soit par fallback)
     logging.info("Tentative d'envoi via SMTP traditionnel...")
     return send_email_with_smtp(to_email, subject, html_content, text_content, attachment_path)
 
