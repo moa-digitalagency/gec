@@ -119,6 +119,11 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         if not sender_email:
             sender_email = os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
         
+        # IMPORTANT: Utiliser une adresse vérifiée dans SendGrid
+        # Remplacer par l'adresse vérifiée si nécessaire
+        if sender_email == 'noreply@gec.local' or not sender_email:
+            sender_email = 'notif@monbusiness.pro'  # Adresse vérifiée dans SendGrid
+        
         # Créer le message SendGrid
         message = Mail(
             from_email=Email(sender_email),
@@ -347,6 +352,11 @@ def test_sendgrid_configuration(test_email):
         sender_email = ParametresSysteme.get_valeur('smtp_username')
         if not sender_email:
             sender_email = os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
+        
+        # IMPORTANT: Utiliser une adresse vérifiée dans SendGrid
+        # Remplacer par l'adresse vérifiée si nécessaire
+        if sender_email == 'noreply@gec.local' or not sender_email:
+            sender_email = 'notif@monbusiness.pro'  # Adresse vérifiée dans SendGrid
         
         # Récupérer le nom du logiciel
         software_name = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
