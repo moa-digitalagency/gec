@@ -3555,20 +3555,20 @@ def analytics():
     dept_stats = db.session.query(
         Departement.nom.label('departement'),
         func.count(Courrier.id).label('total'),
-        func.sum(func.case((Courrier.type_courrier == 'ENTRANT', 1), else_=0)).label('entrants'),
-        func.sum(func.case((Courrier.type_courrier == 'SORTANT', 1), else_=0)).label('sortants')
+        func.sum(func.case([(Courrier.type_courrier == 'ENTRANT', 1)], else_=0)).label('entrants'),
+        func.sum(func.case([(Courrier.type_courrier == 'SORTANT', 1)], else_=0)).label('sortants')
     ).join(User, Courrier.utilisateur_id == User.id)\
      .join(Departement, User.departement_id == Departement.id)\
      .filter(Courrier.is_deleted == False)\
      .group_by(Departement.nom)\
      .order_by(func.count(Courrier.id).desc()).all()
     
-    # 2. Statistiques par utilisateur (top 10)
+    # 2. Statistiques par utilisateur (top 10)  
     user_stats = db.session.query(
         User.nom_complet,
         func.count(Courrier.id).label('total'),
-        func.sum(func.case((Courrier.type_courrier == 'ENTRANT', 1), else_=0)).label('entrants'),
-        func.sum(func.case((Courrier.type_courrier == 'SORTANT', 1), else_=0)).label('sortants')
+        func.sum(func.case([(Courrier.type_courrier == 'ENTRANT', 1)], else_=0)).label('entrants'),
+        func.sum(func.case([(Courrier.type_courrier == 'SORTANT', 1)], else_=0)).label('sortants')
     ).join(Courrier, Courrier.utilisateur_id == User.id)\
      .filter(Courrier.is_deleted == False)\
      .group_by(User.nom_complet)\
