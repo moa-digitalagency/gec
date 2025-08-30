@@ -34,6 +34,32 @@ def add_column_safely(engine, table_name, column_name, column_definition):
         logging.error(f"Erreur lors de l'ajout de la colonne {column_name}: {e}")
         return False
 
+def check_table_exists(engine, table_name):
+    """Vérifie si une table existe"""
+    try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        return table_name in tables
+    except Exception as e:
+        logging.warning(f"Impossible de vérifier la table {table_name}: {e}")
+        return False
+
+def create_table_safely(engine, table_name, create_sql):
+    """Crée une table de manière sécurisée si elle n'existe pas"""
+    try:
+        if not check_table_exists(engine, table_name):
+            logging.info(f"Création de la table {table_name}")
+            with engine.connect() as connection:
+                connection.execute(text(create_sql))
+                connection.commit()
+            return True
+        else:
+            logging.debug(f"Table {table_name} existe déjà")
+            return False
+    except Exception as e:
+        logging.error(f"Erreur lors de la création de la table {table_name}: {e}")
+        return False
+
 def run_automatic_migrations(app, db):
     """
     Exécute toutes les migrations automatiques nécessaires
@@ -44,6 +70,32 @@ def run_automatic_migrations(app, db):
     try:
         engine = db.engine
         migrations_applied = 0
+        
+        # Vérifier et créer les tables manquantes si nécessaire
+        required_tables = {
+            'migration_log': '''
+                CREATE TABLE migration_log (
+                    id SERIAL PRIMARY KEY,
+                    migration_name VARCHAR(255) NOT NULL,
+                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    version VARCHAR(50)
+                )
+            ''',
+            'system_health': '''
+                CREATE TABLE system_health (
+                    id SERIAL PRIMARY KEY,
+                    check_name VARCHAR(255) NOT NULL,
+                    status VARCHAR(50) NOT NULL,
+                    last_check TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    details TEXT
+                )
+            '''
+        }
+        
+        for table_name, create_sql in required_tables.items():
+            if create_table_safely(engine, table_name, create_sql):
+                migrations_applied += 1
+                logging.info(f"✓ Table {table_name} créée")
         
         # Migration 1: Ajouter sendgrid_api_key à parametres_systeme
         if add_column_safely(engine, 'parametres_systeme', 'sendgrid_api_key', 'VARCHAR(500)'):
