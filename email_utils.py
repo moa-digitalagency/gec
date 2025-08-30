@@ -7,6 +7,9 @@ from email import encoders
 import logging
 from datetime import datetime
 import re
+import socket
+import urllib.request
+import urllib.error
 
 # Import SendGrid
 try:
@@ -162,6 +165,105 @@ def send_email_with_sendgrid(to_email, subject, html_content, text_content=None,
         logging.error(f"❌ Clé API commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
         return False
 
+def check_internet_connection():
+    """
+    Vérifie si l'appareil est connecté à Internet
+    
+    Returns:
+        bool: True si connecté à Internet, False sinon
+    """
+    try:
+        # Test de connexion vers Google DNS (rapide et fiable)
+        socket.create_connection(("8.8.8.8", 53), timeout=3)
+        return True
+    except (socket.error, socket.timeout):
+        try:
+            # Test alternatif vers un autre DNS
+            socket.create_connection(("1.1.1.1", 53), timeout=3)
+            return True
+        except (socket.error, socket.timeout):
+            return False
+
+def validate_email_format(email):
+    """
+    Valide le format de l'adresse email
+    
+    Args:
+        email (str): Adresse email à valider
+        
+    Returns:
+        bool: True si l'email est valide, False sinon
+    """
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def verify_sendgrid_prerequisites(test_email):
+    """
+    Vérifie les 3 conditions nécessaires pour SendGrid
+    
+    Args:
+        test_email (str): Email de destination pour le test
+        
+    Returns:
+        dict: {
+            'internet': bool,
+            'api_configured': bool, 
+            'email_valid': bool,
+            'all_ok': bool,
+            'error_message': str or None
+        }
+    """
+    result = {
+        'internet': False,
+        'api_configured': False,
+        'email_valid': False,
+        'all_ok': False,
+        'error_message': None
+    }
+    
+    # 1. Vérifier la connexion Internet
+    print(f"🌐 Vérification de la connexion Internet...")
+    result['internet'] = check_internet_connection()
+    print(f"🌐 Connexion Internet: {'✅ OK' if result['internet'] else '❌ ÉCHEC'}")
+    
+    if not result['internet']:
+        result['error_message'] = "❌ ERREUR DE CONNEXION: Votre appareil n'est pas connecté à Internet. Vérifiez votre connexion réseau."
+        return result
+    
+    # 2. Vérifier la configuration de l'API SendGrid
+    print(f"🔑 Vérification de la clé API SendGrid...")
+    from models import ParametresSysteme
+    parametres = ParametresSysteme.get_parametres()
+    sendgrid_api_key = parametres.get_sendgrid_api_key_decrypted()
+    
+    if sendgrid_api_key and sendgrid_api_key.startswith('SG.') and len(sendgrid_api_key) > 20:
+        result['api_configured'] = True
+        print(f"🔑 API SendGrid: ✅ OK (clé valide de {len(sendgrid_api_key)} caractères)")
+    else:
+        result['api_configured'] = False
+        print(f"🔑 API SendGrid: ❌ ÉCHEC")
+        if not sendgrid_api_key:
+            result['error_message'] = "❌ ERREUR CONFIGURATION: Clé API SendGrid non configurée. Allez dans Paramètres → Configuration Email pour configurer votre clé."
+        elif not sendgrid_api_key.startswith('SG.'):
+            result['error_message'] = "❌ ERREUR CONFIGURATION: Clé API SendGrid invalide. La clé doit commencer par 'SG.'"
+        else:
+            result['error_message'] = "❌ ERREUR CONFIGURATION: Clé API SendGrid trop courte ou invalide."
+        return result
+    
+    # 3. Vérifier le format de l'email
+    print(f"📧 Vérification du format email...")
+    result['email_valid'] = validate_email_format(test_email)
+    print(f"📧 Format email: {'✅ OK' if result['email_valid'] else '❌ ÉCHEC'}")
+    
+    if not result['email_valid']:
+        result['error_message'] = f"❌ ERREUR EMAIL: L'adresse '{test_email}' n'est pas un format d'email valide. Exemple valide: nom@domaine.com"
+        return result
+    
+    # Toutes les conditions sont remplies
+    result['all_ok'] = True
+    print(f"✅ TOUTES LES CONDITIONS REMPLIES - Prêt pour l'envoi")
+    return result
+
 def test_sendgrid_configuration(test_email):
     """
     Teste la configuration SendGrid en envoyant un email de test
@@ -173,36 +275,39 @@ def test_sendgrid_configuration(test_email):
         dict: {'success': bool, 'message': str}
     """
     try:
-        print(f"🔍 DIAGNOSTIC LOCAL - Test SendGrid pour {test_email}")
+        print(f"🔍 DIAGNOSTIC COMPLET - Test SendGrid pour {test_email}")
+        print(f"=" * 60)
         
         # Vérifier que SendGrid est disponible
         print(f"📦 SendGrid disponible: {SENDGRID_AVAILABLE}")
         if not SENDGRID_AVAILABLE:
             return {
                 'success': False,
-                'message': 'SendGrid n\'est pas installé. Veuillez installer le package sendgrid.'
+                'message': '❌ ERREUR INSTALLATION: SendGrid n\'est pas installé. Veuillez installer le package sendgrid.'
             }
         
-        # Vérifier la clé API
-        from models import ParametresSysteme
-        parametres = ParametresSysteme.get_parametres()
-        sendgrid_api_key = parametres.get_sendgrid_api_key_decrypted()
-        print(f"🔑 Clé API récupérée: {'Oui (' + str(len(sendgrid_api_key)) + ' caractères)' if sendgrid_api_key else 'Non'}")
-        print(f"🔑 Clé commence par SG.: {'Oui' if sendgrid_api_key and sendgrid_api_key.startswith('SG.') else 'Non'}")
+        # Effectuer les 3 vérifications principales
+        prerequisites = verify_sendgrid_prerequisites(test_email)
         
-        if not sendgrid_api_key:
+        # Si une condition n'est pas remplie, retourner l'erreur spécifique
+        if not prerequisites['all_ok']:
             return {
                 'success': False,
-                'message': 'Clé API SendGrid non configurée. Veuillez configurer la clé dans les paramètres système.'
+                'message': prerequisites['error_message']
             }
         
-        # Récupérer l'email expéditeur
+        # Récupérer les informations système (déjà validées)
+        from models import ParametresSysteme
         sender_email = ParametresSysteme.get_valeur('smtp_username')
         if not sender_email:
             sender_email = os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
         
         # Récupérer le nom du logiciel
         software_name = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
+        
+        print(f"📧 Email expéditeur: {sender_email}")
+        print(f"🏢 Système: {software_name}")
+        print(f"=" * 60)
         
         # Créer le contenu du test
         subject = f"Test de configuration SendGrid - {software_name}"
