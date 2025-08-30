@@ -177,6 +177,36 @@ Type: MX     | Name: @              | Value: mail.domain.com   | TTL: 3600
 Type: TXT    | Name: @              | Value: "v=spf1 include:_spf.domain.com ~all"
 ```
 
+#### Quick Terminal Configuration (One Line)
+
+To change local address after launching the application on port 5000:
+
+**Windows PowerShell (Admin required)** :
+```powershell
+Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`tgec.local`n127.0.0.1`twww.gec.local" -Encoding ASCII
+```
+
+**macOS Terminal** :
+```bash
+echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
+```
+
+**Linux (Ubuntu/Debian/CentOS)** :
+```bash
+echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
+```
+
+**Result** : Access via `http://gec.local:5000` instead of `http://127.0.0.1:5000`
+
+**Undo changes** :
+```bash
+# Windows PowerShell (Admin)
+(Get-Content "$env:SystemRoot\System32\drivers\etc\hosts") | Where-Object {$_ -notmatch "gec.local"} | Set-Content "$env:SystemRoot\System32\drivers\etc\hosts"
+
+# macOS/Linux
+sudo sed -i '/gec.local/d' /etc/hosts
+```
+
 ### Performance Optimizations
 
 #### Indexing

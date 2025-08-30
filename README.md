@@ -213,6 +213,27 @@ Pour accéder à l'application via un nom de domaine local :
 
 3. **Accédez à** `http://gec.local` au lieu de `http://127.0.0.1:5000`
 
+#### 🖥️ Commandes Terminal Rapides (Une Ligne)
+
+Pour changer l'adresse après avoir lancé l'application :
+
+**Windows (PowerShell - Admin requis)** :
+```powershell
+Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`tgec.local`n127.0.0.1`twww.gec.local" -Encoding ASCII
+```
+
+**macOS (Terminal)** :
+```bash
+echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
+```
+
+**Linux (Ubuntu/Debian/CentOS)** :
+```bash
+echo -e "127.0.0.1\tgec.local\n127.0.0.1\twww.gec.local" | sudo tee -a /etc/hosts
+```
+
+**Puis accédez à** : `http://gec.local:5000` ou `http://www.gec.local:5000`
+
 ---
 
 ## 📋 Dernières Mises à Jour (Août 2025)
