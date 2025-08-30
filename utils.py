@@ -451,18 +451,25 @@ def export_courrier_pdf(courrier):
             canvas.Canvas.save(self)
             
         def draw_page_number(self, page_num, total_pages):
-            """Draw the footer with copyright and page number at the bottom"""
+            """Draw the footer with copyright and page number at the bottom on two lines"""
             from models import ParametresSysteme
+            from flask_login import current_user
             parametres = ParametresSysteme.get_parametres()
             
-            # Construire le footer complet
-            footer_parts = []
-            
-            # Texte footer configurable
+            # Première ligne : Système et Copyright
+            line1_parts = []
             if parametres.texte_footer:
-                footer_parts.append(parametres.texte_footer)
+                line1_parts.append(parametres.texte_footer)
             
-            # Date de génération - utiliser le formatage français direct
+            copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
+            line1_parts.append(copyright)
+            
+            line1_text = " | ".join(line1_parts)
+            
+            # Deuxième ligne : Date, utilisateur et pagination
+            line2_parts = []
+            
+            # Date de génération
             now = datetime.now()
             date_str = now.strftime('%A %d %B %Y à %H:%M')
             # Traduire en français
@@ -479,57 +486,43 @@ def export_courrier_pdf(courrier):
                 date_str = date_str.replace(en, fr)
             for en, fr in jours_fr.items():
                 date_str = date_str.replace(en, fr)
-            footer_parts.append(f"Document généré le {date_str} par le système GEC")
             
-            # Copyright
-            copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
-            footer_parts.append(copyright)
+            # Essayer d'obtenir l'utilisateur actuel
+            try:
+                if current_user and current_user.is_authenticated:
+                    user_info = f"par {current_user.nom_complet}"
+                else:
+                    user_info = "par le système GEC"
+            except:
+                user_info = "par le système GEC"
             
-            # Numéro de page
-            footer_parts.append(f"Page {page_num} sur {total_pages}")
+            line2_parts.append(f"Document généré le {date_str} {user_info}")
+            line2_parts.append(f"Page {page_num} sur {total_pages}")
             
-            # Joindre tout avec des séparateurs
-            footer_text = " | ".join(footer_parts)
+            line2_text = " | ".join(line2_parts)
             
-            # Dessiner le footer centré avec gestion du débordement
+            # Configuration du texte
             self.setFont("Helvetica", 8)
             page_width = A4[0]
             left_margin = 0.75*inch
             right_margin = 0.75*inch
             text_width = page_width - left_margin - right_margin
             
-            # Calculer la largeur du texte
-            actual_text_width = self.stringWidth(footer_text, "Helvetica", 8)
-            
-            if actual_text_width <= text_width:
-                # Le texte tient sur une ligne, le centrer
-                x_position = (page_width - actual_text_width) / 2
-                self.drawString(x_position, 0.5*inch, footer_text)
+            # Dessiner la première ligne
+            line1_width = self.stringWidth(line1_text, "Helvetica", 8)
+            if line1_width <= text_width:
+                x_position1 = (page_width - line1_width) / 2
             else:
-                # Le texte est trop long, le raccourcir intelligemment
-                # Essayer d'abord avec une police plus petite
-                self.setFont("Helvetica", 7)
-                actual_text_width_small = self.stringWidth(footer_text, "Helvetica", 7)
-                
-                if actual_text_width_small <= text_width:
-                    # Avec police plus petite, centrer
-                    x_position = (page_width - actual_text_width_small) / 2
-                    self.drawString(x_position, 0.5*inch, footer_text)
-                else:
-                    # Même avec police plus petite, trop long - raccourcir le texte
-                    # Garder les parties essentielles
-                    short_footer = f"{parametres.texte_footer or 'GEC'} | {copyright} | Page {page_num} sur {total_pages}"
-                    short_text_width = self.stringWidth(short_footer, "Helvetica", 7)
-                    
-                    if short_text_width <= text_width:
-                        x_position = (page_width - short_text_width) / 2
-                        self.drawString(x_position, 0.5*inch, short_footer)
-                    else:
-                        # En dernier recours, juste copyright et page
-                        minimal_footer = f"{copyright} | Page {page_num} sur {total_pages}"
-                        minimal_width = self.stringWidth(minimal_footer, "Helvetica", 7)
-                        x_position = (page_width - minimal_width) / 2 if minimal_width <= text_width else left_margin
-                        self.drawString(x_position, 0.5*inch, minimal_footer)
+                x_position1 = left_margin
+            self.drawString(x_position1, 0.6*inch, line1_text)
+            
+            # Dessiner la deuxième ligne
+            line2_width = self.stringWidth(line2_text, "Helvetica", 8)
+            if line2_width <= text_width:
+                x_position2 = (page_width - line2_width) / 2
+            else:
+                x_position2 = left_margin
+            self.drawString(x_position2, 0.4*inch, line2_text)
     
     # Créer le document PDF avec la classe personnalisée
     doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1.2*inch, 
