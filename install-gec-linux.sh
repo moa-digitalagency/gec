@@ -98,7 +98,7 @@ install_dependencies() {
 # Fonction principale d'installation
 main_installation() {
     echo
-    echo "📥 [ETAPE 3/8] Téléchargement du code source GEC Mines..."
+    echo "📥 [ETAPE 3/8] Téléchargement du code source GEC..."
     
     # Aller dans le répertoire home de l'utilisateur
     cd "$HOME"
@@ -161,7 +161,7 @@ source .venv/bin/activate
 
 echo
 echo "============================================"
-echo "  GEC Mines - Système de Gestion du Courrier"
+echo "  GEC - Système de Gestion du Courrier"
 echo "  Accès: http://localhost:5000"
 echo "  Développé par MOA Digital Agency LLC"
 echo "============================================"
@@ -175,9 +175,9 @@ EOF
     # Créer un script d'arrêt
     cat > stop-gec.sh << 'EOF'
 #!/bin/bash
-echo "🛑 Arrêt de GEC Mines..."
-pkill -f "python.*main.py" || echo "Aucun processus GEC Mines trouvé"
-echo "✅ GEC Mines arrêté"
+echo "🛑 Arrêt de GEC..."
+pkill -f "python.*main.py" || echo "Aucun processus GEC trouvé"
+echo "✅ GEC arrêté"
 EOF
     
     chmod +x stop-gec.sh
@@ -186,7 +186,7 @@ EOF
     echo "🔧 [ETAPE 7/8] Configuration du service systemd (optionnel)..."
     
     # Demander si l'utilisateur veut installer le service système
-    read -p "Voulez-vous installer GEC Mines comme service système? (o/N): " install_service
+    read -p "Voulez-vous installer GEC comme service système? (o/N): " install_service
     
     if [[ $install_service =~ ^[Oo]$ ]]; then
         # Créer l'utilisateur système gecmines
@@ -202,7 +202,7 @@ EOF
         # Créer le fichier service systemd
         sudo tee /etc/systemd/system/gecmines.service > /dev/null << EOF
 [Unit]
-Description=GEC Mines - Système de Gestion du Courrier
+Description=GEC - Système de Gestion du Courrier
 After=network.target
 
 [Service]
@@ -244,7 +244,7 @@ EOF
     
     if ! grep -q "alias gec-start" "$SHELL_RC" 2>/dev/null; then
         echo "" >> "$SHELL_RC"
-        echo "# GEC Mines aliases" >> "$SHELL_RC"
+        echo "# GEC aliases" >> "$SHELL_RC"
         echo "alias gec-start='cd $HOME/gec && ./start-gec.sh'" >> "$SHELL_RC"
         echo "alias gec-stop='cd $HOME/gec && ./stop-gec.sh'" >> "$SHELL_RC"
         echo "alias gec-logs='tail -f $HOME/gec/logs/gecmines.log'" >> "$SHELL_RC"
@@ -262,7 +262,7 @@ echo "================================================================"
 echo "                    INSTALLATION TERMINÉE !"
 echo "================================================================"
 echo
-echo "✅ L'application GEC Mines a été installée avec succès."
+echo "✅ L'application GEC a été installée avec succès."
 echo
 
 if [ "$SERVICE_INSTALLED" = true ]; then
@@ -303,15 +303,15 @@ echo "================================================================"
 
 if [ "$SERVICE_INSTALLED" = false ]; then
     echo
-    read -p "Voulez-vous démarrer GEC Mines maintenant? (o/N): " start_now
+    read -p "Voulez-vous démarrer GEC maintenant? (o/N): " start_now
     if [[ $start_now =~ ^[Oo]$ ]]; then
-        echo "🚀 Démarrage de GEC Mines..."
+        echo "🚀 Démarrage de GEC..."
         echo "Ouvrez votre navigateur à l'adresse: http://localhost:5000"
         echo
         ./start-gec.sh
     else
         echo
-        echo "ℹ️  Vous pouvez démarrer GEC Mines plus tard en tapant 'gec-start'"
+        echo "ℹ️  Vous pouvez démarrer GEC plus tard en tapant 'gec-start'"
         echo "   ou en exécutant ./start-gec.sh dans le dossier $HOME/gec"
     fi
 fi

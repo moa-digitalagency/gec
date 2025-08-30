@@ -1,10 +1,10 @@
-# 📮 GEC Mines - Mail Management System
+# 📮 GEC Courrier - Mail Management System
 
 ## 🌟 Transform Your Administrative Management
 
-**GEC Mines** is the complete digital solution to modernize mail management within the General Secretariat of Mines. More than just software, it's your partner for efficient and transparent administration.
+**GEC Courrier** is the complete digital solution to modernize mail management within the General Secretariat of Courrier. More than just software, it's your partner for efficient and transparent administration.
 
-## 🎯 Why Choose GEC Mines?
+## 🎯 Why Choose GEC Courrier?
 
 ### 📈 Multiplied Productivity
 - ⚡ **10x faster** mail processing
@@ -108,7 +108,7 @@
 ## 💼 Use Cases
 
 ### 🏛️ Public Administration
-> "GEC Mines revolutionized our document management. We reduced mail processing time by 80%." - *Administrative Director*
+> "GEC Courrier revolutionized our document management. We reduced mail processing time by 80%." - *Administrative Director*
 
 ### 🏢 Mining Companies
 > "Complete traceability allows us to meet all compliance standards. A profitable investment!" - *Compliance Manager*
@@ -171,16 +171,16 @@
 ## 🌍 They Trust Us
 
 ### 🏛️ Public Institutions
-- Ministry of Mines DRC
-- General Secretariat of Mines
+- Ministry of Courrier DRC
+- General Secretariat of Courrier
 - Provincial Governments
 - Local Administrations
 
 ### 🏢 Private Companies
-- Gécamines
+- Gécacourrier
 - Kibali Gold Mine
 - Tenke Fungurume Mining
-- Ivanhoe Mines
+- Ivanhoe Courrier
 
 ## 📞 Contact Us
 
@@ -207,7 +207,7 @@
 - ✅ Premium support
 - ✅ Free customization
 
-**Promo Code**: GECMINES2025
+**Promo Code**: GECCOURRIER2025
 
 ## ⭐ Customer Testimonials
 
@@ -238,7 +238,7 @@
 
 <div align="center">
 
-[**🎯 REQUEST A DEMO**](https://gecmines.cd/demo) | [**💬 CONTACT US**](https://gecmines.cd/contact) | [**📖 DOCUMENTATION**](https://docs.gecmines.cd)
+[**🎯 REQUEST A DEMO**](https://geccourrier.cd/demo) | [**💬 CONTACT US**](https://geccourrier.cd/contact) | [**📖 DOCUMENTATION**](https://docs.geccourrier.cd)
 
 </div>
 

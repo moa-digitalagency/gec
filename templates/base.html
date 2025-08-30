@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Mines' }}{% endblock %}</title>
+    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Courrier' }}{% endblock %}</title>
     
     <!-- Tailwind CSS (local) -->
     <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
@@ -49,7 +49,7 @@
                 {% else %}
                     <i class="fas fa-mail-bulk me-2"></i>
                 {% endif %}
-                {{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Mines RDC' }}
+                {{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Courrier RDC' }}
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -179,7 +179,7 @@
         <div class="container text-center">
             <p class="mb-0 text-muted">
                 {% set system_params = get_system_params() %}
-                &copy; 2025 Secrétariat Général des Mines - {{ system_params.pays_pdf if system_params.pays_pdf else 'République Démocratique du Congo' }}
+                &copy; 2025 Secrétariat Général des Courrier - {{ system_params.pays_pdf if system_params.pays_pdf else 'République Démocratique du Congo' }}
             </p>
         </div>
     </footer>

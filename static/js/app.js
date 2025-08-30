@@ -1,5 +1,5 @@
 /**
- * Application JavaScript for GEC Mines
+ * Application JavaScript for GEC
  * Handles client-side interactions and enhancements
  */
 
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDateFilters();
     setupGlobalEventListeners();
     
-    console.log('GEC Mines Application Initialized');
+    console.log('GEC Application Initialized');
 });
 
 /**

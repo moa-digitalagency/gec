@@ -1,4 +1,4 @@
-# Installation GEC Mines - macOS
+# Installation GEC Courrier - macOS
 
 ## Méthode Automatique (Recommandée)
 
@@ -50,7 +50,7 @@ pip install -r project-dependencies.txt
 ```bash
 # Créer le fichier de configuration
 cat > .env << EOF
-DATABASE_URL=sqlite:///instance/gecmines.db
+DATABASE_URL=sqlite:///instance/geccourrier.db
 SESSION_SECRET=your-secret-key-here
 GEC_MASTER_KEY=your-encryption-key
 GEC_PASSWORD_SALT=your-password-salt
@@ -73,21 +73,21 @@ brew install postgresql@14
 brew services start postgresql@14
 
 # Créer la base de données
-createdb gecmines
+createdb geccourrier
 
 # Mettre à jour .env
-echo "DATABASE_URL=postgresql://$(whoami)@localhost/gecmines" > .env
+echo "DATABASE_URL=postgresql://$(whoami)@localhost/geccourrier" > .env
 ```
 
 ### Service macOS (LaunchDaemon)
-Créez le fichier `~/Library/LaunchAgents/com.moa.gecmines.plist`:
+Créez le fichier `~/Library/LaunchAgents/com.moa.geccourrier.plist`:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.moa.gecmines</string>
+    <string>com.moa.geccourrier</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/python3.11</string>
@@ -100,17 +100,17 @@ Créez le fichier `~/Library/LaunchAgents/com.moa.gecmines.plist`:
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/Users/$(whoami)/gec/logs/gecmines.log</string>
+    <string>/Users/$(whoami)/gec/logs/geccourrier.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/$(whoami)/gec/logs/gecmines.error.log</string>
+    <string>/Users/$(whoami)/gec/logs/geccourrier.error.log</string>
 </dict>
 </plist>
 ```
 
 Charger le service:
 ```bash
-launchctl load ~/Library/LaunchAgents/com.moa.gecmines.plist
-launchctl start com.moa.gecmines
+launchctl load ~/Library/LaunchAgents/com.moa.geccourrier.plist
+launchctl start com.moa.geccourrier
 ```
 
 ### Configuration HTTPS avec nginx
@@ -119,7 +119,7 @@ launchctl start com.moa.gecmines
 brew install nginx
 
 # Configuration nginx
-sudo tee /opt/homebrew/etc/nginx/servers/gecmines.conf << EOF
+sudo tee /opt/homebrew/etc/nginx/servers/geccourrier.conf << EOF
 server {
     listen 80;
     server_name localhost;
@@ -143,13 +143,13 @@ brew services start nginx
 ### Dockerfile pour macOS
 ```bash
 # Créer l'image Docker
-docker build -t gecmines .
+docker build -t geccourrier .
 
 # Lancer le conteneur
-docker run -d -p 5000:5000 --name gecmines \
-  -v gecmines-data:/app/instance \
-  -v gecmines-uploads:/app/uploads \
-  gecmines
+docker run -d -p 5000:5000 --name geccourrier \
+  -v geccourrier-data:/app/instance \
+  -v geccourrier-uploads:/app/uploads \
+  geccourrier
 ```
 
 ## Dépannage macOS
@@ -192,10 +192,10 @@ du -sh /Users/$(whoami)/gec/
 ### Logs système
 ```bash
 # Voir les logs de l'application
-tail -f /Users/$(whoami)/gec/logs/gecmines.log
+tail -f /Users/$(whoami)/gec/logs/geccourrier.log
 
 # Logs système macOS
-log show --predicate 'subsystem contains "com.moa.gecmines"' --last 1h
+log show --predicate 'subsystem contains "com.moa.geccourrier"' --last 1h
 ```
 
 ## Support Technique

@@ -1,4 +1,4 @@
-# Installation GEC Mines - Windows 10/11
+# Installation GEC Courrier - Windows 10/11
 
 ## Méthode Automatique (Recommandée)
 
@@ -55,7 +55,7 @@ python -m pip install -r project-dependencies.txt
 ### Étape 6: Configuration de la Base de Données
 ```powershell
 # Créer le fichier de configuration .env
-echo DATABASE_URL=sqlite:///instance/gecmines.db > .env
+echo DATABASE_URL=sqlite:///instance/geccourrier.db > .env
 echo SESSION_SECRET=your-secret-key-here >> .env
 echo GEC_MASTER_KEY=your-encryption-key >> .env
 echo GEC_PASSWORD_SALT=your-password-salt >> .env

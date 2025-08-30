@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ================================================================
-echo     Installation GEC Mines - Windows Server 2008/2012/2016+
+echo     Installation GEC - Windows Server 2008/2012/2016+
 echo ================================================================
 echo Developpe par: MOA Digital Agency LLC
 echo Auteur: AIsance KALONJI wa KALONJI
@@ -72,13 +72,13 @@ set PATH=%PATH%;C:\Program Files\Python311;C:\Program Files\Python311\Scripts;C:
 
 echo.
 echo [ETAPE 5/9] Configuration du pare-feu Windows Server...
-netsh advfirewall firewall add rule name="GEC Mines HTTP" dir=in action=allow protocol=TCP localport=5000
-netsh advfirewall firewall add rule name="GEC Mines HTTPS" dir=in action=allow protocol=TCP localport=443
+netsh advfirewall firewall add rule name="GEC HTTP" dir=in action=allow protocol=TCP localport=5000
+netsh advfirewall firewall add rule name="GEC HTTPS" dir=in action=allow protocol=TCP localport=443
 
 echo.
 echo [ETAPE 6/9] Creation du repertoire d'installation...
-if not exist "C:\GEC-Mines" mkdir C:\GEC-Mines
-cd /d C:\GEC-Mines
+if not exist "C:\GEC" mkdir C:\GEC
+cd /d C:\GEC
 
 echo [INFO] Telechargement du code source...
 git clone https://github.com/moa-digitalagency/gec.git .
@@ -127,51 +127,51 @@ echo [ETAPE 9/9] Installation du service Windows...
 
 REM Creer le script de service
 echo @echo off > gec-service.bat
-echo cd /d "C:\GEC-Mines" >> gec-service.bat
+echo cd /d "C:\GEC" >> gec-service.bat
 echo call venv\Scripts\activate.bat >> gec-service.bat
 echo python main.py >> gec-service.bat
 
 REM Installer le service Windows
-sc create "GEC-Mines" binPath= "C:\GEC-Mines\gec-service.bat" start= auto DisplayName= "GEC Mines - Gestion du Courrier"
-sc description "GEC-Mines" "Systeme de gestion du courrier - Ministere des Mines RDC - Developpe par MOA Digital Agency LLC"
+sc create "GEC" binPath= "C:\GEC\gec-service.bat" start= auto DisplayName= "GEC - Gestion du Courrier"
+sc description "GEC" "Systeme de gestion du courrier - Secrétariat Général RDC - Developpe par MOA Digital Agency LLC"
 
 REM Configurer le service pour redemarrage automatique
-sc failure "GEC-Mines" reset= 86400 actions= restart/60000/restart/60000/restart/60000
+sc failure "GEC" reset= 86400 actions= restart/60000/restart/60000/restart/60000
 
 REM Creer les scripts de gestion
 echo @echo off > start-gec.bat
-echo echo Demarrage du service GEC Mines... >> start-gec.bat
-echo sc start "GEC-Mines" >> start-gec.bat
+echo echo Demarrage du service GEC... >> start-gec.bat
+echo sc start "GEC" >> start-gec.bat
 echo echo Service demarre. Acces: http://localhost:5000 >> start-gec.bat
 echo pause >> start-gec.bat
 
 echo @echo off > stop-gec.bat
-echo echo Arret du service GEC Mines... >> stop-gec.bat
-echo sc stop "GEC-Mines" >> stop-gec.bat
+echo echo Arret du service GEC... >> stop-gec.bat
+echo sc stop "GEC" >> stop-gec.bat
 echo echo Service arrete >> stop-gec.bat
 echo pause >> stop-gec.bat
 
 echo @echo off > status-gec.bat
-echo echo Statut du service GEC Mines: >> status-gec.bat
-echo sc query "GEC-Mines" >> status-gec.bat
+echo echo Statut du service GEC: >> status-gec.bat
+echo sc query "GEC" >> status-gec.bat
 echo pause >> status-gec.bat
 
 REM Creer script de sauvegarde automatique
 echo @echo off > backup-gec.bat
-echo cd /d "C:\GEC-Mines" >> backup-gec.bat
+echo cd /d "C:\GEC" >> backup-gec.bat
 echo call venv\Scripts\activate.bat >> backup-gec.bat
 echo python -c "from views import create_system_backup; create_system_backup()" >> backup-gec.bat
 echo echo Sauvegarde terminee >> backup-gec.bat
 
 REM Programmer la sauvegarde quotidienne
-schtasks /create /sc daily /mo 1 /tn "GEC Mines Backup" /tr "C:\GEC-Mines\backup-gec.bat" /st 02:00 /ru SYSTEM
+schtasks /create /sc daily /mo 1 /tn "GEC Backup" /tr "C:\GEC\backup-gec.bat" /st 02:00 /ru SYSTEM
 
 echo.
 echo ================================================================
 echo              INSTALLATION WINDOWS SERVER TERMINEE !
 echo ================================================================
 echo.
-echo Configuration du serveur GEC Mines terminee avec succes.
+echo Configuration du serveur GEC terminee avec succes.
 echo.
 echo COMMANDES DE GESTION:
 echo   Demarrer le service: start-gec.bat
@@ -184,9 +184,9 @@ echo   URL locale: http://localhost:5000
 echo   URL reseau: http://[IP-SERVEUR]:5000
 echo.
 echo CONFIGURATION AVANCEE:
-echo   - Fichier config: C:\GEC-Mines\.env
+echo   - Fichier config: C:\GEC\.env
 echo   - Logs systeme: Observateur d'evenements ^> Services
-echo   - Sauvegarde auto: Tache planifiee "GEC Mines Backup"
+echo   - Sauvegarde auto: Tache planifiee "GEC Backup"
 echo.
 echo SECURITE:
 echo   - Pare-feu: Port 5000 autorise
@@ -206,10 +206,10 @@ echo.
 echo ================================================================
 
 echo.
-set /p startService="Voulez-vous demarrer le service GEC Mines maintenant? (O/N): "
+set /p startService="Voulez-vous demarrer le service GEC maintenant? (O/N): "
 if /i "%startService%"=="O" (
     echo Demarrage du service...
-    sc start "GEC-Mines"
+    sc start "GEC"
     echo.
     echo Service demarre ! Acces: http://localhost:5000
     echo Verifiez le statut avec: status-gec.bat

@@ -165,14 +165,14 @@ echo.
 echo ================================================================
 
 echo.
-set /p startNow="Voulez-vous demarrer GEC Mines maintenant? (O/N): "
+set /p startNow="Voulez-vous demarrer GEC maintenant? (O/N): "
 if /i "%startNow%"=="O" (
-    echo Demarrage de GEC Mines...
+    echo Demarrage de GEC...
     start cmd /k start-gec.bat
 ) else (
     echo.
-    echo Vous pouvez demarrer GEC Mines plus tard en double-cliquant 
-    echo sur le raccourci "GEC Mines" sur votre bureau.
+    echo Vous pouvez demarrer GEC plus tard en double-cliquant 
+    echo sur le raccourci "GEC" sur votre bureau.
 )
 
 echo.

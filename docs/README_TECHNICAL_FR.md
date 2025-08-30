@@ -1,4 +1,4 @@
-# GEC Mines - Documentation Technique
+# GEC - Documentation Technique
 
 ## Architecture Système
 
@@ -153,7 +153,7 @@ python -m pip install -r project-dependencies.txt
 ```bash
 # Créer .env
 cat > .env << EOF
-DATABASE_URL=postgresql://user:password@localhost:5432/gecmines
+DATABASE_URL=postgresql://user:password@localhost:5432/geccourrier
 SESSION_SECRET=$(openssl rand -hex 32)
 GEC_MASTER_KEY=$(openssl rand -base64 32)
 GEC_PASSWORD_SALT=$(openssl rand -base64 32)
@@ -171,7 +171,7 @@ with app.app_context():
     from models import User
     admin = User(
         username='admin',
-        email='admin@gecmines.cd',
+        email='admin@geccourrier.cd',
         role='super_admin'
     )
     admin.set_password('Admin@2025')
@@ -185,7 +185,7 @@ with app.app_context():
 ```nginx
 server {
     listen 80;
-    server_name gecmines.example.com;
+    server_name geccourrier.example.com;
     
     location / {
         proxy_pass http://127.0.0.1:5000;
@@ -196,7 +196,7 @@ server {
     }
     
     location /uploads {
-        alias /var/www/gecmines/uploads;
+        alias /var/www/geccourrier/uploads;
         expires 30d;
     }
     
@@ -206,21 +206,21 @@ server {
 
 #### Service Systemd
 ```ini
-# /etc/systemd/system/gecmines.service
+# /etc/systemd/system/geccourrier.service
 [Unit]
-Description=GEC Mines Application
+Description=GEC Courrier Application
 After=network.target postgresql.service
 
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/gecmines
-Environment="PATH=/var/www/gecmines/venv/bin"
-ExecStart=/var/www/gecmines/venv/bin/gunicorn \
+WorkingDirectory=/var/www/geccourrier
+Environment="PATH=/var/www/geccourrier/venv/bin"
+ExecStart=/var/www/geccourrier/venv/bin/gunicorn \
     --workers 4 \
     --bind 127.0.0.1:5000 \
     --timeout 120 \
-    --log-file /var/log/gecmines/gunicorn.log \
+    --log-file /var/log/geccourrier/gunicorn.log \
     main:app
 Restart=always
 
@@ -234,7 +234,7 @@ WantedBy=multi-user.target
 apt-get install certbot python3-certbot-nginx
 
 # Génération certificat
-certbot --nginx -d gecmines.example.com
+certbot --nginx -d geccourrier.example.com
 
 # Renouvellement automatique
 crontab -e
@@ -249,11 +249,11 @@ crontab -e
 import sys
 import os
 
-project_home = '/home/username/gecmines'
+project_home = '/home/username/geccourrier'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
-os.environ['DATABASE_URL'] = 'mysql://username:password@username.mysql.pythonanywhere-services.com/username$gecmines'
+os.environ['DATABASE_URL'] = 'mysql://username:password@username.mysql.pythonanywhere-services.com/username$geccourrier'
 os.environ['SESSION_SECRET'] = 'your-secret-key'
 os.environ['GEC_MASTER_KEY'] = 'your-master-key'
 os.environ['GEC_PASSWORD_SALT'] = 'your-salt'
@@ -299,8 +299,8 @@ CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "main:app"]
 #### Logs
 ```bash
 # Rotation des logs
-cat > /etc/logrotate.d/gecmines << EOF
-/var/log/gecmines/*.log {
+cat > /etc/logrotate.d/geccourrier << EOF
+/var/log/geccourrier/*.log {
     daily
     rotate 30
     compress
@@ -309,7 +309,7 @@ cat > /etc/logrotate.d/gecmines << EOF
     create 0640 www-data www-data
     sharedscripts
     postrotate
-        systemctl reload gecmines
+        systemctl reload geccourrier
     endscript
 }
 EOF
@@ -320,19 +320,19 @@ EOF
 #!/bin/bash
 # backup.sh
 DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/backup/gecmines"
+BACKUP_DIR="/backup/geccourrier"
 
 # Sauvegarde DB
 pg_dump $DATABASE_URL > $BACKUP_DIR/db_$DATE.sql
 
 # Sauvegarde fichiers
-tar -czf $BACKUP_DIR/uploads_$DATE.tar.gz /var/www/gecmines/uploads
+tar -czf $BACKUP_DIR/uploads_$DATE.tar.gz /var/www/geccourrier/uploads
 
 # Nettoyer anciennes sauvegardes (>30 jours)
 find $BACKUP_DIR -type f -mtime +30 -delete
 
 # Cron
-0 2 * * * /opt/gecmines/backup.sh
+0 2 * * * /opt/geccourrier/backup.sh
 ```
 
 #### Monitoring Santé
@@ -362,7 +362,7 @@ def health_check():
 POST /login
 Content-Type: application/x-www-form-urlencoded
 
-email=admin@gecmines.cd&password=Admin@2025
+email=admin@geccourrier.cd&password=Admin@2025
 ```
 
 ### Courriers
@@ -409,11 +409,11 @@ python -c "import os; print(os.environ.get('DATABASE_URL'))"
 #### File Upload Failed
 ```bash
 # Permissions
-chmod 755 /var/www/gecmines/uploads
-chown -R www-data:www-data /var/www/gecmines/uploads
+chmod 755 /var/www/geccourrier/uploads
+chown -R www-data:www-data /var/www/geccourrier/uploads
 
 # Espace disque
-df -h /var/www/gecmines/uploads
+df -h /var/www/geccourrier/uploads
 ```
 
 #### Session Expired
@@ -449,10 +449,10 @@ class TestModels(unittest.TestCase):
 ### Tests de Charge
 ```bash
 # Apache Bench
-ab -n 1000 -c 10 https://gecmines.example.com/
+ab -n 1000 -c 10 https://geccourrier.example.com/
 
 # Locust
-locust -f loadtest.py --host=https://gecmines.example.com
+locust -f loadtest.py --host=https://geccourrier.example.com
 ```
 
 ## Support Technique

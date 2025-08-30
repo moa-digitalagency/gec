@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Paramètres Système - GEC Mines{% endblock %}
+{% block title %}Paramètres Système - GEC{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -158,7 +158,7 @@
                                    name="email_contact" 
                                    value="{{ parametres.email_contact or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="contact@mines.gouv.cd">
+                                   placeholder="contact@courrier.gouv.cd">
                         </div>
                     </div>
                     
@@ -262,7 +262,7 @@
                                 <input type="text" 
                                        id="titre_pdf" 
                                        name="titre_pdf" 
-                                       value="{{ parametres.titre_pdf or 'Ministère des Mines' }}"
+                                       value="{{ parametres.titre_pdf or 'Ministère des Courrier' }}"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
                                        placeholder="Titre principal pour PDF">
                             </div>

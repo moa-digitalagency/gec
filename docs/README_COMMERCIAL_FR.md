@@ -1,10 +1,10 @@
-# 📮 GEC Mines - Système de Gestion du Courrier
+# 📮 GEC - Système de Gestion du Courrier
 
 ## 🌟 Transformez Votre Gestion Administrative
 
-**GEC Mines** est la solution digitale complète pour moderniser la gestion du courrier au sein du Secrétariat Général des Mines. Plus qu'un simple logiciel, c'est votre partenaire pour une administration efficace et transparente.
+**GEC** est la solution digitale complète pour moderniser la gestion du courrier au sein des administrations et secrétariats généraux. Plus qu'un simple logiciel, c'est votre partenaire pour une administration efficace et transparente.
 
-## 🎯 Pourquoi Choisir GEC Mines?
+## 🎯 Pourquoi Choisir GEC?
 
 ### 📈 Productivité Multipliée
 - ⚡ **Traitement 10x plus rapide** des courriers
@@ -108,7 +108,7 @@
 ## 💼 Cas d'Usage
 
 ### 🏛️ Administration Publique
-> "GEC Mines a révolutionné notre gestion documentaire. Nous avons réduit de 80% le temps de traitement des courriers." - *Directeur Administratif*
+> "GEC Courrier a révolutionné notre gestion documentaire. Nous avons réduit de 80% le temps de traitement des courriers." - *Directeur Administratif*
 
 ### 🏢 Entreprises Minières
 > "La traçabilité complète nous permet de respecter toutes les normes de conformité. Un investissement rentable!" - *Responsable Compliance*
@@ -171,16 +171,16 @@
 ## 🌍 Ils Nous Font Confiance
 
 ### 🏛️ Institutions Publiques
-- Ministère des Mines RDC
-- Secrétariat Général des Mines
+- Ministère des Courrier RDC
+- Secrétariat Général des Courrier
 - Gouvernorats Provinciaux
 - Administrations Locales
 
 ### 🏢 Entreprises Privées
-- Gécamines
+- Gécacourrier
 - Kibali Gold Mine
 - Tenke Fungurume Mining
-- Ivanhoe Mines
+- Ivanhoe Courrier
 
 ## 📞 Contactez-Nous
 
@@ -207,7 +207,7 @@
 - ✅ Support premium
 - ✅ Personnalisation offerte
 
-**Code Promo**: GECMINES2025
+**Code Promo**: GECCOURRIER2025
 
 ## ⭐ Témoignages Clients
 

@@ -112,7 +112,7 @@ def send_email_from_system_config(to_email, subject, html_content, text_content=
             return False
         
         # Convertir les paramètres
-        smtp_port = int(smtp_port)
+        smtp_port = int(smtp_port) if smtp_port else 587
         use_tls = str(smtp_use_tls).lower() == 'true'
         
         # Créer le message
@@ -255,7 +255,7 @@ def send_new_mail_notification(admins_emails, courrier_data, language='fr'):
     from models import ParametresSysteme
     
     # Récupérer le nom du logiciel depuis les paramètres système
-    nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC Mines')
+    nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
     
     # Préparer les variables pour le template
     variables = {
@@ -368,7 +368,7 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
     from models import ParametresSysteme
     
     # Récupérer le nom du logiciel depuis les paramètres système
-    nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC Mines')
+    nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
     
     # Préparer les variables pour le template
     variables = {

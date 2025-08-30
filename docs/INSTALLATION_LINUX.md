@@ -1,4 +1,4 @@
-# Installation GEC Mines - Linux (Ubuntu/Debian/CentOS/RHEL)
+# Installation GEC Courrier - Linux (Ubuntu/Debian/CentOS/RHEL)
 
 ## Méthode Automatique (Recommandée)
 
@@ -78,26 +78,26 @@ sudo postgresql-setup initdb
 sudo -u postgres psql
 ```
 ```sql
-CREATE DATABASE gecmines;
-CREATE USER gecmines WITH PASSWORD 'motdepasse_securise';
-GRANT ALL PRIVILEGES ON DATABASE gecmines TO gecmines;
+CREATE DATABASE geccourrier;
+CREATE USER geccourrier WITH PASSWORD 'motdepasse_securise';
+GRANT ALL PRIVILEGES ON DATABASE geccourrier TO geccourrier;
 \q
 ```
 
 ### Configuration Systemd
-Créez le fichier `/etc/systemd/system/gecmines.service`:
+Créez le fichier `/etc/systemd/system/geccourrier.service`:
 ```ini
 [Unit]
-Description=GEC Mines - Système de Gestion du Courrier
+Description=GEC Courrier - Système de Gestion du Courrier
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=gecmines
-Group=gecmines
-WorkingDirectory=/opt/gecmines
-Environment=PATH=/opt/gecmines/.venv/bin
-ExecStart=/opt/gecmines/.venv/bin/python main.py
+User=geccourrier
+Group=geccourrier
+WorkingDirectory=/opt/geccourrier
+Environment=PATH=/opt/geccourrier/.venv/bin
+ExecStart=/opt/geccourrier/.venv/bin/python main.py
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=10
@@ -109,15 +109,15 @@ WantedBy=multi-user.target
 ### Installation système
 ```bash
 # Créer l'utilisateur système
-sudo useradd -r -s /bin/false gecmines
+sudo useradd -r -s /bin/false geccourrier
 
 # Copier l'application
-sudo cp -r gec /opt/gecmines
-sudo chown -R gecmines:gecmines /opt/gecmines
+sudo cp -r gec /opt/geccourrier
+sudo chown -R geccourrier:geccourrier /opt/geccourrier
 
 # Activer et démarrer le service
-sudo systemctl enable gecmines
-sudo systemctl start gecmines
+sudo systemctl enable geccourrier
+sudo systemctl start geccourrier
 ```
 
 ### Configuration Nginx (Reverse Proxy)
@@ -132,7 +132,7 @@ sudo dnf install -y nginx
 ```
 
 #### Configuration Nginx
-Créez `/etc/nginx/sites-available/gecmines`:
+Créez `/etc/nginx/sites-available/geccourrier`:
 ```nginx
 server {
     listen 80;
@@ -148,7 +148,7 @@ server {
     }
 
     location /static/ {
-        alias /opt/gecmines/static/;
+        alias /opt/geccourrier/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -157,7 +157,7 @@ server {
 
 ```bash
 # Activer le site
-sudo ln -s /etc/nginx/sites-available/gecmines /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/geccourrier /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -175,8 +175,8 @@ sudo certbot --nginx -d votre-domaine.com
 
 ### Fichier .env production
 ```bash
-sudo tee /opt/gecmines/.env << EOF
-DATABASE_URL=postgresql://gecmines:motdepasse_securise@localhost/gecmines
+sudo tee /opt/geccourrier/.env << EOF
+DATABASE_URL=postgresql://geccourrier:motdepasse_securise@localhost/geccourrier
 SESSION_SECRET=$(openssl rand -hex 32)
 GEC_MASTER_KEY=$(openssl rand -hex 32)
 GEC_PASSWORD_SALT=$(openssl rand -hex 16)
@@ -189,31 +189,31 @@ SMTP_EMAIL=noreply@votre-domaine.com
 SMTP_PASSWORD=votre-mot-de-passe-app
 EOF
 
-sudo chown gecmines:gecmines /opt/gecmines/.env
-sudo chmod 600 /opt/gecmines/.env
+sudo chown geccourrier:geccourrier /opt/geccourrier/.env
+sudo chmod 600 /opt/geccourrier/.env
 ```
 
 ## Sauvegarde Automatique
 
 ### Script de sauvegarde
-Créez `/opt/gecmines/backup.sh`:
+Créez `/opt/geccourrier/backup.sh`:
 ```bash
 #!/bin/bash
-BACKUP_DIR="/opt/gecmines/backups"
+BACKUP_DIR="/opt/geccourrier/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="gecmines_backup_$DATE.tar.gz"
+BACKUP_FILE="geccourrier_backup_$DATE.tar.gz"
 
 mkdir -p $BACKUP_DIR
 
 # Sauvegarde base de données
-sudo -u postgres pg_dump gecmines > $BACKUP_DIR/db_$DATE.sql
+sudo -u postgres pg_dump geccourrier > $BACKUP_DIR/db_$DATE.sql
 
 # Sauvegarde fichiers
 tar -czf $BACKUP_DIR/$BACKUP_FILE \
     --exclude='.venv' \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
-    /opt/gecmines
+    /opt/geccourrier
 
 # Nettoyer les sauvegardes anciennes (> 30 jours)
 find $BACKUP_DIR -type f -mtime +30 -delete
@@ -227,7 +227,7 @@ echo "Sauvegarde créée: $BACKUP_FILE"
 sudo crontab -e
 
 # Sauvegarde quotidienne à 2h du matin
-0 2 * * * /opt/gecmines/backup.sh
+0 2 * * * /opt/geccourrier/backup.sh
 ```
 
 ## Surveillance et Monitoring
@@ -235,13 +235,13 @@ sudo crontab -e
 ### Monitoring avec systemctl
 ```bash
 # Statut du service
-sudo systemctl status gecmines
+sudo systemctl status geccourrier
 
 # Logs du service
-sudo journalctl -u gecmines -f
+sudo journalctl -u geccourrier -f
 
 # Redémarrage automatique
-sudo systemctl restart gecmines
+sudo systemctl restart geccourrier
 ```
 
 ### Monitoring des ressources
@@ -250,7 +250,7 @@ sudo systemctl restart gecmines
 sudo htop -p $(pgrep -f "python.*main.py")
 
 # Espace disque
-sudo du -sh /opt/gecmines/
+sudo du -sh /opt/geccourrier/
 sudo df -h
 ```
 
@@ -274,15 +274,15 @@ sudo firewall-cmd --reload
 
 ### Problème de permissions
 ```bash
-sudo chown -R gecmines:gecmines /opt/gecmines
-sudo chmod -R 755 /opt/gecmines
-sudo chmod 600 /opt/gecmines/.env
+sudo chown -R geccourrier:geccourrier /opt/geccourrier
+sudo chmod -R 755 /opt/geccourrier
+sudo chmod 600 /opt/geccourrier/.env
 ```
 
 ### Erreur de dépendances Python
 ```bash
 # Réinstaller les dépendances
-source /opt/gecmines/.venv/bin/activate
+source /opt/geccourrier/.venv/bin/activate
 pip install --force-reinstall -r project-dependencies.txt
 ```
 
@@ -292,7 +292,7 @@ pip install --force-reinstall -r project-dependencies.txt
 sudo systemctl restart postgresql
 
 # Vérifier les connexions
-sudo -u postgres psql -c "SELECT * FROM pg_stat_activity WHERE datname='gecmines';"
+sudo -u postgres psql -c "SELECT * FROM pg_stat_activity WHERE datname='geccourrier';"
 ```
 
 ## Support Technique

@@ -243,7 +243,7 @@ class PerformanceMonitor:
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        execution_time = time.time() - self.start_time
+        execution_time = time.time() - (self.start_time or 0)
         
         # Log performance metrics
         current_app.logger.info(

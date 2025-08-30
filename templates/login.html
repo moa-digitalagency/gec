@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Connexion - {{ parametres.nom_logiciel if parametres else 'GEC Mines' }}{% endblock %}
+{% block title %}Connexion - {{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-rdc-blue to-rdc-green py-12 px-4 sm:px-6 lg:px-8">
@@ -22,7 +22,7 @@
                     </div>
                 {% endif %}
                 <h2 class="text-2xl font-bold text-gray-900">{{ parametres.nom_logiciel if parametres else 'Système GEC' }}</h2>
-                <p class="mt-2 text-sm text-gray-600">{{ parametres.sous_titre_pdf if parametres else 'Secrétariat Général des Mines' }}</p>
+                <p class="mt-2 text-sm text-gray-600">{{ parametres.sous_titre_pdf if parametres else 'Secrétariat Général des Courrier' }}</p>
                 <p class="text-xs text-gray-500">{{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}</p>
             </div>
             

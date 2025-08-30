@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Installation Automatique GEC Mines - macOS
+# Installation Automatique GEC - macOS
 # Développé par: MOA Digital Agency LLC
 # Auteur: AIsance KALONJI wa KALONJI
 # Contact: moa@myoneart.com
@@ -8,7 +8,7 @@
 set -e
 
 echo "================================================================"
-echo "           Installation Automatique GEC Mines - macOS"
+echo "           Installation Automatique GEC - macOS"
 echo "================================================================"
 echo "Développé par: MOA Digital Agency LLC"
 echo "Auteur: AIsance KALONJI wa KALONJI"
@@ -70,7 +70,7 @@ fi
 echo "✅ [OK] Python 3.11 et Git installés"
 
 echo
-echo "📥 [ETAPE 4/8] Téléchargement du code source GEC Mines..."
+echo "📥 [ETAPE 4/8] Téléchargement du code source GEC..."
 
 # Aller dans le répertoire home de l'utilisateur
 cd "$HOME"
@@ -134,7 +134,7 @@ source .venv/bin/activate
 
 echo
 echo "============================================"
-echo "  GEC Mines - Système de Gestion du Courrier"
+echo "  GEC - Système de Gestion du Courrier"
 echo "  Accès: http://localhost:5000"
 echo "  Développé par MOA Digital Agency LLC"
 echo "============================================"
@@ -192,7 +192,7 @@ echo "================================================================"
 echo "                    INSTALLATION TERMINÉE !"
 echo "================================================================"
 echo
-echo "✅ L'application GEC Mines a été installée avec succès."
+echo "✅ L'application GEC a été installée avec succès."
 echo
 echo "🚀 Pour démarrer l'application:"
 echo "   1. Ouvrez Terminal"
@@ -217,14 +217,14 @@ echo
 echo "================================================================"
 
 echo
-read -p "Voulez-vous démarrer GEC Mines maintenant? (o/N): " start_now
+read -p "Voulez-vous démarrer GEC maintenant? (o/N): " start_now
 if [[ $start_now =~ ^[Oo]$ ]]; then
-    echo "🚀 Démarrage de GEC Mines..."
+    echo "🚀 Démarrage de GEC..."
     echo "Ouvrez votre navigateur à l'adresse: http://localhost:5000"
     echo
     ./start-gec.sh
 else
     echo
-    echo "ℹ️  Vous pouvez démarrer GEC Mines plus tard en tapant 'gec-start' dans Terminal"
+    echo "ℹ️  Vous pouvez démarrer GEC plus tard en tapant 'gec-start' dans Terminal"
     echo "   ou en exécutant ./start-gec.sh dans le dossier $HOME/gec"
 fi

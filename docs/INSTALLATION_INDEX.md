@@ -1,7 +1,7 @@
-# Index des Installations GEC Mines
+# Index des Installations GEC
 
 ## Vue d'Ensemble
-Ce document centralise toutes les méthodes d'installation pour le système GEC Mines - Gestion du Courrier, développé par MOA Digital Agency LLC.
+Ce document centralise toutes les méthodes d'installation pour le système GEC - Gestion du Courrier, développé par MOA Digital Agency LLC.
 
 ## 🚀 Installations One-Click (Recommandées)
 
@@ -77,7 +77,7 @@ SMTP_PASSWORD=votre-mot-de-passe-app
 
 ### Configuration Base de Données Production
 ```env
-DATABASE_URL=postgresql://username:password@localhost/gecmines
+DATABASE_URL=postgresql://username:password@localhost/geccourrier
 ```
 
 ## 🔧 Dépannage Courant
@@ -149,4 +149,4 @@ pip install -r project-dependencies.txt
 
 ---
 
-*Ce document est maintenu à jour avec chaque nouvelle version de GEC Mines.*
+*Ce document est maintenu à jour avec chaque nouvelle version de GEC Courrier.*

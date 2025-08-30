@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Mines' }}{% endblock %}</title>
+    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Courrier' }}{% endblock %}</title>
     
     <!-- Tailwind CSS (local) -->
     <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
@@ -56,7 +56,7 @@
                         {% else %}
                             <i class="fas fa-mail-bulk mr-3 text-rdc-yellow"></i>
                         {% endif %}
-                        <span>{{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Mines RDC' }}</span>
+                        <span>{{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Courrier RDC' }}</span>
                     </a>
                 </div>
                 
@@ -362,7 +362,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('GEC Mines Application Initialized');
+            console.log('GEC Application Initialized');
             
             // Variables globales pour le menu
             let menuOverlay = null;

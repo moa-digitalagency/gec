@@ -1,4 +1,4 @@
-# Installation GEC Mines - Windows Server 2008 R2
+# Installation GEC Courrier - Windows Server 2008 R2
 
 ## Prérequis Spéciaux
 - Windows Server 2008 R2 SP1 minimum
@@ -46,13 +46,13 @@ python -m pip install -r project-dependencies.txt
 ### Étape 6: Configuration Windows Server
 ```cmd
 REM Créer le fichier de configuration
-echo DATABASE_URL=sqlite:///instance/gecmines.db > .env
+echo DATABASE_URL=sqlite:///instance/geccourrier.db > .env
 echo SESSION_SECRET=your-server-secret-key >> .env
 echo GEC_MASTER_KEY=your-server-encryption-key >> .env
 echo GEC_PASSWORD_SALT=your-server-password-salt >> .env
 
 REM Configurer le pare-feu Windows
-netsh advfirewall firewall add rule name="GEC Mines Port 5000" dir=in action=allow protocol=TCP localport=5000
+netsh advfirewall firewall add rule name="GEC Courrier Port 5000" dir=in action=allow protocol=TCP localport=5000
 ```
 
 ### Étape 7: Installation en tant que Service Windows
@@ -61,14 +61,14 @@ Créez le fichier `install-service.bat`:
 @echo off
 cd /d "%~dp0"
 
-REM Installer le service GEC Mines
-sc create "GEC Mines" binPath= "\"%CD%\venv\Scripts\python.exe\" \"%CD%\main.py\"" start= auto
-sc description "GEC Mines" "Système de gestion du courrier - Ministère des Mines RDC"
+REM Installer le service GEC Courrier
+sc create "GEC Courrier" binPath= "\"%CD%\venv\Scripts\python.exe\" \"%CD%\main.py\"" start= auto
+sc description "GEC Courrier" "Système de gestion du courrier - Ministère des Courrier RDC"
 
 REM Démarrer le service
-sc start "GEC Mines"
+sc start "GEC Courrier"
 
-echo Service GEC Mines installé et démarré
+echo Service GEC Courrier installé et démarré
 pause
 ```
 
@@ -83,7 +83,7 @@ Pour une configuration avec IIS et reverse proxy:
     <system.webServer>
         <rewrite>
             <rules>
-                <rule name="GEC Mines" stopProcessing="true">
+                <rule name="GEC Courrier" stopProcessing="true">
                     <match url="(.*)" />
                     <action type="Rewrite" url="http://localhost:5000/{R:1}" />
                 </rule>
@@ -98,17 +98,17 @@ Pour une configuration avec IIS et reverse proxy:
 ### Sécurité Windows Server
 ```cmd
 REM Créer un utilisateur dédié
-net user gecmines password123 /add /comment:"Service GEC Mines"
-net localgroup Users gecmines /delete
-net localgroup "Log on as a service" gecmines /add
+net user geccourrier password123 /add /comment:"Service GEC Courrier"
+net localgroup Users geccourrier /delete
+net localgroup "Log on as a service" geccourrier /add
 
 REM Permissions sur le dossier
-icacls "C:\gec" /grant gecmines:(OI)(CI)F
+icacls "C:\gec" /grant geccourrier:(OI)(CI)F
 ```
 
 ### Variables d'Environnement Système
 ```cmd
-setx DATABASE_URL "postgresql://username:password@localhost/gecmines" /M
+setx DATABASE_URL "postgresql://username:password@localhost/geccourrier" /M
 setx SESSION_SECRET "your-production-secret-key" /M
 setx GEC_MASTER_KEY "your-production-encryption-key" /M
 setx GEC_PASSWORD_SALT "your-production-password-salt" /M
@@ -117,7 +117,7 @@ setx GEC_PASSWORD_SALT "your-production-password-salt" /M
 ### Backup Automatique
 Créez une tâche planifiée pour la sauvegarde:
 ```cmd
-schtasks /create /sc daily /mo 1 /tn "GEC Mines Backup" /tr "C:\gec\backup-daily.bat" /st 02:00
+schtasks /create /sc daily /mo 1 /tn "GEC Courrier Backup" /tr "C:\gec\backup-daily.bat" /st 02:00
 ```
 
 ## Dépannage Server 2008
