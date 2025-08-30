@@ -344,35 +344,42 @@ python -m pip install --upgrade pip
 python main.py --port 8080
 ```
 
-## Nouvelles Fonctionnalités (Août 2025)
-
-### Nomenclature Dynamique
-- **Titres de responsables configurables** (ex: Secrétaire Général, Directeur)
-- **Adaptation automatique** dans tous les templates et exports
-- **Interface de configuration** dans les paramètres système
-
-### Notifications Avancées
-- **Ciblage intelligent** pour commentaires/annotations/instructions
-- **Notifications à plusieurs destinataires** : créateur + dernier destinataire
-- **Templates email** spécialisés par type d'action
-- **Système de permissions** pour notifications
-
-### Améliorations PDF
-- **Texte "En Copie"** au lieu de "SG Copie" pour plus de flexibilité
-- **Adaptation automatique** à la nomenclature configurée
-- **Mise en page optimisée** pour tous types d'organisation
-
-### Système de Migration
-- **Migration automatique** des colonnes de base de données
-- **Détection intelligente** des changements de schéma
-- **Préservation des données** existantes
-- **Messages d'information** détaillés
-
 ## Support et Contribution
 
 Ce système est développé pour répondre aux besoins spécifiques des administrations et peut être adapté selon les exigences organisationnelles.
 
-Pour plus d'informations techniques, consultez le code source ou contactez l'équipe de développement.
+### 👨‍💻 Développeur et Concepteur
+**AIsance KALONJI wa KALONJI**
+
+### 🏢 Copyright et Licence
+**© 2025 MOA Digital Agency LLC** - Tous droits réservés
+
+### 📞 Informations de Contact
+
+**MOA Digital Agency**
+- **📧 Email** : moa@myoneart.com
+- **📧 Email alternatif** : moa.myoneart@gmail.com
+- **📱 Téléphone Maroc** : +212 699 14 000 1
+- **📱 Téléphone RDC** : +243 86 049 33 45
+- **🌐 Site web** : [myoneart.com](https://myoneart.com)
+
+### 🤝 Support Technique
+
+Pour obtenir de l'aide technique, des modifications personnalisées ou des questions sur le déploiement :
+
+1. **Support par email** : Contactez-nous à moa@myoneart.com
+2. **Documentation** : Consultez ce README pour les instructions d'installation
+3. **Personnalisation** : MOA Digital Agency propose des services d'adaptation sur mesure
+
+### 💼 À Propos de MOA Digital Agency
+
+MOA Digital Agency LLC est une agence de développement spécialisée dans la création de solutions digitales sur mesure pour les entreprises et institutions gouvernementales. Nous excellons dans le développement d'applications web robustes, sécurisées et évolutives.
+
+**Domaines d'expertise** :
+- Applications web d'entreprise
+- Systèmes de gestion administratifs
+- Solutions de sécurité avancées
+- Intégration et migration de données
 
 ---
 

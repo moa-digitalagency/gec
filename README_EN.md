@@ -344,35 +344,42 @@ python -m pip install --upgrade pip
 python main.py --port 8080
 ```
 
-## New Features (August 2025)
-
-### Dynamic Nomenclature
-- **Configurable leadership titles** (e.g., Secretary General, Director)
-- **Automatic adaptation** in all templates and exports
-- **Configuration interface** in system parameters
-
-### Advanced Notifications
-- **Smart targeting** for comments/annotations/instructions
-- **Multi-recipient notifications**: creator + last recipient
-- **Specialized email templates** by action type
-- **Permission-based notification system**
-
-### PDF Improvements
-- **"En Copie" text** instead of "SG Copie" for more flexibility
-- **Automatic adaptation** to configured nomenclature
-- **Optimized layout** for all organization types
-
-### Migration System
-- **Automatic database column migration**
-- **Smart detection** of schema changes
-- **Existing data preservation**
-- **Detailed information messages**
-
 ## Support and Contribution
 
 This system is developed to meet the specific needs of administrations and can be adapted according to organizational requirements.
 
-For more technical information, consult the source code or contact the development team.
+### 👨‍💻 Developer and Designer
+**AIsance KALONJI wa KALONJI**
+
+### 🏢 Copyright and License
+**© 2025 MOA Digital Agency LLC** - All rights reserved
+
+### 📞 Contact Information
+
+**MOA Digital Agency**
+- **📧 Email**: moa@myoneart.com
+- **📧 Alternative Email**: moa.myoneart@gmail.com
+- **📱 Phone Morocco**: +212 699 14 000 1
+- **📱 Phone DRC**: +243 86 049 33 45
+- **🌐 Website**: [myoneart.com](https://myoneart.com)
+
+### 🤝 Technical Support
+
+For technical assistance, custom modifications, or deployment questions:
+
+1. **Email Support**: Contact us at moa@myoneart.com
+2. **Documentation**: Refer to this README for installation instructions
+3. **Customization**: MOA Digital Agency offers custom adaptation services
+
+### 💼 About MOA Digital Agency
+
+MOA Digital Agency LLC is a development agency specialized in creating custom digital solutions for businesses and government institutions. We excel in developing robust, secure, and scalable web applications.
+
+**Areas of Expertise**:
+- Enterprise web applications
+- Administrative management systems
+- Advanced security solutions
+- Data integration and migration
 
 ---
 
