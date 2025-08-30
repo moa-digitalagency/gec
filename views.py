@@ -1288,12 +1288,9 @@ def settings():
         types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
         if request.method == 'POST':
-            print(f"DEBUG: POST received with form keys: {list(request.form.keys())}")
-            
             # Gestion du test d'email SendGrid en premier
             if request.form.get('test_email'):
                 test_email = request.form.get('test_email', '').strip()
-                print(f"DEBUG: Test email requested for: {test_email}")
                 
                 if not test_email:
                     flash('Veuillez saisir une adresse email pour le test.', 'error')
