@@ -659,8 +659,7 @@ def export_courrier_pdf(courrier):
         sg_copie_text = 'Oui' if courrier.secretaire_general_copie else 'Non'
         if courrier.secretaire_general_copie is None:
             sg_copie_text = 'Non renseigné'
-        titre_responsable = get_titre_responsable()
-        data.append([Paragraph(f'{titre_responsable} en copie:', label_style), Paragraph(sg_copie_text, text_style)])
+        data.append([Paragraph('En copie:', label_style), Paragraph(sg_copie_text, text_style)])
     
     # Utiliser le bon label selon le type de courrier
     date_label = "Date d'Émission:" if courrier.type_courrier == 'SORTANT' else "Date de Rédaction:"
@@ -1046,7 +1045,7 @@ def export_mail_list_pdf(courriers, filters):
             Paragraph(date_header, header_style),
             Paragraph('Date d\'Enregistrement', header_style),
             Paragraph('Statut', header_style),
-            Paragraph('SG Copie', header_style),
+            Paragraph('En Copie', header_style),
             Paragraph('Observation', header_style)
         ]
         data = [headers]
@@ -1172,3 +1171,76 @@ def export_mail_list_pdf(courriers, filters):
     doc.build(story)
     
     return pdf_path
+
+def send_comment_notification(email, courrier_data):
+    """Envoyer un email de notification pour les commentaires/annotations/instructions"""
+    try:
+        # Charger les paramètres système pour l'email
+        parametres = get_system_config_for_email()
+        if not parametres:
+            logging.error("Impossible de charger les paramètres système pour l'email")
+            return False
+        
+        # Textes selon le type de commentaire
+        type_labels = {
+            'comment': 'Commentaire',
+            'annotation': 'Annotation', 
+            'instruction': 'Instruction'
+        }
+        type_label = type_labels.get(courrier_data['comment_type'], 'Commentaire')
+        
+        subject = f"Nouveau {type_label} - {courrier_data['numero_accuse_reception']}"
+        
+        # Template HTML pour l'email
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .header {{ background-color: #003087; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; }}
+        .details {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+        .comment {{ background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 10px 0; }}
+        .footer {{ background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>GEC - Nouveau {type_label}</h2>
+    </div>
+    <div class="content">
+        <p>Bonjour,</p>
+        <p>Un nouveau {type_label.lower()} a été ajouté sur un courrier dans le système GEC.</p>
+        
+        <div class="details">
+            <h3>Détails du courrier :</h3>
+            <p><strong>Numéro d'accusé de réception :</strong> {courrier_data['numero_accuse_reception']}</p>
+            <p><strong>Type :</strong> {courrier_data['type_courrier']}</p>
+            <p><strong>Objet :</strong> {courrier_data['objet']}</p>
+            <p><strong>Contact :</strong> {courrier_data['expediteur']}</p>
+            <p><strong>{type_label} ajouté par :</strong> {courrier_data['added_by']}</p>
+        </div>
+        
+        <div class="comment">
+            <h3>{type_label} :</h3>
+            <p>{courrier_data['comment_text']}</p>
+        </div>
+        
+        <p>Vous pouvez consulter ce courrier et répondre en vous connectant au système GEC.</p>
+    </div>
+    <div class="footer">
+        <p>GEC - Système de Gestion du Courrier<br>
+        Secrétariat Général - République Démocratique du Congo</p>
+    </div>
+</body>
+</html>
+        """
+        
+        # Envoyer l'email
+        return send_email_from_system_config(email, subject, html_content)
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'envoi de la notification de commentaire: {e}")
+        return False

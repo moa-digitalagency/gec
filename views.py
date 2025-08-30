@@ -3768,15 +3768,72 @@ def add_comment(courrier_id):
         db.session.add(comment)
         db.session.commit()
         
-        # Créer une notification pour le propriétaire du courrier (s'il est différent)
+        # Identifier les personnes à notifier (créateur + dernière personne qui a reçu le courrier)
+        users_to_notify = set()
+        
+        # Ajouter le créateur du courrier
         if current_user.id != courrier.utilisateur_id:
-            Notification.create_notification(
-                user_id=courrier.utilisateur_id,
-                type_notification='comment_added',
-                titre=f'Nouveau commentaire - {courrier.numero_accuse_reception}',
-                message=f'{current_user.nom_complet} a ajouté un commentaire sur le courrier "{courrier.objet}".',
-                courrier_id=courrier_id
-            )
+            users_to_notify.add(courrier.utilisateur_id)
+        
+        # Ajouter la dernière personne qui a reçu le courrier en transmission
+        last_forward = CourrierForward.query.filter_by(courrier_id=courrier_id)\
+                                           .order_by(CourrierForward.date_transmission.desc()).first()
+        if last_forward and last_forward.forwarded_to_id != current_user.id:
+            users_to_notify.add(last_forward.forwarded_to_id)
+        
+        # Type de notification selon le type de commentaire
+        notification_types = {
+            'comment': 'comment_added',
+            'annotation': 'annotation_added', 
+            'instruction': 'instruction_added'
+        }
+        notification_type = notification_types.get(type_comment, 'comment_added')
+        
+        # Textes selon le type
+        action_texts = {
+            'comment': 'ajouté un commentaire',
+            'annotation': 'ajouté une annotation',
+            'instruction': 'ajouté une instruction'
+        }
+        action_text = action_texts.get(type_comment, 'ajouté un commentaire')
+        
+        # Créer les notifications et envoyer les emails
+        for user_id in users_to_notify:
+            try:
+                # Notification in-app
+                Notification.create_notification(
+                    user_id=user_id,
+                    type_notification=notification_type,
+                    titre=f'Nouveau {type_comment} - {courrier.numero_accuse_reception}',
+                    message=f'{current_user.nom_complet} a {action_text} sur le courrier "{courrier.objet}".',
+                    courrier_id=courrier_id
+                )
+                
+                # Notification email
+                user = User.query.get(user_id)
+                if user and user.email:
+                    try:
+                        courrier_data = {
+                            'numero_accuse_reception': courrier.numero_accuse_reception,
+                            'type_courrier': courrier.type_courrier,
+                            'objet': courrier.objet,
+                            'expediteur': courrier.expediteur or courrier.destinataire,
+                            'comment_type': type_comment,
+                            'comment_text': commentaire,
+                            'added_by': current_user.nom_complet
+                        }
+                        
+                        # Envoyer l'email de notification
+                        if send_comment_notification(user.email, courrier_data):
+                            logging.info(f"Notification email envoyée à {user.email} pour {type_comment}")
+                        else:
+                            logging.warning(f"Échec envoi email notification à {user.email}")
+                            
+                    except Exception as e:
+                        logging.error(f"Erreur envoi email notification: {e}")
+                        
+            except Exception as e:
+                logging.error(f"Erreur création notification pour user {user_id}: {e}")
         
         # Log de l'activité
         log_activity(current_user.id, "AJOUT_COMMENTAIRE", 
