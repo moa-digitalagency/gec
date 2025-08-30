@@ -451,14 +451,62 @@ def export_courrier_pdf(courrier):
             canvas.Canvas.save(self)
             
         def draw_page_number(self, page_num, total_pages):
-            """Draw the page number at the bottom of the page"""
-            self.setFont("Helvetica", 9)
-            page_text = f"Page {page_num} sur {total_pages}"
-            # Centrer le numéro de page
+            """Draw the footer with copyright and page number at the bottom"""
+            from models import ParametresSysteme
+            parametres = ParametresSysteme.get_parametres()
+            
+            # Construire le footer complet
+            footer_parts = []
+            
+            # Texte footer configurable
+            if parametres.texte_footer:
+                footer_parts.append(parametres.texte_footer)
+            
+            # Date de génération - utiliser le formatage français direct
+            now = datetime.now()
+            date_str = now.strftime('%A %d %B %Y à %H:%M')
+            # Traduire en français
+            mois_fr = {
+                'January': 'janvier', 'February': 'février', 'March': 'mars', 'April': 'avril',
+                'May': 'mai', 'June': 'juin', 'July': 'juillet', 'August': 'août',
+                'September': 'septembre', 'October': 'octobre', 'November': 'novembre', 'December': 'décembre'
+            }
+            jours_fr = {
+                'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi', 'Thursday': 'Jeudi',
+                'Friday': 'Vendredi', 'Saturday': 'Samedi', 'Sunday': 'Dimanche'
+            }
+            for en, fr in mois_fr.items():
+                date_str = date_str.replace(en, fr)
+            for en, fr in jours_fr.items():
+                date_str = date_str.replace(en, fr)
+            footer_parts.append(f"Document généré le {date_str} par le système GEC")
+            
+            # Copyright
+            copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
+            footer_parts.append(copyright)
+            
+            # Numéro de page
+            footer_parts.append(f"Page {page_num} sur {total_pages}")
+            
+            # Joindre tout avec des séparateurs
+            footer_text = " | ".join(footer_parts)
+            
+            # Dessiner le footer centré
+            self.setFont("Helvetica", 8)
             page_width = A4[0]
-            text_width = self.stringWidth(page_text, "Helvetica", 9)
-            x_position = (page_width - text_width) / 2
-            self.drawString(x_position, 0.5*inch, page_text)
+            left_margin = 0.75*inch
+            right_margin = 0.75*inch
+            text_width = page_width - left_margin - right_margin
+            
+            # Calculer la position pour centrer le texte
+            actual_text_width = self.stringWidth(footer_text, "Helvetica", 8)
+            if actual_text_width <= text_width:
+                # Le texte tient sur une ligne, le centrer
+                x_position = (page_width - actual_text_width) / 2
+                self.drawString(x_position, 0.5*inch, footer_text)
+            else:
+                # Le texte est trop long, l'ajuster à la largeur disponible
+                self.drawString(left_margin, 0.5*inch, footer_text)
     
     # Créer le document PDF avec la classe personnalisée
     doc = SimpleDocTemplate(pdf_path, pagesize=A4, topMargin=1*inch, bottomMargin=1.2*inch, 
@@ -771,24 +819,8 @@ def export_courrier_pdf(courrier):
     if comments or forwards:
         story.append(PageBreak())
     
-    # Note de bas de page avec texte configurable
-    footer_lines = []
-    
-    # Texte footer configurable
-    if parametres.texte_footer:
-        footer_lines.append(parametres.texte_footer)
-    
-    # Date de génération
-    footer_lines.append(f"Document généré le {format_date(datetime.now(), include_time=True)} par le système GEC")
-    
-    # Copyright dynamique
-    copyright = parametres.copyright_text or parametres.get_copyright_decrypte()
-    footer_lines.append(copyright)
-    
-    # Joindre toutes les lignes du footer sur une seule ligne avec séparateurs
-    footer_text = " | ".join(footer_lines)
-    footer = Paragraph(footer_text, styles['Normal'])
-    story.append(footer)
+    # Le footer est maintenant géré automatiquement par la classe NumberedCanvas
+    # sur chaque page, donc on n'ajoute plus rien ici
     
     # Construire le PDF avec numérotation des pages
     doc.build(story, canvasmaker=NumberedCanvas)
