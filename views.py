@@ -858,6 +858,28 @@ def mail_detail(id):
         flash('Vous n\'avez pas l\'autorisation de consulter ce courrier.', 'error')
         return redirect(url_for('view_mail'))
     
+    # Marquer automatiquement comme lu si l'utilisateur vient d'une notification
+    from_notification = request.args.get('from_notification')
+    if from_notification:
+        # Marquer la notification comme lue
+        notification = Notification.query.filter_by(
+            courrier_id=id,
+            user_id=current_user.id,
+            type_notification='mail_forwarded'
+        ).order_by(Notification.date_creation.desc()).first()
+        
+        if notification and not notification.lu:
+            notification.mark_as_read()
+        
+        # Marquer la transmission correspondante comme lue
+        forward = CourrierForward.query.filter_by(
+            courrier_id=id,
+            forwarded_to_id=current_user.id
+        ).order_by(CourrierForward.date_transmission.desc()).first()
+        
+        if forward and not forward.lu:
+            forward.mark_as_read()
+    
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     
     # Récupérer les commentaires du courrier
@@ -1265,9 +1287,6 @@ def settings():
         parametres = ParametresSysteme.get_parametres()
         types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
         
-        print(f"DEBUG: Settings request method: {request.method}")
-        print(f"DEBUG: Form data: {dict(request.form)}")
-        
         if request.method == 'POST':
             # Sanitize and update parameters
             parametres.nom_logiciel = sanitize_input(request.form['nom_logiciel'].strip())
@@ -1373,12 +1392,8 @@ def settings():
                             f"Mise à jour des paramètres système par {current_user.username}")
                 log_security_event("SETTINGS_UPDATE", f"System settings updated by {current_user.username}")
                 flash('Paramètres sauvegardés avec succès!', 'success')
-                print("DEBUG: Settings saved successfully")
             except Exception as e:
                 db.session.rollback()
-                print(f"DEBUG: Error saving settings: {str(e)}")
-                import traceback
-                traceback.print_exc()
                 flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
                 log_security_event("SETTINGS_ERROR", f"Failed to save settings: {str(e)}")
             

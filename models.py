@@ -952,6 +952,19 @@ class Notification(db.Model):
         """Marquer la notification comme lue"""
         self.lu = True
         self.date_lecture = datetime.utcnow()
+        
+        # Synchroniser avec l'historique des transmissions si c'est une notification de courrier transmis
+        if self.type_notification == 'mail_forwarded' and self.courrier_id:
+            # Trouver la transmission correspondante pour cet utilisateur et ce courrier
+            forward = CourrierForward.query.filter_by(
+                courrier_id=self.courrier_id,
+                forwarded_to_id=self.user_id
+            ).order_by(CourrierForward.date_transmission.desc()).first()
+            
+            if forward and not forward.lu:
+                forward.lu = True
+                forward.date_lecture = datetime.utcnow()
+        
         db.session.commit()
     
     @staticmethod
@@ -1028,6 +1041,19 @@ class CourrierForward(db.Model):
         """Marquer la transmission comme lue"""
         self.lu = True
         self.date_lecture = datetime.utcnow()
+        
+        # Synchroniser avec la notification correspondante
+        if self.courrier_id and self.forwarded_to_id:
+            notification = Notification.query.filter_by(
+                courrier_id=self.courrier_id,
+                user_id=self.forwarded_to_id,
+                type_notification='mail_forwarded'
+            ).order_by(Notification.date_creation.desc()).first()
+            
+            if notification and not notification.lu:
+                notification.lu = True
+                notification.date_lecture = datetime.utcnow()
+        
         db.session.commit()
 
 class EmailTemplate(db.Model):
