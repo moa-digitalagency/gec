@@ -3,15 +3,16 @@
 ## Architecture Système
 
 ### Stack Technologique
-- **Backend**: Flask 2.3.3 (Python 3.8+)
+- **Backend**: Flask 3.1.1 (Python 3.11+)
 - **Base de données**: PostgreSQL 14+ / SQLite 3
-- **ORM**: SQLAlchemy 2.0.20 avec Flask-SQLAlchemy 3.0.5
+- **ORM**: SQLAlchemy 2.0.41 avec Flask-SQLAlchemy 3.1.1
 - **Serveur WSGI**: Gunicorn 23.0.0
-- **Authentification**: Flask-Login 0.6.2
-- **Chiffrement**: AES-256-CBC (cryptography 41.0.3)
-- **Hachage**: bcrypt 4.0.1 avec salage personnalisé
-- **PDF**: ReportLab 4.0.4
-- **Images**: Pillow 10.0.0
+- **Authentification**: Flask-Login 0.6.3
+- **Chiffrement**: AES-256-CBC (cryptography 45.0.6)
+- **Hachage**: bcrypt 4.3.0 avec salage personnalisé
+- **PDF**: ReportLab 4.4.2
+- **Images**: Pillow 11.3.0
+- **Email**: SendGrid 6.12.4 avec templates multi-langues
 
 ### Architecture de Sécurité
 
@@ -95,27 +96,57 @@ def get_statuts_actifs():
 ```bash
 # Ubuntu/Debian
 apt-get update
-apt-get install -y python3.8 python3-pip postgresql-14 nginx
+apt-get install -y python3.11 python3.11-venv python3.11-dev git postgresql-client
 
-# CentOS/RHEL
-yum install -y python38 python38-pip postgresql14-server nginx
+# CentOS/RHEL/Fedora
+dnf install -y python3.11 python3.11-devel git postgresql
+
+# macOS
+brew install python@3.11 git
+
+# Windows
+winget install --id Python.Python.3.11 -e
+winget install --id Git.Git -e
 ```
 
-### Installation Locale
+### Installation Multi-Plateforme
 
-#### 1. Clonage et Configuration
+#### 🚀 Installation Automatique One-Click
+
+**Scripts d'installation disponibles :**
+- **Windows** : `install-windows.ps1` ou `install-windows.bat`
+- **macOS** : `install-macos.sh`
+- **Linux** : `install-linux.sh`
+
 ```bash
-git clone [REPOSITORY_URL]
-cd gec-mines
+# Exemple pour Linux/macOS
+chmod +x install-linux.sh
+./install-linux.sh
 
-# Environnement virtuel
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate  # Windows
+# Exemple pour Windows (PowerShell)
+.\install-windows.ps1
+```
 
-# Dépendances
-pip install -r requirements.txt
+#### 🔧 Installation Manuelle
+
+**1. Clonage et Configuration**
+```bash
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Créer l'environnement virtuel
+python3.11 -m venv .venv  # Linux/macOS
+python -m venv .venv      # Windows
+
+# Activer l'environnement
+source .venv/bin/activate    # Linux/macOS
+.venv\Scripts\Activate.ps1   # Windows PowerShell
+.venv\Scripts\activate.bat   # Windows CMD
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
 ```
 
 #### 2. Variables d'Environnement

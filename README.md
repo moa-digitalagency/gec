@@ -39,31 +39,129 @@
 
 ---
 
-## ⚡ Installation Rapide
+## ⚡ Installation Multi-Plateforme
 
-### 1️⃣ Installation
-```bash
-# Cloner le dépôt
-git clone [URL_REPOSITORY]
-cd gec-mines
+### 🪟 Windows (10/11/Server 2008+)
+```powershell
+# Installer Python 3.11
+winget install --id Python.Python.3.11 -e
+
+# Installer Git
+winget install --id Git.Git -e
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Configurer l'environnement
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+python -m venv .venv
+# Si erreur, essayez : py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
 # Installer les dépendances
-pip install -r project-dependencies.txt
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python .\main.py
 ```
 
-### 2️⃣ Configuration
+### 🍎 macOS (10.15+)
 ```bash
-# Variables d'environnement
-export DATABASE_URL="postgresql://..."
-export SESSION_SECRET="votre-clé-secrète"
-export GEC_MASTER_KEY="votre-clé-maître"
+# Installer Homebrew si nécessaire
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Installer Python 3.11 et Git
+brew install python@3.11 git
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Configurer l'environnement
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
 ```
 
-### 3️⃣ Lancement
+### 🐧 Linux (Ubuntu/Debian/CentOS/RHEL)
 ```bash
-# Démarrer l'application
-gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
-# Accès via http://localhost:5000
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3.11 python3.11-venv python3.11-dev git postgresql-client -y
+
+# CentOS/RHEL/Fedora
+sudo dnf install python3.11 python3.11-devel git postgresql -y
+# ou pour les versions plus anciennes :
+# sudo yum install python3.11 python3.11-devel git postgresql
+
+# Cloner le projet
+git clone https://github.com/moa-digitalagency/gec.git
+cd gec
+
+# Configurer l'environnement
+python3.11 -m venv .venv
+source .venv/bin/activate
+
+# Installer les dépendances
+python -m pip install -U pip wheel
+python -m pip install -r project-dependencies.txt
+
+# Lancer l'application
+python main.py
+```
+
+### 🚀 Installation Automatique One-Click
+
+Téléchargez et exécutez les scripts d'installation automatique selon votre système :
+
+#### Windows 10/11
+```batch
+# Télécharger install-gec-windows.bat
+# Clic droit → "Exécuter en tant qu'administrateur"
+```
+
+#### Windows Server 2008/2012/2016+
+```batch
+# Télécharger install-gec-windows-server.bat
+# Clic droit → "Exécuter en tant qu'administrateur"
+# Installation complète avec service Windows
+```
+
+#### macOS (10.15+)
+```bash
+# Télécharger install-gec-macos.sh
+chmod +x install-gec-macos.sh
+./install-gec-macos.sh
+```
+
+#### Linux (Toutes distributions)
+```bash
+# Installation directe depuis internet
+curl -fsSL https://raw.githubusercontent.com/moa-digitalagency/gec/main/install-gec-linux.sh | bash
+
+# Ou téléchargement puis exécution
+chmod +x install-gec-linux.sh
+./install-gec-linux.sh
+```
+
+📖 **Documentation d'installation complète** : [docs/INSTALLATION_INDEX.md](docs/INSTALLATION_INDEX.md)
+
+### 🔧 Configuration Post-Installation
+
+Créez un fichier `.env` pour les variables d'environnement :
+```bash
+DATABASE_URL=postgresql://user:password@localhost/gecmines
+SESSION_SECRET=votre-clé-secrète-très-longue
+GEC_MASTER_KEY=votre-clé-de-chiffrement-32-caractères
+GEC_PASSWORD_SALT=votre-sel-de-mot-de-passe
 ```
 
 ---
