@@ -483,57 +483,6 @@
             </div>
         </div>
         {% endif %}
-        
-        <!-- Notification History -->
-        {% if notifications %}
-        <div class="bg-white shadow-rdc rounded-xl mt-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-bell mr-2 text-rdc-blue"></i>
-                    Historique des Notifications
-                </h2>
-            </div>
-            <div class="divide-y divide-gray-200">
-                {% for notification in notifications %}
-                <div class="p-6 hover:bg-gray-50">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-
-                                    {%- if notification.type_notification == 'new_mail' -%}plus-circle text-green-500
-                                    {%- elif notification.type_notification == 'mail_forwarded' -%}share text-blue-500
-                                    {%- elif notification.type_notification == 'comment_added' -%}comment text-purple-500
-                                    {%- else -%}bell text-gray-500
-                                    {%- endif -%} mr-2"></i>
-                                <span class="font-medium text-gray-900">{{ notification.titre }}</span>
-                            </div>
-                            <p class="text-gray-600 mb-2">{{ notification.message }}</p>
-                            <div class="flex items-center text-sm text-gray-500">
-                                <i class="fas fa-clock mr-1"></i>
-                                <span>{{ notification.date_creation.strftime('%d/%m/%Y à %H:%M') }}</span>
-                                {% if notification.lu %}
-                                    <span class="ml-4">
-                                        <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                                        Lu le {{ notification.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
-                                    </span>
-                                {% else %}
-                                    <span class="ml-4">
-                                        <i class="fas fa-circle text-orange-500 mr-1"></i>
-                                        Non lu
-                                    </span>
-                                {% endif %}
-                                <span class="ml-4">
-                                    <i class="fas fa-user text-gray-400 mr-1"></i>
-                                    {{ notification.user.nom_complet }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
 
     </div>
     
