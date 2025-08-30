@@ -67,6 +67,9 @@ def get_email_template(template_type, language='fr', variables=None):
         html_content = template.contenu_html
         text_content = template.contenu_texte
         
+        # Debug: afficher les variables disponibles
+        logging.info(f"Variables pour template {template_type}: {list(variables.keys())}")
+        
         # Remplacer les variables avec protection contre les erreurs
         for var_name, var_value in variables.items():
             # Convertir None en chaîne vide et échapper les valeurs HTML
@@ -76,12 +79,16 @@ def get_email_template(template_type, language='fr', variables=None):
             
             # Remplacer les variables dans le format {{variable}}
             pattern = f'{{{{{var_name}}}}}'
-            if subject:
+            
+            if subject and pattern in subject:
                 subject = subject.replace(pattern, safe_value)
-            if html_content:
+                logging.info(f"Remplacé {pattern} par {safe_value} dans le sujet")
+            if html_content and pattern in html_content:
                 html_content = html_content.replace(pattern, safe_value)
-            if text_content:
+                logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu HTML")
+            if text_content and pattern in text_content:
                 text_content = text_content.replace(pattern, safe_value)
+                logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu texte")
         
         return {
             'subject': subject,
@@ -708,11 +715,14 @@ def send_new_mail_notification(admins_emails, courrier_data, language='fr'):
     
     # Préparer les variables pour le template
     variables = {
+        'numero_accuse_reception': courrier_data.get('numero_accuse_reception', 'N/A'),
         'numero_courrier': courrier_data.get('numero_accuse_reception', 'N/A'),
         'objet': courrier_data.get('objet', 'N/A'),
         'expediteur': courrier_data.get('expediteur', 'N/A'),
         'type_courrier': courrier_data.get('type_courrier', 'N/A'),
+        'date_enregistrement': datetime.now().strftime('%d/%m/%Y à %H:%M'),
         'date_reception': datetime.now().strftime('%d/%m/%Y à %H:%M'),
+        'created_by': courrier_data.get('created_by', 'N/A'),
         'nom_utilisateur': courrier_data.get('created_by', 'N/A'),
         'nom_logiciel': nom_logiciel,
         'url_courrier': courrier_data.get('url_courrier', '#')
@@ -826,15 +836,18 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
     
     # Préparer les variables pour le template
     variables = {
+        'numero_accuse_reception': courrier_data.get('numero_accuse_reception', 'N/A'),
         'numero_courrier': courrier_data.get('numero_accuse_reception', 'N/A'),
         'objet': courrier_data.get('objet', 'N/A'),
         'expediteur': courrier_data.get('expediteur', 'N/A'),
         'type_courrier': courrier_data.get('type_courrier', 'N/A'),
+        'date_transmission': datetime.now().strftime('%d/%m/%Y à %H:%M'),
         'date_reception': datetime.now().strftime('%d/%m/%Y à %H:%M'),
         'nom_utilisateur': user_name or 'utilisateur',
         'nom_logiciel': nom_logiciel,
         'url_courrier': courrier_data.get('url_courrier', '#'),
-        'transmis_par': forwarded_by
+        'transmis_par': forwarded_by,
+        'forwarded_by': forwarded_by
     }
     
     # Récupérer le template d'email
