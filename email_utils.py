@@ -77,18 +77,19 @@ def get_email_template(template_type, language='fr', variables=None):
             # Échappement basique pour HTML
             safe_value = safe_value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
             
-            # Remplacer les variables dans le format {{variable}}
-            pattern = f'{{{{{var_name}}}}}'
+            # Remplacer les variables dans les formats {{variable}} et {variable} (compatibilité)
+            patterns = [f'{{{{{var_name}}}}}', f'{{{var_name}}}']
             
-            if subject and pattern in subject:
-                subject = subject.replace(pattern, safe_value)
-                logging.info(f"Remplacé {pattern} par {safe_value} dans le sujet")
-            if html_content and pattern in html_content:
-                html_content = html_content.replace(pattern, safe_value)
-                logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu HTML")
-            if text_content and pattern in text_content:
-                text_content = text_content.replace(pattern, safe_value)
-                logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu texte")
+            for pattern in patterns:
+                if subject and pattern in subject:
+                    subject = subject.replace(pattern, safe_value)
+                    logging.info(f"Remplacé {pattern} par {safe_value} dans le sujet")
+                if html_content and pattern in html_content:
+                    html_content = html_content.replace(pattern, safe_value)
+                    logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu HTML")
+                if text_content and pattern in text_content:
+                    text_content = text_content.replace(pattern, safe_value)
+                    logging.info(f"Remplacé {pattern} par {safe_value} dans le contenu texte")
         
         return {
             'subject': subject,
