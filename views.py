@@ -3783,6 +3783,7 @@ def export_analytics(format):
     """Export des données analytiques en PDF ou Excel"""
     from datetime import datetime, timedelta
     from sqlalchemy import func
+    from flask import send_file
     import io
     
     if format not in ['pdf', 'excel']:
@@ -3822,7 +3823,6 @@ def export_analytics(format):
     if format == 'excel':
         try:
             import pandas as pd
-            from flask import send_file
         except ImportError:
             flash('Pandas n\'est pas installé. Impossible d\'exporter en Excel.', 'error')
             return redirect(url_for('analytics'))
