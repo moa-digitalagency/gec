@@ -19,7 +19,6 @@
   "language": "Language",
   "french": "Français",
   "english": "English",
-  
   "total_mail": "Total Mail",
   "incoming_mail": "Incoming Mail",
   "outgoing_mail": "Outgoing Mail",
@@ -27,42 +26,34 @@
   "last_7_days": "Last 7 Days",
   "last_30_days": "Last 30 Days",
   "mails_registered": "mails registered",
-  
   "volume_per_day": "Volume per Day",
   "status_distribution": "Status Distribution",
   "monthly_volume": "Monthly Volume",
   "top_senders": "Top 10 Senders",
   "top_recipients": "Top 10 Recipients",
-  
   "export_excel": "Export Excel",
   "export_pdf": "Export PDF",
   "no_data_available": "No data available",
-  
   "login": "Login",
   "username": "Username",
   "password": "Password",
   "enter_username": "Enter your username",
   "enter_password": "Enter your password",
-  "register_mail": "Register Mail",
   "register_new_mail": "Register New Mail",
   "enter_mail_info": "Enter mail information (incoming or outgoing)",
   "mail_information": "Mail Information",
   "mail_type": "Mail Type",
   "incoming": "Incoming",
   "outgoing": "Outgoing",
-  "view_mail": "View Mail",
   "browse_filter_mail": "Browse and filter all registered mail",
   "filters_search": "Filters and Search",
   "text_search": "Text Search",
   "search_placeholder": "Receipt #, reference, subject, sender, recipient...",
   "type": "Type",
   "all": "All",
-  "username": "Username",
-  "password": "Password",
   "email": "Email",
   "remember_me": "Remember me",
   "forgot_password": "Forgot password?",
-  
   "subject": "Subject",
   "sender": "Sender",
   "recipient": "Recipient",
@@ -72,13 +63,9 @@
   "drafting_date": "Drafting Date",
   "reference_number": "Reference Number",
   "receipt_number": "Receipt Number",
-  "mail_type": "Mail Type",
-  "incoming": "Incoming",
-  "outgoing": "Outgoing",
   "attachment": "Attachment",
   "other_information": "Other Information",
   "sg_in_copy": "Secretary General in Copy",
-  
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -89,7 +76,6 @@
   "filter": "Filter",
   "reset": "Reset",
   "confirm": "Confirm",
-  
   "today": "Today",
   "user": "User",
   "quick_actions": "Quick Actions",
@@ -105,49 +91,38 @@
   "reference": "Reference",
   "actions": "Actions",
   "email_templates": "Email Templates",
-  
   "success": "Success",
   "error": "Error",
   "warning": "Warning",
   "info": "Information",
-  
   "yes": "Yes",
   "no": "No",
-  "all": "All",
   "none": "None",
-  
   "days": "days",
   "day": "day",
   "month": "month",
   "year": "year",
-  
   "loading": "Loading...",
   "please_wait": "Please wait",
   "no_results": "No results",
   "showing": "Showing",
   "of": "of",
   "entries": "entries",
-  
   "welcome": "Welcome",
   "profile": "Profile",
   "my_profile": "My Profile",
   "edit_profile": "Edit Profile",
   "change_password": "Change Password",
-  
   "super_admin": "Super Admin",
   "admin": "Admin",
-  "user": "User",
-  
   "active": "Active",
   "inactive": "Inactive",
   "pending": "Pending",
   "processed": "Processed",
   "in_progress": "In Progress",
   "received": "Received",
-  
   "copyright": "© 2025 GEC Mines - General Secretariat of Mines",
   "all_rights_reserved": "All rights reserved",
-  
   "backup": {
     "title": "Backup and Restore System",
     "create_backup": "Create Backup",
@@ -179,14 +154,12 @@
     "restore_now": "Restore Now",
     "available_backups": "Available Backups"
   },
-  
   "common": {
     "warning": "Warning",
     "info": "Information",
     "success": "Success",
     "error": "Error"
   },
-  
   "manage_outgoing_types": "Manage Outgoing Mail Types",
   "outgoing_mail_types": "Outgoing Mail Types",
   "add_type": "Add Type",
@@ -194,7 +167,6 @@
   "type_name": "Type Name",
   "type_description": "Type Description",
   "display_order": "Display Order",
-  
   "full_name": "Full Name",
   "department": "Department",
   "role": "Role",
@@ -203,8 +175,6 @@
   "profile_photo": "Profile Photo",
   "last_login": "Last Login",
   "date_created": "Date Created",
-  
-  "actions": "Actions",
   "details": "Details",
   "statistics": "Statistics",
   "reports": "Reports",
@@ -212,29 +182,24 @@
   "import": "Import",
   "print": "Print",
   "refresh": "Refresh",
-  
   "from": "From",
   "to": "To",
   "date_from": "Date From",
   "date_to": "Date To",
   "date_range": "Date Range",
-  
   "confirm_delete": "Are you sure you want to delete?",
   "confirm_action": "Confirm action",
   "operation_successful": "Operation successful",
   "operation_failed": "Operation failed",
-  
   "select_file": "Select file",
   "upload_file": "Upload file",
   "file_type": "File type",
   "file_size": "File size",
   "max_file_size": "Maximum file size",
-  
   "sorting": "Sorting",
   "sort_by": "Sort by",
   "ascending": "Ascending",
   "descending": "Descending",
-  
   "pagination": {
     "first": "First",
     "previous": "Previous",
@@ -243,7 +208,6 @@
     "page": "Page",
     "per_page": "Per page"
   },
-  
   "security": {
     "whitelist": "Whitelist",
     "ip_whitelist": "IP Whitelist",
@@ -268,7 +232,6 @@
     "security_warning": "Security Warning",
     "whitelisted_ips_protected": "Whitelisted IPs will never be blocked"
   },
-  
   "analytics": {
     "analytics_dashboard": "Analytics Dashboard",
     "statistics": "Statistics",
@@ -285,7 +248,6 @@
     "volume": "Volume",
     "efficiency": "Efficiency"
   },
-  
   "notifications": {
     "new_mail_notification": "New Mail Notification",
     "mail_forwarded": "Mail Forwarded",
@@ -297,12 +259,77 @@
     "send_notification": "Send Notification",
     "notification_settings": "Notification Settings"
   },
-  
   "language_change": {
     "language_changed": "Language changed successfully",
     "language_not_supported": "Language not supported",
     "select_language": "Select a language",
     "current_language": "Current language",
     "available_languages": "Available languages"
-  }
+  },
+  "add_user": "Add User",
+  "employee_id": "Employee ID",
+  "users_list": "Users List",
+  "manage_users_description": "Manage users and their permissions",
+  "search_with_criteria": "Search mail with specific criteria",
+  "search_criteria": "Search Criteria",
+  "global_text_search": "Global Text Search",
+  "search_all_fields": "Search in all fields...",
+  "search_fields_help": "Search in: Receipt #, reference, subject, sender, status",
+  "specific_sender": "Specific Sender",
+  "sender_name": "Sender name...",
+  "start_date": "Start Date",
+  "end_date": "End Date",
+  "system_settings": "System Settings",
+  "configure_system_description": "Configure the appearance and behavior of the GEC system",
+  "general_configuration": "General Configuration",
+  "software_name": "Software Name",
+  "displayed_name_interface": "Name displayed in the interface",
+  "name_appears_help": "This name will appear in the navigation bar and generated documents",
+  "organization_logo": "Organization Logo",
+  "current_logo": "Current logo",
+  "time_filter": "Time Filter",
+  "this_week": "This Week",
+  "this_month": "This Month",
+  "this_year": "This Year",
+  "custom_period": "Custom period",
+  "apply": "Apply",
+  "deleted_mail_description": "Deleted mail (can be restored)",
+  "deleted_mail": "Deleted Mail",
+  "mail_deleted_count": "mail deleted",
+  "deletion_date": "Deletion Date",
+  "deleted_by": "Deleted by",
+  "configure_mail_statuses": "Configure available statuses for mail",
+  "existing_statuses": "Existing Statuses",
+  "order": "Order",
+  "description": "Description",
+  "view_user_activities": "View all user activities",
+  "filters": "Filters",
+  "search_action_description_user": "Action, description, user...",
+  "action_type": "Action type",
+  "all_actions": "All actions",
+  "security_monitoring": "Security events monitoring and audit",
+  "level": "Level",
+  "all_levels": "All levels",
+  "event_type": "Event type",
+  "all_types": "All types",
+  "successful_login": "Successful login",
+  "failed_login": "Failed login",
+  "blocked_ip": "Blocked IP",
+  "encrypted_file": "Encrypted file",
+  "sql_injection_attempt": "SQL injection attempt",
+  "xss_attempt": "XSS attempt",
+  "home": "Home",
+  "advanced_security_configuration": "Advanced configuration of system security measures",
+  "login_control": "Login Control",
+  "max_login_attempts": "Maximum number of login attempts",
+  "manage_email_templates": "Manage Email Templates",
+  "configure_email_templates": "Configure email templates for notifications in French and English",
+  "new_template": "New Template",
+  "new_mail_template": "New Mail",
+  "mail_forwarded_template": "Mail Forwarded",
+  "users_count": "user(s)",
+  "roles_and_permissions": "Roles and Permissions Management",
+  "configure_user_roles": "Configure user roles and their permissions",
+  "new_role": "New Role",
+  "permissions": "Permissions"
 }

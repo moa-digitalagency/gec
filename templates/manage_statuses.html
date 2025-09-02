@@ -1,15 +1,15 @@
 {% extends "new_base.html" %}
 
-{% block title %}Gestion des Statuts - GEC{% endblock %}
+{% block title %}{{ t('manage_statuses') or 'Gestion des Statuts' }} - GEC{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
 <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
         <i class="fas fa-tags mr-3 text-rdc-blue"></i>
-        Gestion des Statuts
+        {{ t('manage_statuses') or 'Gestion des Statuts' }}
     </h1>
-    <p class="mt-2 text-gray-600">Configurez les statuts disponibles pour les courriers</p>
+    <p class="mt-2 text-gray-600">{{ t('configure_mail_statuses') or 'Configurez les statuts disponibles pour les courriers' }}</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -19,7 +19,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <i class="fas fa-list mr-2 text-rdc-blue"></i>
-                    Statuts Existants
+                    {{ t('existing_statuses') or 'Statuts Existants' }}
                 </h2>
             </div>
             <div class="p-6">
@@ -37,11 +37,11 @@
                                         {{ statut.nom }}
                                     </span>
                                     <span class="text-sm text-gray-500">
-                                        Ordre: {{ statut.ordre }}
+                                        {{ t('order') or 'Ordre' }}: {{ statut.ordre }}
                                     </span>
                                     {% if not statut.actif %}
                                     <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800">
-                                        Inactif
+                                        {{ t('inactive') or 'Inactif' }}
                                     </span>
                                     {% endif %}
                                 </div>
@@ -61,7 +61,7 @@
                             
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ t('description') or 'Description' }}</label>
                                     <input type="text" 
                                            name="description" 
                                            value="{{ statut.description or '' }}"

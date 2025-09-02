@@ -2090,7 +2090,10 @@ def set_language_route(lang_code):
         flash('Language successfully changed to English', 'success')
     
     # Rediriger vers la page précédente ou le dashboard
-    return redirect(request.referrer or url_for('dashboard'))
+    response = redirect(request.referrer or url_for('dashboard'))
+    # Définir un cookie persistant pour la langue (1 an)
+    response.set_cookie('language', lang_code, max_age=365*24*60*60, secure=False, httponly=False)
+    return response
 
 @app.route('/manage_users')
 @login_required

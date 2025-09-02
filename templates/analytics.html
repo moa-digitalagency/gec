@@ -1,22 +1,22 @@
 {% extends "new_base.html" %}
 
-{% block title %}Tableau de Bord Analytique - {{ super() }}{% endblock %}
+{% block title %}{{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }} - {{ super() }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="mb-8 flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900">
             <i class="fas fa-chart-bar mr-3 text-rdc-blue"></i>
-            Tableau de Bord Analytique
+            {{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }}
         </h1>
         <div class="flex space-x-4">
             <a href="{{ url_for('export_analytics', format='excel') }}" 
                class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
-                <i class="fas fa-file-excel mr-2"></i>Export Excel
+                <i class="fas fa-file-excel mr-2"></i>{{ t('export_excel') or 'Export Excel' }}
             </a>
             <a href="{{ url_for('export_analytics', format='pdf') }}"
                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
-                <i class="fas fa-file-pdf mr-2"></i>Export PDF
+                <i class="fas fa-file-pdf mr-2"></i>{{ t('export_pdf') or 'Export PDF' }}
             </a>
         </div>
     </div>
@@ -25,34 +25,34 @@
     <div class="bg-white rounded-lg shadow-md p-6 mb-8">
         <h3 class="text-lg font-semibold mb-4">
             <i class="fas fa-filter mr-2 text-purple-600"></i>
-            Filtre Temporel
+            {{ t('time_filter') or 'Filtre Temporel' }}
         </h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button onclick="filterByPeriod('day')" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors" data-period="day">
-                <i class="fas fa-calendar-day mr-2"></i>Aujourd'hui
+                <i class="fas fa-calendar-day mr-2"></i>{{ t('today') or "Aujourd'hui" }}
             </button>
             <button onclick="filterByPeriod('week')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="week">
-                <i class="fas fa-calendar-week mr-2"></i>Cette Semaine
+                <i class="fas fa-calendar-week mr-2"></i>{{ t('this_week') or 'Cette Semaine' }}
             </button>
             <button onclick="filterByPeriod('month')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="month">
-                <i class="fas fa-calendar-alt mr-2"></i>Ce Mois
+                <i class="fas fa-calendar-alt mr-2"></i>{{ t('this_month') or 'Ce Mois' }}
             </button>
             <button onclick="filterByPeriod('year')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="year">
-                <i class="fas fa-calendar mr-2"></i>Cette Année
+                <i class="fas fa-calendar mr-2"></i>{{ t('this_year') or 'Cette Année' }}
             </button>
         </div>
         <div class="mt-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <label for="customDate" class="text-sm font-medium text-gray-700">Période personnalisée :</label>
+                <label for="customDate" class="text-sm font-medium text-gray-700">{{ t('custom_period') or 'Période personnalisée' }} :</label>
                 <input type="date" id="dateFrom" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <span class="text-gray-500">à</span>
+                <span class="text-gray-500">{{ t('to') or 'à' }}</span>
                 <input type="date" id="dateTo" class="border border-gray-300 rounded px-3 py-1 text-sm">
                 <button onclick="filterByCustom()" class="bg-green-500 text-white px-4 py-1 rounded text-sm hover:bg-green-600">
-                    Appliquer
+                    {{ t('apply') or 'Appliquer' }}
                 </button>
             </div>
             <button onclick="resetFilter()" class="bg-gray-500 text-white px-4 py-1 rounded text-sm hover:bg-gray-600">
-                <i class="fas fa-undo mr-1"></i>Réinitialiser
+                <i class="fas fa-undo mr-1"></i>{{ t('reset') or 'Réinitialiser' }}
             </button>
         </div>
     </div>
@@ -62,7 +62,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Courriers</p>
+                    <p class="text-sm font-medium text-gray-600">{{ t('total_mail') or 'Total Courriers' }}</p>
                     <p class="text-3xl font-bold text-gray-900">{{ total_courriers }}</p>
                 </div>
                 <div class="p-3 bg-blue-100 rounded-full">
@@ -74,7 +74,7 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Courriers Entrants</p>
+                    <p class="text-sm font-medium text-gray-600">{{ t('incoming_mail') or 'Courriers Entrants' }}</p>
                     <p class="text-3xl font-bold text-green-600">{{ courriers_entrants }}</p>
                 </div>
                 <div class="p-3 bg-green-100 rounded-full">

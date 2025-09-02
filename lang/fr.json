@@ -2,7 +2,7 @@
   "app_name": "GEC",
   "dashboard": "Tableau de Bord",
   "register_mail": "Enregistrer Courrier",
-  "view_mail": "Consulter Courriers",
+  "view_mail": "Consulter les Courriers",
   "advanced_search": "Recherche Avancée",
   "analytics_dashboard": "Tableau de Bord Analytique",
   "trash": "Corbeille",
@@ -19,7 +19,6 @@
   "language": "Langue",
   "french": "Français",
   "english": "English",
-  
   "total_mail": "Total Courriers",
   "incoming_mail": "Courriers Entrants",
   "outgoing_mail": "Courriers Sortants",
@@ -27,42 +26,34 @@
   "last_7_days": "7 Derniers Jours",
   "last_30_days": "30 Derniers Jours",
   "mails_registered": "courriers enregistrés",
-  
   "volume_per_day": "Volume par Jour",
   "status_distribution": "Répartition par Statut",
   "monthly_volume": "Volume par Mois",
   "top_senders": "Top 10 Expéditeurs",
   "top_recipients": "Top 10 Destinataires",
-  
   "export_excel": "Export Excel",
   "export_pdf": "Export PDF",
   "no_data_available": "Aucune donnée disponible",
-  
   "login": "Connexion",
   "username": "Nom d'utilisateur",
   "password": "Mot de passe",
   "enter_username": "Entrez votre nom d'utilisateur",
   "enter_password": "Entrez votre mot de passe",
-  "register_mail": "Enregistrer Courrier",
   "register_new_mail": "Enregistrer un Nouveau Courrier",
   "enter_mail_info": "Saisissez les informations du courrier (entrant ou sortant)",
   "mail_information": "Informations du Courrier",
   "mail_type": "Type de Courrier",
   "incoming": "Entrant",
   "outgoing": "Sortant",
-  "view_mail": "Consulter les Courriers",
   "browse_filter_mail": "Parcourez et filtrez tous les courriers enregistrés",
   "filters_search": "Filtres et Recherche",
   "text_search": "Recherche Textuelle",
   "search_placeholder": "N° accusé, référence, objet, expéditeur, destinataire...",
   "type": "Type",
   "all": "Tous",
-  "username": "Nom d'utilisateur",
-  "password": "Mot de passe",
   "email": "Email",
   "remember_me": "Se souvenir de moi",
   "forgot_password": "Mot de passe oublié?",
-  
   "subject": "Objet",
   "sender": "Expéditeur",
   "recipient": "Destinataire",
@@ -72,13 +63,9 @@
   "drafting_date": "Date de Rédaction",
   "reference_number": "Numéro de Référence",
   "receipt_number": "Numéro d'Accusé de Réception",
-  "mail_type": "Type de Courrier",
-  "incoming": "Entrant",
-  "outgoing": "Sortant",
   "attachment": "Pièce Jointe",
   "other_information": "Autres Informations",
   "sg_in_copy": "Secrétaire Général en Copie",
-  
   "save": "Enregistrer",
   "cancel": "Annuler",
   "delete": "Supprimer",
@@ -89,7 +76,6 @@
   "filter": "Filtrer",
   "reset": "Réinitialiser",
   "confirm": "Confirmer",
-  
   "today": "Aujourd'hui",
   "user": "Utilisateur",
   "quick_actions": "Actions Rapides",
@@ -105,49 +91,38 @@
   "reference": "Référence",
   "actions": "Actions",
   "email_templates": "Templates Email",
-  
   "success": "Succès",
   "error": "Erreur",
   "warning": "Avertissement",
   "info": "Information",
-  
   "yes": "Oui",
   "no": "Non",
-  "all": "Tous",
   "none": "Aucun",
-  
   "days": "jours",
   "day": "jour",
   "month": "mois",
   "year": "année",
-  
   "loading": "Chargement...",
   "please_wait": "Veuillez patienter",
   "no_results": "Aucun résultat",
   "showing": "Affichage",
   "of": "de",
   "entries": "entrées",
-  
   "welcome": "Bienvenue",
   "profile": "Profil",
   "my_profile": "Mon Profil",
   "edit_profile": "Modifier Profil",
   "change_password": "Changer Mot de Passe",
-  
   "super_admin": "Super Admin",
   "admin": "Admin",
-  "user": "Utilisateur",
-  
   "active": "Actif",
   "inactive": "Inactif",
   "pending": "En Attente",
   "processed": "Traité",
   "in_progress": "En Cours",
   "received": "Reçu",
-  
   "copyright": "© 2025 GEC Mines - Secrétariat Général des Mines",
   "all_rights_reserved": "Tous droits réservés",
-  
   "backup": {
     "title": "Système de Sauvegarde et Restauration",
     "create_backup": "Créer une Sauvegarde",
@@ -179,14 +154,12 @@
     "restore_now": "Restaurer Maintenant",
     "available_backups": "Sauvegardes Disponibles"
   },
-  
   "common": {
     "warning": "Avertissement",
     "info": "Information",
     "success": "Succès",
     "error": "Erreur"
   },
-  
   "manage_outgoing_types": "Gérer Types Courrier Sortant",
   "outgoing_mail_types": "Types de Courrier Sortant",
   "add_type": "Ajouter un Type",
@@ -194,7 +167,6 @@
   "type_name": "Nom du Type",
   "type_description": "Description du Type",
   "display_order": "Ordre d'Affichage",
-  
   "full_name": "Nom Complet",
   "department": "Département",
   "role": "Rôle",
@@ -203,8 +175,6 @@
   "profile_photo": "Photo de Profil",
   "last_login": "Dernière Connexion",
   "date_created": "Date de Création",
-  
-  "actions": "Actions",
   "details": "Détails",
   "statistics": "Statistiques",
   "reports": "Rapports",
@@ -212,29 +182,24 @@
   "import": "Importer",
   "print": "Imprimer",
   "refresh": "Actualiser",
-  
   "from": "De",
   "to": "À",
   "date_from": "Date Début",
   "date_to": "Date Fin",
   "date_range": "Plage de Dates",
-  
   "confirm_delete": "Êtes-vous sûr de vouloir supprimer?",
   "confirm_action": "Confirmer l'action",
   "operation_successful": "Opération réussie",
   "operation_failed": "Opération échouée",
-  
   "select_file": "Sélectionner un fichier",
   "upload_file": "Téléverser un fichier",
   "file_type": "Type de fichier",
   "file_size": "Taille du fichier",
   "max_file_size": "Taille maximale du fichier",
-  
   "sorting": "Tri",
   "sort_by": "Trier par",
   "ascending": "Croissant",
   "descending": "Décroissant",
-  
   "pagination": {
     "first": "Premier",
     "previous": "Précédent",
@@ -243,7 +208,6 @@
     "page": "Page",
     "per_page": "Par page"
   },
-  
   "security": {
     "whitelist": "Liste Blanche",
     "ip_whitelist": "Liste Blanche IP",
@@ -268,7 +232,6 @@
     "security_warning": "Avertissement de Sécurité",
     "whitelisted_ips_protected": "Les IPs en liste blanche ne seront jamais bloquées"
   },
-  
   "analytics": {
     "analytics_dashboard": "Tableau de Bord Analytique",
     "statistics": "Statistiques",
@@ -285,7 +248,6 @@
     "volume": "Volume",
     "efficiency": "Efficacité"
   },
-  
   "notifications": {
     "new_mail_notification": "Notification Nouveau Courrier",
     "mail_forwarded": "Courrier Transféré",
@@ -297,12 +259,77 @@
     "send_notification": "Envoyer Notification",
     "notification_settings": "Paramètres Notifications"
   },
-  
   "language_change": {
     "language_changed": "Langue changée avec succès",
     "language_not_supported": "Langue non supportée",
     "select_language": "Sélectionnez une langue",
     "current_language": "Langue actuelle",
     "available_languages": "Langues disponibles"
-  }
+  },
+  "add_user": "Ajouter un Utilisateur",
+  "employee_id": "Matricule",
+  "users_list": "Liste des Utilisateurs",
+  "manage_users_description": "Gérer les utilisateurs et leurs permissions",
+  "search_with_criteria": "Recherchez des courriers avec des critères spécifiques",
+  "search_criteria": "Critères de Recherche",
+  "global_text_search": "Recherche Textuelle Globale",
+  "search_all_fields": "Recherche dans tous les champs...",
+  "search_fields_help": "Recherche dans: N° accusé, référence, objet, expéditeur, statut",
+  "specific_sender": "Expéditeur Spécifique",
+  "sender_name": "Nom de l expéditeur...",
+  "start_date": "Date de Début",
+  "end_date": "Date de Fin",
+  "system_settings": "Paramètres Système",
+  "configure_system_description": "Configurez l apparence et le comportement du système GEC",
+  "general_configuration": "Configuration Générale",
+  "software_name": "Nom du Logiciel",
+  "displayed_name_interface": "Nom affiché dans l interface",
+  "name_appears_help": "Ce nom apparaîtra dans la barre de navigation et les documents générés",
+  "organization_logo": "Logo de l Organisation",
+  "current_logo": "Logo actuel",
+  "time_filter": "Filtre Temporel",
+  "this_week": "Cette Semaine",
+  "this_month": "Ce Mois",
+  "this_year": "Cette Année",
+  "custom_period": "Période personnalisée",
+  "apply": "Appliquer",
+  "deleted_mail_description": "Courriers supprimés (peuvent être restaurés)",
+  "deleted_mail": "Courriers Supprimés",
+  "mail_deleted_count": "courrier(s) supprimé(s)",
+  "deletion_date": "Date Suppression",
+  "deleted_by": "Supprimé par",
+  "configure_mail_statuses": "Configurez les statuts disponibles pour les courriers",
+  "existing_statuses": "Statuts Existants",
+  "order": "Ordre",
+  "description": "Description",
+  "view_user_activities": "Consultation de toutes les activités des utilisateurs",
+  "filters": "Filtres",
+  "search_action_description_user": "Action, description, utilisateur...",
+  "action_type": "Type d'action",
+  "all_actions": "Toutes les actions",
+  "security_monitoring": "Surveillance et audit des événements de sécurité",
+  "level": "Niveau",
+  "all_levels": "Tous les niveaux",
+  "event_type": "Type d'événement",
+  "all_types": "Tous les types",
+  "successful_login": "Connexion réussie",
+  "failed_login": "Échec de connexion",
+  "blocked_ip": "IP bloquée",
+  "encrypted_file": "Fichier crypté",
+  "sql_injection_attempt": "Tentative injection SQL",
+  "xss_attempt": "Tentative XSS",
+  "home": "Accueil",
+  "advanced_security_configuration": "Configuration avancée des mesures de sécurité du système",
+  "login_control": "Contrôle des Connexions",
+  "max_login_attempts": "Nombre maximum de tentatives de connexion",
+  "manage_email_templates": "Gestion des Templates Email",
+  "configure_email_templates": "Configurez les templates d'email pour les notifications en français et anglais",
+  "new_template": "Nouveau Template",
+  "new_mail_template": "Nouveau Courrier",
+  "mail_forwarded_template": "Transmission Courrier",
+  "users_count": "utilisateur(s)",
+  "roles_and_permissions": "Gestion des Rôles et Permissions",
+  "configure_user_roles": "Configuration des rôles utilisateur et de leurs permissions",
+  "new_role": "Nouveau Rôle",
+  "permissions": "Permissions"
 }

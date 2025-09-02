@@ -36,14 +36,24 @@ def get_available_languages():
     return languages
 
 def get_current_language():
-    """Obtient la langue actuelle depuis la session ou les préférences utilisateur"""
+    """Obtient la langue actuelle depuis la session, cookies ou les préférences utilisateur"""
     # 1. Vérifier la session en premier
     if 'language' in session and session['language']:
         lang = session['language']
         if lang in AVAILABLE_LANGUAGES:
             return lang
     
-    # 2. Si utilisateur connecté, vérifier ses préférences
+    # 2. Vérifier les cookies pour la persistance
+    try:
+        if hasattr(request, 'cookies') and request.cookies:
+            lang_cookie = request.cookies.get('language')
+            if lang_cookie and lang_cookie in AVAILABLE_LANGUAGES:
+                session['language'] = lang_cookie
+                return lang_cookie
+    except Exception:
+        pass
+    
+    # 3. Si utilisateur connecté, vérifier ses préférences
     try:
         from flask_login import current_user
         if current_user.is_authenticated and hasattr(current_user, 'langue') and current_user.langue:
@@ -54,7 +64,7 @@ def get_current_language():
     except Exception:
         pass  # Ignorer les erreurs si current_user n'est pas disponible
     
-    # 3. Vérifier les préférences du navigateur
+    # 4. Vérifier les préférences du navigateur
     try:
         if hasattr(request, 'accept_languages') and request.accept_languages:
             best_match = request.accept_languages.best_match(['fr', 'en'])
@@ -64,7 +74,7 @@ def get_current_language():
     except Exception:
         pass
     
-    # 4. Langue par défaut
+    # 5. Langue par défaut
     session['language'] = 'fr'
     return 'fr'
 
