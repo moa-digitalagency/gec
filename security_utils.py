@@ -96,20 +96,33 @@ def get_client_ip():
     return request.environ.get('REMOTE_ADDR', 'unknown')
 
 def is_ip_blocked(ip):
-    """Check if IP is blocked"""
-    from models import IPBlock
+    """Check if IP is blocked - but never block whitelisted IPs"""
+    from models import IPBlock, IPWhitelist
+    
+    # Check whitelist first
+    if IPWhitelist.is_ip_whitelisted(ip):
+        return False
+    
     return IPBlock.is_ip_blocked(ip)
 
 def block_ip(ip, duration_minutes=AUTO_BLOCK_DURATION):
-    """Block an IP address temporarily using database storage"""
-    from models import IPBlock
+    """Block an IP address temporarily using database storage - but never block whitelisted IPs"""
+    from models import IPBlock, IPWhitelist
+    
+    # Never block whitelisted IPs
+    if IPWhitelist.is_ip_whitelisted(ip):
+        logging.info(f"IP {ip} is whitelisted, skipping block")
+        return False
+    
     try:
         IPBlock.block_ip(ip, duration_minutes, "Automatic block due to suspicious activity")
         logging.warning(f"IP blocked: {ip} for {duration_minutes} minutes")
+        return True
     except Exception as e:
         logging.error(f"Failed to block IP {ip}: {e}")
         # Fallback to in-memory blocking
         _blocked_ips.add(ip)
+        return True
 
 def log_suspicious_activity(ip, activity_type, details=""):
     """Log suspicious activity"""

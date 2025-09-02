@@ -3354,7 +3354,8 @@ def security_settings():
         
         elif form_type == 'unblock_all':
             # Débloquer toutes les IPs
-            cleared_ips = len(_blocked_ips)
+            from models import IPBlock
+            cleared_ips = IPBlock.unblock_all_ips()
             _blocked_ips.clear()
             _failed_login_attempts.clear()
             flash(f'{cleared_ips} adresses IP débloquées', 'success')
@@ -3362,16 +3363,49 @@ def security_settings():
         
         elif form_type == 'unblock_ip':
             # Débloquer une IP spécifique
+            from models import IPBlock
             ip_address = request.form.get('ip_address')
-            if ip_address and ip_address in _blocked_ips:
-                _blocked_ips.remove(ip_address)
+            if ip_address:
+                success = IPBlock.unblock_ip(ip_address)
+                if ip_address in _blocked_ips:
+                    _blocked_ips.remove(ip_address)
                 if ip_address in _failed_login_attempts:
                     del _failed_login_attempts[ip_address]
-                flash(f'Adresse IP {ip_address} débloquée avec succès', 'success')
-                log_activity(current_user.id, "SECURITY_UNBLOCK", f"IP {ip_address} débloquée manuellement")
-                log_security_event("IP_UNBLOCK", f"IP {ip_address} unblocked by {current_user.username}")
+                
+                if success:
+                    flash(f'Adresse IP {ip_address} débloquée avec succès', 'success')
+                    log_activity(current_user.id, "SECURITY_UNBLOCK", f"IP {ip_address} débloquée manuellement")
+                    log_security_event("IP_UNBLOCK", f"IP {ip_address} unblocked by {current_user.username}")
+                else:
+                    flash(f'Adresse IP {ip_address} non trouvée dans la liste des IP bloquées', 'error')
+                    
+        elif form_type == 'add_whitelist':
+            # Ajouter une IP à la whitelist
+            from models import IPWhitelist
+            ip_address = request.form.get('whitelist_ip', '').strip()
+            description = request.form.get('whitelist_description', '').strip()
+            
+            if ip_address:
+                success = IPWhitelist.add_to_whitelist(ip_address, description, current_user.username)
+                if success:
+                    flash(f'IP {ip_address} ajoutée à la whitelist avec succès', 'success')
+                    log_activity(current_user.id, "SECURITY_WHITELIST", f"IP {ip_address} ajoutée à la whitelist")
+                else:
+                    flash(f'Erreur lors de l\'ajout de l\'IP {ip_address} à la whitelist', 'error')
             else:
-                flash(f'Adresse IP {ip_address} non trouvée dans la liste des IP bloquées', 'error')
+                flash('Veuillez saisir une adresse IP valide', 'error')
+                
+        elif form_type == 'remove_whitelist':
+            # Retirer une IP de la whitelist
+            from models import IPWhitelist
+            ip_address = request.form.get('ip_address')
+            if ip_address:
+                success = IPWhitelist.remove_from_whitelist(ip_address)
+                if success:
+                    flash(f'IP {ip_address} retirée de la whitelist', 'success')
+                    log_activity(current_user.id, "SECURITY_WHITELIST", f"IP {ip_address} retirée de la whitelist")
+                else:
+                    flash(f'Erreur lors de la suppression de l\'IP {ip_address}', 'error')
         
         elif form_type == 'advanced_security':
             # Configuration avancée
@@ -3399,6 +3433,11 @@ def security_settings():
                              if isinstance(data, dict) and 
                              now - data.get('timestamp', now) < timedelta(hours=24))
     
+    # Récupérer les listes d'IPs bloquées et en whitelist
+    from models import IPBlock, IPWhitelist
+    blocked_ips = [block.ip_address for block in IPBlock.get_blocked_ips()]
+    whitelisted_ips = IPWhitelist.get_whitelisted_ips()
+    
     return render_template('security_settings.html',
                          max_login_attempts=MAX_LOGIN_ATTEMPTS,
                          lockout_duration=LOGIN_LOCKOUT_DURATION,
@@ -3406,7 +3445,8 @@ def security_settings():
                          suspicious_threshold=SUSPICIOUS_ACTIVITY_THRESHOLD,
                          auto_block_duration=AUTO_BLOCK_DURATION,
                          audit_logging_enabled=True,  # Cette valeur devrait venir de la configuration
-                         blocked_ips=list(_blocked_ips),
+                         blocked_ips=list(set(blocked_ips + list(_blocked_ips))),  # Combine et déduplique
+                         whitelisted_ips=whitelisted_ips,
                          failed_attempts_24h=failed_attempts_24h,
                          monitored_ips=len(_failed_login_attempts))
 

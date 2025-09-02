@@ -644,8 +644,100 @@ class IPBlock(db.Model):
         db.session.commit()
         return expired_count
     
+    @staticmethod
+    def unblock_ip(ip_address):
+        """Unblock an IP address manually"""
+        from app import db
+        unblocked_count = IPBlock.query.filter_by(ip_address=ip_address, is_active=True).update({
+            'is_active': False
+        })
+        db.session.commit()
+        return unblocked_count > 0
+    
+    @staticmethod
+    def unblock_all_ips():
+        """Unblock all IP addresses"""
+        from app import db
+        unblocked_count = IPBlock.query.filter_by(is_active=True).update({
+            'is_active': False
+        })
+        db.session.commit()
+        return unblocked_count
+    
+    @staticmethod
+    def get_blocked_ips():
+        """Get list of currently blocked IPs"""
+        now = datetime.utcnow()
+        return IPBlock.query.filter_by(is_active=True).filter(
+            IPBlock.expires_at > now
+        ).all()
+    
     def __repr__(self):
         return f'<IPBlock {self.ip_address} until {self.expires_at}>'
+
+
+class IPWhitelist(db.Model):
+    """Model for storing whitelisted IP addresses that should never be blocked"""
+    __tablename__ = 'ip_whitelist'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False, unique=True, index=True)
+    description = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_by = db.Column(db.String(100), nullable=False)
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    
+    @staticmethod
+    def is_ip_whitelisted(ip_address):
+        """Check if an IP is in the whitelist"""
+        whitelist_entry = IPWhitelist.query.filter_by(
+            ip_address=ip_address, 
+            is_active=True
+        ).first()
+        return whitelist_entry is not None
+    
+    @staticmethod
+    def add_to_whitelist(ip_address, description="", created_by="system"):
+        """Add an IP to the whitelist"""
+        from app import db
+        
+        # Check if already exists
+        existing = IPWhitelist.query.filter_by(ip_address=ip_address).first()
+        if existing:
+            existing.is_active = True
+            existing.description = description
+            existing.created_by = created_by
+        else:
+            new_whitelist = IPWhitelist(
+                ip_address=ip_address,
+                description=description,
+                created_by=created_by
+            )
+            db.session.add(new_whitelist)
+        
+        # Also unblock the IP if it's currently blocked
+        IPBlock.unblock_ip(ip_address)
+        
+        db.session.commit()
+        return True
+    
+    @staticmethod
+    def remove_from_whitelist(ip_address):
+        """Remove an IP from the whitelist"""
+        from app import db
+        removed_count = IPWhitelist.query.filter_by(ip_address=ip_address).update({
+            'is_active': False
+        })
+        db.session.commit()
+        return removed_count > 0
+    
+    @staticmethod
+    def get_whitelisted_ips():
+        """Get list of whitelisted IPs"""
+        return IPWhitelist.query.filter_by(is_active=True).order_by(IPWhitelist.created_at.desc()).all()
+    
+    def __repr__(self):
+        return f'<IPWhitelist {self.ip_address}>'
 
 class ParametresSysteme(db.Model):
     """Paramètres de configuration du système"""

@@ -218,6 +218,77 @@
                 </div>
             </form>
         </div>
+        <!-- Gestion de la Whitelist -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200 bg-green-600">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <i class="fas fa-shield-check mr-2"></i>
+                    Gestion de la Whitelist IP
+                </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Formulaire pour ajouter une IP à la whitelist -->
+                <form method="POST" class="space-y-3">
+                    <input type="hidden" name="form_type" value="add_whitelist">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Adresse IP à ajouter à la whitelist
+                        </label>
+                        <input type="text" 
+                               name="whitelist_ip" 
+                               placeholder="Ex: 192.168.1.100 ou 203.0.113.0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Description (optionnel)
+                        </label>
+                        <input type="text" 
+                               name="whitelist_description" 
+                               placeholder="Ex: Serveur principal, Bureau direction..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <button type="submit" 
+                            class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Ajouter à la Whitelist
+                    </button>
+                </form>
+
+                <!-- Liste des IPs en whitelist -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">IPs en Whitelist</h3>
+                    {% if whitelisted_ips %}
+                        <div class="space-y-2">
+                            {% for ip in whitelisted_ips %}
+                            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-md">
+                                <div>
+                                    <span class="font-mono text-sm font-semibold">{{ ip.ip_address }}</span>
+                                    {% if ip.description %}
+                                        <p class="text-xs text-gray-600">{{ ip.description }}</p>
+                                    {% endif %}
+                                    <p class="text-xs text-gray-500">Ajoutée le {{ ip.created_at.strftime('%d/%m/%Y') }} par {{ ip.created_by }}</p>
+                                </div>
+                                <form method="POST" class="inline">
+                                    <input type="hidden" name="form_type" value="remove_whitelist">
+                                    <input type="hidden" name="ip_address" value="{{ ip.ip_address }}">
+                                    <button type="submit" 
+                                            class="text-red-600 hover:text-red-800 px-2 py-1 text-sm"
+                                            onclick="return confirm('Êtes-vous sûr de vouloir retirer cette IP de la whitelist ?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="flex items-center justify-center p-6 text-gray-500">
+                            <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                            Aucune IP en whitelist actuellement
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Alerte de sécurité -->
@@ -232,6 +303,7 @@
                     <p>Des paramètres de sécurité trop permissifs peuvent exposer votre système à des attaques. 
                     Des paramètres trop restrictifs peuvent bloquer les utilisateurs légitimes. 
                     Ajustez ces valeurs avec prudence et surveillez les logs de sécurité.</p>
+                    <p class="mt-2"><strong>Whitelist :</strong> Les IPs en whitelist ne seront jamais bloquées, même en cas d'activité suspecte.</p>
                 </div>
             </div>
         </div>
