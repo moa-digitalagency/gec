@@ -4842,6 +4842,57 @@ def add_outgoing_type():
     
     return redirect(url_for('manage_outgoing_types'))
 
+@app.route('/edit_outgoing_type/<int:type_id>', methods=['GET', 'POST'])
+@login_required
+def edit_outgoing_type(type_id):
+    """Modifier un type de courrier sortant"""
+    if not (current_user.is_super_admin() or current_user.has_permission('manage_system_settings')):
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    from models import TypeCourrierSortant
+    type_courrier = TypeCourrierSortant.query.get_or_404(type_id)
+    
+    if request.method == 'POST':
+        try:
+            nom = request.form.get('nom', '').strip()
+            description = request.form.get('description', '').strip()
+            ordre_affichage = request.form.get('ordre_affichage', 0)
+            
+            if not nom:
+                flash('Le nom est obligatoire.', 'error')
+                return redirect(url_for('edit_outgoing_type', type_id=type_id))
+            
+            # Vérifier si le nom existe déjà (autre que le type actuel)
+            existing = TypeCourrierSortant.query.filter(
+                TypeCourrierSortant.nom == nom,
+                TypeCourrierSortant.id != type_id
+            ).first()
+            if existing:
+                flash('Un type avec ce nom existe déjà.', 'error')
+                return redirect(url_for('edit_outgoing_type', type_id=type_id))
+            
+            # Mettre à jour le type
+            ancien_nom = type_courrier.nom
+            type_courrier.nom = nom
+            type_courrier.description = description if description else None
+            type_courrier.ordre_affichage = int(ordre_affichage) if ordre_affichage else 0
+            
+            db.session.commit()
+            
+            log_activity(current_user.id, "TYPE_SORTANT_MODIFIE", 
+                        f"Type de courrier sortant modifié: {ancien_nom} -> {nom}")
+            
+            flash(f'Type "{nom}" modifié avec succès.', 'success')
+            return redirect(url_for('manage_outgoing_types'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Erreur lors de la modification du type: {e}")
+            flash('Erreur lors de la modification du type.', 'error')
+    
+    return render_template('edit_outgoing_type.html', type_courrier=type_courrier)
+
 @app.route('/toggle_outgoing_type_status/<int:type_id>', methods=['POST'])
 @login_required
 def toggle_outgoing_type_status(type_id):

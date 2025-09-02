@@ -650,5 +650,16 @@
   "cannot_delete_used_type": "Impossible de supprimer un type utilisé par des courriers.",
   "confirm_delete_type": "Êtes-vous sûr de vouloir supprimer ce type ? Cette action est irréversible.",
   "confirm_status_change": "Êtes-vous sûr de vouloir changer le statut de ce type ?",
-  "no_types_found": "Aucun type de courrier sortant trouvé"
+  "no_types_found": "Aucun type de courrier sortant trouvé",
+  "edit_type": "Modifier le Type",
+  "edit_type_description": "Modifiez les informations du type de courrier sortant",
+  "back": "Retour",
+  "type_information": "Informations du Type",
+  "display_order_help": "Détermine l'ordre dans les listes déroulantes",
+  "additional_info": "Informations supplémentaires",
+  "created_date": "Date de création",
+  "created_by": "Créé par",
+  "save_changes": "Enregistrer les modifications",
+  "activate": "Activer",
+  "deactivate": "Désactiver"
 }

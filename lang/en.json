@@ -620,5 +620,16 @@
   "create_first_department": "Start by creating your first department",
   "create_department": "Create Department",
   "manage_outgoing_types": "Outgoing Mail Types",
-  "outgoing_mail_types": "Outgoing Mail Types"
+  "outgoing_mail_types": "Outgoing Mail Types",
+  "edit_type": "Edit Type",
+  "edit_type_description": "Edit outgoing mail type information",
+  "back": "Back",
+  "type_information": "Type Information",
+  "display_order_help": "Determines the order in dropdown lists",
+  "additional_info": "Additional Information",
+  "created_date": "Creation date",
+  "created_by": "Created by",
+  "save_changes": "Save Changes",
+  "activate": "Activate",
+  "deactivate": "Deactivate"
 }
