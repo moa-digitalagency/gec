@@ -779,6 +779,15 @@
             <p class="text-sm text-gray-600 group-hover:text-purple-700">Configurer les types de courriers sortants</p>
         </a>
 
+        <!-- Gestion des Templates Email -->
+        <a href="{{ url_for('manage_email_templates') }}" class="group block bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-lg p-6 transition-all duration-200 border border-indigo-200 hover:border-indigo-300">
+            <div class="flex items-center mb-3">
+                <i class="fas fa-envelope text-indigo-600 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-800">Templates Email</h3>
+            </div>
+            <p class="text-sm text-gray-600 group-hover:text-indigo-700">Configurer les modèles d'emails</p>
+        </a>
+
         <!-- Gestion des Sauvegardes -->
         {% if current_user.is_super_admin() %}
         <a href="{{ url_for('manage_backups') }}" class="group block bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg p-6 transition-all duration-200 border border-orange-200 hover:border-orange-300">
