@@ -3794,6 +3794,31 @@ def export_analytics(format):
     courriers_entrants = Courrier.query.filter_by(type_courrier='ENTRANT', is_deleted=False).count()
     courriers_sortants = Courrier.query.filter_by(type_courrier='SORTANT', is_deleted=False).count()
     
+    # Calculer les statistiques par période
+    date_7_days_ago = datetime.now() - timedelta(days=7)
+    courriers_7_days = Courrier.query.filter(
+        Courrier.date_enregistrement >= date_7_days_ago,
+        Courrier.is_deleted == False
+    ).count()
+    
+    date_30_days_ago = datetime.now() - timedelta(days=30)
+    courriers_30_days = Courrier.query.filter(
+        Courrier.date_enregistrement >= date_30_days_ago,
+        Courrier.is_deleted == False
+    ).count()
+    
+    # Top expéditeurs pour le PDF
+    top_senders = db.session.query(
+        Courrier.expediteur,
+        func.count(Courrier.id).label('count')
+    ).filter(
+        Courrier.is_deleted == False,
+        Courrier.expediteur.isnot(None),
+        Courrier.expediteur != ''
+    ).group_by(Courrier.expediteur).order_by(
+        func.count(Courrier.id).desc()
+    ).limit(10).all()
+    
     if format == 'excel':
         try:
             import pandas as pd
