@@ -3866,6 +3866,10 @@ def export_analytics(format):
             from reportlab.lib.units import cm
             from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
             from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.graphics.shapes import Drawing
+            from reportlab.graphics.charts.barcharts import VerticalBarChart
+            from reportlab.graphics.charts.piecharts import Pie
+            from reportlab.graphics.charts.legends import Legend
         except ImportError:
             flash('ReportLab n\'est pas installé. Impossible d\'exporter en PDF.', 'error')
             return redirect(url_for('analytics'))
@@ -4213,10 +4217,136 @@ def export_analytics(format):
             elements.append(monthly_table)
             elements.append(Spacer(1, 30))
         
-        # Footer avec informations du système
+        # ===================
+        # 8. GRAPHIQUES VISUELS
+        # ===================
+        
+        # Saut de page pour les graphiques
+        elements.append(PageBreak())
+        
+        charts_title = Paragraph("8. Graphiques et Visualisations", styles['Heading2'])
+        elements.append(charts_title)
+        elements.append(Spacer(1, 20))
+        
+        # Graphique en barres : Évolution mensuelle
+        if monthly_volumes:
+            monthly_chart_title = Paragraph("Évolution Mensuelle (Barres)", styles['Heading3'])
+            elements.append(monthly_chart_title)
+            elements.append(Spacer(1, 10))
+            
+            # Créer le graphique en barres
+            drawing = Drawing(400, 200)
+            chart = VerticalBarChart()
+            chart.x = 50
+            chart.y = 50
+            chart.height = 125
+            chart.width = 300
+            
+            # Données pour le graphique
+            months_data = [vol['total'] for vol in monthly_volumes]
+            chart.data = [months_data]
+            chart.categoryAxis.categoryNames = [vol['month'][:7] for vol in monthly_volumes]  # Raccourcir les noms
+            
+            # Style du graphique
+            chart.bars[0].fillColor = colors.darkblue
+            chart.valueAxis.valueMin = 0
+            chart.valueAxis.valueMax = max(months_data) * 1.1 if months_data else 10
+            chart.categoryAxis.labels.angle = 45
+            chart.categoryAxis.labels.fontSize = 8
+            
+            drawing.add(chart)
+            elements.append(drawing)
+            elements.append(Spacer(1, 20))
+        
+        # Graphique en camembert : Répartition par statut
+        if status_distribution:
+            pie_chart_title = Paragraph("Répartition par Statut (Camembert)", styles['Heading3'])
+            elements.append(pie_chart_title)
+            elements.append(Spacer(1, 10))
+            
+            # Créer le graphique en camembert
+            drawing = Drawing(400, 200)
+            pie = Pie()
+            pie.x = 65
+            pie.y = 15
+            pie.width = 100
+            pie.height = 100
+            
+            # Données pour le camembert
+            pie.data = [s.count for s in status_distribution]
+            pie.labels = [s.statut or 'Non défini' for s in status_distribution]
+            
+            # Couleurs variées
+            colors_list = [colors.red, colors.green, colors.blue, colors.orange, colors.purple, colors.yellow, colors.pink, colors.brown]
+            pie.slices.strokeColor = colors.white
+            for i, color in enumerate(colors_list[:len(status_distribution)]):
+                pie.slices[i].fillColor = color
+            
+            # Ajouter une légende
+            legend = Legend()
+            legend.x = 200
+            legend.y = 50
+            legend.dx = 8
+            legend.dy = 8
+            legend.fontName = 'Helvetica'
+            legend.fontSize = 9
+            legend.boxAnchor = 'w'
+            legend.columnMaximum = 6
+            legend.strokeWidth = 1
+            legend.strokeColor = colors.black
+            legend.deltax = 75
+            legend.deltay = 10
+            legend.autoXPadding = 5
+            legend.yGap = 0
+            legend.dxTextSpace = 5
+            legend.alignment = 'left'
+            legend.dividerLines = 1|2|4
+            legend.dividerOffsY = 4.5
+            legend.subCols.rpad = 30
+            
+            legend.colorNamePairs = [(pie.slices[i].fillColor, (pie.labels[i][:15] + '...' if len(pie.labels[i]) > 15 else pie.labels[i])) for i in range(len(pie.labels))]
+            
+            drawing.add(pie)
+            drawing.add(legend)
+            elements.append(drawing)
+            elements.append(Spacer(1, 30))
+        
+        # Graphique en barres : Top départements
+        if dept_stats:
+            dept_chart_title = Paragraph("Top 5 Départements (Barres)", styles['Heading3'])
+            elements.append(dept_chart_title)
+            elements.append(Spacer(1, 10))
+            
+            # Créer le graphique en barres pour départements
+            drawing = Drawing(400, 200)
+            chart = VerticalBarChart()
+            chart.x = 50
+            chart.y = 50
+            chart.height = 125
+            chart.width = 300
+            
+            # Données pour le graphique (top 5)
+            top5_depts = dept_stats[:5]
+            dept_data = [dept.total for dept in top5_depts]
+            chart.data = [dept_data]
+            chart.categoryAxis.categoryNames = [dept.departement[:15] + '...' if len(dept.departement) > 15 else dept.departement for dept in top5_depts]
+            
+            # Style du graphique
+            chart.bars[0].fillColor = colors.darkgreen
+            chart.valueAxis.valueMin = 0
+            chart.valueAxis.valueMax = max(dept_data) * 1.1 if dept_data else 10
+            chart.categoryAxis.labels.angle = 45
+            chart.categoryAxis.labels.fontSize = 8
+            
+            drawing.add(chart)
+            elements.append(drawing)
+            elements.append(Spacer(1, 30))
+        
+        # Footer avec informations du système et utilisateur
         footer_para = Paragraph(
             f"<i>Ce rapport a été généré automatiquement par le système GEC - Gestion Électronique du Courrier<br/>"
-            f"Total de {total_courriers} courriers analysés - Page générée le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
+            f"Total de {total_courriers} courriers analysés - Généré par: {current_user.nom_complet}<br/>"
+            f"Page générée le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
             styles['Normal']
         )
         elements.append(footer_para)
