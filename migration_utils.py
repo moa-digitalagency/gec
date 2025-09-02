@@ -68,6 +68,9 @@ def run_automatic_migrations(app, db):
     logging.info("Vérification des migrations automatiques...")
     
     try:
+        # Note: Sauvegarde automatique disponible via l'interface web ou manuellement
+        # pour éviter les imports circulaires lors du démarrage
+        
         engine = db.engine
         migrations_applied = 0
         

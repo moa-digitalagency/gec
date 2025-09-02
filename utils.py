@@ -386,8 +386,10 @@ def get_backup_files():
     return backup_files
 
 def create_system_backup():
-    """Créer une sauvegarde complète du système"""
+    """Créer une sauvegarde complète du système avec support PostgreSQL"""
     import zipfile
+    import subprocess
+    import tempfile
     from datetime import datetime
     
     # Créer le dossier de sauvegarde s'il n'existe pas
@@ -400,6 +402,44 @@ def create_system_backup():
     backup_path = os.path.join(backup_dir, backup_filename)
     
     with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Sauvegarder la base de données PostgreSQL
+        try:
+            database_url = os.environ.get('DATABASE_URL')
+            if database_url and 'postgresql' in database_url:
+                # Extraire les paramètres de connexion
+                import urllib.parse
+                parsed = urllib.parse.urlparse(database_url)
+                
+                # Créer un dump PostgreSQL
+                with tempfile.NamedTemporaryFile(suffix='.sql', delete=False) as temp_sql:
+                    env = os.environ.copy()
+                    env['PGPASSWORD'] = parsed.password
+                    
+                    cmd = [
+                        'pg_dump',
+                        '-h', parsed.hostname,
+                        '-p', str(parsed.port or 5432),
+                        '-U', parsed.username,
+                        '-d', parsed.path[1:],  # Enlever le '/' initial
+                        '--no-password',
+                        '--clean',
+                        '--if-exists'
+                    ]
+                    
+                    with open(temp_sql.name, 'w') as f:
+                        result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, env=env)
+                        
+                    if result.returncode == 0:
+                        zipf.write(temp_sql.name, 'database_backup.sql')
+                        logging.info("Sauvegarde PostgreSQL créée avec succès")
+                    else:
+                        logging.warning(f"Erreur pg_dump: {result.stderr.decode()}")
+                    
+                    os.unlink(temp_sql.name)
+                    
+        except Exception as e:
+            logging.warning(f"Impossible de créer la sauvegarde PostgreSQL: {e}")
+        
         # Sauvegarder la base de données SQLite (si applicable)
         if os.path.exists('instance/database.db'):
             zipf.write('instance/database.db', 'database.db')
@@ -412,18 +452,56 @@ def create_system_backup():
                     arc_path = os.path.relpath(file_path, '.')
                     zipf.write(file_path, arc_path)
         
-        # Sauvegarder les fichiers de configuration
-        config_files = ['app.py', 'models.py', 'utils.py', 'views.py']
+        # Sauvegarder les fichiers de langues
+        if os.path.exists('lang'):
+            for root, dirs, files in os.walk('lang'):
+                for file in files:
+                    if file.endswith('.json'):
+                        file_path = os.path.join(root, file)
+                        arc_path = os.path.relpath(file_path, '.')
+                        zipf.write(file_path, arc_path)
+        
+        # Ajouter un manifeste de sauvegarde
+        import json
+        import tempfile
+        manifest = {
+            'timestamp': timestamp,
+            'version': '1.1.0',
+            'database_type': 'postgresql' if 'postgresql' in os.environ.get('DATABASE_URL', '') else 'sqlite',
+            'backup_type': 'full_system',
+            'files_included': ['database', 'uploads', 'lang', 'config', 'templates']
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as manifest_file:
+            json.dump(manifest, manifest_file, indent=2)
+            zipf.write(manifest_file.name, 'backup_manifest.json')
+            os.unlink(manifest_file.name)
+        
+        # Sauvegarder les fichiers de configuration et migration
+        config_files = [
+            'app.py', 'models.py', 'utils.py', 'views.py', 
+            'migration_utils.py', 'email_utils.py', 'security_utils.py',
+            'project-dependencies.txt', 'replit.md'
+        ]
         for config_file in config_files:
             if os.path.exists(config_file):
                 zipf.write(config_file)
+        
+        # Sauvegarder les templates critiques
+        if os.path.exists('templates'):
+            for template_file in ['new_base.html', 'login.html']:
+                template_path = os.path.join('templates', template_file)
+                if os.path.exists(template_path):
+                    zipf.write(template_path)
     
     return backup_filename
 
 def restore_system_from_backup(backup_file):
-    """Restaurer le système depuis un fichier de sauvegarde"""
+    """Restaurer le système depuis un fichier de sauvegarde avec support PostgreSQL"""
     import zipfile
     import tempfile
+    import subprocess
+    import shutil
     
     # Créer un dossier temporaire pour extraire la sauvegarde
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -435,22 +513,167 @@ def restore_system_from_backup(backup_file):
         with zipfile.ZipFile(backup_path, 'r') as zipf:
             zipf.extractall(temp_dir)
         
-        # Restaurer la base de données
+        # Restaurer la base de données PostgreSQL
+        db_sql_backup = os.path.join(temp_dir, 'database_backup.sql')
+        if os.path.exists(db_sql_backup):
+            try:
+                database_url = os.environ.get('DATABASE_URL')
+                if database_url and 'postgresql' in database_url:
+                    import urllib.parse
+                    parsed = urllib.parse.urlparse(database_url)
+                    
+                    env = os.environ.copy()
+                    env['PGPASSWORD'] = parsed.password
+                    
+                    # Restaurer la base de données PostgreSQL
+                    cmd = [
+                        'psql',
+                        '-h', parsed.hostname,
+                        '-p', str(parsed.port or 5432),
+                        '-U', parsed.username,
+                        '-d', parsed.path[1:],
+                        '-f', db_sql_backup,
+                        '--no-password'
+                    ]
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+                    if result.returncode == 0:
+                        logging.info("Base de données PostgreSQL restaurée avec succès")
+                    else:
+                        logging.error(f"Erreur lors de la restauration PostgreSQL: {result.stderr}")
+                        
+            except Exception as e:
+                logging.error(f"Erreur lors de la restauration PostgreSQL: {e}")
+        
+        # Restaurer la base de données SQLite (si applicable)
         db_backup_path = os.path.join(temp_dir, 'database.db')
         if os.path.exists(db_backup_path):
             os.makedirs('instance', exist_ok=True)
-            import shutil
             shutil.copy2(db_backup_path, 'instance/database.db')
         
         # Restaurer les fichiers uploadés
         uploads_backup_path = os.path.join(temp_dir, 'uploads')
         if os.path.exists(uploads_backup_path):
             if os.path.exists('uploads'):
-                import shutil
                 shutil.rmtree('uploads')
             shutil.copytree(uploads_backup_path, 'uploads')
+        
+        # Restaurer les fichiers de langues
+        lang_backup_path = os.path.join(temp_dir, 'lang')
+        if os.path.exists(lang_backup_path):
+            if os.path.exists('lang'):
+                # Sauvegarder les langues existantes avant remplacement
+                backup_existing_lang = f'lang_backup_{int(time.time())}'
+                shutil.move('lang', backup_existing_lang)
+            shutil.copytree(lang_backup_path, 'lang')
+        
+        # Restaurer les fichiers de configuration critiques (optionnel et sécurisé)
+        config_files_to_restore = [
+            'project-dependencies.txt', 'replit.md'
+        ]
+        for config_file in config_files_to_restore:
+            backup_config_path = os.path.join(temp_dir, config_file)
+            if os.path.exists(backup_config_path):
+                # Créer une sauvegarde de l'existant
+                if os.path.exists(config_file):
+                    backup_name = f"{config_file}.backup_{int(time.time())}"
+                    shutil.copy2(config_file, backup_name)
+                # Restaurer le fichier
+                shutil.copy2(backup_config_path, config_file)
     
     return True
+
+def recover_files_from_old_backup(backup_filename, file_patterns):
+    """Récupérer des fichiers spécifiques d'une ancienne sauvegarde"""
+    import zipfile
+    import tempfile
+    import fnmatch
+    import time
+    
+    backup_path = os.path.join('backups', backup_filename)
+    if not os.path.exists(backup_path):
+        return False, f"Fichier de sauvegarde {backup_filename} non trouvé"
+    
+    recovered_files = []
+    
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Extraire la sauvegarde
+            with zipfile.ZipFile(backup_path, 'r') as zipf:
+                all_files = zipf.namelist()
+                
+                # Trouver les fichiers correspondant aux patterns
+                files_to_extract = []
+                for pattern in file_patterns:
+                    files_to_extract.extend(fnmatch.filter(all_files, pattern))
+                
+                # Extraire uniquement les fichiers demandés
+                for file_path in files_to_extract:
+                    zipf.extract(file_path, temp_dir)
+                    
+                    # Créer le répertoire de destination si nécessaire
+                    dest_path = file_path
+                    dest_dir = os.path.dirname(dest_path)
+                    if dest_dir:
+                        os.makedirs(dest_dir, exist_ok=True)
+                    
+                    # Copier le fichier récupéré
+                    src_path = os.path.join(temp_dir, file_path)
+                    if os.path.exists(src_path):
+                        # Créer une sauvegarde du fichier existant
+                        if os.path.exists(dest_path):
+                            backup_name = f"{dest_path}.backup_{int(time.time())}"
+                            import shutil
+                            shutil.copy2(dest_path, backup_name)
+                        
+                        # Copier le fichier récupéré
+                        import shutil
+                        shutil.copy2(src_path, dest_path)
+                        recovered_files.append(dest_path)
+        
+        return True, f"Fichiers récupérés avec succès: {', '.join(recovered_files)}"
+        
+    except Exception as e:
+        return False, f"Erreur lors de la récupération: {str(e)}"
+
+def create_automatic_backup_before_migration():
+    """Créer une sauvegarde automatique avant migration"""
+    import logging
+    try:
+        backup_filename = create_system_backup()
+        logging.info(f"Sauvegarde pré-migration créée: {backup_filename}")
+        return backup_filename
+    except Exception as e:
+        logging.error(f"Impossible de créer la sauvegarde pré-migration: {e}")
+        return None
+
+def verify_backup_integrity(backup_filename):
+    """Vérifier l'intégrité d'un fichier de sauvegarde"""
+    import zipfile
+    
+    backup_path = os.path.join('backups', backup_filename)
+    if not os.path.exists(backup_path):
+        return False, "Fichier de sauvegarde non trouvé"
+    
+    try:
+        with zipfile.ZipFile(backup_path, 'r') as zipf:
+            # Tester l'intégrité du ZIP
+            bad_files = zipf.testzip()
+            if bad_files:
+                return False, f"Fichiers corrompus détectés: {bad_files}"
+            
+            # Vérifier la présence des fichiers critiques
+            files_in_zip = zipf.namelist()
+            critical_files = ['database_backup.sql', 'database.db', 'uploads/', 'lang/']
+            found_critical = any(any(f.startswith(critical) for f in files_in_zip) for critical in critical_files)
+            
+            if not found_critical:
+                return False, "Aucun fichier critique trouvé dans la sauvegarde"
+            
+            return True, "Sauvegarde intègre"
+            
+    except Exception as e:
+        return False, f"Erreur lors de la vérification: {str(e)}"
 
 def log_activity(user_id, action, description, courrier_id=None):
     """Enregistrer une activité dans les logs"""

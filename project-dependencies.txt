@@ -1,8 +1,8 @@
 # GEC - Dépendances du Projet
 # =====================================
 # Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC
-# Date de mise à jour: 29 Août 2025
-# Version: 1.0.1
+# Date de mise à jour: 2 Septembre 2025
+# Version: 1.1.0
 # Python Version: 3.11+
 #
 # Installation:
@@ -48,10 +48,12 @@ sendgrid==6.12.4               # Service d'envoi d'emails SendGrid
 requests==2.32.4               # Client HTTP pour API externes
 PyYAML==6.0.2                  # Parsing de fichiers YAML
 
-# Dépendances Système (pour les mises à jour)
+# Dépendances Système (pour les mises à jour et sauvegardes)
 # --------------------------------------------
 # git                   # Pour les mises à jour en ligne (installé au niveau système)
 # zip/unzip            # Pour les mises à jour hors ligne (généralement préinstallé)
+# pg_dump              # Pour les sauvegardes PostgreSQL (installé avec PostgreSQL)
+# psql                 # Pour les restaurations PostgreSQL (installé avec PostgreSQL)
 
 # Dépendances Automatiques
 # ------------------------
@@ -80,8 +82,15 @@ PyYAML==6.0.2                  # Parsing de fichiers YAML
 # GEC_MASTER_KEY=your-encryption-key
 # GEC_PASSWORD_SALT=your-password-salt
 
-# Fonctionnalités Récentes Ajoutées (Août 2025)
+# Fonctionnalités Récentes Ajoutées (Septembre 2025)
 # -----------------------------------------------
+# - Système de traduction multilingue complet (Français/Anglais)
+# - Commutation de langue persistante et dynamique
+# - Page de gestion des langues pour super administrateurs
+# - Sauvegardes/restaurations améliorées avec support PostgreSQL
+# - Récupération sélective de fichiers d'anciennes sauvegardes
+# - Migration automatique avec sauvegarde préventive
+# - Vérification d'intégrité des sauvegardes
 # - Templates d'email multi-langues configurables (Français/Anglais)
 # - Variables dynamiques dans les emails ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
 # - Interface d'administration pour gestion des templates email
