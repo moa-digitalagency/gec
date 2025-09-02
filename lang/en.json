@@ -208,5 +208,67 @@
     "last": "Last",
     "page": "Page",
     "per_page": "Per page"
+  },
+  
+  "security": {
+    "whitelist": "Whitelist",
+    "ip_whitelist": "IP Whitelist",
+    "add_to_whitelist": "Add to Whitelist",
+    "remove_from_whitelist": "Remove from Whitelist",
+    "whitelisted_ips": "Whitelisted IPs",
+    "blocked_ips": "Blocked IPs",
+    "unblock_ip": "Unblock IP",
+    "unblock_all": "Unblock All",
+    "security_logs": "Security Logs",
+    "failed_attempts": "Failed Attempts",
+    "monitored_ips": "Monitored IPs",
+    "suspicious_activity": "Suspicious Activity",
+    "brute_force_protection": "Brute Force Protection",
+    "auto_block_duration": "Auto Block Duration",
+    "max_login_attempts": "Max Login Attempts",
+    "lockout_duration": "Lockout Duration",
+    "rate_limiting": "Rate Limiting",
+    "audit_logging": "Audit Logging",
+    "ip_description": "IP Description",
+    "ip_added_by": "IP added by",
+    "security_warning": "Security Warning",
+    "whitelisted_ips_protected": "Whitelisted IPs will never be blocked"
+  },
+  
+  "analytics": {
+    "analytics_dashboard": "Analytics Dashboard",
+    "statistics": "Statistics",
+    "charts": "Charts",
+    "export_data": "Export Data",
+    "monthly_evolution": "Monthly Evolution",
+    "status_distribution": "Status Distribution",
+    "department_activity": "Department Activity",
+    "processing_times": "Processing Times",
+    "performance_metrics": "Performance Metrics",
+    "trend_analysis": "Trend Analysis",
+    "comparison": "Comparison",
+    "period": "Period",
+    "volume": "Volume",
+    "efficiency": "Efficiency"
+  },
+  
+  "notifications": {
+    "new_mail_notification": "New Mail Notification",
+    "mail_forwarded": "Mail Forwarded",
+    "email_sent": "Email Sent",
+    "notification_sent": "Notification Sent",
+    "recipients": "Recipients",
+    "subject_line": "Subject Line",
+    "email_content": "Email Content",
+    "send_notification": "Send Notification",
+    "notification_settings": "Notification Settings"
+  },
+  
+  "language_change": {
+    "language_changed": "Language changed successfully",
+    "language_not_supported": "Language not supported",
+    "select_language": "Select a language",
+    "current_language": "Current language",
+    "available_languages": "Available languages"
   }
 }

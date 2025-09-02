@@ -17,6 +17,8 @@ import logging
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
+
+# Le support des langues est maintenant dans utils.py
 from email_utils import send_new_mail_notification, send_mail_forwarded_notification
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
@@ -2056,14 +2058,30 @@ def manage_statuses():
 @app.route('/set_language/<lang_code>')
 def set_language_route(lang_code):
     """Changer la langue de l'interface"""
-    if set_language(lang_code):
-        if current_user.is_authenticated:
-            # Sauvegarder la préférence dans le profil utilisateur
+    # Vérifier que la langue est supportée
+    if lang_code not in ['fr', 'en']:
+        flash('Langue non supportée', 'error')
+        return redirect(request.referrer or url_for('dashboard'))
+    
+    # Définir la langue dans la session
+    session['language'] = lang_code
+    session.permanent = True  # Rendre la session permanente
+    
+    # Si l'utilisateur est connecté, sauvegarder dans son profil
+    if current_user.is_authenticated:
+        try:
             current_user.langue = lang_code
             db.session.commit()
-        flash('Langue changée avec succès' if lang_code == 'fr' else 'Language changed successfully', 'success')
+            log_activity(current_user.id, "LANGUAGE_CHANGE", f"Langue changée vers {lang_code}")
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde de la langue: {e}")
+            db.session.rollback()
+    
+    # Message de confirmation dans la nouvelle langue
+    if lang_code == 'fr':
+        flash('Langue changée avec succès vers le français', 'success')
     else:
-        flash('Langue non supportée', 'error')
+        flash('Language successfully changed to English', 'success')
     
     # Rediriger vers la page précédente ou le dashboard
     return redirect(request.referrer or url_for('dashboard'))

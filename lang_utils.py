@@ -24,17 +24,35 @@ def get_available_languages():
 
 def get_current_language():
     """Obtient la langue actuelle depuis la session ou les préférences utilisateur"""
-    # 1. Vérifier la session
-    if 'language' in session:
-        return session['language']
+    # 1. Vérifier la session en premier
+    if 'language' in session and session['language']:
+        lang = session['language']
+        if lang in AVAILABLE_LANGUAGES:
+            return lang
     
-    # 2. Vérifier les préférences du navigateur
-    if hasattr(request, 'accept_languages'):
-        best_match = request.accept_languages.best_match(['fr', 'en'])
-        if best_match:
-            return best_match
+    # 2. Si utilisateur connecté, vérifier ses préférences
+    try:
+        from flask_login import current_user
+        if current_user.is_authenticated and hasattr(current_user, 'langue') and current_user.langue:
+            if current_user.langue in AVAILABLE_LANGUAGES:
+                # Mettre à jour la session pour la cohérence
+                session['language'] = current_user.langue
+                return current_user.langue
+    except Exception:
+        pass  # Ignorer les erreurs si current_user n'est pas disponible
     
-    # 3. Langue par défaut
+    # 3. Vérifier les préférences du navigateur
+    try:
+        if hasattr(request, 'accept_languages') and request.accept_languages:
+            best_match = request.accept_languages.best_match(['fr', 'en'])
+            if best_match and best_match in AVAILABLE_LANGUAGES:
+                session['language'] = best_match
+                return best_match
+    except Exception:
+        pass
+    
+    # 4. Langue par défaut
+    session['language'] = 'fr'
     return 'fr'
 
 def set_language(lang_code):

@@ -208,5 +208,67 @@
     "last": "Dernier",
     "page": "Page",
     "per_page": "Par page"
+  },
+  
+  "security": {
+    "whitelist": "Liste Blanche",
+    "ip_whitelist": "Liste Blanche IP",
+    "add_to_whitelist": "Ajouter à la Liste Blanche",
+    "remove_from_whitelist": "Retirer de la Liste Blanche",
+    "whitelisted_ips": "IPs en Liste Blanche",
+    "blocked_ips": "IPs Bloquées",
+    "unblock_ip": "Débloquer IP",
+    "unblock_all": "Débloquer Toutes",
+    "security_logs": "Journaux de Sécurité",
+    "failed_attempts": "Tentatives Échouées",
+    "monitored_ips": "IPs Surveillées",
+    "suspicious_activity": "Activité Suspecte",
+    "brute_force_protection": "Protection Force Brute",
+    "auto_block_duration": "Durée Blocage Auto",
+    "max_login_attempts": "Tentatives Connexion Max",
+    "lockout_duration": "Durée Verrouillage",
+    "rate_limiting": "Limitation du Taux",
+    "audit_logging": "Journalisation d'Audit",
+    "ip_description": "Description IP",
+    "ip_added_by": "IP ajoutée par",
+    "security_warning": "Avertissement de Sécurité",
+    "whitelisted_ips_protected": "Les IPs en liste blanche ne seront jamais bloquées"
+  },
+  
+  "analytics": {
+    "analytics_dashboard": "Tableau de Bord Analytique",
+    "statistics": "Statistiques",
+    "charts": "Graphiques",
+    "export_data": "Exporter les Données",
+    "monthly_evolution": "Évolution Mensuelle",
+    "status_distribution": "Répartition par Statut",
+    "department_activity": "Activité par Département",
+    "processing_times": "Temps de Traitement",
+    "performance_metrics": "Métriques de Performance",
+    "trend_analysis": "Analyse des Tendances",
+    "comparison": "Comparaison",
+    "period": "Période",
+    "volume": "Volume",
+    "efficiency": "Efficacité"
+  },
+  
+  "notifications": {
+    "new_mail_notification": "Notification Nouveau Courrier",
+    "mail_forwarded": "Courrier Transféré",
+    "email_sent": "Email Envoyé",
+    "notification_sent": "Notification Envoyée",
+    "recipients": "Destinataires",
+    "subject_line": "Ligne d'Objet",
+    "email_content": "Contenu Email",
+    "send_notification": "Envoyer Notification",
+    "notification_settings": "Paramètres Notifications"
+  },
+  
+  "language_change": {
+    "language_changed": "Langue changée avec succès",
+    "language_not_supported": "Langue non supportée",
+    "select_language": "Sélectionnez une langue",
+    "current_language": "Langue actuelle",
+    "available_languages": "Langues disponibles"
   }
 }
