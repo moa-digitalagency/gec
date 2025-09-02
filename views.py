@@ -1561,31 +1561,27 @@ def update_online():
         return redirect(url_for('dashboard'))
     
     try:
-        # Créer une sauvegarde avant la mise à jour
+        # Créer une sauvegarde complète avant la mise à jour
         backup_dir = 'backups/before_update'
         os.makedirs(backup_dir, exist_ok=True)
-        backup_file = os.path.join(backup_dir, f'backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_file = os.path.join(backup_dir, f'backup_before_update_{timestamp}.zip')
         
-        # Fichiers à préserver
-        preserve_files = [
-            'instance/gec.db',
-            'uploads',
-            '.env',
-            'version.txt'
-        ]
+        # Utiliser la fonction de sauvegarde complète existante
+        log_activity(current_user.id, 'BACKUP_BEFORE_UPDATE', 'Création d\'une sauvegarde avant mise à jour Git')
         
-        # Créer une sauvegarde des fichiers importants
-        with zipfile.ZipFile(backup_file, 'w') as zipf:
-            for file_or_dir in preserve_files:
-                if os.path.exists(file_or_dir):
-                    if os.path.isdir(file_or_dir):
-                        for root, dirs, files in os.walk(file_or_dir):
-                            for file in files:
-                                file_path = os.path.join(root, file)
-                                arcname = os.path.relpath(file_path)
-                                zipf.write(file_path, arcname)
-                    else:
-                        zipf.write(file_or_dir, os.path.basename(file_or_dir))
+        # Créer une sauvegarde complète incluant :
+        # - Base de données PostgreSQL complète
+        # - Fichiers téléchargés (pièces jointes)
+        # - Configuration système et paramètres
+        # - Variables d'environnement
+        success, message = create_complete_backup(backup_file)
+        
+        if not success:
+            flash(f'Erreur lors de la création de la sauvegarde de sécurité : {message}', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        log_activity(current_user.id, 'BACKUP_CREATED', f'Sauvegarde de sécurité créée avant mise à jour: {os.path.basename(backup_file)}')
         
         # Exécuter git pull
         result = subprocess.run(['git', 'pull', 'origin', 'main'], 
