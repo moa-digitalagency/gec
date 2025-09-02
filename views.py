@@ -1575,13 +1575,13 @@ def update_online():
         # - Fichiers téléchargés (pièces jointes)
         # - Configuration système et paramètres
         # - Variables d'environnement
-        success, message = create_complete_backup(backup_file)
-        
-        if not success:
-            flash(f'Erreur lors de la création de la sauvegarde de sécurité : {message}', 'error')
+        try:
+            backup_filename = create_system_backup()
+            log_activity(current_user.id, 'BACKUP_CREATED', f'Sauvegarde de sécurité créée avant mise à jour: {backup_filename}')
+            flash(f'Sauvegarde de sécurité créée: {backup_filename}', 'info')
+        except Exception as backup_error:
+            flash(f'Erreur lors de la création de la sauvegarde de sécurité : {str(backup_error)}', 'error')
             return redirect(url_for('manage_backups'))
-        
-        log_activity(current_user.id, 'BACKUP_CREATED', f'Sauvegarde de sécurité créée avant mise à jour: {os.path.basename(backup_file)}')
         
         # Exécuter git pull
         result = subprocess.run(['git', 'pull', 'origin', 'main'], 
