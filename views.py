@@ -2995,55 +2995,81 @@ def create_system_backup():
     
     backup_path = os.path.join(backup_dir, backup_filename)
     
-    with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as backup_zip:
-        # 1. Sauvegarde de la base de données
-        db_backup_path = backup_database()
-        if db_backup_path:
-            backup_zip.write(db_backup_path, "database_backup.sql")
-            os.remove(db_backup_path)  # Nettoyer le fichier temporaire
-        
-        # 2. Fichiers système critiques
-        system_files = [
-            'app.py', 'main.py', 'models.py', 'views.py', 'utils.py',
-            'requirements.txt', 'pyproject.toml', '.replit'
-        ]
-        
-        for file in system_files:
-            if os.path.exists(file):
-                backup_zip.write(file)
-        
-        # 3. Dossiers critiques
-        critical_dirs = ['templates', 'static', 'lang', 'utils']
-        for dir_name in critical_dirs:
-            if os.path.exists(dir_name):
-                for root, dirs, files in os.walk(dir_name):
+    try:
+        with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as backup_zip:
+            # 1. Sauvegarde de la base de données
+            logging.info("Création de la sauvegarde de la base de données...")
+            db_backup_path = backup_database()
+            if db_backup_path:
+                backup_zip.write(db_backup_path, "database_backup.sql")
+                os.remove(db_backup_path)  # Nettoyer le fichier temporaire
+                logging.info("Base de données sauvegardée")
+            
+            # 2. Fichiers système critiques
+            system_files = [
+                'app.py', 'main.py', 'models.py', 'views.py', 'utils.py',
+                'requirements.txt', 'pyproject.toml', '.replit',
+                'migration_utils.py', 'security_utils.py', 'email_utils.py'
+            ]
+            
+            logging.info("Sauvegarde des fichiers système...")
+            for file in system_files:
+                if os.path.exists(file):
+                    backup_zip.write(file)
+                    logging.debug(f"Fichier ajouté: {file}")
+            
+            # 3. Dossiers critiques
+            critical_dirs = ['templates', 'static', 'lang', 'utils']
+            for dir_name in critical_dirs:
+                if os.path.exists(dir_name):
+                    logging.info(f"Sauvegarde du dossier: {dir_name}")
+                    for root, dirs, files in os.walk(dir_name):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            try:
+                                backup_zip.write(file_path)
+                                logging.debug(f"Fichier ajouté: {file_path}")
+                            except Exception as e:
+                                logging.warning(f"Impossible d'ajouter {file_path}: {e}")
+            
+            # 4. Fichiers uploads
+            uploads_dir = app.config.get('UPLOAD_FOLDER', 'uploads')
+            if os.path.exists(uploads_dir):
+                logging.info(f"Sauvegarde du dossier uploads: {uploads_dir}")
+                for root, dirs, files in os.walk(uploads_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        backup_zip.write(file_path)
+                        try:
+                            backup_zip.write(file_path)
+                            logging.debug(f"Upload ajouté: {file_path}")
+                        except Exception as e:
+                            logging.warning(f"Impossible d'ajouter upload {file_path}: {e}")
+            
+            # 5. Métadonnées de sauvegarde
+            logging.info("Ajout des métadonnées...")
+            metadata = {
+                'backup_date': timestamp,
+                'version': '1.0',
+                'backup_type': 'full_system',
+                'created_by': current_user.username if current_user.is_authenticated else 'system'
+            }
+            
+            import json
+            metadata_path = f"backup_metadata_{timestamp}.json"
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=2)
+            
+            backup_zip.write(metadata_path, "backup_metadata.json")
+            os.remove(metadata_path)  # Nettoyer
+            
+            logging.info(f"Sauvegarde créée avec succès: {backup_filename}")
         
-        # 4. Fichiers uploads
-        uploads_dir = app.config.get('UPLOAD_FOLDER', 'uploads')
-        if os.path.exists(uploads_dir):
-            for root, dirs, files in os.walk(uploads_dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    backup_zip.write(file_path)
-        
-        # 5. Métadonnées de sauvegarde
-        metadata = {
-            'backup_date': timestamp,
-            'version': '1.0',
-            'backup_type': 'full_system',
-            'created_by': current_user.username if current_user.is_authenticated else 'system'
-        }
-        
-        import json
-        metadata_path = f"backup_metadata_{timestamp}.json"
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        backup_zip.write(metadata_path, "backup_metadata.json")
-        os.remove(metadata_path)  # Nettoyer
+    except Exception as e:
+        logging.error(f"Erreur lors de la création de la sauvegarde: {e}")
+        # Supprimer le fichier de sauvegarde partiel s'il existe
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
+        raise e
     
     return backup_filename
 
