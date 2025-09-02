@@ -1296,9 +1296,8 @@ def download_file(id):
 @rate_limit(max_requests=20, per_minutes=15)
 def settings():
     with PerformanceMonitor("settings_page"):
-        from models import TypeCourrierSortant
         parametres = ParametresSysteme.get_parametres()
-        types_courrier_sortant = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage).all()
+        # Types de courrier sortant maintenant gérés dans une page dédiée
         
         if request.method == 'POST':
             # Gestion du test d'email SendGrid en premier
@@ -1464,93 +1463,9 @@ def settings():
         return render_template('settings.html', 
                               parametres=parametres,
                               format_preview=format_preview,
-                              backup_files=backup_files,
-                              types_courrier_sortant=types_courrier_sortant)
+                              backup_files=backup_files)
 
-@app.route('/manage_mail_types', methods=['POST'])
-@login_required
-def manage_mail_types():
-    """Gérer les types de courrier sortant"""
-    from models import TypeCourrierSortant
-    
-    # Vérifier les permissions
-    if not current_user.has_permission('manage_system_settings'):
-        flash('Accès refusé. Vous n\'avez pas les permissions nécessaires.', 'error')
-        return redirect(url_for('settings'))
-    
-    action = request.form.get('action')
-    
-    if action == 'add':
-        nom = request.form.get('nom', '').strip()
-        description = request.form.get('description', '').strip()
-        
-        if not nom:
-            flash('Le nom du type est obligatoire.', 'error')
-            return redirect(url_for('settings'))
-        
-        # Vérifier l'unicité du nom
-        existing = TypeCourrierSortant.query.filter_by(nom=nom).first()
-        if existing:
-            flash(f'Un type avec le nom "{nom}" existe déjà.', 'error')
-            return redirect(url_for('settings'))
-        
-        try:
-            # Obtenir le prochain ordre d'affichage
-            max_ordre = db.session.query(db.func.max(TypeCourrierSortant.ordre_affichage)).scalar() or 0
-            
-            new_type = TypeCourrierSortant(
-                nom=nom,
-                description=description,
-                ordre_affichage=max_ordre + 1,
-                cree_par_id=current_user.id
-            )
-            db.session.add(new_type)
-            db.session.commit()
-            
-            log_activity(current_user.id, "AJOUT_TYPE_COURRIER", 
-                        f"Ajout du type de courrier sortant: {nom}")
-            flash(f'Type "{nom}" ajouté avec succès!', 'success')
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Erreur lors de l'ajout du type: {e}")
-            flash('Erreur lors de l\'ajout du type.', 'error')
-    
-    elif action == 'toggle':
-        type_id = request.form.get('type_id')
-        mail_type = TypeCourrierSortant.query.get(type_id)
-        
-        if mail_type:
-            mail_type.actif = not mail_type.actif
-            db.session.commit()
-            
-            status = 'activé' if mail_type.actif else 'désactivé'
-            log_activity(current_user.id, "MODIFICATION_TYPE_COURRIER", 
-                        f"Type {mail_type.nom} {status}")
-            flash(f'Type "{mail_type.nom}" {status}!', 'success')
-        else:
-            flash('Type non trouvé.', 'error')
-    
-    elif action == 'delete':
-        type_id = request.form.get('type_id')
-        mail_type = TypeCourrierSortant.query.get(type_id)
-        
-        if mail_type:
-            # Vérifier s'il y a des courriers associés
-            count = mail_type.courriers.count()
-            if count > 0:
-                flash(f'Impossible de supprimer ce type. {count} courrier(s) associé(s).', 'error')
-            else:
-                nom = mail_type.nom
-                db.session.delete(mail_type)
-                db.session.commit()
-                
-                log_activity(current_user.id, "SUPPRESSION_TYPE_COURRIER", 
-                            f"Suppression du type de courrier sortant: {nom}")
-                flash(f'Type "{nom}" supprimé avec succès!', 'success')
-        else:
-            flash('Type non trouvé.', 'error')
-    
-    return redirect(url_for('settings'))
+# Route manage_mail_types supprimée - maintenant gérée par manage_outgoing_types
 
 @app.route('/backup_system', methods=['POST'])
 @login_required
