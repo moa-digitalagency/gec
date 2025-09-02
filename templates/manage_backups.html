@@ -1,0 +1,337 @@
+{% extends "new_base.html" %}
+
+{% block title %}{{ t('backup_management') or 'Gestion des Sauvegardes' }} - GEC{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-database mr-3 text-rdc-blue"></i>
+                {{ t('backup_management') or 'Gestion des Sauvegardes' }}
+            </h1>
+            <p class="mt-2 text-gray-600">{{ t('backup_management_description') or 'Créez et gérez les sauvegardes complètes du système' }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100 text-green-600">
+                <i class="fas fa-archive text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">{{ backup_files|length }}</h3>
+                <p class="text-gray-600">{{ t('available_backups') or 'Sauvegardes disponibles' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                <i class="fas fa-clock text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    {% if backup_files %}
+                        {{ backup_files[0].date.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        {{ t('never') or 'Jamais' }}
+                    {% endif %}
+                </h3>
+                <p class="text-gray-600">{{ t('last_backup') or 'Dernière sauvegarde' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-rdc p-6">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                <i class="fas fa-hdd text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    {% set total_size = backup_files | sum(attribute='size') %}
+                    {{ "%.1f MB"|format(total_size / 1024 / 1024) if total_size else '0 MB' }}
+                </h3>
+                <p class="text-gray-600">{{ t('total_size') or 'Taille totale' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="grid lg:grid-cols-2 gap-8">
+    <!-- Create Backup Section -->
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-plus-circle mr-2 text-green-600"></i>
+                {{ t('create_backup') or 'Créer une Sauvegarde' }}
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-gray-600 mb-4">
+                    {{ t('backup_create_description') or 'Créez une sauvegarde complète incluant la base de données, les fichiers et la configuration.' }}
+                </p>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 class="font-medium text-blue-900 mb-3 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        {{ t('backup_includes') or 'La sauvegarde inclut :' }}
+                    </h4>
+                    <ul class="space-y-2 text-sm text-blue-800">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('database_complete') or 'Base de données complète' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('uploaded_files') or 'Fichiers téléchargés (pièces jointes)' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('system_configuration') or 'Configuration système' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('user_settings') or 'Paramètres utilisateurs' }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_backup') or 'Voulez-vous vraiment créer une sauvegarde ?' }}')">
+                <button type="submit" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-download mr-2"></i>
+                    {{ t('create_backup_now') or 'Créer la Sauvegarde' }}
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Restore System Section -->
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-upload mr-2 text-orange-600"></i>
+                {{ t('restore_system') or 'Restaurer le Système' }}
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-gray-600 mb-4">
+                    {{ t('restore_description') or 'Restaurez le système depuis un fichier de sauvegarde (.zip).' }}
+                </p>
+                
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-triangle text-red-600 mt-1 mr-2"></i>
+                        <div>
+                            <h4 class="font-medium text-red-900 mb-2">{{ t('warning') or 'Attention !' }}</h4>
+                            <p class="text-sm text-red-800">
+                                {{ t('restore_warning') or 'La restauration remplacera toutes les données actuelles. Cette action est irréversible.' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('restore_system') }}" method="POST" enctype="multipart/form-data" 
+                  onsubmit="return confirm('{{ t('confirm_restore') or 'Voulez-vous vraiment restaurer le système ? Toutes les données actuelles seront remplacées !' }}')">
+                <div class="mb-4">
+                    <label for="backup_file" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ t('select_backup_file') or 'Sélectionner le fichier de sauvegarde' }}
+                    </label>
+                    <input type="file" 
+                           name="backup_file" 
+                           id="backup_file" 
+                           accept=".zip" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
+                    <p class="mt-1 text-sm text-gray-500">{{ t('backup_file_format') or 'Format accepté : fichiers .zip uniquement' }}</p>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-upload mr-2"></i>
+                    {{ t('restore_now') or 'Restaurer le Système' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Available Backups Table -->
+{% if backup_files %}
+<div class="mt-8 bg-white shadow-rdc rounded-xl">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-history mr-2 text-blue-600"></i>
+            {{ t('available_backups') or 'Sauvegardes Disponibles' }}
+        </h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ t('filename') or 'Nom du fichier' }}
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ t('date_created') or 'Date de création' }}
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ t('file_size') or 'Taille' }}
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {{ t('actions') or 'Actions' }}
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for backup in backup_files %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-archive text-blue-600 mr-3"></i>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ backup.filename }}</div>
+                                <div class="text-sm text-gray-500">{{ t('backup_file') or 'Fichier de sauvegarde' }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ backup.date.strftime('%d/%m/%Y à %H:%M') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ "%.2f MB"|format(backup.size / 1024 / 1024) }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-3">
+                            <a href="{{ url_for('download_backup', filename=backup.filename) }}" 
+                               class="text-rdc-blue hover:text-blue-900 flex items-center">
+                                <i class="fas fa-download mr-1"></i>
+                                {{ t('download') or 'Télécharger' }}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="mt-8 bg-white shadow-rdc rounded-xl">
+    <div class="p-8 text-center">
+        <i class="fas fa-archive text-4xl text-gray-400 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_backups_found') or 'Aucune sauvegarde trouvée' }}</h3>
+        <p class="text-gray-600 mb-6">{{ t('no_backups_description') or 'Créez votre première sauvegarde pour sécuriser vos données.' }}</p>
+        <form action="{{ url_for('backup_system') }}" method="POST" class="inline">
+            <button type="submit" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center mx-auto">
+                <i class="fas fa-plus mr-2"></i>
+                {{ t('create_first_backup') or 'Créer la première sauvegarde' }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- System Update Section -->
+<div class="mt-8 bg-white shadow-rdc rounded-xl">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-sync-alt mr-2 text-purple-600"></i>
+            {{ t('system_update') or 'Mise à Jour Système' }}
+        </h2>
+    </div>
+    <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Online Update -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-cloud-download-alt mr-2 text-blue-600"></i>
+                    {{ t('online_update') or 'Mise à jour en ligne' }}
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    {{ t('online_update_description') or 'Rechercher et installer les mises à jour depuis le serveur.' }}
+                </p>
+                <button type="button" 
+                        onclick="checkForUpdates()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-search mr-2"></i>
+                    {{ t('check_updates') or 'Vérifier les mises à jour' }}
+                </button>
+            </div>
+            
+            <!-- Offline Update -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-file-upload mr-2 text-green-600"></i>
+                    {{ t('offline_update') or 'Mise à jour hors ligne' }}
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    {{ t('offline_update_description') or 'Installer une mise à jour depuis un fichier .zip.' }}
+                </p>
+                <form action="{{ url_for('update_system_offline') }}" method="POST" enctype="multipart/form-data">
+                    <input type="file" 
+                           name="update_file" 
+                           accept=".zip" 
+                           required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent mb-3">
+                    <button type="submit" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-upload mr-2"></i>
+                        {{ t('install_update') or 'Installer la mise à jour' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkForUpdates() {
+    // Simuler la vérification des mises à jour
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>{{ t("checking") or "Vérification..." }}';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('{{ t("no_updates_available") or "Aucune mise à jour disponible." }}');
+    }, 2000);
+}
+
+// Auto-refresh backup list every 30 seconds
+setInterval(() => {
+    // Refresh the page content without full reload
+    if (document.querySelector('.backup-table')) {
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                const newTable = newDoc.querySelector('.backup-table');
+                if (newTable) {
+                    document.querySelector('.backup-table').innerHTML = newTable.innerHTML;
+                }
+            })
+            .catch(console.error);
+    }
+}, 30000);
+</script>
+{% endblock %}

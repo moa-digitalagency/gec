@@ -1457,13 +1457,11 @@ def settings():
         # Generate format preview with caching
         format_preview = generate_format_preview(parametres.format_numero_accuse)
         
-        # Get backup files (only for super admins)
-        backup_files = get_backup_files() if current_user.is_super_admin() else []
+        # Backup files maintenant gérés dans la page dédiée
         
         return render_template('settings.html', 
                               parametres=parametres,
-                              format_preview=format_preview,
-                              backup_files=backup_files)
+                              format_preview=format_preview)
 
 # Route manage_mail_types supprimée - maintenant gérée par manage_outgoing_types
 
@@ -1484,7 +1482,7 @@ def backup_system():
         logging.error(f"Erreur lors de la création de la sauvegarde: {e}")
         flash(f'Erreur lors de la création de la sauvegarde: {str(e)}', 'error')
     
-    return redirect(url_for('settings'))
+    return redirect(url_for('manage_backups'))
 
 @app.route('/download_backup/<filename>')
 @login_required
@@ -1492,7 +1490,7 @@ def download_backup(filename):
     """Télécharger un fichier de sauvegarde"""
     if not current_user.is_super_admin():
         flash('Accès refusé.', 'error')
-        return redirect(url_for('settings'))
+        return redirect(url_for('manage_backups'))
     
     # Créer le dossier backups s'il n'existe pas
     os.makedirs('backups', exist_ok=True)
@@ -1504,7 +1502,7 @@ def download_backup(filename):
                                  mimetype='application/zip')
     else:
         flash('Fichier de sauvegarde non trouvé.', 'error')
-        return redirect(url_for('settings'))
+        return redirect(url_for('manage_backups'))
 
 @app.route('/restore_system', methods=['POST'])
 @login_required
@@ -1512,16 +1510,16 @@ def restore_system():
     """Restaurer le système depuis une sauvegarde"""
     if not current_user.is_super_admin():
         flash('Accès refusé. Seuls les super administrateurs peuvent restaurer le système.', 'error')
-        return redirect(url_for('settings'))
+        return redirect(url_for('manage_backups'))
     
     if 'backup_file' not in request.files:
         flash('Aucun fichier de sauvegarde sélectionné.', 'error')
-        return redirect(url_for('settings'))
+        return redirect(url_for('manage_backups'))
     
     backup_file = request.files['backup_file']
     if backup_file.filename == '':
         flash('Aucun fichier sélectionné.', 'error')
-        return redirect(url_for('settings'))
+        return redirect(url_for('manage_backups'))
     
     if backup_file and backup_file.filename.endswith('.zip'):
         try:
@@ -1535,7 +1533,7 @@ def restore_system():
     else:
         flash('Format de fichier invalide. Utilisez un fichier .zip.', 'error')
     
-    return redirect(url_for('settings'))
+    return redirect(url_for('manage_backups'))
 
 @app.route('/update_system')
 @login_required
@@ -4807,6 +4805,19 @@ def edit_outgoing_type(type_id):
             flash('Erreur lors de la modification du type.', 'error')
     
     return render_template('edit_outgoing_type.html', type_courrier=type_courrier)
+
+@app.route('/manage_backups')
+@login_required
+def manage_backups():
+    """Page dédiée pour la gestion des sauvegardes et restaurations"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent gérer les sauvegardes.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Récupérer la liste des fichiers de sauvegarde
+    backup_files = get_backup_files() if current_user.is_super_admin() else []
+    
+    return render_template('manage_backups.html', backup_files=backup_files)
 
 @app.route('/toggle_outgoing_type_status/<int:type_id>', methods=['POST'])
 @login_required
