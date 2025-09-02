@@ -218,10 +218,32 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-3">
                             <a href="{{ url_for('download_backup', filename=backup.filename) }}" 
-                               class="text-rdc-blue hover:text-blue-900 flex items-center">
+                               class="text-blue-600 hover:text-blue-900 flex items-center">
                                 <i class="fas fa-download mr-1"></i>
                                 {{ t('download') or 'Télécharger' }}
                             </a>
+                            
+                            <form action="{{ url_for('restore_from_backup', filename=backup.filename) }}" 
+                                  method="POST" 
+                                  class="inline"
+                                  onsubmit="return confirm('⚠️ ATTENTION : Restaurer cette sauvegarde remplacera TOUTES les données actuelles (base de données, fichiers, configuration). Cette action est IRRÉVERSIBLE. Êtes-vous absolument sûr de vouloir continuer ?')">
+                                <button type="submit" 
+                                        class="text-orange-600 hover:text-orange-900 flex items-center">
+                                    <i class="fas fa-undo mr-1"></i>
+                                    {{ t('restore') or 'Restaurer' }}
+                                </button>
+                            </form>
+                            
+                            <form action="{{ url_for('delete_backup', filename=backup.filename) }}" 
+                                  method="POST" 
+                                  class="inline"
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement cette sauvegarde ? Cette action ne peut pas être annulée.')">
+                                <button type="submit" 
+                                        class="text-red-600 hover:text-red-900 flex items-center">
+                                    <i class="fas fa-trash mr-1"></i>
+                                    {{ t('delete') or 'Supprimer' }}
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>

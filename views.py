@@ -4878,3 +4878,88 @@ def delete_outgoing_type(type_id):
     
     return redirect(url_for('manage_outgoing_types'))
 
+@app.route('/restore_from_backup/<filename>', methods=['POST'])
+@login_required
+def restore_from_backup(filename):
+    """Restaurer le système depuis un fichier de sauvegarde spécifique"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent restaurer le système.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    try:
+        backup_path = os.path.join('backups', filename)
+        
+        if not os.path.exists(backup_path):
+            flash('Fichier de sauvegarde introuvable.', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        if not filename.endswith('.zip'):
+            flash('Format de fichier invalide. Seuls les fichiers .zip sont acceptés.', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        # Créer une sauvegarde de sécurité avant restauration
+        security_backup = create_system_backup()
+        log_activity(current_user.id, 'SECURITY_BACKUP_BEFORE_RESTORE', 
+                    f'Sauvegarde de sécurité créée avant restauration: {security_backup}')
+        
+        # Utiliser la fonction de restauration existante
+        with open(backup_path, 'rb') as f:
+            class MockFile:
+                def __init__(self, file_obj, filename):
+                    self.file_obj = file_obj
+                    self.filename = filename
+                
+                def save(self, path):
+                    with open(path, 'wb') as dest:
+                        dest.write(self.file_obj.read())
+                        
+                def read(self):
+                    return self.file_obj.read()
+            
+            mock_file = MockFile(f, filename)
+            restore_system_from_backup(mock_file)
+        
+        log_activity(current_user.id, "RESTAURATION_SYSTEME", 
+                    f"Restauration depuis la sauvegarde: {filename}")
+        flash(f'Système restauré avec succès depuis la sauvegarde: {filename}', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la restauration depuis {filename}: {e}")
+        flash(f'Erreur lors de la restauration: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_backups'))
+
+@app.route('/delete_backup/<filename>', methods=['POST'])
+@login_required
+def delete_backup(filename):
+    """Supprimer un fichier de sauvegarde"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent supprimer des sauvegardes.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    try:
+        backup_path = os.path.join('backups', filename)
+        
+        if not os.path.exists(backup_path):
+            flash('Fichier de sauvegarde introuvable.', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        # Vérifier qu'on ne supprime pas la dernière sauvegarde
+        backup_files = get_backup_files()
+        if len(backup_files) <= 1:
+            flash('Impossible de supprimer la dernière sauvegarde disponible.', 'warning')
+            return redirect(url_for('manage_backups'))
+        
+        # Supprimer le fichier
+        os.remove(backup_path)
+        
+        log_activity(current_user.id, "BACKUP_DELETED", 
+                    f"Sauvegarde supprimée: {filename}")
+        flash(f'Sauvegarde "{filename}" supprimée avec succès.', 'success')
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de la suppression de {filename}: {e}")
+        flash(f'Erreur lors de la suppression: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_backups'))
+
