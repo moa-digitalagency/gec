@@ -86,6 +86,7 @@
   "sender_recipient": "Sender/Recipient",
   "reference": "Reference",
   "actions": "Actions",
+  "email_templates": "Email Templates",
   
   "success": "Success",
   "error": "Error",

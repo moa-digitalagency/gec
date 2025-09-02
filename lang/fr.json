@@ -86,6 +86,7 @@
   "sender_recipient": "Expéditeur/Destinataire",
   "reference": "Référence",
   "actions": "Actions",
+  "email_templates": "Templates Email",
   
   "success": "Succès",
   "error": "Erreur",

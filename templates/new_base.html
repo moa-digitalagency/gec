@@ -185,7 +185,7 @@
                         {% if current_user.has_permission('view_trash') %}
                         <a href="{{ url_for('trash') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-trash-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Corbeille
+                            {{ t('trash') or 'Corbeille' }}
                         </a>
                         {% endif %}
                     </div>
@@ -193,58 +193,58 @@
                     <!-- Paramètres -->
                     <div style="border-top: 1px solid #009639; padding-top: 1rem; margin-bottom: 1rem;">
                         <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Paramètres
+                            {{ t('settings') or 'Paramètres' }}
                         </div>
                         {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
                         <a href="{{ url_for('settings') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-cog" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Configuration Système
+                            {{ t('system_configuration') or 'Configuration Système' }}
                         </a>
                         {% endif %}
                         {% if current_user.has_permission('manage_statuses') or current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_statuses') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-tags" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Gérer les Statuts
+                            {{ t('manage_statuses') or 'Gérer les Statuts' }}
                         </a>
                         {% endif %}
                         {% if current_user.can_manage_users() %}
                         <a href="{{ url_for('manage_users') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-users" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Gérer les Utilisateurs
+                            {{ t('manage_users') or 'Gérer les Utilisateurs' }}
                         </a>
                         {% endif %}
                         {% if current_user.has_permission('view_all_logs') or current_user.is_super_admin() %}
                         <a href="{{ url_for('view_logs') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-history" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Logs d'Activité
+                            {{ t('activity_logs') or "Logs d'Activité" }}
                         </a>
                         {% endif %}
                         {% if current_user.has_permission('view_security_logs') or current_user.is_super_admin() %}
                         <a href="{{ url_for('security_logs') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-shield-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Logs de Sécurité
+                            {{ t('security_logs') or 'Logs de Sécurité' }}
                         </a>
                         {% endif %}
                         {% if current_user.has_permission('manage_security_settings') or current_user.is_super_admin() %}
                         <a href="{{ url_for('security_settings') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-shield-virus" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Paramètres de Sécurité
+                            {{ t('security_settings') or 'Paramètres de Sécurité' }}
                         </a>
                         {% endif %}
                         {% if current_user.has_permission('manage_email_templates') or current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_email_templates') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-envelope-open-text" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Templates Email
+                            {{ t('email_templates') or 'Templates Email' }}
                         </a>
                         {% endif %}
                         {% if current_user.is_super_admin() %}
                         <a href="{{ url_for('manage_roles') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-user-shield" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Gestion des Rôles
+                            {{ t('manage_roles') or 'Gestion des Rôles' }}
                         </a>
                         <a href="{{ url_for('manage_departments') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-building" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Gestion des {{ get_appellation_entites() }}
+                            {{ t('manage_departments') or 'Gestion des' }} {{ get_appellation_entites() }}
                         </a>
                         {% endif %}
                     </div>
