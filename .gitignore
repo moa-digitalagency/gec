@@ -18,3 +18,13 @@ temp/
 # Logs de sécurité
 security.log
 audit.log
+
+# Dossier instance et bases de données locales
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Fichiers de données utilisateur
+uploads/
+data/
