@@ -3864,19 +3864,124 @@ def export_analytics(format):
             from reportlab.lib import colors
             from reportlab.lib.pagesizes import letter, A4
             from reportlab.lib.units import cm
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
             from reportlab.lib.styles import getSampleStyleSheet
         except ImportError:
             flash('ReportLab n\'est pas installé. Impossible d\'exporter en PDF.', 'error')
             return redirect(url_for('analytics'))
         
+        # Récupérer toutes les données analytiques comme dans la fonction analytics()
+        # Copier les calculs de la fonction analytics() pour avoir toutes les données
+        
+        # Filtres de base
+        base_filter = [Courrier.is_deleted == False]
+        
+        # Statistiques par département
+        dept_stats_raw = db.session.query(
+            Departement.nom.label('departement'),
+            Courrier.type_courrier,
+            func.count(Courrier.id).label('count')
+        ).join(User, Courrier.utilisateur_id == User.id)\
+         .join(Departement, User.departement_id == Departement.id)\
+         .filter(*base_filter)\
+         .group_by(Departement.nom, Courrier.type_courrier).all()
+        
+        # Agrégation des résultats par département
+        dept_dict = {}
+        for stat in dept_stats_raw:
+            if stat.departement not in dept_dict:
+                dept_dict[stat.departement] = {'departement': stat.departement, 'total': 0, 'entrants': 0, 'sortants': 0}
+            dept_dict[stat.departement]['total'] += stat.count
+            if stat.type_courrier == 'ENTRANT':
+                dept_dict[stat.departement]['entrants'] = stat.count
+            elif stat.type_courrier == 'SORTANT':
+                dept_dict[stat.departement]['sortants'] = stat.count
+        
+        # Conversion en liste triée par total
+        dept_stats = []
+        for dept_name, data in dept_dict.items():
+            from collections import namedtuple
+            DeptStat = namedtuple('DeptStat', ['departement', 'total', 'entrants', 'sortants'])
+            dept_stats.append(DeptStat(data['departement'], data['total'], data['entrants'], data['sortants']))
+        dept_stats.sort(key=lambda x: x.total, reverse=True)
+        
+        # Statistiques par utilisateur (top 10)
+        user_stats_raw = db.session.query(
+            User.nom_complet,
+            Courrier.type_courrier,
+            func.count(Courrier.id).label('count')
+        ).join(Courrier, Courrier.utilisateur_id == User.id)\
+         .filter(*base_filter)\
+         .group_by(User.nom_complet, Courrier.type_courrier).all()
+        
+        # Agrégation des résultats par utilisateur
+        user_dict = {}
+        for stat in user_stats_raw:
+            if stat.nom_complet not in user_dict:
+                user_dict[stat.nom_complet] = {'nom_complet': stat.nom_complet, 'total': 0, 'entrants': 0, 'sortants': 0}
+            user_dict[stat.nom_complet]['total'] += stat.count
+            if stat.type_courrier == 'ENTRANT':
+                user_dict[stat.nom_complet]['entrants'] = stat.count
+            elif stat.type_courrier == 'SORTANT':
+                user_dict[stat.nom_complet]['sortants'] = stat.count
+        
+        # Conversion en liste triée par total (top 10)
+        user_stats = []
+        for user_name, data in user_dict.items():
+            from collections import namedtuple
+            UserStat = namedtuple('UserStat', ['nom_complet', 'total', 'entrants', 'sortants'])
+            user_stats.append(UserStat(data['nom_complet'], data['total'], data['entrants'], data['sortants']))
+        user_stats.sort(key=lambda x: x.total, reverse=True)
+        user_stats = user_stats[:10]  # Top 10
+        
+        # Top destinataires
+        recipient_filter = base_filter + [
+            Courrier.destinataire != None,
+            Courrier.destinataire != ''
+        ]
+        top_recipients = db.session.query(
+            Courrier.destinataire,
+            func.count(Courrier.id).label('count')
+        ).filter(*recipient_filter).group_by(Courrier.destinataire).order_by(func.count(Courrier.id).desc()).limit(10).all()
+        
+        # Répartition par statut
+        status_distribution = db.session.query(
+            Courrier.statut,
+            func.count(Courrier.id).label('count')
+        ).filter(*base_filter).group_by(Courrier.statut).all()
+        
+        # Volume par mois (6 derniers mois)
+        monthly_volumes = []
+        for i in range(6):
+            month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+            month_end = (month_start + timedelta(days=32)).replace(day=1)
+            entrants = Courrier.query.filter(
+                Courrier.date_enregistrement >= month_start,
+                Courrier.date_enregistrement < month_end,
+                Courrier.type_courrier == 'ENTRANT',
+                Courrier.is_deleted == False
+            ).count()
+            sortants = Courrier.query.filter(
+                Courrier.date_enregistrement >= month_start,
+                Courrier.date_enregistrement < month_end,
+                Courrier.type_courrier == 'SORTANT',
+                Courrier.is_deleted == False
+            ).count()
+            monthly_volumes.append({
+                'month': month_start.strftime('%B %Y'),
+                'entrants': entrants,
+                'sortants': sortants,
+                'total': entrants + sortants
+            })
+        monthly_volumes.reverse()
+        
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
         elements = []
         styles = getSampleStyleSheet()
         
-        # Titre
-        title = Paragraph("Rapport Analytique - GEC", styles['Title'])
+        # Titre principal
+        title = Paragraph("Rapport Analytique Complet - GEC", styles['Title'])
         elements.append(title)
         elements.append(Spacer(1, 20))
         
@@ -3885,12 +3990,13 @@ def export_analytics(format):
         elements.append(date_para)
         elements.append(Spacer(1, 30))
         
-        # Section statistiques générales
-        stats_title = Paragraph("Statistiques Générales", styles['Heading2'])
+        # ===================
+        # 1. STATISTIQUES GÉNÉRALES
+        # ===================
+        stats_title = Paragraph("1. Statistiques Générales", styles['Heading2'])
         elements.append(stats_title)
         elements.append(Spacer(1, 10))
         
-        # Tableau des statistiques principales
         stats_data = [
             ['Métrique', 'Valeur'],
             ['Total Courriers', str(total_courriers)],
@@ -3900,9 +4006,9 @@ def export_analytics(format):
             ['30 Derniers Jours', str(courriers_30_days)]
         ]
         
-        stats_table = Table(stats_data, colWidths=[8*cm, 4*cm])
+        stats_table = Table(stats_data, colWidths=[10*cm, 5*cm])
         stats_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -3916,22 +4022,155 @@ def export_analytics(format):
         elements.append(stats_table)
         elements.append(Spacer(1, 30))
         
-        # Section Top Expéditeurs
+        # ===================
+        # 2. STATISTIQUES PAR DÉPARTEMENT
+        # ===================
+        dept_title = Paragraph("2. Statistiques par Département", styles['Heading2'])
+        elements.append(dept_title)
+        elements.append(Spacer(1, 10))
+        
+        if dept_stats:
+            dept_data = [['Département', 'Total', 'Entrants', 'Sortants']]
+            for dept in dept_stats[:10]:  # Top 10 départements
+                dept_data.append([
+                    dept.departement[:30] + '...' if len(dept.departement) > 30 else dept.departement,
+                    str(dept.total),
+                    str(dept.entrants),
+                    str(dept.sortants)
+                ])
+            
+            dept_table = Table(dept_data, colWidths=[7*cm, 3*cm, 3*cm, 3*cm])
+            dept_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgreen),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(dept_table)
+        elements.append(Spacer(1, 30))
+        
+        # ===================
+        # 3. TOP 10 UTILISATEURS
+        # ===================
+        users_title = Paragraph("3. Top 10 Utilisateurs les Plus Actifs", styles['Heading2'])
+        elements.append(users_title)
+        elements.append(Spacer(1, 10))
+        
+        if user_stats:
+            user_data = [['Utilisateur', 'Total', 'Entrants', 'Sortants']]
+            for user in user_stats:
+                user_data.append([
+                    user.nom_complet[:30] + '...' if len(user.nom_complet) > 30 else user.nom_complet,
+                    str(user.total),
+                    str(user.entrants),
+                    str(user.sortants)
+                ])
+            
+            user_table = Table(user_data, colWidths=[7*cm, 3*cm, 3*cm, 3*cm])
+            user_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkorange),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightyellow),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(user_table)
+        elements.append(Spacer(1, 30))
+        
+        # ===================
+        # 4. TOP EXPÉDITEURS
+        # ===================
         if top_senders:
-            senders_title = Paragraph("Top 10 Expéditeurs", styles['Heading2'])
+            senders_title = Paragraph("4. Top 10 Expéditeurs", styles['Heading2'])
             elements.append(senders_title)
             elements.append(Spacer(1, 10))
             
             senders_data = [['Expéditeur', 'Nombre de Courriers']]
-            for sender in top_senders[:5]:  # Limiter à 5 pour le PDF
-                senders_data.append([sender.expediteur[:50] + '...' if len(sender.expediteur) > 50 else sender.expediteur, str(sender.count)])
+            for sender in top_senders:
+                senders_data.append([
+                    sender.expediteur[:40] + '...' if len(sender.expediteur) > 40 else sender.expediteur,
+                    str(sender.count)
+                ])
             
-            senders_table = Table(senders_data, colWidths=[10*cm, 4*cm])
+            senders_table = Table(senders_data, colWidths=[12*cm, 4*cm])
             senders_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkred),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.mistyrose),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(senders_table)
+            elements.append(Spacer(1, 30))
+        
+        # ===================
+        # 5. TOP DESTINATAIRES
+        # ===================
+        if top_recipients:
+            recipients_title = Paragraph("5. Top 10 Destinataires", styles['Heading2'])
+            elements.append(recipients_title)
+            elements.append(Spacer(1, 10))
+            
+            recipients_data = [['Destinataire', 'Nombre de Courriers']]
+            for recipient in top_recipients:
+                recipients_data.append([
+                    recipient.destinataire[:40] + '...' if len(recipient.destinataire) > 40 else recipient.destinataire,
+                    str(recipient.count)
+                ])
+            
+            recipients_table = Table(recipients_data, colWidths=[12*cm, 4*cm])
+            recipients_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.purple),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lavender),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(recipients_table)
+            elements.append(PageBreak())
+        
+        # ===================
+        # 6. RÉPARTITION PAR STATUT
+        # ===================
+        if status_distribution:
+            status_title = Paragraph("6. Répartition par Statut", styles['Heading2'])
+            elements.append(status_title)
+            elements.append(Spacer(1, 10))
+            
+            status_data = [['Statut', 'Nombre de Courriers', 'Pourcentage']]
+            total_status = sum([s.count for s in status_distribution])
+            for status in status_distribution:
+                percentage = round((status.count / total_status) * 100, 1) if total_status > 0 else 0
+                status_data.append([
+                    status.statut or 'Non défini',
+                    str(status.count),
+                    f"{percentage}%"
+                ])
+            
+            status_table = Table(status_data, colWidths=[6*cm, 5*cm, 4*cm])
+            status_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, 0), 10),
                 ('BACKGROUND', (0, 1), (-1, -1), colors.lightblue),
@@ -3939,9 +4178,48 @@ def export_analytics(format):
                 ('FONTSIZE', (0, 1), (-1, -1), 9),
             ]))
             
-            elements.append(senders_table)
-            elements.append(Spacer(1, 20))
+            elements.append(status_table)
+            elements.append(Spacer(1, 30))
         
+        # ===================
+        # 7. ÉVOLUTION MENSUELLE (6 DERNIERS MOIS)
+        # ===================
+        if monthly_volumes:
+            monthly_title = Paragraph("7. Évolution Mensuelle (6 Derniers Mois)", styles['Heading2'])
+            elements.append(monthly_title)
+            elements.append(Spacer(1, 10))
+            
+            monthly_data = [['Mois', 'Entrants', 'Sortants', 'Total']]
+            for month in monthly_volumes:
+                monthly_data.append([
+                    month['month'],
+                    str(month['entrants']),
+                    str(month['sortants']),
+                    str(month['total'])
+                ])
+            
+            monthly_table = Table(monthly_data, colWidths=[5*cm, 3.5*cm, 3.5*cm, 4*cm])
+            monthly_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightgreen),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            
+            elements.append(monthly_table)
+            elements.append(Spacer(1, 30))
+        
+        # Footer avec informations du système
+        footer_para = Paragraph(
+            f"<i>Ce rapport a été généré automatiquement par le système GEC - Gestion Électronique du Courrier<br/>"
+            f"Total de {total_courriers} courriers analysés - Page générée le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
+            styles['Normal']
+        )
+        elements.append(footer_para)
         
         doc.build(elements)
         
@@ -3949,7 +4227,7 @@ def export_analytics(format):
         return send_file(buffer,
                         mimetype='application/pdf',
                         as_attachment=True,
-                        download_name=f'analytics_report_{datetime.now().strftime("%Y%m%d")}.pdf')
+                        download_name=f'analytics_report_complet_{datetime.now().strftime("%Y%m%d")}.pdf')
 
 @app.route('/forward_mail/<int:courrier_id>', methods=['POST'])
 @login_required
