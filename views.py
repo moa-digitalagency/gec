@@ -31,12 +31,17 @@ def inject_system_context():
             return Notification.query.filter_by(user_id=current_user.id, lu=False).count()
         return 0
     
+    # Import des utilitaires de formatage pour les templates
+    from utils import format_date, get_titre_responsable
+    
     return dict(
         get_system_params=lambda: ParametresSysteme.get_parametres(),
         get_current_language=get_current_language,
         get_available_languages=get_available_languages,
         get_unread_notifications_count=get_unread_notifications_count,
-        t=t
+        t=t,
+        format_date=format_date,
+        get_titre_responsable=get_titre_responsable
     )
 
 @app.route('/')

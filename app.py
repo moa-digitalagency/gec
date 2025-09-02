@@ -73,31 +73,7 @@ with app.app_context():
         """Execute after each request to add security headers"""
         return add_security_headers(response)
     
-    # Ajouter les fonctions utilitaires au contexte Jinja2
-    from utils import format_date, get_titre_responsable, get_current_language, get_available_languages, t
-    app.jinja_env.globals.update(format_date=format_date, get_titre_responsable=get_titre_responsable)
-    
-    # Context processor pour le support des langues
-    @app.context_processor
-    def inject_language():
-        """Injecte les fonctions de langue dans tous les templates"""
-        current_lang = get_current_language()
-        return {
-            't': lambda key, **kwargs: t(key, current_lang, **kwargs),
-            'current_language': current_lang,
-            'available_languages': get_available_languages(),
-            'get_available_languages': get_available_languages
-        }
-    
-    # Context processor pour les paramètres système
-    @app.context_processor
-    def inject_parametres():
-        """Injecte les paramètres système dans tous les templates"""
-        try:
-            parametres = models.ParametresSysteme.get_parametres()
-            return {'parametres': parametres}
-        except:
-            return {'parametres': None}
+    # Context processors sont maintenant définis dans views.py pour éviter les dépendances circulaires
     
     # Create default admin user if none exists
     from werkzeug.security import generate_password_hash
