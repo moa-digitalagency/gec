@@ -82,7 +82,7 @@
                         <div>
                             <label for="type_courrier" class="block text-sm font-medium text-gray-700 mb-2">
                                 <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
-                                Type de Courrier
+                                {{ t('mail_type') or 'Type de Courrier' }}
                             </label>
                             <select id="type_courrier" 
                                     name="type_courrier"
@@ -96,7 +96,7 @@
                         <div>
                             <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
                                 <i class="fas fa-flag mr-1 text-rdc-blue"></i>
-                                Statut
+                                {{ t('status') or 'Statut' }}
                             </label>
                             <select id="statut" 
                                     name="statut"
@@ -125,7 +125,7 @@
                                 <option value="numero_accuse_reception">Numéro d'accusé</option>
                                 <option value="expediteur">Expéditeur</option>
                                 <option value="objet">Objet</option>
-                                <option value="statut">Statut</option>
+                                <option value="statut">{{ t('status') or 'Statut' }}</option>
                             </select>
                         </div>
                         
@@ -148,7 +148,7 @@
                         <button type="submit" 
                                 class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
                             <i class="fas fa-search mr-2"></i>
-                            Lancer la Recherche
+                            {{ t('launch_search') or 'Lancer la Recherche' }}
                         </button>
                         <button type="button" 
                                 onclick="resetForm()"
@@ -169,7 +169,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900 flex items-center">
                     <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
-                    Recherches Rapides
+                    {{ t('quick_searches') or 'Recherches Rapides' }}
                 </h3>
             </div>
             <div class="p-6 space-y-3">
@@ -177,7 +177,7 @@
                    class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-clock text-rdc-blue mr-3"></i>
                     <div>
-                        <p class="font-medium text-gray-900">Courriers Récents</p>
+                        <p class="font-medium text-gray-900">{{ t('recent_mail') or 'Courriers Récents' }}</p>
                         <p class="text-sm text-gray-500">Derniers enregistrements</p>
                     </div>
                 </a>
@@ -186,7 +186,7 @@
                    class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-exclamation-triangle text-rdc-red mr-3"></i>
                     <div>
-                        <p class="font-medium text-gray-900">Courriers Urgents</p>
+                        <p class="font-medium text-gray-900">{{ t('urgent_mail') or 'Courriers Urgents' }}</p>
                         <p class="text-sm text-gray-500">Statut urgent</p>
                     </div>
                 </a>

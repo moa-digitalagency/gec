@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Logs de Sécurité - GEC{% endblock %}
+{% block title %}{{ t('security_logs') or 'Logs de Sécurité' }} - GEC{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
@@ -10,17 +10,17 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">
                     <i class="fas fa-shield-alt text-blue-600 mr-2"></i>
-                    Logs de Sécurité
+                    {{ t('security_logs') or 'Logs de Sécurité' }}
                 </h1>
-                <p class="text-gray-600 mt-1">Surveillance et audit des événements de sécurité</p>
+                <p class="text-gray-600 mt-1">{{ t('security_monitoring') or 'Surveillance et audit des événements de sécurité' }}</p>
             </div>
             
             <div class="flex space-x-3">
                 <button onclick="refreshLogs()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-sync-alt mr-2"></i>Actualiser
+                    <i class="fas fa-sync-alt mr-2"></i>{{ t('refresh') or 'Actualiser' }}
                 </button>
                 <button onclick="exportLogs()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-                    <i class="fas fa-download mr-2"></i>Exporter
+                    <i class="fas fa-download mr-2"></i>{{ t('export') or 'Exporter' }}
                 </button>
             </div>
         </div>

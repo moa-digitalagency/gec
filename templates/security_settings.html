@@ -1,6 +1,6 @@
 {% extends "new_base.html" %}
 
-{% block title %}Paramètres de Sécurité - GEC{% endblock %}
+{% block title %}{{ t('security_settings') or 'Paramètres de Sécurité' }} - GEC{% endblock %}
 
 {% block content %}
     <!-- Breadcrumb -->
@@ -10,13 +10,13 @@
                 <li>
                     <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
                         <i class="fas fa-home"></i>
-                        <span class="sr-only">Accueil</span>
+                        <span class="sr-only">{{ t('home') or 'Accueil' }}</span>
                     </a>
                 </li>
                 <li>
                     <div class="flex items-center">
                         <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                        <span class="text-sm font-medium text-gray-900">Paramètres de Sécurité</span>
+                        <span class="text-sm font-medium text-gray-900">{{ t('security_settings') or 'Paramètres de Sécurité' }}</span>
                     </div>
                 </li>
             </ol>
@@ -27,9 +27,9 @@
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 flex items-center">
             <i class="fas fa-shield-virus mr-3 text-rdc-blue"></i>
-            Paramètres de Sécurité
+            {{ t('security_settings') or 'Paramètres de Sécurité' }}
         </h1>
-        <p class="mt-2 text-gray-600">Configuration avancée des mesures de sécurité du système</p>
+        <p class="mt-2 text-gray-600">{{ t('advanced_security_configuration') or 'Configuration avancée des mesures de sécurité du système' }}</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
