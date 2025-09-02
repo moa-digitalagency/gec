@@ -283,7 +283,7 @@
                 <p class="text-sm text-gray-600 mb-4">
                     {{ t('offline_update_description') or 'Installer une mise à jour depuis un fichier .zip.' }}
                 </p>
-                <form action="{{ url_for('update_system_offline') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ url_for('update_offline') }}" method="POST" enctype="multipart/form-data">
                     <input type="file" 
                            name="update_file" 
                            accept=".zip" 

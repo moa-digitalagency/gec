@@ -1607,7 +1607,7 @@ def update_online():
         log_activity(current_user.id, 'UPDATE_ERROR', f'Erreur lors de la mise à jour online: {str(e)}')
         flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
     
-    return redirect(url_for('update_system'))
+    return redirect(url_for('manage_backups'))
 
 @app.route('/update_offline', methods=['POST'])
 @login_required
@@ -1636,16 +1636,16 @@ def update_offline():
         # Vérifier qu'un fichier a été uploadé
         if 'update_file' not in request.files:
             flash('Aucun fichier sélectionné.', 'error')
-            return redirect(url_for('update_system'))
+            return redirect(url_for('manage_backups'))
         
         file = request.files['update_file']
         if file.filename == '':
             flash('Aucun fichier sélectionné.', 'error')
-            return redirect(url_for('update_system'))
+            return redirect(url_for('manage_backups'))
         
         if not file.filename.endswith('.zip'):
             flash('Le fichier doit être un fichier ZIP.', 'error')
-            return redirect(url_for('update_system'))
+            return redirect(url_for('manage_backups'))
         
         # Créer une sauvegarde avant la mise à jour
         backup_dir = 'backups/before_update'
@@ -1789,7 +1789,7 @@ def update_offline():
         log_activity(current_user.id, 'UPDATE_ERROR', f'Erreur lors de la mise à jour offline: {str(e)}')
         flash(f'Erreur lors de la mise à jour : {str(e)}', 'error')
     
-    return redirect(url_for('update_system'))
+    return redirect(url_for('manage_backups'))
 
 def generate_format_preview(format_string):
     """Génère un aperçu du format de numéro d'accusé"""
