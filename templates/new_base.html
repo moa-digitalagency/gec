@@ -77,7 +77,7 @@
                     <div class="relative">
                         <a href="{{ url_for('notifications') }}" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
                             <i class="fas fa-bell"></i>
-                            <span class="hidden sm:inline ml-1">Notifications</span>
+                            <span class="hidden sm:inline ml-1">{{ t('notifications.notifications') or 'Notifications' }}</span>
                             {% set unread_count = get_unread_notifications_count() %}
                             {% if unread_count > 0 %}
                                 <span class="absolute -top-1 -right-1 min-w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1" style="min-width: 20px;">
@@ -118,23 +118,23 @@
                                 <div class="text-sm font-medium text-gray-900">{{ current_user.nom_complet }}</div>
                                 <div class="text-xs text-gray-500">
                                     {% if current_user.role == 'super_admin' %}
-                                        <i class="fas fa-crown mr-1 text-yellow-500"></i>Super Admin
+                                        <i class="fas fa-crown mr-1 text-yellow-500"></i>{{ t('super_admin') or 'Super Admin' }}
                                     {% elif current_user.role == 'admin' %}
-                                        <i class="fas fa-user-shield mr-1 text-blue-500"></i>Admin
+                                        <i class="fas fa-user-shield mr-1 text-blue-500"></i>{{ t('admin') or 'Admin' }}
                                     {% else %}
-                                        <i class="fas fa-user mr-1 text-gray-500"></i>Utilisateur
+                                        <i class="fas fa-user mr-1 text-gray-500"></i>{{ t('user') or 'Utilisateur' }}
                                     {% endif %}
                                 </div>
                             </div>
                             <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user-circle mr-2"></i>Voir mon profil
+                                <i class="fas fa-user-circle mr-2"></i>{{ t('my_profile') or 'Voir mon profil' }}
                             </a>
                             <a href="{{ url_for('edit_profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user-edit mr-2"></i>Modifier mon profil
+                                <i class="fas fa-user-edit mr-2"></i>{{ t('edit_profile') or 'Modifier mon profil' }}
                             </a>
                             <div class="border-t border-gray-200 my-1"></div>
                             <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
+                                <i class="fas fa-sign-out-alt mr-2"></i>{{ t('logout') or 'Déconnexion' }}
                             </a>
                         </div>
                     </div>
@@ -164,23 +164,23 @@
                     <div style="margin-bottom: 1rem;">
                         <a href="{{ url_for('dashboard') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-tachometer-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Tableau de Bord
+                            {{ t('dashboard') or 'Tableau de Bord' }}
                         </a>
                         <a href="{{ url_for('register_mail') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-plus-circle" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Enregistrer Courrier
+                            {{ t('register_mail') or 'Enregistrer Courrier' }}
                         </a>
                         <a href="{{ url_for('view_mail') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-list" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Consulter Courriers
+                            {{ t('view_mail') or 'Consulter Courriers' }}
                         </a>
                         <a href="{{ url_for('search') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-search" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Recherche Avancée
+                            {{ t('advanced_search') or 'Recherche Avancée' }}
                         </a>
                         <a href="{{ url_for('analytics') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-chart-bar" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Tableau de Bord Analytique
+                            {{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }}
                         </a>
                         {% if current_user.has_permission('view_trash') %}
                         <a href="{{ url_for('trash') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
