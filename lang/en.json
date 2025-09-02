@@ -618,5 +618,7 @@
   "not_assigned": "Not assigned",
   "no_departments": "No departments",
   "create_first_department": "Start by creating your first department",
-  "create_department": "Create Department"
+  "create_department": "Create Department",
+  "manage_outgoing_types": "Outgoing Mail Types",
+  "outgoing_mail_types": "Outgoing Mail Types"
 }

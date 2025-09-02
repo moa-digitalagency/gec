@@ -4780,3 +4780,128 @@ def delete_language(lang_code):
     
     return redirect(url_for('manage_languages'))
 
+# ===== GESTION DES TYPES DE COURRIER SORTANT =====
+
+@app.route('/manage_outgoing_types')
+@login_required
+def manage_outgoing_types():
+    """Page de gestion des types de courrier sortant"""
+    if not (current_user.is_super_admin() or current_user.has_permission('manage_system_settings')):
+        flash(t('access_denied') or 'Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    from models import TypeCourrierSortant
+    types = TypeCourrierSortant.query.order_by(TypeCourrierSortant.ordre_affichage, TypeCourrierSortant.nom).all()
+    return render_template('manage_outgoing_types.html', types=types)
+
+@app.route('/add_outgoing_type', methods=['POST'])
+@login_required
+def add_outgoing_type():
+    """Ajouter un nouveau type de courrier sortant"""
+    if not (current_user.is_super_admin() or current_user.has_permission('manage_system_settings')):
+        flash(t('access_denied') or 'Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from models import TypeCourrierSortant
+        
+        nom = request.form.get('nom', '').strip()
+        description = request.form.get('description', '').strip()
+        ordre_affichage = request.form.get('ordre_affichage', 0)
+        
+        if not nom:
+            flash(t('name_required') or 'Le nom est obligatoire.', 'error')
+            return redirect(url_for('manage_outgoing_types'))
+        
+        # Vérifier si le nom existe déjà
+        existing = TypeCourrierSortant.query.filter_by(nom=nom).first()
+        if existing:
+            flash(t('type_name_exists') or 'Un type avec ce nom existe déjà.', 'error')
+            return redirect(url_for('manage_outgoing_types'))
+        
+        # Créer le nouveau type
+        nouveau_type = TypeCourrierSortant(
+            nom=nom,
+            description=description if description else None,
+            ordre_affichage=int(ordre_affichage) if ordre_affichage else 0,
+            cree_par_id=current_user.id
+        )
+        
+        db.session.add(nouveau_type)
+        db.session.commit()
+        
+        log_activity(current_user.id, "TYPE_SORTANT_AJOUTE", 
+                    f"Type de courrier sortant ajouté: {nom}")
+        
+        flash(t('type_added_successfully') or f'Type "{nom}" ajouté avec succès.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de l'ajout du type: {e}")
+        flash(t('error_adding_type') or 'Erreur lors de l\'ajout du type.', 'error')
+    
+    return redirect(url_for('manage_outgoing_types'))
+
+@app.route('/toggle_outgoing_type_status/<int:type_id>', methods=['POST'])
+@login_required
+def toggle_outgoing_type_status(type_id):
+    """Activer/désactiver un type de courrier sortant"""
+    if not (current_user.is_super_admin() or current_user.has_permission('manage_system_settings')):
+        flash(t('access_denied') or 'Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from models import TypeCourrierSortant
+        type_courrier = TypeCourrierSortant.query.get_or_404(type_id)
+        
+        ancien_statut = type_courrier.actif
+        type_courrier.actif = not type_courrier.actif
+        
+        db.session.commit()
+        
+        nouveau_statut = "activé" if type_courrier.actif else "désactivé"
+        log_activity(current_user.id, "TYPE_SORTANT_STATUT_CHANGE", 
+                    f"Type {type_courrier.nom} {nouveau_statut}")
+        
+        flash(t('status_changed_successfully') or f'Statut du type "{type_courrier.nom}" modifié avec succès.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors du changement de statut: {e}")
+        flash(t('error_changing_status') or 'Erreur lors du changement de statut.', 'error')
+    
+    return redirect(url_for('manage_outgoing_types'))
+
+@app.route('/delete_outgoing_type/<int:type_id>', methods=['POST'])
+@login_required
+def delete_outgoing_type(type_id):
+    """Supprimer un type de courrier sortant"""
+    if not (current_user.is_super_admin() or current_user.has_permission('manage_system_settings')):
+        flash(t('access_denied') or 'Accès refusé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        from models import TypeCourrierSortant
+        type_courrier = TypeCourrierSortant.query.get_or_404(type_id)
+        
+        # Vérifier si le type est utilisé
+        if type_courrier.courriers.count() > 0:
+            flash(t('cannot_delete_used_type') or 'Impossible de supprimer un type utilisé par des courriers.', 'error')
+            return redirect(url_for('manage_outgoing_types'))
+        
+        nom_type = type_courrier.nom
+        db.session.delete(type_courrier)
+        db.session.commit()
+        
+        log_activity(current_user.id, "TYPE_SORTANT_SUPPRIME", 
+                    f"Type de courrier sortant supprimé: {nom_type}")
+        
+        flash(t('type_deleted_successfully') or f'Type "{nom_type}" supprimé avec succès.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de la suppression du type: {e}")
+        flash(t('error_deleting_type') or 'Erreur lors de la suppression du type.', 'error')
+    
+    return redirect(url_for('manage_outgoing_types'))
+

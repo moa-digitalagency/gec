@@ -1,0 +1,246 @@
+{% extends "new_base.html" %}
+
+{% block title %}{{ t('manage_outgoing_types') or 'Gestion des Types de Courrier Sortant' }} - GEC{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+        <i class="fas fa-paper-plane mr-3 text-rdc-blue"></i>
+        {{ t('manage_outgoing_types') or 'Gestion des Types de Courrier Sortant' }}
+    </h1>
+    <p class="mt-2 text-gray-600">{{ t('manage_outgoing_types_description') or 'Gérez les types de courrier sortant disponibles dans le système' }}</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Add New Type Form -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-plus mr-2 text-rdc-blue"></i>
+                    {{ t('add_new_type') or 'Ajouter un Nouveau Type' }}
+                </h2>
+            </div>
+            <div class="p-6">
+                <form method="POST" action="{{ url_for('add_outgoing_type') }}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ t('type_name') or 'Nom du Type' }} <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="nom" 
+                                   name="nom" 
+                                   required 
+                                   maxlength="100"
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-transparent"
+                                   placeholder="{{ t('type_name_placeholder') or 'Ex: Note de service' }}">
+                        </div>
+                        
+                        <div>
+                            <label for="ordre_affichage" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ t('display_order') or 'Ordre d\'affichage' }}
+                            </label>
+                            <input type="number" 
+                                   id="ordre_affichage" 
+                                   name="ordre_affichage" 
+                                   min="0" 
+                                   max="999"
+                                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-transparent"
+                                   placeholder="0">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ t('description') or 'Description' }}
+                        </label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  rows="3"
+                                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-transparent"
+                                  placeholder="{{ t('description_placeholder') or 'Description optionnelle du type de courrier...' }}"></textarea>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end">
+                        <button type="submit" 
+                                class="px-6 py-2 bg-rdc-blue text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center">
+                            <i class="fas fa-plus mr-2"></i>
+                            {{ t('add_type') or 'Ajouter le Type' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Existing Types List -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-list mr-2 text-rdc-blue"></i>
+                    {{ t('existing_types') or 'Types Existants' }}
+                </h2>
+            </div>
+            <div class="overflow-x-auto">
+                {% if types %}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('order') or 'Ordre' }}
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('type_name') or 'Nom du Type' }}
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('description') or 'Description' }}
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('status') or 'Statut' }}
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('usage_count') or 'Utilisation' }}
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ t('actions') or 'Actions' }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for type_courrier in types %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ type_courrier.ordre_affichage }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ type_courrier.nom }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-600 max-w-xs truncate">
+                                    {{ type_courrier.description or '-' }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if type_courrier.actif %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        {{ t('active') or 'Actif' }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="fas fa-times-circle mr-1"></i>
+                                        {{ t('inactive') or 'Inactif' }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ type_courrier.courriers.count() }} {{ t('mails') or 'courriers' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <!-- Edit Button -->
+                                <a href="{{ url_for('edit_outgoing_type', type_id=type_courrier.id) }}" 
+                                   class="text-rdc-blue hover:text-blue-700" 
+                                   title="{{ t('edit') or 'Modifier' }}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <!-- Toggle Status -->
+                                <form method="POST" action="{{ url_for('toggle_outgoing_type_status', type_id=type_courrier.id) }}" class="inline">
+                                    <button type="submit" 
+                                            class="{% if type_courrier.actif %}text-yellow-600 hover:text-yellow-800{% else %}text-green-600 hover:text-green-800{% endif %}"
+                                            title="{% if type_courrier.actif %}{{ t('deactivate') or 'Désactiver' }}{% else %}{{ t('activate') or 'Activer' }}{% endif %}"
+                                            onclick="return confirm('{{ t('confirm_status_change') or 'Êtes-vous sûr de vouloir changer le statut de ce type ?' }}')">
+                                        {% if type_courrier.actif %}
+                                            <i class="fas fa-eye-slash"></i>
+                                        {% else %}
+                                            <i class="fas fa-eye"></i>
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                
+                                <!-- Delete Button (only if no usage) -->
+                                {% if type_courrier.courriers.count() == 0 %}
+                                <form method="POST" action="{{ url_for('delete_outgoing_type', type_id=type_courrier.id) }}" class="inline">
+                                    <button type="submit" 
+                                            class="text-red-600 hover:text-red-800"
+                                            title="{{ t('delete') or 'Supprimer' }}"
+                                            onclick="return confirm('{{ t('confirm_delete_type') or 'Êtes-vous sûr de vouloir supprimer ce type ? Cette action est irréversible.' }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-gray-400" title="{{ t('cannot_delete_used_type') or 'Impossible de supprimer un type utilisé' }}">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-6 text-center text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>{{ t('no_types_found') or 'Aucun type de courrier sortant trouvé' }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Statistics Card -->
+        <div class="bg-white shadow-rdc rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-chart-bar mr-2 text-rdc-blue"></i>
+                {{ t('statistics') or 'Statistiques' }}
+            </h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">{{ t('total_types') or 'Total des types' }}:</span>
+                    <span class="font-semibold text-rdc-blue">{{ types|length if types else 0 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">{{ t('active_types') or 'Types actifs' }}:</span>
+                    <span class="font-semibold text-green-600">{{ types|selectattr('actif')|list|length if types else 0 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">{{ t('inactive_types') or 'Types inactifs' }}:</span>
+                    <span class="font-semibold text-red-600">{{ types|rejectattr('actif')|list|length if types else 0 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="bg-blue-50 shadow-rdc rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                {{ t('help') or 'Aide' }}
+            </h3>
+            <div class="text-sm text-blue-800 space-y-2">
+                <p>• {{ t('outgoing_types_help_1') or 'Les types de courrier sortant définissent les catégories disponibles lors de la création de courriers sortants.' }}</p>
+                <p>• {{ t('outgoing_types_help_2') or 'L\'ordre d\'affichage détermine l\'ordre dans les listes déroulantes.' }}</p>
+                <p>• {{ t('outgoing_types_help_3') or 'Les types utilisés ne peuvent pas être supprimés, seulement désactivés.' }}</p>
+                <p>• {{ t('outgoing_types_help_4') or 'Les types inactifs n\'apparaissent plus dans les formulaires mais restent visibles sur les courriers existants.' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmation pour les actions sensibles
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('[onclick*="confirm"]');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!this.onclick()) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
