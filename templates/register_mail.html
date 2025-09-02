@@ -1,15 +1,15 @@
 {% extends "new_base.html" %}
 
-{% block title %}Enregistrer Courrier - GEC{% endblock %}
+{% block title %}{{ t('register_mail') or 'Enregistrer Courrier' }} - GEC{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
 <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
         <i class="fas fa-plus-circle mr-3 text-rdc-blue"></i>
-        Enregistrer un Nouveau Courrier
+        {{ t('register_new_mail') or 'Enregistrer un Nouveau Courrier' }}
     </h1>
-    <p class="mt-2 text-gray-600">Saisissez les informations du courrier (entrant ou sortant)</p>
+    <p class="mt-2 text-gray-600">{{ t('enter_mail_info') or 'Saisissez les informations du courrier (entrant ou sortant)' }}</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -19,7 +19,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <i class="fas fa-edit mr-2 text-rdc-blue"></i>
-                    Informations du Courrier
+                    {{ t('mail_information') or 'Informations du Courrier' }}
                 </h2>
             </div>
             <div class="p-6">
@@ -28,7 +28,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
-                            Type de Courrier <span class="text-red-500">*</span>
+                            {{ t('mail_type') or 'Type de Courrier' }} <span class="text-red-500">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-4">
                             <label class="relative flex items-center p-3 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rdc-blue mail-type-option">
@@ -43,7 +43,7 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-inbox mr-2 text-blue-500"></i>
-                                    <span class="text-sm font-medium">Entrant</span>
+                                    <span class="text-sm font-medium">{{ t('incoming') or 'Entrant' }}</span>
                                 </div>
                             </label>
                             
@@ -58,7 +58,7 @@
                                 </div>
                                 <div class="flex items-center">
                                     <i class="fas fa-paper-plane mr-2 text-green-500"></i>
-                                    <span class="text-sm font-medium">Sortant</span>
+                                    <span class="text-sm font-medium">{{ t('outgoing') or 'Sortant' }}</span>
                                 </div>
                             </label>
                         </div>
