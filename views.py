@@ -35,7 +35,8 @@ def inject_system_context():
         get_system_params=lambda: ParametresSysteme.get_parametres(),
         get_current_language=get_current_language,
         get_available_languages=get_available_languages,
-        get_unread_notifications_count=get_unread_notifications_count
+        get_unread_notifications_count=get_unread_notifications_count,
+        t=t
     )
 
 @app.route('/')
