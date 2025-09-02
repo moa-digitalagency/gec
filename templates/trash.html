@@ -95,11 +95,11 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex space-x-2">
                                         {% if current_user.has_permission('restore_mail') %}
-                                        <button onclick="confirmRestore({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
-                                               class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-green-600 hover:bg-green-700 transition-colors">
-                                            <i class="fas fa-undo mr-1"></i>
-                                            Restaurer
-                                        </button>
+                                                                <button onclick="confirmRestore({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
+                               class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-green-600 hover:bg-green-700 transition-colors">
+                            <i class="fas fa-undo mr-1"></i>
+                            {{ t('restore') or 'Restaurer' }}
+                        </button>
                                         {% endif %}
                                         <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
                                            class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-gray-600 hover:bg-gray-700 transition-colors">
@@ -116,12 +116,12 @@
                 {% else %}
                 <div class="text-center py-12">
                     <i class="fas fa-trash-alt text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">La corbeille est vide</h3>
-                    <p class="text-gray-500 mb-6">Aucun courrier n'a été supprimé.</p>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('trash_empty') or 'La corbeille est vide' }}</h3>
+                    <p class="text-gray-500 mb-6">{{ t('no_mail_deleted') or 'Aucun courrier n\'a été supprimé.' }}</p>
                     <a href="{{ url_for('view_mail') }}" 
                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
                         <i class="fas fa-arrow-left mr-2"></i>
-                        Retour aux courriers
+                        {{ t('back_to_mail') or 'Retour aux courriers' }}
                     </a>
                 </div>
                 {% endif %}
@@ -155,7 +155,7 @@
                            class="flex items-center p-4 border-2 border-dashed border-red-600 rounded-lg hover:bg-red-50 transition-colors group w-full">
                         <i class="fas fa-trash text-2xl text-red-600 mr-3 group-hover:scale-110 transition-transform"></i>
                         <div class="text-left">
-                            <p class="font-medium text-gray-900">Vider la Corbeille</p>
+                            <p class="font-medium text-gray-900">{{ t('empty_trash') or 'Vider la Corbeille' }}</p>
                             <p class="text-sm text-gray-500">Suppression définitive</p>
                         </div>
                     </button>

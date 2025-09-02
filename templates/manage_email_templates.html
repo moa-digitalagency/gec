@@ -9,14 +9,14 @@
         <div>
             <h1 class="text-3xl font-bold text-gray-900 flex items-center">
                 <i class="fas fa-envelope-open-text mr-3 text-rdc-blue"></i>
-                Gestion des Templates Email
+                {{ t('email_templates_management') or 'Gestion des Templates Email' }}
             </h1>
-            <p class="mt-2 text-gray-600">Configurez les templates d'email pour les notifications en français et anglais</p>
+            <p class="mt-2 text-gray-600">{{ t('configure_email_templates') or 'Configurez les templates d\'email pour les notifications en français et anglais' }}</p>
         </div>
         <a href="{{ url_for('add_email_template') }}" 
            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
             <i class="fas fa-plus mr-2"></i>
-            Nouveau Template
+            {{ t('new_template') or 'Nouveau Template' }}
         </a>
     </div>
 </div>
@@ -86,12 +86,12 @@
         <div class="px-6 py-4">
             <div class="space-y-3">
                 <div>
-                    <label class="text-sm font-medium text-gray-500">Sujet :</label>
+                    <label class="text-sm font-medium text-gray-500">{{ t('template_subject') or 'Sujet :' }}</label>
                     <p class="text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ template.sujet }}</p>
                 </div>
                 
                 <div>
-                    <label class="text-sm font-medium text-gray-500">Aperçu HTML :</label>
+                    <label class="text-sm font-medium text-gray-500">{{ t('html_preview') or 'Aperçu HTML :' }}</label>
                     <div class="mt-1 border border-gray-200 rounded bg-gray-50 p-2 max-h-32 overflow-y-auto">
                         <div class="text-xs text-gray-600">
                             {{ template.contenu_html[:200] }}{% if template.contenu_html|length > 200 %}...{% endif %}
@@ -100,9 +100,9 @@
                 </div>
                 
                 <div class="text-xs text-gray-500 flex items-center justify-between">
-                    <span>Créé par {{ template.cree_par.nom_complet }} le {{ template.date_creation.strftime('%d/%m/%Y') }}</span>
+                    <span>{{ t('created_by') or 'Créé par' }} {{ template.cree_par.nom_complet }} le {{ template.date_creation.strftime('%d/%m/%Y') }}</span>
                     {% if template.date_modification > template.date_creation %}
-                        <span>Modifié le {{ template.date_modification.strftime('%d/%m/%Y') }}</span>
+                        <span>{{ t('modified_on') or 'Modifié le' }} {{ template.date_modification.strftime('%d/%m/%Y') }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -112,12 +112,12 @@
     <div class="lg:col-span-2">
         <div class="text-center py-12">
             <i class="fas fa-envelope-open-text text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun template email</h3>
-            <p class="text-gray-500 mb-6">Commencez par créer votre premier template d'email pour les notifications.</p>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_email_templates') or 'Aucun template email' }}</h3>
+            <p class="text-gray-500 mb-6">{{ t('create_first_template') or 'Commencez par créer votre premier template d\'email pour les notifications.' }}</p>
             <a href="{{ url_for('add_email_template') }}" 
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700">
                 <i class="fas fa-plus mr-2"></i>
-                Créer un Template
+                {{ t('create_template') or 'Créer un Template' }}
             </a>
         </div>
     </div>
@@ -131,20 +131,20 @@
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-2">Confirmer la suppression</h3>
+            <h3 class="text-lg font-medium text-gray-900 mt-2">{{ t('confirm_template_deletion') or 'Confirmer la suppression' }}</h3>
             <div class="mt-2 px-7 py-3">
                 <p class="text-sm text-gray-500" id="deleteMessage">
-                    Êtes-vous sûr de vouloir supprimer ce template ?
+                    {{ t('confirm_delete_template') or 'Êtes-vous sûr de vouloir supprimer ce template ?' }}
                 </p>
             </div>
             <div class="items-center px-4 py-3">
                 <button id="confirmDelete" 
                         class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    Supprimer
+                    {{ t('delete') or 'Supprimer' }}
                 </button>
                 <button onclick="closeDeleteModal()" 
                         class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Annuler
+                    {{ t('cancel') or 'Annuler' }}
                 </button>
             </div>
         </div>

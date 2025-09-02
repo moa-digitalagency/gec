@@ -16,7 +16,7 @@ import logging
 
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file
 
 # Le support des langues est maintenant dans utils.py
 from email_utils import send_new_mail_notification, send_mail_forwarded_notification
@@ -2065,7 +2065,8 @@ def manage_statuses():
 def set_language_route(lang_code):
     """Changer la langue de l'interface"""
     # Vérifier que la langue est supportée
-    if lang_code not in ['fr', 'en']:
+    available_languages = get_available_languages()
+    if lang_code not in available_languages:
         flash('Langue non supportée', 'error')
         return redirect(request.referrer or url_for('dashboard'))
     
@@ -4667,4 +4668,115 @@ def mark_notification_read_ajax(notification_id):
     except Exception as e:
         logging.error(f"Erreur AJAX marquage notification: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+# ===== GESTION DES LANGUES =====
+
+@app.route('/manage_languages')
+@login_required
+def manage_languages():
+    """Gestion des langues - accessible uniquement aux super admins"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    all_languages = get_all_languages()
+    return render_template('manage_languages.html', languages=all_languages)
+
+@app.route('/toggle_language/<lang_code>', methods=['POST'])
+@login_required
+def toggle_language(lang_code):
+    """Activer/désactiver une langue"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    enabled = request.json.get('enabled', False)
+    
+    if toggle_language_status(lang_code, enabled):
+        status = "activée" if enabled else "désactivée"
+        log_activity(current_user.id, "LANGUAGE_TOGGLE", 
+                    f"Langue {lang_code} {status}")
+        return jsonify({'success': True, 'message': f'Langue {status} avec succès'})
+    else:
+        return jsonify({'success': False, 'message': 'Erreur lors de la modification'}), 400
+
+@app.route('/download_language/<lang_code>')
+@login_required
+def download_language(lang_code):
+    """Télécharger un fichier de langue JSON"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    file_path = download_language_file(lang_code)
+    if file_path:
+        log_activity(current_user.id, "LANGUAGE_DOWNLOAD", 
+                    f"Téléchargement du fichier de langue {lang_code}")
+        return send_file(file_path, as_attachment=True, 
+                        download_name=f'{lang_code}.json',
+                        mimetype='application/json')
+    else:
+        flash('Fichier de langue non trouvé.', 'error')
+        return redirect(url_for('manage_languages'))
+
+@app.route('/upload_language', methods=['POST'])
+@login_required
+def upload_language():
+    """Upload un nouveau fichier de langue JSON"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if 'language_file' not in request.files:
+        flash('Aucun fichier sélectionné.', 'error')
+        return redirect(url_for('manage_languages'))
+    
+    file = request.files['language_file']
+    lang_code = request.form.get('lang_code', '').lower().strip()
+    
+    if file.filename == '' or not lang_code:
+        flash('Fichier et code de langue requis.', 'error')
+        return redirect(url_for('manage_languages'))
+    
+    if not lang_code or len(lang_code) != 2:
+        flash('Le code de langue doit faire exactement 2 caractères.', 'error')
+        return redirect(url_for('manage_languages'))
+    
+    if file and file.filename.endswith('.json'):
+        try:
+            file_content = file.read().decode('utf-8')
+            
+            if upload_language_file(lang_code, file_content):
+                log_activity(current_user.id, "LANGUAGE_UPLOAD", 
+                            f"Upload du fichier de langue {lang_code}")
+                flash(f'Fichier de langue {lang_code} uploadé avec succès!', 'success')
+            else:
+                flash('Erreur lors de l\'upload du fichier. Vérifiez le format JSON.', 'error')
+        except Exception as e:
+            flash(f'Erreur lors de l\'upload: {str(e)}', 'error')
+    else:
+        flash('Seuls les fichiers JSON sont acceptés.', 'error')
+    
+    return redirect(url_for('manage_languages'))
+
+@app.route('/delete_language/<lang_code>', methods=['POST'])
+@login_required
+def delete_language(lang_code):
+    """Supprimer un fichier de langue"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    if lang_code == 'fr':
+        flash('Impossible de supprimer le fichier français (langue de référence).', 'error')
+        return redirect(url_for('manage_languages'))
+    
+    if delete_language_file(lang_code):
+        log_activity(current_user.id, "LANGUAGE_DELETE", 
+                    f"Suppression du fichier de langue {lang_code}")
+        flash(f'Fichier de langue {lang_code} supprimé avec succès!', 'success')
+    else:
+        flash('Erreur lors de la suppression du fichier.', 'error')
+    
+    return redirect(url_for('manage_languages'))
 

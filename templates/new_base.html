@@ -213,6 +213,12 @@
                             {{ t('manage_users') or 'Gérer les Utilisateurs' }}
                         </a>
                         {% endif %}
+                        {% if current_user.is_super_admin() %}
+                        <a href="{{ url_for('manage_languages') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fas fa-globe" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
+                            {{ t('manage_languages') or 'Gérer les Langues' }}
+                        </a>
+                        {% endif %}
                         {% if current_user.has_permission('view_all_logs') or current_user.is_super_admin() %}
                         <a href="{{ url_for('view_logs') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
                             <i class="fas fa-history" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
@@ -255,16 +261,17 @@
                     <!-- Language Switch -->
                     <div style="border-top: 1px solid #009639; padding-top: 1rem;">
                         <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
-                            Langue / Language
+                            {{ t('language') or 'Langue' }}
                         </div>
-                        <a href="{{ url_for('set_language_route', lang_code='fr') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
+                        {% for lang_code, lang_info in get_available_languages().items() %}
+                        <a href="{{ url_for('set_language_route', lang_code=lang_code) }}" 
+                           style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none; {% if current_language == lang_code %}background-color: #009639;{% endif %}" 
+                           onmouseover="this.style.backgroundColor='#009639'" 
+                           onmouseout="this.style.backgroundColor='{% if current_language == lang_code %}#009639{% else %}transparent{% endif %}'">
                             <i class="fas fa-flag" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            🇫🇷 Français
+                            {{ lang_info.flag }} {{ lang_info.name }}
                         </a>
-                        <a href="{{ url_for('set_language_route', lang_code='en') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-flag" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            🇬🇧 English
-                        </a>
+                        {% endfor %}
                     </div>
                     
                     <!-- Déconnexion -->

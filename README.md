@@ -1,7 +1,5 @@
 # GEC - Système de Gestion Électronique du Courrier
 
-**[English Version](README_EN.md)**
-
 ## Aperçu
 
 GEC (Gestion Électronique du Courrier) est une application web Flask complète pour la gestion numérique de la correspondance. Développée spécialement pour les administrations et entreprises, elle offre une solution sécurisée et auditable pour l'enregistrement, le suivi et la gestion des courriers avec fichiers joints.
@@ -76,11 +74,24 @@ GEC (Gestion Électronique du Courrier) est une application web Flask complète 
 - **Configuration email** (SMTP/SendGrid)
 - **Gestion des statuts** et types de courriers
 
-### 🌍 Multi-langue
-- **Support français et anglais**
-- **Fichiers de traduction JSON**
-- **Commutation de langue** en temps réel
-- **Interface entièrement localisée**
+### 🌍 Système Multi-langue Avancé
+- **Détection automatique** des langues disponibles
+- **Support de 10+ langues** : Français, Anglais, Espagnol, Allemand, Italien, Portugais, Arabe, Chinois, Japonais, Russe
+- **Interface d'administration** pour la gestion des langues
+- **Activation/désactivation** des langues individuelles
+- **Upload et téléchargement** des fichiers de traduction
+- **Persistance des préférences** (session + cookie + base de données)
+- **Fallback intelligent** vers le français par défaut
+- **560+ clés de traduction** par langue
+
+#### 🎛️ Gestion des Langues (Super Admin)
+- **Interface dédiée** : `/manage_languages`
+- **Toggle switch** pour activer/désactiver les langues
+- **Upload de nouveaux fichiers** JSON de traduction
+- **Téléchargement** des fichiers existants
+- **Suppression sécurisée** (protection du français)
+- **Validation automatique** des fichiers JSON
+- **Logs d'audit** pour toutes les actions
 
 ### 🔒 Sauvegarde et Migration
 - **Système de sauvegarde automatique**
@@ -343,6 +354,36 @@ python -m pip install --upgrade pip
 # Changer le port dans main.py ou utiliser
 python main.py --port 8080
 ```
+
+## Utilisation du Système Multi-langue
+
+### Pour les Utilisateurs
+1. **Changement de langue** : Utilisez le sélecteur dans la sidebar
+2. **Persistance** : Votre choix est sauvegardé automatiquement
+3. **Langues disponibles** : Seules les langues activées par l'admin sont visibles
+
+### Pour les Super Administrateurs
+1. **Accès** : Menu → "Gérer les Langues" 🌐
+2. **Activation/Désactivation** : Utilisez les toggle switches
+3. **Ajout de langue** : Upload d'un fichier JSON via l'interface
+4. **Téléchargement** : Pour modifier les traductions
+5. **Suppression** : Protection du français (langue de référence)
+
+### Structure des Fichiers de Traduction
+```
+lang/
+├── fr.json          # Français (référence, protégé)
+├── en.json          # Anglais
+├── es.json          # Espagnol
+├── de.json          # Allemand
+└── [code].json      # Autres langues...
+```
+
+### Ajout d'une Nouvelle Langue
+1. **Préparer** : Copier `lang/fr.json` comme modèle
+2. **Traduire** : Remplacer toutes les valeurs par les traductions
+3. **Uploader** : Via l'interface d'administration
+4. **Activer** : Utiliser le toggle switch
 
 ## Support et Contribution
 

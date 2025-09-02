@@ -2,14 +2,22 @@ import json
 import os
 from flask import session, request
 
-# Languages disponibles
-AVAILABLE_LANGUAGES = {
-    'fr': {'name': 'Français', 'flag': '🇫🇷'},
-    'en': {'name': 'English', 'flag': '🇺🇸'}
+# Configuration des langues par défaut (peut être étendue automatiquement)
+DEFAULT_LANGUAGE_CONFIG = {
+    'fr': {'name': 'Français', 'flag': '🇫🇷', 'enabled': True},
+    'en': {'name': 'English', 'flag': '🇺🇸', 'enabled': True},
+    'es': {'name': 'Español', 'flag': '🇪🇸', 'enabled': True},
+    'de': {'name': 'Deutsch', 'flag': '🇩🇪', 'enabled': True},
+    'it': {'name': 'Italiano', 'flag': '🇮🇹', 'enabled': False},
+    'pt': {'name': 'Português', 'flag': '🇵🇹', 'enabled': False},
+    'ar': {'name': 'العربية', 'flag': '🇸🇦', 'enabled': False},
+    'zh': {'name': '中文', 'flag': '🇨🇳', 'enabled': False},
+    'ja': {'name': '日本語', 'flag': '🇯🇵', 'enabled': False},
+    'ru': {'name': 'Русский', 'flag': '🇷🇺', 'enabled': False}
 }
 
 def get_available_languages():
-    """Retourne la liste des langues disponibles"""
+    """Retourne la liste des langues disponibles en détectant automatiquement les fichiers JSON"""
     languages = {}
     lang_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lang')
     
@@ -17,24 +25,66 @@ def get_available_languages():
         for filename in os.listdir(lang_dir):
             if filename.endswith('.json'):
                 lang_code = filename[:-5]  # Remove .json
-                if lang_code in AVAILABLE_LANGUAGES:
-                    languages[lang_code] = AVAILABLE_LANGUAGES[lang_code]
+                
+                # Utiliser la configuration par défaut si disponible, sinon générer automatiquement
+                if lang_code in DEFAULT_LANGUAGE_CONFIG:
+                    lang_config = DEFAULT_LANGUAGE_CONFIG[lang_code].copy()
+                    # Vérifier si la langue est activée
+                    if lang_config.get('enabled', True):
+                        languages[lang_code] = lang_config
+                else:
+                    # Génération automatique pour les nouvelles langues (activées par défaut)
+                    languages[lang_code] = {
+                        'name': lang_code.upper(),  # Nom par défaut
+                        'flag': '🌐',  # Drapeau générique
+                        'enabled': True
+                    }
     
     return languages
 
+def get_all_languages():
+    """Retourne toutes les langues (activées et désactivées)"""
+    languages = {}
+    lang_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'lang')
+    
+    if os.path.exists(lang_dir):
+        for filename in os.listdir(lang_dir):
+            if filename.endswith('.json'):
+                lang_code = filename[:-5]  # Remove .json
+                
+                # Utiliser la configuration par défaut si disponible, sinon générer automatiquement
+                if lang_code in DEFAULT_LANGUAGE_CONFIG:
+                    languages[lang_code] = DEFAULT_LANGUAGE_CONFIG[lang_code].copy()
+                else:
+                    # Génération automatique pour les nouvelles langues
+                    languages[lang_code] = {
+                        'name': lang_code.upper(),  # Nom par défaut
+                        'flag': '🌐',  # Drapeau générique
+                        'enabled': True
+                    }
+    
+    return languages
+
+def get_language_info(lang_code):
+    """Obtient les informations d'une langue spécifique"""
+    available_languages = get_available_languages()
+    return available_languages.get(lang_code, {'name': lang_code.upper(), 'flag': '🌐'})
+
 def get_current_language():
     """Obtient la langue actuelle depuis la session ou les préférences utilisateur"""
+    available_languages = get_available_languages()
+    
     # 1. Vérifier la session en premier
     if 'language' in session and session['language']:
         lang = session['language']
-        if lang in AVAILABLE_LANGUAGES:
+        if lang in available_languages:
             return lang
     
     # 2. Si utilisateur connecté, vérifier ses préférences
     try:
         from flask_login import current_user
         if current_user.is_authenticated and hasattr(current_user, 'langue') and current_user.langue:
-            if current_user.langue in AVAILABLE_LANGUAGES:
+            if current_user.langue in available_languages:
                 # Mettre à jour la session pour la cohérence
                 session['language'] = current_user.langue
                 return current_user.langue
@@ -44,20 +94,24 @@ def get_current_language():
     # 3. Vérifier les préférences du navigateur
     try:
         if hasattr(request, 'accept_languages') and request.accept_languages:
-            best_match = request.accept_languages.best_match(['fr', 'en'])
-            if best_match and best_match in AVAILABLE_LANGUAGES:
+            # Créer une liste des codes de langue disponibles
+            available_codes = list(available_languages.keys())
+            best_match = request.accept_languages.best_match(available_codes)
+            if best_match and best_match in available_languages:
                 session['language'] = best_match
                 return best_match
     except Exception:
         pass
     
-    # 4. Langue par défaut
-    session['language'] = 'fr'
-    return 'fr'
+    # 4. Langue par défaut (français si disponible, sinon la première disponible)
+    default_lang = 'fr' if 'fr' in available_languages else list(available_languages.keys())[0] if available_languages else 'fr'
+    session['language'] = default_lang
+    return default_lang
 
 def set_language(lang_code):
     """Définit la langue dans la session"""
-    if lang_code in get_available_languages():
+    available_languages = get_available_languages()
+    if lang_code in available_languages:
         session['language'] = lang_code
         return True
     return False

@@ -7,9 +7,9 @@
 <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
         <i class="fas fa-history mr-3 text-rdc-blue"></i>
-        Logs d'Activité
+        {{ t('activity_logs') or 'Logs d\'Activité' }}
     </h1>
-    <p class="mt-2 text-gray-600">Consultation de toutes les activités des utilisateurs</p>
+    <p class="mt-2 text-gray-600">{{ t('view_user_activities') or 'Consultation de toutes les activités des utilisateurs' }}</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -19,7 +19,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <i class="fas fa-filter mr-2 text-rdc-blue"></i>
-                    Filtres
+                    {{ t('filters') or 'Filtres' }}
                 </h2>
             </div>
             <div class="p-6">
@@ -28,26 +28,26 @@
                     <div>
                         <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-search mr-1 text-rdc-blue"></i>
-                            Recherche
+                            {{ t('search') or 'Recherche' }}
                         </label>
                         <input type="text" 
                                id="search" 
                                name="search" 
                                value="{{ search }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="Action, description, utilisateur...">
+                               placeholder="{{ t('search_placeholder_logs') or 'Action, description, utilisateur...' }}">
                     </div>
                     
                     <!-- Action Filter -->
                     <div>
                         <label for="action" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-tasks mr-1 text-rdc-green"></i>
-                            Type d'action
+                            {{ t('action_type') or 'Type d\'action' }}
                         </label>
                         <select id="action" 
                                 name="action"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="">Toutes les actions</option>
+                            <option value="">{{ t('all_actions') or 'Toutes les actions' }}</option>
                             {% for action in actions_list %}
                                 <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>
                                     {{ action.replace('_', ' ').title() }}
@@ -65,7 +65,7 @@
                         <select id="user_id" 
                                 name="user_id"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="">Tous les utilisateurs</option>
+                            <option value="">{{ t('all_users') or 'Tous les utilisateurs' }}</option>
                             {% for user in users_list %}
                                 <option value="{{ user.id }}" {% if user_filter == user.id|string %}selected{% endif %}>
                                     {{ user.nom_complet }} ({{ user.username }})
@@ -78,7 +78,7 @@
                     <div>
                         <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-calendar mr-1 text-rdc-red"></i>
-                            Date de début
+                            {{ t('date_from') or 'Date de début' }}
                         </label>
                         <input type="date" 
                                id="date_from" 
@@ -90,7 +90,7 @@
                     <div>
                         <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-calendar mr-1 text-rdc-red"></i>
-                            Date de fin
+                            {{ t('date_to') or 'Date de fin' }}
                         </label>
                         <input type="date" 
                                id="date_to" 
@@ -104,12 +104,12 @@
                         <button type="submit" 
                                 class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
                             <i class="fas fa-filter mr-2"></i>
-                            Filtrer
+                            {{ t('filter_button') or 'Filtrer' }}
                         </button>
                         <a href="{{ url_for('view_logs') }}" 
                            class="w-full flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                             <i class="fas fa-eraser mr-2"></i>
-                            Réinitialiser
+                            {{ t('reset_button') or 'Réinitialiser' }}
                         </a>
                     </div>
                 </form>
@@ -123,10 +123,10 @@
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-gray-900 flex items-center">
                     <i class="fas fa-list mr-2 text-rdc-blue"></i>
-                    Journal des Activités
+                    {{ t('activity_journal') or 'Journal des Activités' }}
                 </h2>
                 <div class="text-sm text-gray-500">
-                    {{ pagination.total }} entrée(s) trouvée(s)
+                    {{ pagination.total }} {{ t('entries_found') or 'entrée(s) trouvée(s)' }}
                 </div>
             </div>
             
@@ -135,19 +135,19 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Date & Heure
+                                {{ t('date_time') or 'Date & Heure' }}
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Utilisateur
+                                {{ t('user') or 'Utilisateur' }}
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Action
+                                {{ t('action') or 'Action' }}
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Description
+                                {{ t('description') or 'Description' }}
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                IP
+                                {{ t('ip') or 'IP' }}
                             </th>
                         </tr>
                     </thead>
@@ -217,8 +217,8 @@
                         <tr>
                             <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                 <i class="fas fa-history text-4xl text-gray-300 mb-4"></i>
-                                <p class="text-lg font-medium">Aucun log trouvé</p>
-                                <p class="text-sm">Aucune activité ne correspond aux critères de recherche.</p>
+                                <p class="text-lg font-medium">{{ t('no_logs_found') or 'Aucun log trouvé' }}</p>
+                                <p class="text-sm">{{ t('no_activity_criteria') or 'Aucune activité ne correspond aux critères de recherche.' }}</p>
                             </td>
                         </tr>
                         {% endfor %}

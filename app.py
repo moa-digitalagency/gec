@@ -17,6 +17,7 @@ db = SQLAlchemy(model_class=Base)
 # Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-gec-mines")
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30  # 30 jours
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database

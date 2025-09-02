@@ -38,7 +38,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
                 <h2 class="text-xl font-semibold text-white flex items-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>
-                    Contrôle des Connexions
+                    {{ t('login_control') or 'Contrôle des Connexions' }}
                 </h2>
             </div>
             <form method="POST" class="p-6 space-y-4">
@@ -47,7 +47,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-exclamation-triangle mr-1 text-rdc-yellow"></i>
-                        Nombre maximum de tentatives de connexion
+                        {{ t('max_login_attempts') or 'Nombre maximum de tentatives de connexion' }}
                     </label>
                     <input type="number" 
                            name="max_login_attempts" 
@@ -55,13 +55,13 @@
                            min="3" 
                            max="20"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
-                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ max_login_attempts }} tentatives autorisées</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ t('currently_allowed') or 'Actuellement' }} : {{ max_login_attempts }} {{ t('attempts_allowed') or 'tentatives autorisées' }}</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-clock mr-1 text-rdc-blue"></i>
-                        Durée de blocage (minutes)
+                        {{ t('lockout_duration') or 'Durée de blocage (minutes)' }}
                     </label>
                     <input type="number" 
                            name="lockout_duration" 
@@ -69,13 +69,13 @@
                            min="5" 
                            max="120"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
-                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ lockout_duration }} minutes de blocage</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ t('currently_allowed') or 'Actuellement' }} : {{ lockout_duration }} {{ t('minutes_blocking') or 'minutes de blocage' }}</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-tachometer-alt mr-1 text-rdc-green"></i>
-                        Limite de requêtes par période
+                        {{ t('rate_limit_requests') or 'Limite de requêtes par période' }}
                     </label>
                     <input type="number" 
                            name="rate_limit_requests" 
@@ -83,12 +83,12 @@
                            min="5" 
                            max="50"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
-                    <p class="text-xs text-gray-500 mt-1">Actuellement : {{ rate_limit_requests }} requêtes par 15 minutes</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ t('currently_allowed') or 'Actuellement' }} : {{ rate_limit_requests }} {{ t('requests_per_15min') or 'requêtes par 15 minutes' }}</p>
                 </div>
 
                 <button type="submit" 
                         class="w-full bg-rdc-blue text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-save mr-2"></i>Sauvegarder les Paramètres
+                    <i class="fas fa-save mr-2"></i>{{ t('save_security_settings') or 'Sauvegarder les Paramètres' }}
                 </button>
             </form>
         </div>
@@ -98,7 +98,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-red-600">
                 <h2 class="text-xl font-semibold text-white flex items-center">
                     <i class="fas fa-ban mr-2"></i>
-                    Gestion des IP Bloquées
+                    {{ t('blocked_ip_management') or 'Gestion des IP Bloquées' }}
                 </h2>
             </div>
             <div class="p-6 space-y-4">
@@ -107,13 +107,13 @@
                     <input type="hidden" name="form_type" value="unblock_all">
                     <button type="submit" 
                             class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                        <i class="fas fa-unlock mr-2"></i>Débloquer Toutes les IP
+                        <i class="fas fa-unlock mr-2"></i>{{ t('unblock_all_ips') or 'Débloquer Toutes les IP' }}
                     </button>
                 </form>
 
                 <!-- Liste des IPs bloquées -->
                 <div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-3">IP Actuellement Bloquées</h3>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">{{ t('currently_blocked_ips') or 'IP Actuellement Bloquées' }}</h3>
                     {% if blocked_ips %}
                         <div class="space-y-2">
                             {% for ip in blocked_ips %}
@@ -124,7 +124,7 @@
                                     <input type="hidden" name="ip_address" value="{{ ip }}">
                                     <button type="submit" 
                                             class="text-green-600 hover:text-green-800 text-sm">
-                                        <i class="fas fa-unlock"></i> Débloquer
+                                        <i class="fas fa-unlock"></i> {{ t('unblock') or 'Débloquer' }}
                                     </button>
                                 </form>
                             </div>
@@ -133,21 +133,21 @@
                     {% else %}
                         <p class="text-gray-500 text-center py-4">
                             <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                            Aucune IP bloquée actuellement
+                            {{ t('no_ips_blocked') or 'Aucune IP bloquée actuellement' }}
                         </p>
                     {% endif %}
                 </div>
 
                 <!-- Statistiques -->
                 <div class="mt-6 p-4 bg-gray-50 rounded-md">
-                    <h4 class="font-medium text-gray-900 mb-2">Statistiques de Sécurité</h4>
+                    <h4 class="font-medium text-gray-900 mb-2">{{ t('security_statistics') or 'Statistiques de Sécurité' }}</h4>
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <span class="text-gray-600">Tentatives échouées (24h):</span>
+                            <span class="text-gray-600">{{ t('failed_attempts_24h') or 'Tentatives échouées (24h)' }}:</span>
                             <span class="font-medium ml-2">{{ failed_attempts_24h }}</span>
                         </div>
                         <div>
-                            <span class="text-gray-600">IPs surveillées:</span>
+                            <span class="text-gray-600">{{ t('monitored_ips') or 'IPs surveillées' }}:</span>
                             <span class="font-medium ml-2">{{ monitored_ips }}</span>
                         </div>
                     </div>
@@ -160,7 +160,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-rdc-yellow">
                 <h2 class="text-xl font-semibold text-white flex items-center">
                     <i class="fas fa-cogs mr-2"></i>
-                    Configuration Avancée
+                    {{ t('advanced_configuration') or 'Configuration Avancée' }}
                 </h2>
             </div>
             <form method="POST" class="p-6">
@@ -170,7 +170,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-exclamation-circle mr-1 text-red-500"></i>
-                            Seuil d'activité suspecte
+                            {{ t('suspicious_activity_threshold') or 'Seuil d\'activité suspecte' }}
                         </label>
                         <input type="number" 
                                name="suspicious_threshold" 
@@ -178,13 +178,13 @@
                                min="5" 
                                max="50"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
-                        <p class="text-xs text-gray-500 mt-1">Nombre d'actions suspectes avant alerte</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ t('suspicious_threshold_help') or 'Nombre d\'actions suspectes avant alerte' }}</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-shield-alt mr-1 text-rdc-blue"></i>
-                            Durée de blocage automatique (minutes)
+                            {{ t('auto_block_duration') or 'Durée de blocage automatique (minutes)' }}
                         </label>
                         <input type="number" 
                                name="auto_block_duration" 
@@ -192,7 +192,7 @@
                                min="10" 
                                max="240"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-rdc-blue focus:border-rdc-blue">
-                        <p class="text-xs text-gray-500 mt-1">Durée de blocage pour activité suspecte</p>
+                        <p class="text-xs text-gray-500 mt-1">{{ t('auto_block_duration_help') or 'Durée de blocage pour activité suspecte' }}</p>
                     </div>
 
                     <div class="md:col-span-2">
@@ -203,17 +203,17 @@
                                    {% if audit_logging_enabled %}checked{% endif %}
                                    class="h-4 w-4 text-rdc-blue focus:ring-rdc-blue border-gray-300 rounded">
                             <label for="enable_audit_logging" class="ml-2 block text-sm text-gray-900">
-                                Activer l'audit complet des actions utilisateur
+                                {{ t('enable_audit_logging') or 'Activer l\'audit complet des actions utilisateur' }}
                             </label>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1 ml-6">Enregistre toutes les actions sensibles (peut impacter les performances)</p>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">{{ t('audit_logging_help') or 'Enregistre toutes les actions sensibles (peut impacter les performances)' }}</p>
                     </div>
                 </div>
 
                 <div class="mt-6">
                     <button type="submit" 
                             class="bg-rdc-yellow text-white px-6 py-2 rounded-md hover:bg-yellow-600 transition-colors">
-                        <i class="fas fa-cog mr-2"></i>Appliquer la Configuration Avancée
+                        <i class="fas fa-cog mr-2"></i>{{ t('apply_advanced_config') or 'Appliquer la Configuration Avancée' }}
                     </button>
                 </div>
             </form>
@@ -223,7 +223,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-green-600">
                 <h2 class="text-xl font-semibold text-white flex items-center">
                     <i class="fas fa-shield-check mr-2"></i>
-                    Gestion de la Whitelist IP
+                    {{ t('whitelist_management') or 'Gestion de la Whitelist IP' }}
                 </h2>
             </div>
             <div class="p-6 space-y-4">
@@ -232,31 +232,31 @@
                     <input type="hidden" name="form_type" value="add_whitelist">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Adresse IP à ajouter à la whitelist
+                            {{ t('add_to_whitelist') or 'Adresse IP à ajouter à la whitelist' }}
                         </label>
                         <input type="text" 
                                name="whitelist_ip" 
-                               placeholder="Ex: 192.168.1.100 ou 203.0.113.0"
+                               placeholder="{{ t('whitelist_ip_placeholder') or 'Ex: 192.168.1.100 ou 203.0.113.0' }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Description (optionnel)
+                            {{ t('whitelist_description') or 'Description (optionnel)' }}
                         </label>
                         <input type="text" 
                                name="whitelist_description" 
-                               placeholder="Ex: Serveur principal, Bureau direction..."
+                               placeholder="{{ t('whitelist_description_placeholder') or 'Ex: Serveur principal, Bureau direction...' }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500">
                     </div>
                     <button type="submit" 
                             class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Ajouter à la Whitelist
+                        <i class="fas fa-plus mr-2"></i>{{ t('add_to_whitelist_button') or 'Ajouter à la Whitelist' }}
                     </button>
                 </form>
 
                 <!-- Liste des IPs en whitelist -->
                 <div class="mt-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-3">IPs en Whitelist</h3>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">{{ t('whitelisted_ips') or 'IPs en Whitelist' }}</h3>
                     {% if whitelisted_ips %}
                         <div class="space-y-2">
                             {% for ip in whitelisted_ips %}
@@ -266,14 +266,14 @@
                                     {% if ip.description %}
                                         <p class="text-xs text-gray-600">{{ ip.description }}</p>
                                     {% endif %}
-                                    <p class="text-xs text-gray-500">Ajoutée le {{ ip.created_at.strftime('%d/%m/%Y') }} par {{ ip.created_by }}</p>
+                                    <p class="text-xs text-gray-500">{{ t('added_on') or 'Ajoutée le' }} {{ ip.created_at.strftime('%d/%m/%Y') }} {{ t('by') or 'par' }} {{ ip.created_by }}</p>
                                 </div>
                                 <form method="POST" class="inline">
                                     <input type="hidden" name="form_type" value="remove_whitelist">
                                     <input type="hidden" name="ip_address" value="{{ ip.ip_address }}">
                                     <button type="submit" 
                                             class="text-red-600 hover:text-red-800 px-2 py-1 text-sm"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir retirer cette IP de la whitelist ?')">
+                                            onclick="return confirm('{{ t('remove_from_whitelist') or 'Êtes-vous sûr de vouloir retirer cette IP de la whitelist ?' }}')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -283,7 +283,7 @@
                     {% else %}
                         <div class="flex items-center justify-center p-6 text-gray-500">
                             <i class="fas fa-info-circle mr-2 text-blue-500"></i>
-                            Aucune IP en whitelist actuellement
+                            {{ t('no_whitelisted_ips') or 'Aucune IP en whitelist actuellement' }}
                         </div>
                     {% endif %}
                 </div>
@@ -298,12 +298,10 @@
                 <i class="fas fa-exclamation-triangle text-yellow-400"></i>
             </div>
             <div class="ml-3">
-                <h3 class="text-sm font-medium text-yellow-800">Important</h3>
+                <h3 class="text-sm font-medium text-yellow-800">{{ t('security_important') or 'Important' }}</h3>
                 <div class="mt-2 text-sm text-yellow-700">
-                    <p>Des paramètres de sécurité trop permissifs peuvent exposer votre système à des attaques. 
-                    Des paramètres trop restrictifs peuvent bloquer les utilisateurs légitimes. 
-                    Ajustez ces valeurs avec prudence et surveillez les logs de sécurité.</p>
-                    <p class="mt-2"><strong>Whitelist :</strong> Les IPs en whitelist ne seront jamais bloquées, même en cas d'activité suspecte.</p>
+                    <p>{{ t('security_warning') or 'Des paramètres de sécurité trop permissifs peuvent exposer votre système à des attaques. Des paramètres trop restrictifs peuvent bloquer les utilisateurs légitimes. Ajustez ces valeurs avec prudence et surveillez les logs de sécurité.' }}</p>
+                    <p class="mt-2"><strong>{{ t('whitelist_note') or 'Whitelist : Les IPs en whitelist ne seront jamais bloquées, même en cas d\'activité suspecte.' }}</strong></p>
                 </div>
             </div>
         </div>
