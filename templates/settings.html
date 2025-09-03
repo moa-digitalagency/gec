@@ -799,6 +799,17 @@
         </a>
         {% endif %}
 
+        <!-- Gestion des Rôles -->
+        {% if current_user.is_super_admin() %}
+        <a href="{{ url_for('manage_roles') }}" class="group block bg-gradient-to-br from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 rounded-lg p-6 transition-all duration-200 border border-pink-200 hover:border-pink-300">
+            <div class="flex items-center mb-3">
+                <i class="fas fa-user-shield text-pink-600 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-pink-800">Gestion des Rôles</h3>
+            </div>
+            <p class="text-sm text-gray-600 group-hover:text-pink-700">Configurer les rôles utilisateur et leurs permissions</p>
+        </a>
+        {% endif %}
+
         <!-- Gestion des Langues -->
         {% if current_user.is_super_admin() %}
         <a href="{{ url_for('manage_languages') }}" class="group block bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg p-6 transition-all duration-200 border border-teal-200 hover:border-teal-300">

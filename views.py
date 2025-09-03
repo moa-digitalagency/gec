@@ -1296,6 +1296,11 @@ def download_file(id):
 @login_required
 @rate_limit(max_requests=20, per_minutes=15)
 def settings():
+    # Vérification des permissions
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent accéder aux paramètres.', 'error')
+        return redirect(url_for('dashboard'))
+    
     with PerformanceMonitor("settings_page"):
         parametres = ParametresSysteme.get_parametres()
         # Types de courrier sortant maintenant gérés dans une page dédiée
@@ -3765,6 +3770,11 @@ def export_security_logs(level, event_type, date_start, date_end):
 @login_required
 def analytics():
     """Tableau de bord analytique avec statistiques et graphiques"""
+    # Vérification des permissions
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent accéder aux analyses.', 'error')
+        return redirect(url_for('dashboard'))
+    
     from datetime import datetime, timedelta
     from sqlalchemy import func
     import json
