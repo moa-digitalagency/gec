@@ -823,7 +823,7 @@
 
         <!-- Logs d'Activités -->
         {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('logs') }}" class="group block bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg p-6 transition-all duration-200 border border-blue-200 hover:border-blue-300">
+        <a href="{{ url_for('activity_logs') }}" class="group block bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg p-6 transition-all duration-200 border border-blue-200 hover:border-blue-300">
             <div class="flex items-center mb-3">
                 <i class="fas fa-list-alt text-blue-600 text-xl mr-3"></i>
                 <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-800">Logs d'Activités</h3>
