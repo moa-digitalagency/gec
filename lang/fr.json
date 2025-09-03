@@ -699,5 +699,15 @@
   "install_update": "Installer la mise à jour",
   "checking": "Vérification...",
   "no_updates_available": "Aucune mise à jour disponible.",
-  "never": "Jamais"
+  "never": "Jamais",
+  "roles_management": "Gestion des Rôles",
+  "manage_user_roles_permissions": "Gérer les rôles utilisateur et leurs permissions",
+  "view_roles": "Voir les Rôles",
+  "add_new_role": "Ajouter un Rôle",
+  "user_statistics": "Statistiques Utilisateurs",
+  "total_users": "Total utilisateurs",
+  "active_users": "Utilisateurs actifs",
+  "super_admins": "Super Admins",
+  "quick_actions": "Actions Rapides",
+  "add_user": "Ajouter Utilisateur"
 }

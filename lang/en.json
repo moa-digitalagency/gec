@@ -669,5 +669,15 @@
   "install_update": "Install update",
   "checking": "Checking...",
   "no_updates_available": "No updates available.",
-  "never": "Never"
+  "never": "Never",
+  "roles_management": "Roles Management",
+  "manage_user_roles_permissions": "Manage user roles and their permissions",
+  "view_roles": "View Roles",
+  "add_new_role": "Add New Role",
+  "user_statistics": "User Statistics",
+  "total_users": "Total users",
+  "active_users": "Active users",
+  "super_admins": "Super Admins",
+  "quick_actions": "Quick Actions",
+  "add_user": "Add User"
 }
