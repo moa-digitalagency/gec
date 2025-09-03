@@ -12,154 +12,200 @@
     <p class="mt-2 text-gray-600">{{ t('search_with_criteria') or 'Recherchez des courriers avec des critères spécifiques' }}</p>
 </div>
 
+<!-- Two Column Layout -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Search Form -->
-    <div class="lg:col-span-2">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Filters Card -->
         <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-filter mr-2 text-rdc-blue"></i>
-                    {{ t('search_criteria') or 'Critères de Recherche' }}
-                </h2>
-            </div>
-            <div class="p-6">
-                <form method="GET" action="{{ url_for('view_mail') }}" class="space-y-6">
-                    <!-- Global Search -->
-                    <div>
-                        <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-search mr-1 text-rdc-blue"></i>
-                            {{ t('global_text_search') or 'Recherche Textuelle Globale' }}
-                        </label>
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-filter mr-2 text-rdc-blue"></i>
+            {{ t('filters_search') or 'Filtres et Recherche' }}
+        </h2>
+    </div>
+    <div class="p-6">
+        <form method="GET" action="{{ url_for('view_mail') }}" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Search Input -->
+                <div class="lg:col-span-3">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-search mr-1 text-rdc-blue"></i>
+                        {{ t('text_search') or 'Recherche Textuelle' }}
+                    </label>
+                    <div class="relative">
                         <input type="text" 
                                id="search" 
                                name="search" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="{{ t('search_all_fields') or 'Recherche dans tous les champs...' }}">
-                        <p class="mt-1 text-sm text-gray-500">
-                            {{ t('search_fields_help') or 'Recherche dans: N° accusé, référence, objet, expéditeur, statut' }}
-                        </p>
-                    </div>
-                    
-                    <!-- Specific Sender -->
-                    <div>
-                        <label for="expediteur_search" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user mr-1 text-rdc-blue"></i>
-                            {{ t('specific_sender') or 'Expéditeur Spécifique' }}
-                        </label>
-                        <input type="text" 
-                               id="expediteur_search" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="{{ t('sender_name') or 'Nom de l\'expéditeur...' }}">
-                    </div>
-                    
-                    <!-- Date Range -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                                {{ t('start_date') or 'Date de Début' }}
-                            </label>
-                            <input type="date" 
-                                   id="date_from" 
-                                   name="date_from"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        </div>
-                        
-                        <div>
-                            <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                                {{ t('end_date') or 'Date de Fin' }}
-                            </label>
-                            <input type="date" 
-                                   id="date_to" 
-                                   name="date_to"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                               placeholder="{{ t('search_placeholder') or 'N° accusé, référence, objet, expéditeur, destinataire...' }}"
+                               autocomplete="off">
+                        <div id="searchSuggestions" class="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg hidden">
+                            <!-- Les suggestions apparaîtront ici -->
                         </div>
                     </div>
-                    
-                    <!-- Type and Status Filters -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="type_courrier" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
-                                {{ t('mail_type') or 'Type de Courrier' }}
-                            </label>
-                            <select id="type_courrier" 
-                                    name="type_courrier"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                                <option value="">Tous les types</option>
-                                <option value="ENTRANT">Entrant</option>
-                                <option value="SORTANT">Sortant</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-flag mr-1 text-rdc-blue"></i>
-                                {{ t('status') or 'Statut' }}
-                            </label>
-                            <select id="statut" 
-                                    name="statut"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                                <option value="">Tous les statuts</option>
-                                <option value="RECU">Reçu</option>
-                                <option value="EN_COURS">En cours</option>
-                                <option value="TRAITE">Traité</option>
-                                <option value="ARCHIVE">Archivé</option>
-                                <option value="URGENT">Urgent</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Sort Options -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-sort mr-1 text-rdc-yellow"></i>
-                                Trier par
-                            </label>
-                            <select id="sort_by" 
-                                    name="sort_by"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                                <option value="date_enregistrement">Date d'enregistrement</option>
-                                <option value="numero_accuse_reception">Numéro d'accusé</option>
-                                <option value="expediteur">Expéditeur</option>
-                                <option value="objet">Objet</option>
-                                <option value="statut">{{ t('status') or 'Statut' }}</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label for="sort_order" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-sort-amount-down mr-1 text-rdc-yellow"></i>
-                                Ordre
-                            </label>
-                            <select id="sort_order" 
-                                    name="sort_order"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                                <option value="desc">Décroissant (Plus récent)</option>
-                                <option value="asc">Croissant (Plus ancien)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-3 pt-6">
-                        <button type="submit" 
-                                class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-search mr-2"></i>
-                            {{ t('launch_search') or 'Lancer la Recherche' }}
-                        </button>
-                        <button type="button" 
-                                onclick="resetForm()"
-                                class="flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-eraser mr-2"></i>
-                            Réinitialiser
-                        </button>
-                    </div>
-                </form>
+                </div>
+                
+                <!-- Type Filter -->
+                <div>
+                    <label for="type_courrier" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
+                        {{ t('type') or 'Type' }}
+                    </label>
+                    <select id="type_courrier" 
+                            name="type_courrier"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="">{{ t('all') or 'Tous' }}</option>
+                        <option value="ENTRANT">{{ t('incoming') or 'Entrant' }}</option>
+                        <option value="SORTANT">{{ t('outgoing') or 'Sortant' }}</option>
+                    </select>
+                </div>
+                
+                <!-- Status Filter -->
+                <div>
+                    <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-flag mr-1 text-rdc-blue"></i>
+                        {{ t('status') or 'Statut' }}
+                    </label>
+                    <select id="statut" 
+                            name="statut"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="">{{ t('all_statuses') or 'Tous les statuts' }}</option>
+                        {% for statut_obj in statuts_disponibles %}
+                        <option value="{{ statut_obj.nom }}">{{ statut_obj.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Type Courrier Sortant Filter -->
+                <div id="type-courrier-sortant-filter" style="display:none;">
+                    <label for="type_courrier_sortant_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-1 text-rdc-green"></i>
+                        {{ t('outgoing_mail_type') or 'Type de Courrier Sortant' }}
+                    </label>
+                    <select id="type_courrier_sortant_id" 
+                            name="type_courrier_sortant_id"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="">{{ t('all_types') or 'Tous les types' }}</option>
+                        {% for type in types_courrier_sortant %}
+                        {% if type.actif %}
+                        <option value="{{ type.id }}">{{ type.nom }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Date From -->
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
+                        {{ t('registration_start_date') or 'Date Enregistrement Début' }}
+                    </label>
+                    <input type="date" 
+                           id="date_from" 
+                           name="date_from"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                </div>
+                
+                <!-- Date To -->
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
+                        {{ t('registration_end_date') or 'Date Enregistrement Fin' }}
+                    </label>
+                    <input type="date" 
+                           id="date_to" 
+                           name="date_to"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                </div>
+                
+                <!-- Date Rédaction From -->
+                <div>
+                    <label for="date_redaction_from" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-edit mr-1 text-purple-500"></i>
+                        Date Rédaction Début
+                    </label>
+                    <input type="date" 
+                           id="date_redaction_from" 
+                           name="date_redaction_from"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                </div>
+                
+                <!-- Date Rédaction To -->
+                <div>
+                    <label for="date_redaction_to" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar-edit mr-1 text-purple-500"></i>
+                        Date Rédaction Fin
+                    </label>
+                    <input type="date" 
+                           id="date_redaction_to" 
+                           name="date_redaction_to"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                </div>
+                
+                <!-- SG en Copie Filter (pour courriers entrants uniquement) -->
+                <div id="sg-copie-filter" style="display:none;">
+                    <label for="sg_copie" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-copy mr-1 text-indigo-500"></i>
+                        {{ get_titre_responsable() }} en Copie
+                    </label>
+                    <select id="sg_copie" 
+                            name="sg_copie"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="">Tous</option>
+                        <option value="oui">Oui</option>
+                        <option value="non">Non</option>
+                    </select>
+                </div>
+                
+                <!-- Sort By -->
+                <div>
+                    <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sort mr-1 text-rdc-yellow"></i>
+                        Trier par
+                    </label>
+                    <select id="sort_by" 
+                            name="sort_by"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="date_enregistrement">Date</option>
+                        <option value="numero_accuse_reception">N° Accusé</option>
+                        <option value="expediteur">Contact</option>
+                        <option value="objet">Objet</option>
+                    </select>
+                </div>
+                
+                <!-- Sort Order -->
+                <div>
+                    <label for="sort_order" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sort-amount-down mr-1 text-rdc-yellow"></i>
+                        Ordre
+                    </label>
+                    <select id="sort_order" 
+                            name="sort_order"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <option value="desc">Décroissant (Plus récent)</option>
+                        <option value="asc">Croissant (Plus ancien)</option>
+                    </select>
+                </div>
             </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-6">
+                <button type="submit" 
+                        class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
+                    <i class="fas fa-search mr-2"></i>
+                    {{ t('launch_search') or 'Lancer la Recherche' }}
+                </button>
+                <button type="button" 
+                        onclick="resetForm()"
+                        class="flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
+                    <i class="fas fa-eraser mr-2"></i>
+                    Réinitialiser
+                </button>
+            </div>
+        </form>
         </div>
+    </div>
     </div>
     
     <!-- Sidebar -->
@@ -258,6 +304,9 @@
 // Reset form
 function resetForm() {
     document.querySelector('form').reset();
+    // Hide conditional filters
+    document.getElementById('type-courrier-sortant-filter').style.display = 'none';
+    document.getElementById('sg-copie-filter').style.display = 'none';
 }
 
 // Quick searches
@@ -271,14 +320,58 @@ function searchWeek() {
     window.location.href = `{{ url_for('view_mail') }}?date_from=${weekAgo}`;
 }
 
-// Handle specific sender search
-document.getElementById('expediteur_search').addEventListener('input', function() {
-    const searchInput = document.getElementById('search');
-    if (this.value.trim()) {
-        // If typing in sender field, clear global search to avoid conflicts
-        searchInput.value = '';
-        // Update global search with sender-specific search
-        searchInput.value = `expéditeur: ${this.value}`;
+// Handle type courrier change to show/hide conditional filters
+document.getElementById('type_courrier').addEventListener('change', function() {
+    const typeCourrierSortantFilter = document.getElementById('type-courrier-sortant-filter');
+    const sgCopieFilter = document.getElementById('sg-copie-filter');
+    
+    if (this.value === 'SORTANT') {
+        typeCourrierSortantFilter.style.display = 'block';
+        sgCopieFilter.style.display = 'none';
+    } else if (this.value === 'ENTRANT') {
+        typeCourrierSortantFilter.style.display = 'none';
+        sgCopieFilter.style.display = 'block';
+    } else {
+        typeCourrierSortantFilter.style.display = 'none';
+        sgCopieFilter.style.display = 'none';
+    }
+});
+
+// Auto-complete for search input
+document.getElementById('search').addEventListener('input', function() {
+    const query = this.value.trim();
+    const suggestionsDiv = document.getElementById('searchSuggestions');
+    
+    if (query.length >= 2) {
+        fetch(`{{ url_for('search_suggestions') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions.length > 0) {
+                    suggestionsDiv.innerHTML = suggestions.map(suggestion => 
+                        `<div class="p-2 hover:bg-gray-100 cursor-pointer" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
+                    ).join('');
+                    suggestionsDiv.classList.remove('hidden');
+                } else {
+                    suggestionsDiv.classList.add('hidden');
+                }
+            })
+            .catch(() => {
+                suggestionsDiv.classList.add('hidden');
+            });
+    } else {
+        suggestionsDiv.classList.add('hidden');
+    }
+});
+
+function selectSuggestion(suggestion) {
+    document.getElementById('search').value = suggestion;
+    document.getElementById('searchSuggestions').classList.add('hidden');
+}
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#search') && !e.target.closest('#searchSuggestions')) {
+        document.getElementById('searchSuggestions').classList.add('hidden');
     }
 });
 </script>

@@ -777,7 +777,16 @@ def view_mail():
 @app.route('/search')
 @login_required
 def search():
-    return render_template('search.html')
+    from models import TypeCourrierSortant
+    
+    # Récupérer les statuts disponibles pour le formulaire
+    statuts_disponibles = StatutCourrier.get_statuts_actifs()
+    # Récupérer les types de courrier sortant pour le formulaire
+    types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
+    
+    return render_template('search.html', 
+                         statuts_disponibles=statuts_disponibles,
+                         types_courrier_sortant=types_courrier_sortant)
 
 @app.route('/api/search_suggestions')
 @login_required
