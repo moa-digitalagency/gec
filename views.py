@@ -35,6 +35,15 @@ def inject_system_context():
     # Import des utilitaires de formatage pour les templates
     from utils import format_date, get_titre_responsable
     
+    def get_appellation_entites():
+        """Récupérer l'appellation des entités organisationnelles"""
+        try:
+            parametres = ParametresSysteme.get_parametres()
+            appellation = getattr(parametres, 'appellation_departement', 'Départements') or 'Départements'
+            return appellation
+        except:
+            return 'Départements'
+    
     return dict(
         get_system_params=lambda: ParametresSysteme.get_parametres(),
         get_current_language=get_current_language,
@@ -42,7 +51,8 @@ def inject_system_context():
         get_unread_notifications_count=get_unread_notifications_count,
         t=t,
         format_date=format_date,
-        get_titre_responsable=get_titre_responsable
+        get_titre_responsable=get_titre_responsable,
+        get_appellation_entites=get_appellation_entites
     )
 
 @app.route('/')

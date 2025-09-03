@@ -21,7 +21,7 @@
     </div>
 </div>
 
-<!-- Liste des départements -->
+<!-- Liste des {{ get_appellation_entites()|lower }} -->
 <div class="bg-white shadow-rdc rounded-xl">
     <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-900 flex items-center">
@@ -115,7 +115,7 @@
                                 </a>
                                 {% if dept.utilisateurs|length == 0 %}
                                 <form method="POST" action="{{ url_for('delete_department', dept_id=dept.id) }}" 
-                                      onsubmit="return confirm('{{ t('confirm_delete_department') or 'Êtes-vous sûr de vouloir supprimer ce département ?' }}')" 
+                                      onsubmit="return confirm('{{ t('confirm_delete_department') or 'Êtes-vous sûr de vouloir supprimer ce' }} {{ get_appellation_entites()[:-1]|lower }} ?')" 
                                       class="inline">
                                     <button type="submit" class="text-red-600 hover:text-red-900">
                                         <i class="fas fa-trash"></i>
@@ -132,12 +132,12 @@
         {% else %}
         <div class="text-center py-12">
             <i class="fas fa-building text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_departments') or 'Aucun département' }}</h3>
-            <p class="text-gray-500 mb-6">{{ t('create_first_department') or 'Commencez par créer votre premier département.' }}</p>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_departments') or 'Aucun' }} {{ get_appellation_entites()[:-1]|lower }}</h3>
+            <p class="text-gray-500 mb-6">{{ t('create_first_department') or 'Commencez par créer votre premier' }} {{ get_appellation_entites()[:-1]|lower }}.</p>
             <a href="{{ url_for('add_department') }}" 
                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
                 <i class="fas fa-plus mr-2"></i>
-                {{ t('create_department') or 'Créer un département' }}
+                {{ t('create_department') or 'Créer un' }} {{ get_appellation_entites()[:-1]|lower }}
             </a>
         </div>
         {% endif %}
