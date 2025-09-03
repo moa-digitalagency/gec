@@ -96,7 +96,7 @@
                     <i class="fas fa-building mr-2"></i>
                     {{ get_appellation_entites() or 'Départements' }}
                 </a>
-                <a href="{{ url_for('logs') }}" 
+                <a href="{{ url_for('view_logs') }}" 
                    class="inline-flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors">
                     <i class="fas fa-history mr-2"></i>
                     {{ t('activity_logs') or 'Logs d\'Activité' }}
