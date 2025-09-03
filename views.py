@@ -3109,11 +3109,16 @@ def create_system_backup():
             
             # 7. MÉTADONNÉES COMPLÈTES
             logging.info("7. Création métadonnées...")
+            try:
+                created_by = current_user.username if current_user and current_user.is_authenticated else 'system'
+            except:
+                created_by = 'system'
+            
             metadata = {
                 'backup_date': timestamp,
                 'backup_version': '2.0',
                 'backup_type': 'full_system_complete',
-                'created_by': current_user.username if current_user.is_authenticated else 'system',
+                'created_by': created_by,
                 'database_type': 'postgresql',
                 'includes': [
                     'database_complete',
