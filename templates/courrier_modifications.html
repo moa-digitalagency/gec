@@ -1,0 +1,74 @@
+{% extends "new_base.html" %}
+
+{% block title %}{{ t('modification_history') or 'Historique des Modifications' }} - GEC{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="mb-8">
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-history mr-3 text-rdc-blue"></i>
+                {{ t('modification_history') or 'Historique des Modifications' }}
+            </h1>
+            <p class="mt-2 text-gray-600">
+                {{ t('courrier') or 'Courrier' }}: {{ courrier.numero_accuse_reception }}
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700">
+                <i class="fas fa-arrow-left mr-2"></i>
+                {{ t('back_to_courrier') or 'Retour au Courrier' }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modifications History -->
+<div class="bg-white shadow-rdc rounded-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
+        <h2 class="text-xl font-semibold text-white flex items-center">
+            <i class="fas fa-list mr-2"></i>
+            {{ t('modifications') or 'Modifications' }}
+        </h2>
+    </div>
+    
+    <div class="p-6">
+        {% if modifications %}
+        <div class="space-y-4">
+            {% for modification in modifications %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-medium text-gray-900">
+                            {{ modification.champ_modifie }}
+                        </h3>
+                        <div class="mt-2 space-y-2">
+                            <div>
+                                <span class="text-sm font-medium text-red-600">{{ t('old_value') or 'Ancienne valeur' }}:</span>
+                                <span class="text-sm text-gray-700 ml-2">{{ modification.ancienne_valeur or t('empty') or 'Vide' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-green-600">{{ t('new_value') or 'Nouvelle valeur' }}:</span>
+                                <span class="text-sm text-gray-700 ml-2">{{ modification.nouvelle_valeur or t('empty') or 'Vide' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ml-4 text-sm text-gray-500 text-right">
+                        <div>{{ modification.utilisateur.nom_complet if modification.utilisateur else t('unknown_user') or 'Utilisateur inconnu' }}</div>
+                        <div>{{ modification.date_modification.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-history text-4xl text-gray-400 mb-4"></i>
+            <p class="text-gray-500">{{ t('no_modifications') or 'Aucune modification enregistrée pour ce courrier' }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
