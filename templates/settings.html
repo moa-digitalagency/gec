@@ -799,6 +799,17 @@
         </a>
         {% endif %}
 
+        <!-- Gestion des Langues -->
+        {% if current_user.is_super_admin() %}
+        <a href="{{ url_for('manage_languages') }}" class="group block bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg p-6 transition-all duration-200 border border-teal-200 hover:border-teal-300">
+            <div class="flex items-center mb-3">
+                <i class="fas fa-language text-teal-600 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-teal-800">Gestion des Langues</h3>
+            </div>
+            <p class="text-sm text-gray-600 group-hover:text-teal-700">Configurer les langues disponibles et les traductions</p>
+        </a>
+        {% endif %}
+
         <!-- Vider les Caches -->
         {% if current_user.is_super_admin() %}
         <a href="#" onclick="clearCaches()" class="group block bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 rounded-lg p-6 transition-all duration-200 border border-yellow-200 hover:border-yellow-300">
