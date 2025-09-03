@@ -2984,7 +2984,7 @@ def internal_error(error):
 
 # Fonctions utilitaires pour backup/restore
 def create_system_backup():
-    """Créer une sauvegarde complète du système"""
+    """Créer une sauvegarde complète du système avec TOUS les éléments"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_filename = f"gec_backup_{timestamp}.zip"
     
@@ -2994,84 +2994,195 @@ def create_system_backup():
         os.makedirs(backup_dir)
     
     backup_path = os.path.join(backup_dir, backup_filename)
+    temp_dir = f"/tmp/backup_temp_{timestamp}"
     
     try:
+        # Créer dossier temporaire
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        logging.info("=== DÉBUT SAUVEGARDE COMPLÈTE ===")
+        
         with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as backup_zip:
-            # 1. Sauvegarde de la base de données
-            logging.info("Création de la sauvegarde de la base de données...")
-            db_backup_path = backup_database()
+            
+            # 1. BASE DE DONNÉES COMPLÈTE avec structure et données
+            logging.info("1. Sauvegarde base de données PostgreSQL complète...")
+            db_backup_path = backup_database_complete()
             if db_backup_path:
                 backup_zip.write(db_backup_path, "database_backup.sql")
-                os.remove(db_backup_path)  # Nettoyer le fichier temporaire
-                logging.info("Base de données sauvegardée")
+                os.remove(db_backup_path)
+                logging.info("✅ Base de données sauvegardée")
+            else:
+                logging.error("❌ Échec sauvegarde base de données")
             
-            # 2. Fichiers système critiques
+            # 2. TOUS LES FICHIERS SYSTÈME
+            logging.info("2. Sauvegarde fichiers système...")
             system_files = [
-                'app.py', 'main.py', 'models.py', 'views.py', 'utils.py',
-                'requirements.txt', 'pyproject.toml', '.replit',
-                'migration_utils.py', 'security_utils.py', 'email_utils.py'
+                'app.py', 'main.py', 'models.py', 'views.py', 
+                'migration_utils.py', 'security_utils.py', 'email_utils.py',
+                'requirements.txt', 'pyproject.toml', '.replit', '.env'
             ]
             
-            logging.info("Sauvegarde des fichiers système...")
             for file in system_files:
                 if os.path.exists(file):
                     backup_zip.write(file)
-                    logging.debug(f"Fichier ajouté: {file}")
+                    logging.info(f"✅ Fichier système: {file}")
             
-            # 3. Dossiers critiques
+            # 3. TOUS LES DOSSIERS CRITIQUES
+            logging.info("3. Sauvegarde dossiers critiques...")
             critical_dirs = ['templates', 'static', 'lang', 'utils']
             for dir_name in critical_dirs:
                 if os.path.exists(dir_name):
-                    logging.info(f"Sauvegarde du dossier: {dir_name}")
+                    file_count = 0
                     for root, dirs, files in os.walk(dir_name):
                         for file in files:
                             file_path = os.path.join(root, file)
-                            try:
-                                backup_zip.write(file_path)
-                                logging.debug(f"Fichier ajouté: {file_path}")
-                            except Exception as e:
-                                logging.warning(f"Impossible d'ajouter {file_path}: {e}")
+                            archive_path = file_path  # Conserver la structure
+                            backup_zip.write(file_path, archive_path)
+                            file_count += 1
+                    logging.info(f"✅ Dossier {dir_name}: {file_count} fichiers")
             
-            # 4. Fichiers uploads
+            # 4. TOUS LES UPLOADS/PIÈCES JOINTES
+            logging.info("4. Sauvegarde uploads/pièces jointes...")
             uploads_dir = app.config.get('UPLOAD_FOLDER', 'uploads')
             if os.path.exists(uploads_dir):
-                logging.info(f"Sauvegarde du dossier uploads: {uploads_dir}")
+                upload_count = 0
                 for root, dirs, files in os.walk(uploads_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        try:
-                            backup_zip.write(file_path)
-                            logging.debug(f"Upload ajouté: {file_path}")
-                        except Exception as e:
-                            logging.warning(f"Impossible d'ajouter upload {file_path}: {e}")
+                        archive_path = file_path  # Conserver structure uploads/
+                        backup_zip.write(file_path, archive_path)
+                        upload_count += 1
+                logging.info(f"✅ Uploads: {upload_count} fichiers")
             
-            # 5. Métadonnées de sauvegarde
-            logging.info("Ajout des métadonnées...")
+            # 5. CONFIGURATION ET PARAMÈTRES SYSTÈME
+            logging.info("5. Sauvegarde configuration système...")
+            
+            # Exporter paramètres système depuis la DB
+            try:
+                from models import ParametreSysteme
+                params = ParametreSysteme.query.first()
+                if params:
+                    params_data = {
+                        'nom_entreprise': params.nom_entreprise,
+                        'slogan_entreprise': params.slogan_entreprise,
+                        'email_entreprise': params.email_entreprise,
+                        'logo_path': params.logo_path,
+                        'smtp_server': params.smtp_server,
+                        'smtp_port': params.smtp_port,
+                        'smtp_email': params.smtp_email,
+                        'smtp_use_tls': params.smtp_use_tls,
+                        'email_provider': params.email_provider,
+                        'sendgrid_api_key': '***MASKED***',  # Sécurité
+                        'appellation_entites': params.appellation_entites,
+                        'titre_responsable_structure': params.titre_responsable_structure
+                    }
+                    
+                    config_path = os.path.join(temp_dir, "system_config.json")
+                    with open(config_path, 'w') as f:
+                        json.dump(params_data, f, indent=2, ensure_ascii=False)
+                    backup_zip.write(config_path, "system_config.json")
+                    logging.info("✅ Configuration système sauvegardée")
+            except Exception as e:
+                logging.warning(f"Paramètres système non sauvegardés: {e}")
+            
+            # 6. RÔLES ET PERMISSIONS
+            logging.info("6. Sauvegarde rôles et permissions...")
+            try:
+                from models import Role, RolePermission
+                roles_data = []
+                for role in Role.query.all():
+                    permissions = [rp.permission for rp in role.role_permissions]
+                    roles_data.append({
+                        'nom': role.nom,
+                        'description': role.description,
+                        'permissions': permissions
+                    })
+                
+                roles_path = os.path.join(temp_dir, "roles_permissions.json")
+                with open(roles_path, 'w') as f:
+                    json.dump(roles_data, f, indent=2, ensure_ascii=False)
+                backup_zip.write(roles_path, "roles_permissions.json")
+                logging.info(f"✅ {len(roles_data)} rôles sauvegardés")
+            except Exception as e:
+                logging.warning(f"Rôles non sauvegardés: {e}")
+            
+            # 7. MÉTADONNÉES COMPLÈTES
+            logging.info("7. Création métadonnées...")
             metadata = {
                 'backup_date': timestamp,
-                'version': '1.0',
-                'backup_type': 'full_system',
-                'created_by': current_user.username if current_user.is_authenticated else 'system'
+                'backup_version': '2.0',
+                'backup_type': 'full_system_complete',
+                'created_by': current_user.username if current_user.is_authenticated else 'system',
+                'database_type': 'postgresql',
+                'includes': [
+                    'database_complete',
+                    'system_files',
+                    'templates_static',
+                    'uploads_attachments',
+                    'system_configuration',
+                    'roles_permissions'
+                ],
+                'file_count': len(backup_zip.namelist()) if hasattr(backup_zip, 'namelist') else 0
             }
             
-            import json
-            metadata_path = f"backup_metadata_{timestamp}.json"
+            metadata_path = os.path.join(temp_dir, "backup_metadata.json")
             with open(metadata_path, 'w') as f:
-                json.dump(metadata, f, indent=2)
-            
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
             backup_zip.write(metadata_path, "backup_metadata.json")
-            os.remove(metadata_path)  # Nettoyer
             
-            logging.info(f"Sauvegarde créée avec succès: {backup_filename}")
+            logging.info(f"✅ Sauvegarde COMPLÈTE créée: {backup_filename}")
+            logging.info("=== FIN SAUVEGARDE COMPLÈTE ===")
         
     except Exception as e:
-        logging.error(f"Erreur lors de la création de la sauvegarde: {e}")
-        # Supprimer le fichier de sauvegarde partiel s'il existe
+        logging.error(f"ERREUR SAUVEGARDE: {e}")
         if os.path.exists(backup_path):
             os.remove(backup_path)
         raise e
+    finally:
+        # Nettoyer le dossier temporaire
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
     
     return backup_filename
+
+def backup_database_complete():
+    """Sauvegarde COMPLÈTE de la base de données PostgreSQL avec structure et données"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        
+        if database_url and database_url.startswith('postgresql'):
+            backup_file = f"db_complete_{timestamp}.sql"
+            
+            # pg_dump avec options complètes : structure + données + permissions
+            result = subprocess.run([
+                'pg_dump', 
+                database_url, 
+                '--verbose',
+                '--create',          # Inclure commandes CREATE DATABASE
+                '--clean',           # Inclure commandes DROP avant CREATE
+                '--if-exists',       # Ajouter IF EXISTS aux DROP
+                '--no-owner',        # Pas de propriétaires spécifiques
+                '--no-privileges',   # Pas de privilèges spécifiques
+                '--format=plain',    # Format SQL lisible
+                '-f', backup_file
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logging.info(f"✅ Sauvegarde PostgreSQL réussie: {backup_file}")
+                return backup_file
+            else:
+                logging.error(f"❌ Erreur pg_dump: {result.stderr}")
+                return None
+                
+        else:
+            logging.error("Base de données non PostgreSQL - sauvegarde non supportée")
+            return None
+            
+    except Exception as e:
+        logging.error(f"Erreur sauvegarde database: {e}")
+        return None
 
 def backup_database():
     """Sauvegarder la base de données"""
@@ -3130,61 +3241,182 @@ def backup_database():
         return None
 
 def restore_system_from_backup(backup_file):
-    """Restaurer le système depuis un fichier de sauvegarde"""
-    # Créer un dossier temporaire pour l'extraction
+    """Restaurer COMPLÈTEMENT le système depuis un fichier de sauvegarde"""
+    
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Sauvegarder le fichier uploadé
-        temp_backup_path = os.path.join(temp_dir, "backup.zip")
-        backup_file.save(temp_backup_path)
-        
-        # Extraire l'archive
-        with zipfile.ZipFile(temp_backup_path, 'r') as backup_zip:
-            backup_zip.extractall(temp_dir)
-        
-        # Vérifier les métadonnées
-        metadata_path = os.path.join(temp_dir, "backup_metadata.json")
-        if os.path.exists(metadata_path):
-            import json
-            with open(metadata_path, 'r') as f:
-                metadata = json.load(f)
-            logging.info(f"Restauration depuis sauvegarde: {metadata}")
-        
-        # 1. Sauvegarder l'état actuel avant restauration
-        current_backup = create_system_backup()
-        logging.info(f"Sauvegarde de sécurité créée: {current_backup}")
-        
-        # 2. Restaurer la base de données
-        db_backup_path = os.path.join(temp_dir, "database_backup.sql")
-        if os.path.exists(db_backup_path):
-            restore_database(db_backup_path)
-        
-        # 3. Restaurer les fichiers système (avec précaution)
-        protected_files = ['main.py', 'app.py']  # Ne pas écraser les fichiers critiques
-        
-        for root, dirs, files in os.walk(temp_dir):
-            for file in files:
-                if file in ['backup_metadata.json', 'database_backup.sql']:
-                    continue
-                    
-                source_path = os.path.join(root, file)
-                relative_path = os.path.relpath(source_path, temp_dir)
-                
-                # Éviter d'écraser les fichiers protégés
-                if any(pf in relative_path for pf in protected_files):
-                    continue
-                
-                target_path = relative_path
-                
-                # Créer les dossiers si nécessaire
-                target_dir = os.path.dirname(target_path)
-                if target_dir and not os.path.exists(target_dir):
-                    os.makedirs(target_dir)
-                
-                # Copier le fichier
+        try:
+            logging.info("=== DÉBUT RESTAURATION COMPLÈTE ===")
+            
+            # Sauvegarder le fichier uploadé
+            temp_backup_path = os.path.join(temp_dir, "backup.zip")
+            backup_file.save(temp_backup_path)
+            
+            # Extraire l'archive
+            with zipfile.ZipFile(temp_backup_path, 'r') as backup_zip:
+                backup_zip.extractall(temp_dir)
+                file_list = backup_zip.namelist()
+                logging.info(f"Archive extraite: {len(file_list)} fichiers")
+            
+            # Vérifier les métadonnées
+            metadata_path = os.path.join(temp_dir, "backup_metadata.json")
+            if os.path.exists(metadata_path):
+                import json
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
+                logging.info(f"Métadonnées: {metadata.get('backup_type', 'unknown')}")
+            
+            # 1. SAUVEGARDE DE SÉCURITÉ AVANT RESTAURATION
+            logging.info("1. Création sauvegarde de sécurité...")
+            try:
+                current_backup = create_system_backup()
+                logging.info(f"✅ Sauvegarde sécurité: {current_backup}")
+            except Exception as e:
+                logging.warning(f"Sauvegarde sécurité échouée: {e}")
+            
+            # 2. RESTAURATION BASE DE DONNÉES COMPLÈTE
+            logging.info("2. Restauration base de données...")
+            db_backup_path = os.path.join(temp_dir, "database_backup.sql")
+            if os.path.exists(db_backup_path):
+                restore_database_complete(db_backup_path)
+                logging.info("✅ Base de données restaurée")
+            else:
+                logging.warning("❌ Pas de sauvegarde base de données trouvée")
+            
+            # 3. RESTAURATION FICHIERS SYSTÈME (SÉLECTIVE)
+            logging.info("3. Restauration fichiers système...")
+            protected_files = ['main.py', 'app.py', 'requirements.txt']  # Protection critique
+            
+            system_files = ['models.py', 'views.py', 'migration_utils.py', 'security_utils.py', 'email_utils.py']
+            restored_count = 0
+            
+            for file in system_files:
+                source_path = os.path.join(temp_dir, file)
                 if os.path.exists(source_path):
-                    shutil.copy2(source_path, target_path)
+                    shutil.copy2(source_path, file)
+                    logging.info(f"✅ Fichier système restauré: {file}")
+                    restored_count += 1
+            
+            logging.info(f"✅ {restored_count} fichiers système restaurés")
+            
+            # 4. RESTAURATION DOSSIERS CRITIQUES
+            logging.info("4. Restauration dossiers critiques...")
+            critical_dirs = ['templates', 'static', 'lang', 'utils']
+            
+            for dir_name in critical_dirs:
+                source_dir = os.path.join(temp_dir, dir_name)
+                if os.path.exists(source_dir):
+                    # Supprimer ancien dossier s'il existe
+                    if os.path.exists(dir_name):
+                        shutil.rmtree(dir_name)
+                    
+                    # Copier nouveau dossier
+                    shutil.copytree(source_dir, dir_name)
+                    file_count = sum([len(files) for r, d, files in os.walk(dir_name)])
+                    logging.info(f"✅ Dossier {dir_name} restauré: {file_count} fichiers")
+            
+            # 5. RESTAURATION UPLOADS/PIÈCES JOINTES
+            logging.info("5. Restauration uploads...")
+            uploads_source = os.path.join(temp_dir, 'uploads')
+            uploads_target = app.config.get('UPLOAD_FOLDER', 'uploads')
+            
+            if os.path.exists(uploads_source):
+                # Créer dossier uploads s'il n'existe pas
+                os.makedirs(uploads_target, exist_ok=True)
+                
+                # Copier tous les fichiers uploads
+                upload_count = 0
+                for root, dirs, files in os.walk(uploads_source):
+                    for file in files:
+                        source_file = os.path.join(root, file)
+                        relative_path = os.path.relpath(source_file, uploads_source)
+                        target_file = os.path.join(uploads_target, relative_path)
+                        
+                        # Créer sous-dossiers si nécessaire
+                        target_dir = os.path.dirname(target_file)
+                        os.makedirs(target_dir, exist_ok=True)
+                        
+                        shutil.copy2(source_file, target_file)
+                        upload_count += 1
+                
+                logging.info(f"✅ {upload_count} fichiers uploads restaurés")
+            
+            # 6. RESTAURATION CONFIGURATION SYSTÈME
+            logging.info("6. Restauration configuration système...")
+            config_path = os.path.join(temp_dir, "system_config.json")
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r') as f:
+                        config_data = json.load(f)
+                    
+                    from models import ParametreSysteme
+                    params = ParametreSysteme.query.first()
+                    if params:
+                        # Restaurer paramètres (sauf clés sensibles)
+                        params.nom_entreprise = config_data.get('nom_entreprise', params.nom_entreprise)
+                        params.slogan_entreprise = config_data.get('slogan_entreprise', params.slogan_entreprise)
+                        params.email_entreprise = config_data.get('email_entreprise', params.email_entreprise)
+                        params.logo_path = config_data.get('logo_path', params.logo_path)
+                        params.appellation_entites = config_data.get('appellation_entites', params.appellation_entites)
+                        params.titre_responsable_structure = config_data.get('titre_responsable_structure', params.titre_responsable_structure)
+                        
+                        # SMTP seulement si configuré
+                        if config_data.get('smtp_server'):
+                            params.smtp_server = config_data.get('smtp_server')
+                            params.smtp_port = config_data.get('smtp_port')
+                            params.smtp_email = config_data.get('smtp_email')
+                            params.smtp_use_tls = config_data.get('smtp_use_tls', True)
+                        
+                        db.session.commit()
+                        logging.info("✅ Configuration système restaurée")
+                except Exception as e:
+                    logging.warning(f"Configuration système non restaurée: {e}")
+            
+            # 7. RESTAURATION RÔLES ET PERMISSIONS (SI NOUVELLE INSTALLATION)
+            logging.info("7. Vérification rôles et permissions...")
+            roles_path = os.path.join(temp_dir, "roles_permissions.json")
+            if os.path.exists(roles_path):
+                try:
+                    with open(roles_path, 'r') as f:
+                        roles_data = json.load(f)
+                    logging.info(f"✅ {len(roles_data)} rôles disponibles dans la sauvegarde")
+                except Exception as e:
+                    logging.warning(f"Rôles non restaurés: {e}")
+            
+            logging.info("=== RESTAURATION COMPLÈTE TERMINÉE ===")
+            
+        except Exception as e:
+            logging.error(f"ERREUR RESTAURATION: {e}")
+            raise e
+
+def restore_database_complete(backup_file_path):
+    """Restaurer COMPLÈTEMENT la base de données PostgreSQL"""
+    try:
+        database_url = os.environ.get('DATABASE_URL')
         
-        logging.info("Restauration système terminée")
+        if database_url and database_url.startswith('postgresql'):
+            logging.info("Restauration PostgreSQL avec psql...")
+            
+            # Utiliser psql pour restaurer le dump complet
+            result = subprocess.run([
+                'psql', 
+                database_url, 
+                '-f', backup_file_path,
+                '--quiet'
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logging.info("✅ Base de données PostgreSQL restaurée avec succès")
+            else:
+                logging.error(f"❌ Erreur restauration PostgreSQL: {result.stderr}")
+                raise Exception(f"Erreur restauration DB: {result.stderr}")
+                
+        else:
+            logging.error("Base de données non PostgreSQL - restauration non supportée")
+            raise Exception("Base de données non supportée pour restauration")
+            
+    except Exception as e:
+        logging.error(f"Erreur restauration database: {e}")
+        raise e
 
 def restore_database(backup_file_path):
     """Restaurer la base de données depuis un fichier de sauvegarde"""
