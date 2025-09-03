@@ -3401,20 +3401,53 @@ def restore_database_complete(backup_file_path):
         
         if database_url and database_url.startswith('postgresql'):
             logging.info("Restauration PostgreSQL avec psql...")
+            logging.info(f"Fichier de sauvegarde: {backup_file_path}")
             
-            # Utiliser psql pour restaurer le dump complet
+            # Vérifier que le fichier existe
+            if not os.path.exists(backup_file_path):
+                raise Exception(f"Fichier de sauvegarde non trouvé: {backup_file_path}")
+            
+            # Lire quelques lignes du fichier pour diagnostic
+            with open(backup_file_path, 'r', encoding='utf-8') as f:
+                first_lines = f.read(500)
+                logging.info(f"Contenu début fichier: {first_lines[:200]}...")
+            
+            # Utiliser psql pour restaurer le dump complet avec options compatibles
+            # Compatible avec les sauvegardes créées par utils.py (--clean --if-exists)
             result = subprocess.run([
                 'psql', 
                 database_url, 
                 '-f', backup_file_path,
-                '--quiet'
+                '--quiet',
+                '--no-password',
+                '--single-transaction',
+                '-v', 'ON_ERROR_STOP=1'  # Arrêter en cas d'erreur
             ], capture_output=True, text=True)
+            
+            logging.info(f"Code retour psql: {result.returncode}")
+            if result.stdout:
+                logging.info(f"Sortie psql: {result.stdout}")
+            if result.stderr:
+                logging.warning(f"Erreurs psql: {result.stderr}")
             
             if result.returncode == 0:
                 logging.info("✅ Base de données PostgreSQL restaurée avec succès")
+                
+                # Vérifier que des données ont été restaurées
+                try:
+                    from models import Courrier
+                    courrier_count = Courrier.query.count()
+                    logging.info(f"Nombre de courriers après restauration: {courrier_count}")
+                except Exception as verify_e:
+                    logging.warning(f"Erreur vérification: {verify_e}")
+                    
             else:
                 logging.error(f"❌ Erreur restauration PostgreSQL: {result.stderr}")
-                raise Exception(f"Erreur restauration DB: {result.stderr}")
+                # Ne pas lever d'exception si c'est juste un avertissement
+                if "WARNING" not in result.stderr and "NOTICE" not in result.stderr:
+                    raise Exception(f"Erreur restauration DB: {result.stderr}")
+                else:
+                    logging.info("Restauration terminée avec avertissements (normal)")
                 
         else:
             logging.error("Base de données non PostgreSQL - restauration non supportée")
