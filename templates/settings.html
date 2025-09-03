@@ -829,7 +829,7 @@
 <script>
 function clearCaches() {
     if (confirm('Êtes-vous sûr de vouloir vider tous les caches ? Cette action peut temporairement ralentir le système.')) {
-        fetch('{{ url_for("clear_cache") }}', {
+        fetch('{{ url_for("clear_cache_route") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

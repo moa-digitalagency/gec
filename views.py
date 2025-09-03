@@ -1475,7 +1475,8 @@ def clear_cache_route():
         }), 403
     
     try:
-        # Import et appel de la fonction clear_cache
+        # Import et appel de la fonction clear_cache depuis performance_utils
+        from performance_utils import clear_cache
         clear_cache()
         
         # Log de l'action
