@@ -191,7 +191,7 @@
                         </p>
                     </div>
                     
-                    <!-- Appellation Départements -->
+                    <!-- Appellation {{ get_appellation_entites() }} -->
                     <div>
                         <label for="appellation_departement" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-building mr-1 text-rdc-blue"></i>
@@ -765,7 +765,7 @@
         <a href="{{ url_for('manage_departments') }}" class="group block bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg p-6 transition-all duration-200 border border-green-200 hover:border-green-300">
             <div class="flex items-center mb-3">
                 <i class="fas fa-building text-green-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-green-800">Départements</h3>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-green-800">{{ get_appellation_entites() }}</h3>
             </div>
             <p class="text-sm text-gray-600 group-hover:text-green-700">Gérer la structure organisationnelle</p>
         </a>

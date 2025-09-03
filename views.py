@@ -4366,12 +4366,15 @@ def export_analytics(format):
         # ===================
         # 2. STATISTIQUES PAR DÉPARTEMENT
         # ===================
-        dept_title = Paragraph("2. Statistiques par Département", styles['Heading2'])
+        # Récupérer l'appellation dynamique
+        parametres = ParametresSysteme.get_parametres()
+        appellation = getattr(parametres, 'appellation_departement', 'Départements') or 'Départements'
+        dept_title = Paragraph(f"2. Statistiques par {appellation[:-1]}", styles['Heading2'])
         elements.append(dept_title)
         elements.append(Spacer(1, 10))
         
         if dept_stats:
-            dept_data = [['Département', 'Total', 'Entrants', 'Sortants']]
+            dept_data = [[appellation[:-1], 'Total', 'Entrants', 'Sortants']]
             for dept in dept_stats[:10]:  # Top 10 départements
                 dept_data.append([
                     dept.departement[:30] + '...' if len(dept.departement) > 30 else dept.departement,
@@ -4650,7 +4653,7 @@ def export_analytics(format):
         
         # Graphique en barres : Top départements
         if dept_stats:
-            dept_chart_title = Paragraph("Top 5 Départements (Barres)", styles['Heading3'])
+            dept_chart_title = Paragraph(f"Top 5 {appellation} (Barres)", styles['Heading3'])
             elements.append(dept_chart_title)
             elements.append(Spacer(1, 10))
             
