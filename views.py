@@ -1483,8 +1483,7 @@ def clear_cache_route():
         log_activity(
             current_user.id,
             "clear_cache",
-            f"Cache système vidé par {current_user.username}",
-            ip_address=get_client_ip()
+            f"Cache système vidé par {current_user.username}"
         )
         
         return jsonify({
