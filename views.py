@@ -22,7 +22,7 @@ from utils import allowed_file, generate_accuse_reception, log_activity, export_
 # Le support des langues est maintenant dans utils.py
 from email_utils import send_new_mail_notification, send_mail_forwarded_notification
 from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
-from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor
+from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
 @app.context_processor
 def inject_system_context():
@@ -1464,6 +1464,39 @@ def settings():
                               parametres=parametres,
                               format_preview=format_preview)
 
+@app.route('/clear_cache', methods=['POST'])
+@login_required
+def clear_cache_route():
+    """Route pour vider le cache système"""
+    if not current_user.is_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'Accès non autorisé'
+        }), 403
+    
+    try:
+        # Import et appel de la fonction clear_cache
+        clear_cache()
+        
+        # Log de l'action
+        log_activity(
+            current_user.id,
+            "clear_cache",
+            f"Cache système vidé par {current_user.username}",
+            ip_address=get_client_ip()
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cache vidé avec succès'
+        })
+    except Exception as e:
+        logging.error(f"Erreur lors du vidage du cache: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Erreur: {str(e)}'
+        }), 500
+
 # Route manage_mail_types supprimée - maintenant gérée par manage_outgoing_types
 
 @app.route('/backup_system', methods=['POST'])
@@ -2016,8 +2049,9 @@ def manage_users():
     
     users = User.query.order_by(User.date_creation.desc()).all()
     departements = Departement.get_departements_actifs()
+    roles = Role.query.all()
     return render_template('manage_users.html', users=users, departements=departements,
-                         available_languages=get_available_languages())
+                         available_languages=get_available_languages(), roles=roles)
 
 @app.route('/add_user', methods=['GET', 'POST'])
 @login_required  

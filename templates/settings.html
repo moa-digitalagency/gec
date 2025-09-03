@@ -798,6 +798,17 @@
             <p class="text-sm text-gray-600 group-hover:text-orange-700">Gérer les sauvegardes et restaurations</p>
         </a>
         {% endif %}
+
+        <!-- Vider les Caches -->
+        {% if current_user.is_super_admin() %}
+        <a href="#" onclick="clearCaches()" class="group block bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 rounded-lg p-6 transition-all duration-200 border border-yellow-200 hover:border-yellow-300">
+            <div class="flex items-center mb-3">
+                <i class="fas fa-broom text-yellow-600 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-yellow-800">Vider les Caches</h3>
+            </div>
+            <p class="text-sm text-gray-600 group-hover:text-yellow-700">Nettoyer le cache système pour améliorer les performances</p>
+        </a>
+        {% endif %}
     </div>
     
     <div class="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -816,6 +827,41 @@
 
 {% block scripts %}
 <script>
+function clearCaches() {
+    if (confirm('Êtes-vous sûr de vouloir vider tous les caches ? Cette action peut temporairement ralentir le système.')) {
+        fetch('{{ url_for("clear_cache") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Cache vidé avec succès !', 'success');
+            } else {
+                showNotification('Erreur lors du vidage du cache: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Erreur lors du vidage du cache', 'error');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
 function toggleFormatField() {
     const mode = document.getElementById('mode_numero_accuse').value;
     const formatField = document.getElementById('format-field');
