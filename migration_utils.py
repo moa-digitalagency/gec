@@ -143,6 +143,18 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Migration: Colonne critique {column} ajoutée à {table}")
         
+        # Migration 4: Ajout des colonnes pour les pièces jointes dans les transmissions
+        forward_attachment_columns = [
+            ('courrier_forward', 'attached_file', 'VARCHAR(255)'),
+            ('courrier_forward', 'attached_file_original_name', 'VARCHAR(255)'),
+            ('courrier_forward', 'attached_file_size', 'INTEGER'),
+        ]
+        
+        for table, column, definition in forward_attachment_columns:
+            if add_column_safely(engine, table, column, definition):
+                migrations_applied += 1
+                logging.info(f"✓ Migration: Colonne de pièce jointe {column} ajoutée à {table}")
+        
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements
