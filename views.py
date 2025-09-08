@@ -4688,12 +4688,53 @@ def forward_mail(courrier_id):
     
     user = User.query.get_or_404(user_id)
     
+    # Gérer le fichier joint (optionnel)
+    attachment_filename = None
+    attachment_original_name = None
+    attachment_size = None
+    
+    if 'attachment' in request.files:
+        file = request.files['attachment']
+        if file and file.filename:
+            # Valider le fichier
+            if validate_file_upload(file):
+                # Créer le répertoire s'il n'existe pas
+                forward_uploads_dir = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), 'forwards')
+                os.makedirs(forward_uploads_dir, exist_ok=True)
+                
+                # Générer un nom unique pour le fichier
+                file_extension = os.path.splitext(file.filename)[1].lower()
+                unique_filename = f"forward_{courrier_id}_{current_user.id}_{uuid.uuid4().hex[:8]}{file_extension}"
+                file_path = os.path.join(forward_uploads_dir, unique_filename)
+                
+                try:
+                    # Sauvegarder le fichier
+                    file.save(file_path)
+                    
+                    # Enregistrer les informations du fichier
+                    attachment_filename = unique_filename
+                    attachment_original_name = file.filename
+                    attachment_size = os.path.getsize(file_path)
+                    
+                    log_activity(current_user.id, "UPLOAD_TRANSMISSION_FILE", 
+                               f"Fichier joint ajouté à la transmission: {file.filename}", courrier_id)
+                    
+                except Exception as e:
+                    logging.error(f"Erreur lors de la sauvegarde du fichier de transmission: {e}")
+                    flash('Erreur lors de la sauvegarde du fichier joint.', 'error')
+            else:
+                flash('Format de fichier non autorisé ou fichier trop volumineux (16MB max).', 'error')
+                return redirect(url_for('mail_detail', id=courrier_id))
+    
     # Créer l'enregistrement de transmission
     forward = CourrierForward(
         courrier_id=courrier_id,
         forwarded_by_id=current_user.id,
         forwarded_to_id=user_id,
-        message=message
+        message=message,
+        attached_file=attachment_filename,
+        attached_file_original_name=attachment_original_name,
+        attached_file_size=attachment_size
     )
     
     try:
