@@ -434,7 +434,7 @@ def validate_backup_integrity(backup_filename):
 
 def create_pre_update_backup():
     """Créer une sauvegarde spéciale avant mise à jour avec protection des paramètres"""
-    import json
+    import json as json_module
     
     # Créer une sauvegarde standard
     backup_filename = create_system_backup()
@@ -465,7 +465,7 @@ def create_pre_update_backup():
         # Sauvegarder dans un fichier séparé
         settings_backup_path = backup_path.replace('.zip', '_protected_settings.json')
         with open(settings_backup_path, 'w', encoding='utf-8') as f:
-            json.dump(protected_settings, f, indent=2, ensure_ascii=False)
+            json_module.dump(protected_settings, f, indent=2, ensure_ascii=False)
         
         logging.info(f"Paramètres critiques sauvegardés dans {settings_backup_path}")
         
