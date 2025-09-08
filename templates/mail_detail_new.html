@@ -455,6 +455,26 @@
                             {% if forward.message %}
                             <p class="text-gray-600 mb-2">{{ forward.message }}</p>
                             {% endif %}
+                            
+                            <!-- File attachment for transmission -->
+                            {% if forward.attached_file %}
+                            <div class="mb-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="flex items-center">
+                                    <i class="fas fa-paperclip text-blue-600 mr-2"></i>
+                                    <span class="text-sm font-medium text-blue-900">Fichier joint:</span>
+                                    <a href="{{ url_for('download_forward_attachment', forward_id=forward.id) }}" 
+                                       class="ml-2 text-blue-600 hover:text-blue-800 underline text-sm">
+                                        {{ forward.attached_file_original_name }}
+                                    </a>
+                                    {% if forward.attached_file_size %}
+                                    <span class="ml-2 text-xs text-gray-500">
+                                        ({{ "%.1f"|format(forward.attached_file_size / 1024 / 1024) }} MB)
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
                             <div class="flex items-center text-sm text-gray-500">
                                 <i class="fas fa-clock mr-1"></i>
                                 <span>{{ forward.date_transmission.strftime('%d/%m/%Y à %H:%M') }}</span>

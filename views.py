@@ -4781,6 +4781,40 @@ def forward_mail(courrier_id):
     
     return redirect(url_for('mail_detail', id=courrier_id))
 
+@app.route('/download_forward_attachment/<int:forward_id>')
+@login_required  
+def download_forward_attachment(forward_id):
+    """Télécharger un fichier joint d'une transmission"""
+    forward = CourrierForward.query.get_or_404(forward_id)
+    
+    # Vérifier que l'utilisateur peut accéder à cette transmission
+    if not (current_user.id == forward.forwarded_to_id or 
+            current_user.id == forward.forwarded_by_id or
+            current_user.can_view_courrier(forward.courrier)):
+        flash('Vous n\'avez pas l\'autorisation d\'accéder à ce fichier.', 'error')
+        return redirect(url_for('view_mail'))
+    
+    if not forward.attached_file:
+        flash('Aucun fichier joint trouvé pour cette transmission.', 'error')
+        return redirect(url_for('mail_detail', id=forward.courrier_id))
+    
+    # Chemin vers le fichier
+    forward_uploads_dir = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), 'forwards')
+    file_path = os.path.join(forward_uploads_dir, forward.attached_file)
+    
+    if not os.path.exists(file_path):
+        flash('Le fichier joint n\'existe plus sur le serveur.', 'error')
+        return redirect(url_for('mail_detail', id=forward.courrier_id))
+    
+    # Log de l'activité
+    log_activity(current_user.id, "DOWNLOAD_TRANSMISSION_FILE", 
+                f"Téléchargement du fichier joint: {forward.attached_file_original_name}", 
+                forward.courrier_id)
+    
+    return send_file(file_path, 
+                    as_attachment=True, 
+                    download_name=forward.attached_file_original_name)
+
 @app.route('/add_comment/<int:courrier_id>', methods=['POST'])
 @login_required
 def add_comment(courrier_id):
