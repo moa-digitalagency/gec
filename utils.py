@@ -385,6 +385,95 @@ def get_backup_files():
     backup_files.sort(key=lambda x: x['date'], reverse=True)
     return backup_files
 
+def validate_backup_integrity(backup_filename):
+    """Valider l'intégrité d'une sauvegarde"""
+    import zipfile
+    import json
+    
+    backup_path = os.path.join('backups', backup_filename)
+    if not os.path.exists(backup_path):
+        return False, "Fichier de sauvegarde introuvable"
+    
+    try:
+        with zipfile.ZipFile(backup_path, 'r') as zipf:
+            # Vérifier les fichiers essentiels
+            required_files = ['backup_manifest.json']
+            optional_files = ['database_backup.sql', 'database.db', 'environment_variables_documentation.json']
+            
+            file_list = zipf.namelist()
+            
+            # Vérifier le manifeste
+            if 'backup_manifest.json' not in file_list:
+                return False, "Manifeste de sauvegarde manquant"
+            
+            # Lire le manifeste pour vérifier la version et les composants
+            manifest_data = zipf.read('backup_manifest.json')
+            manifest = json.loads(manifest_data.decode('utf-8'))
+            
+            # Validation des composants critiques
+            issues = []
+            
+            # Vérifier la base de données
+            if 'database_backup.sql' not in file_list and 'database.db' not in file_list:
+                issues.append("Aucune sauvegarde de base de données trouvée")
+            
+            # Vérifier les dossiers importants
+            important_folders = ['uploads/', 'forward_attachments/', 'lang/', 'templates/', 'static/']
+            for folder in important_folders:
+                folder_files = [f for f in file_list if f.startswith(folder)]
+                if not folder_files and folder != 'forward_attachments/':  # forward_attachments peut être vide
+                    issues.append(f"Dossier {folder} vide ou manquant")
+            
+            if issues:
+                return False, "Problèmes détectés: " + "; ".join(issues)
+            
+            return True, f"Sauvegarde valide (version {manifest.get('version', 'inconnue')})"
+            
+    except Exception as e:
+        return False, f"Erreur lors de la validation: {str(e)}"
+
+def create_pre_update_backup():
+    """Créer une sauvegarde spéciale avant mise à jour avec protection des paramètres"""
+    import json
+    
+    # Créer une sauvegarde standard
+    backup_filename = create_system_backup()
+    
+    # Ajouter des métadonnées spéciales pour les mises à jour
+    backup_path = os.path.join('backups', backup_filename)
+    
+    # Créer un fichier de protection des paramètres
+    try:
+        from models import ParametresSysteme
+        
+        # Récupérer tous les paramètres système critiques
+        critical_params = [
+            'nom_logiciel', 'nom_organisation', 'adresse_organisation', 
+            'telephone_organisation', 'email_organisation', 'logo_organisation',
+            'fuseau_horaire', 'format_date', 'langue_defaut', 
+            'sendgrid_api_key', 'email_provider', 'smtp_server', 'smtp_port',
+            'smtp_username', 'smtp_password', 'smtp_use_tls',
+            'notify_superadmin_new_mail', 'titre_responsable_structure'
+        ]
+        
+        protected_settings = {}
+        for param in critical_params:
+            value = ParametresSysteme.get_valeur(param)
+            if value:
+                protected_settings[param] = value
+        
+        # Sauvegarder dans un fichier séparé
+        settings_backup_path = backup_path.replace('.zip', '_protected_settings.json')
+        with open(settings_backup_path, 'w', encoding='utf-8') as f:
+            json.dump(protected_settings, f, indent=2, ensure_ascii=False)
+        
+        logging.info(f"Paramètres critiques sauvegardés dans {settings_backup_path}")
+        
+    except Exception as e:
+        logging.warning(f"Impossible de sauvegarder les paramètres critiques: {e}")
+    
+    return backup_filename
+
 def create_system_backup():
     """Créer une sauvegarde complète du système avec support PostgreSQL"""
     import zipfile

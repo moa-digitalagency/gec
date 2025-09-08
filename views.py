@@ -1603,9 +1603,9 @@ def update_online():
         # - Configuration système et paramètres
         # - Variables d'environnement
         try:
-            backup_filename = create_system_backup()
-            log_activity(current_user.id, 'BACKUP_CREATED', f'Sauvegarde de sécurité créée avant mise à jour: {backup_filename}')
-            flash(f'Sauvegarde de sécurité créée: {backup_filename}', 'info')
+            backup_filename = create_pre_update_backup()
+            log_activity(current_user.id, 'BACKUP_CREATED', f'Sauvegarde de sécurité avec protection des paramètres créée: {backup_filename}')
+            flash(f'Sauvegarde de sécurité avec protection des paramètres créée: {backup_filename}', 'info')
         except Exception as backup_error:
             flash(f'Erreur lors de la création de la sauvegarde de sécurité : {str(backup_error)}', 'error')
             return redirect(url_for('manage_backups'))
