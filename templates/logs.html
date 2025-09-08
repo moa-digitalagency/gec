@@ -125,8 +125,23 @@
                     <i class="fas fa-list mr-2 text-rdc-blue"></i>
                     {{ t('activity_journal') or 'Journal des Activités' }}
                 </h2>
-                <div class="text-sm text-gray-500">
-                    {{ pagination.total }} {{ t('entries_found') or 'entrée(s) trouvée(s)' }}
+                <div class="flex items-center gap-4">
+                    <div class="text-sm text-gray-500">
+                        {{ pagination.total }} {{ t('entries_found') or 'entrée(s) trouvée(s)' }}
+                    </div>
+                    {% if current_user.is_super_admin() and pagination.total > 0 %}
+                        <a href="{{ url_for('export_logs_pdf_route', 
+                                           search=search, 
+                                           action=action_filter, 
+                                           user_id=user_filter, 
+                                           date_from=date_from, 
+                                           date_to=date_to) }}" 
+                           class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                           title="{{ t('export_logs_pdf') or 'Exporter en PDF' }}">
+                            <i class="fas fa-file-pdf mr-2"></i>
+                            {{ t('export_pdf') or 'Export PDF' }}
+                        </a>
+                    {% endif %}
                 </div>
             </div>
             
