@@ -611,9 +611,58 @@ def restore_system_from_backup(backup_file):
         # Restaurer les fichiers uploadés
         uploads_backup_path = os.path.join(temp_dir, 'uploads')
         if os.path.exists(uploads_backup_path):
+            # Créer une sauvegarde des uploads existants
             if os.path.exists('uploads'):
-                shutil.rmtree('uploads')
+                upload_backup_name = f"uploads_backup_{int(time.time())}"
+                shutil.move('uploads', upload_backup_name)
+            # Restaurer les nouveaux uploads
             shutil.copytree(uploads_backup_path, 'uploads')
+        
+        # Restaurer les pièces jointes des transmissions
+        forward_attachments_backup_path = os.path.join(temp_dir, 'forward_attachments')
+        if os.path.exists(forward_attachments_backup_path):
+            # Créer une sauvegarde des pièces jointes existantes
+            if os.path.exists('forward_attachments'):
+                forward_backup_name = f"forward_attachments_backup_{int(time.time())}"
+                shutil.move('forward_attachments', forward_backup_name)
+            # Restaurer les nouvelles pièces jointes
+            shutil.copytree(forward_attachments_backup_path, 'forward_attachments')
+        
+        # Restaurer tous les templates
+        templates_backup_path = os.path.join(temp_dir, 'templates')
+        if os.path.exists(templates_backup_path):
+            # Créer une sauvegarde des templates existants
+            if os.path.exists('templates'):
+                templates_backup_name = f"templates_backup_{int(time.time())}"
+                shutil.move('templates', templates_backup_name)
+            # Restaurer les nouveaux templates
+            shutil.copytree(templates_backup_path, 'templates')
+        
+        # Restaurer les fichiers statiques
+        static_backup_path = os.path.join(temp_dir, 'static')
+        if os.path.exists(static_backup_path):
+            # Créer une sauvegarde des fichiers statiques existants
+            if os.path.exists('static'):
+                static_backup_name = f"static_backup_{int(time.time())}"
+                shutil.move('static', static_backup_name)
+            # Restaurer les nouveaux fichiers statiques
+            shutil.copytree(static_backup_path, 'static')
+        
+        # Restaurer les exports
+        exports_backup_path = os.path.join(temp_dir, 'exports')
+        if os.path.exists(exports_backup_path):
+            # Créer le dossier exports s'il n'existe pas
+            os.makedirs('exports', exist_ok=True)
+            # Copier les fichiers d'export
+            for file in os.listdir(exports_backup_path):
+                src_file = os.path.join(exports_backup_path, file)
+                dst_file = os.path.join('exports', file)
+                if os.path.isfile(src_file):
+                    # Créer une sauvegarde si le fichier existe déjà
+                    if os.path.exists(dst_file):
+                        backup_name = f"{dst_file}.backup_{int(time.time())}"
+                        shutil.copy2(dst_file, backup_name)
+                    shutil.copy2(src_file, dst_file)
         
         # Restaurer les fichiers de langues
         lang_backup_path = os.path.join(temp_dir, 'lang')
@@ -637,6 +686,25 @@ def restore_system_from_backup(backup_file):
                     shutil.copy2(config_file, backup_name)
                 # Restaurer le fichier
                 shutil.copy2(backup_config_path, config_file)
+        
+        # Afficher un message informatif pour l'administrateur sur les variables d'environnement
+        env_doc_path = os.path.join(temp_dir, 'environment_variables_documentation.json')
+        if os.path.exists(env_doc_path):
+            logging.info("Documentation des variables d'environnement disponible dans environment_variables_documentation.json")
+            logging.info("Vérifiez que toutes les variables requises sont configurées avant de redémarrer l'application")
+        
+        # Vérifier le manifeste de sauvegarde pour compatibilité
+        manifest_path = os.path.join(temp_dir, 'backup_manifest.json')
+        if os.path.exists(manifest_path):
+            try:
+                import json
+                with open(manifest_path, 'r') as f:
+                    manifest = json.load(f)
+                logging.info(f"Restauration depuis sauvegarde version {manifest.get('version', 'inconnue')}")
+                logging.info(f"Type de base de données: {manifest.get('database_type', 'inconnue')}")
+                logging.info(f"Éléments restaurés: {', '.join(manifest.get('files_included', []))}")
+            except Exception as e:
+                logging.warning(f"Impossible de lire le manifeste de sauvegarde: {e}")
     
     return True
 
