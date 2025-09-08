@@ -2429,6 +2429,91 @@ def view_logs():
                          actions_list=actions_list,
                          users_list=users_list)
 
+@app.route('/export_logs_pdf')
+@login_required
+def export_logs_pdf_route():
+    """Exporter les logs d'activité en PDF - accessible uniquement aux super admins"""
+    if not current_user.is_super_admin():
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Récupérer les mêmes filtres que la route view_logs
+        search = request.args.get('search', '')
+        action_filter = request.args.get('action', '')
+        user_filter = request.args.get('user_id', '', type=str)
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+        
+        # Construction de la requête avec les mêmes filtres
+        query = LogActivite.query.join(User).order_by(LogActivite.date_action.desc())
+        
+        # Appliquer les filtres
+        if search:
+            query = query.filter(
+                db.or_(
+                    LogActivite.action.contains(search),
+                    LogActivite.description.contains(search),
+                    User.username.contains(search),
+                    User.nom_complet.contains(search)
+                )
+            )
+        
+        if action_filter:
+            query = query.filter(LogActivite.action == action_filter)
+        
+        if user_filter:
+            query = query.filter(LogActivite.utilisateur_id == user_filter)
+        
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+                query = query.filter(LogActivite.date_action >= date_from_obj)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+                date_to_obj = date_to_obj.replace(hour=23, minute=59, second=59)
+                query = query.filter(LogActivite.date_action <= date_to_obj)
+            except ValueError:
+                pass
+        
+        # Limiter à 1000 entrées maximum pour éviter les PDFs trop volumineux
+        logs = query.limit(1000).all()
+        
+        # Préparer les informations de filtres pour le PDF
+        filters = {
+            'search': search,
+            'action_filter': action_filter,
+            'user_filter': user_filter,
+            'date_from': date_from,
+            'date_to': date_to
+        }
+        
+        # Générer le PDF
+        from utils import export_logs_pdf
+        pdf_path = export_logs_pdf(logs, filters)
+        
+        # Logger cette action d'export
+        log_activity(current_user.id, "EXPORT_LOGS_PDF", 
+                    f"Export PDF des logs d'activité ({len(logs)} entrées)")
+        
+        # Télécharger le fichier PDF
+        import os
+        directory = os.path.dirname(pdf_path)
+        filename = os.path.basename(pdf_path)
+        return send_from_directory(directory, filename, 
+                                 as_attachment=True, 
+                                 download_name=f"journal_activites_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                                 mimetype='application/pdf')
+                                 
+    except Exception as e:
+        logging.error(f"Erreur lors de l'export PDF des logs: {e}")
+        flash('Erreur lors de l\'export PDF des logs d\'activité.', 'error')
+        return redirect(url_for('view_logs'))
+
 @app.route('/manage_roles')
 @login_required
 def manage_roles():
