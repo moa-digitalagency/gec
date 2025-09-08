@@ -2502,6 +2502,7 @@ def export_logs_pdf_route():
         
         # Télécharger le fichier PDF
         import os
+        from flask import send_from_directory
         directory = os.path.dirname(pdf_path)
         filename = os.path.basename(pdf_path)
         return send_from_directory(directory, filename, 
