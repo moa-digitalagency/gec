@@ -1830,3 +1830,316 @@ def send_comment_notification(email, courrier_data):
     except Exception as e:
         logging.error(f"Erreur lors de l'envoi de la notification de commentaire: {e}")
         return False
+
+def export_logs_pdf(logs, filters):
+    """Exporter les logs d'activité en PDF avec mise en forme professionnelle"""
+    # Créer le dossier exports s'il n'existe pas
+    exports_dir = 'exports'
+    os.makedirs(exports_dir, exist_ok=True)
+    
+    # Nom du fichier PDF
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"logs_activite_{timestamp}.pdf"
+    pdf_path = os.path.join(exports_dir, filename)
+    
+    # Créer le document PDF en orientation paysage pour plus d'espace
+    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.platypus import Image
+    from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
+    from reportlab.platypus.frames import Frame
+    from reportlab.pdfgen import canvas
+    
+    # Classe pour numérotation des pages et en-têtes/pieds de page
+    class NumberedCanvas(canvas.Canvas):
+        def __init__(self, *args, **kwargs):
+            canvas.Canvas.__init__(self, *args, **kwargs)
+            self._saved_page_states = []
+            
+        def showPage(self):
+            self._saved_page_states.append(dict(self.__dict__))
+            self._startPage()
+            
+        def save(self):
+            """Ajouter les en-têtes et pieds de page sur toutes les pages"""
+            num_pages = len(self._saved_page_states)
+            for (page_num, page_state) in enumerate(self._saved_page_states):
+                self.__dict__.update(page_state)
+                self.draw_page_elements(page_num + 1, num_pages)
+                canvas.Canvas.showPage(self)
+            canvas.Canvas.save(self)
+            
+        def draw_page_elements(self, page_num, total_pages):
+            """Dessiner les éléments sur chaque page"""
+            from flask_login import current_user
+            
+            # En-tête
+            self.setFont('Helvetica-Bold', 10)
+            # Nom utilisateur en haut à gauche
+            if current_user and current_user.is_authenticated:
+                self.drawString(0.5*inch, landscape(A4)[1] - 0.3*inch, 
+                              f"Utilisateur: {current_user.nom_complet}")
+            
+            # Date et heure en haut à droite
+            self.drawRightString(landscape(A4)[0] - 0.5*inch, landscape(A4)[1] - 0.3*inch,
+                               f"Date d'export: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+            
+            # Pied de page
+            self.setFont('Helvetica', 8)
+            # Numérotation des pages au centre
+            self.drawCentredText(landscape(A4)[0]/2, 0.3*inch, 
+                               f"Page {page_num} sur {total_pages}")
+            
+            # Copyright en bas à droite
+            from models import ParametresSysteme
+            parametres = ParametresSysteme.get_parametres()
+            copyright = parametres.get_copyright_decrypte() if parametres else "© GEC System"
+            self.drawRightString(landscape(A4)[0] - 0.5*inch, 0.3*inch, copyright)
+    
+    doc = SimpleDocTemplate(pdf_path, pagesize=landscape(A4), 
+                          leftMargin=0.5*inch, rightMargin=0.5*inch,
+                          topMargin=0.75*inch, bottomMargin=0.75*inch)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Récupérer les paramètres système
+    from models import ParametresSysteme
+    parametres = ParametresSysteme.get_parametres()
+    
+    # Ajouter le logo s'il existe
+    logo_path = None
+    if parametres.logo_pdf:
+        if parametres.logo_pdf.startswith('/uploads/'):
+            logo_file_path = parametres.logo_pdf[9:]
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    elif parametres.logo_url:
+        if parametres.logo_url.startswith('/uploads/'):
+            logo_file_path = parametres.logo_url[9:]
+            logo_abs_path = os.path.join('uploads', logo_file_path)
+            if os.path.exists(logo_abs_path):
+                logo_path = logo_abs_path
+    
+    if logo_path:
+        try:
+            from PIL import Image as PILImage
+            pil_img = PILImage.open(logo_path)
+            original_width, original_height = pil_img.size
+            
+            # Calculer les dimensions en préservant le ratio
+            max_width = 1.5*inch
+            max_height = 1.0*inch
+            
+            width_ratio = max_width / original_width
+            height_ratio = max_height / original_height
+            ratio = min(width_ratio, height_ratio)
+            
+            new_width = original_width * ratio
+            new_height = original_height * ratio
+            
+            logo = Image(logo_path, width=new_width, height=new_height)
+            logo.hAlign = 'CENTER'
+            story.append(logo)
+            story.append(Spacer(1, 10))
+        except Exception as e:
+            print(f"Erreur chargement logo: {e}")
+    
+    # Style personnalisé pour le titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        spaceAfter=20,
+        alignment=1,  # Centré
+        textColor=colors.darkblue,
+        fontName='Helvetica-Bold'
+    )
+    
+    # En-tête pays
+    pays_style = ParagraphStyle(
+        'PaysStyle',
+        parent=styles['Normal'],
+        fontSize=18,
+        fontName='Helvetica-Bold',
+        alignment=1,
+        spaceAfter=10,
+        textColor=colors.darkblue
+    )
+    pays_text = parametres.pays_pdf or "République Démocratique du Congo"
+    story.append(Paragraph(pays_text, pays_style))
+    
+    # Titre et sous-titre
+    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
+    
+    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)
+    story.append(title)
+    story.append(Spacer(1, 20))
+    
+    # Titre du rapport
+    rapport_title = Paragraph("JOURNAL DES ACTIVITÉS SYSTÈME", styles['Heading2'])
+    story.append(rapport_title)
+    story.append(Spacer(1, 15))
+    
+    # Informations sur les filtres appliqués
+    filter_info = []
+    if filters.get('search'):
+        filter_info.append(f"Recherche textuelle: {filters['search']}")
+    if filters.get('action_filter'):
+        filter_info.append(f"Action filtrée: {filters['action_filter']}")
+    if filters.get('user_filter'):
+        from models import User
+        user = User.query.get(filters['user_filter'])
+        if user:
+            filter_info.append(f"Utilisateur: {user.nom_complet}")
+    if filters.get('date_from') or filters.get('date_to'):
+        period = "Période: "
+        if filters.get('date_from'):
+            period += f"du {filters['date_from']}"
+        if filters.get('date_to'):
+            period += f" au {filters['date_to']}"
+        filter_info.append(period)
+    
+    if filter_info:
+        filter_style = ParagraphStyle(
+            'FilterStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=15,
+            textColor=colors.grey
+        )
+        filter_text = " | ".join(filter_info)
+        story.append(Paragraph(f"<b>Filtres appliqués:</b> {filter_text}", filter_style))
+    
+    # Statistiques rapides
+    total_logs = len(logs)
+    actions_uniques = len(set(log.action for log in logs))
+    utilisateurs_uniques = len(set(log.utilisateur_id for log in logs))
+    
+    stats_style = ParagraphStyle(
+        'StatsStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=15,
+        textColor=colors.darkgreen
+    )
+    stats_text = f"<b>Statistiques:</b> {total_logs} entrées | {actions_uniques} types d'actions | {utilisateurs_uniques} utilisateurs actifs"
+    story.append(Paragraph(stats_text, stats_style))
+    story.append(Spacer(1, 10))
+    
+    # Construire le tableau des logs
+    if logs:
+        # En-têtes du tableau
+        headers = [
+            'Date/Heure',
+            'Utilisateur', 
+            'Action',
+            'Description',
+            'IP',
+            'Courrier'
+        ]
+        
+        # Données du tableau
+        data = [headers]
+        
+        for log in logs:
+            # Formatage de la date
+            date_str = log.date_action.strftime('%d/%m/%Y\n%H:%M:%S') if log.date_action else ''
+            
+            # Nom utilisateur
+            user_name = log.utilisateur.nom_complet if log.utilisateur else 'Inconnu'
+            
+            # Action
+            action = log.action or ''
+            
+            # Description (limitée et avec retour à la ligne)
+            description = log.description or ''
+            if len(description) > 80:
+                description = description[:77] + '...'
+            
+            # IP
+            ip = log.ip_address or ''
+            
+            # Courrier (si applicable)
+            courrier_info = ''
+            if log.courrier_id and log.courrier:
+                courrier_info = f"#{log.courrier.numero_accuse_reception}"
+            
+            row = [
+                Paragraph(date_str, styles['Normal']),
+                Paragraph(user_name, styles['Normal']),
+                Paragraph(action, styles['Normal']),
+                Paragraph(description, styles['Normal']),
+                Paragraph(ip, styles['Normal']),
+                Paragraph(courrier_info, styles['Normal'])
+            ]
+            data.append(row)
+        
+        # Largeurs des colonnes optimisées pour paysage
+        col_widths = [
+            1.2*inch,   # Date/Heure
+            1.4*inch,   # Utilisateur
+            1.3*inch,   # Action
+            3.5*inch,   # Description (plus large)
+            1.0*inch,   # IP
+            1.0*inch    # Courrier
+        ]
+        table = Table(data, colWidths=col_widths, repeatRows=1)
+        
+        # Style du tableau professionnel
+        table.setStyle(TableStyle([
+            # En-tête
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TOPPADDING', (0, 0), (-1, 0), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            
+            # Corps du tableau
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 8),
+            
+            # Bordures
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('LINEBELOW', (0, 0), (-1, 0), 2, colors.darkblue),
+            
+            # Alternance de couleur pour lisibilité
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+            
+            # Styles spéciaux par colonne
+            ('BACKGROUND', (0, 1), (0, -1), colors.lightblue),  # Date/Heure
+            ('BACKGROUND', (2, 1), (2, -1), colors.lightyellow),  # Action
+            
+            # Retour à la ligne automatique
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),
+        ]))
+        
+        story.append(table)
+    else:
+        # Message si aucun log
+        no_data_style = ParagraphStyle(
+            'NoDataStyle',
+            parent=styles['Normal'],
+            fontSize=12,
+            alignment=1,
+            textColor=colors.red
+        )
+        story.append(Paragraph("Aucun log d'activité trouvé avec les critères sélectionnés.", no_data_style))
+    
+    story.append(Spacer(1, 20))
+    
+    # Construire le PDF avec numérotation des pages
+    doc.build(story, canvasmaker=NumberedCanvas)
+    
+    return pdf_path
