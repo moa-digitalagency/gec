@@ -388,7 +388,7 @@ def get_backup_files():
 def validate_backup_integrity(backup_filename):
     """Valider l'intégrité d'une sauvegarde"""
     import zipfile
-    import json
+    import json as json_module
     
     backup_path = os.path.join('backups', backup_filename)
     if not os.path.exists(backup_path):
@@ -408,7 +408,7 @@ def validate_backup_integrity(backup_filename):
             
             # Lire le manifeste pour vérifier la version et les composants
             manifest_data = zipf.read('backup_manifest.json')
-            manifest = json.loads(manifest_data.decode('utf-8'))
+            manifest = json_module.loads(manifest_data.decode('utf-8'))
             
             # Validation des composants critiques
             issues = []
@@ -572,13 +572,14 @@ def create_system_backup():
             'SESSION_SECRET': 'Clé secrète pour les sessions Flask'
         }
         
+        import json as json_module
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as env_file:
-            json.dump(env_doc, env_file, indent=2, ensure_ascii=False)
+            json_module.dump(env_doc, env_file, indent=2, ensure_ascii=False)
             zipf.write(env_file.name, 'environment_variables_documentation.json')
             os.unlink(env_file.name)
         
         # Ajouter un manifeste de sauvegarde complet
-        import json
+        import json as json_module
         import tempfile
         manifest = {
             'timestamp': timestamp,
@@ -599,7 +600,7 @@ def create_system_backup():
         }
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as manifest_file:
-            json.dump(manifest, manifest_file, indent=2)
+            json_module.dump(manifest, manifest_file, indent=2)
             zipf.write(manifest_file.name, 'backup_manifest.json')
             os.unlink(manifest_file.name)
         
@@ -786,9 +787,9 @@ def restore_system_from_backup(backup_file):
         manifest_path = os.path.join(temp_dir, 'backup_manifest.json')
         if os.path.exists(manifest_path):
             try:
-                import json
+                import json as json_module
                 with open(manifest_path, 'r') as f:
-                    manifest = json.load(f)
+                    manifest = json_module.load(f)
                 logging.info(f"Restauration depuis sauvegarde version {manifest.get('version', 'inconnue')}")
                 logging.info(f"Type de base de données: {manifest.get('database_type', 'inconnue')}")
                 logging.info(f"Éléments restaurés: {', '.join(manifest.get('files_included', []))}")
