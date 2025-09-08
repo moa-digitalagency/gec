@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import logging
 from datetime import datetime
 from flask import request, session
 from reportlab.lib.pagesizes import A4
@@ -1762,7 +1763,8 @@ def send_comment_notification(email, courrier_data):
     """Envoyer un email de notification pour les commentaires/annotations/instructions"""
     try:
         # Charger les paramètres système pour l'email
-        parametres = get_system_config_for_email()
+        from models import ParametresSysteme
+        parametres = ParametresSysteme.get_parametres()
         if not parametres:
             logging.error("Impossible de charger les paramètres système pour l'email")
             return False
@@ -1825,6 +1827,7 @@ def send_comment_notification(email, courrier_data):
         """
         
         # Envoyer l'email
+        from email_utils import send_email_from_system_config
         return send_email_from_system_config(email, subject, html_content)
         
     except Exception as e:
@@ -1890,8 +1893,8 @@ def export_logs_pdf(logs, filters):
             # Pied de page
             self.setFont('Helvetica', 8)
             # Numérotation des pages au centre
-            self.drawCentredText(landscape(A4)[0]/2, 0.3*inch, 
-                               f"Page {page_num} sur {total_pages}")
+            self.drawString(landscape(A4)[0]/2 - 30, 0.3*inch, 
+                           f"Page {page_num} sur {total_pages}")
             
             # Copyright en bas à droite
             from models import ParametresSysteme
