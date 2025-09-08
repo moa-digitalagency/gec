@@ -452,6 +452,14 @@ def create_system_backup():
                     arc_path = os.path.relpath(file_path, '.')
                     zipf.write(file_path, arc_path)
         
+        # Sauvegarder les pièces jointes des transmissions
+        if os.path.exists('forward_attachments'):
+            for root, dirs, files in os.walk('forward_attachments'):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
+        
         # Sauvegarder les fichiers de langues
         if os.path.exists('lang'):
             for root, dirs, files in os.walk('lang'):
