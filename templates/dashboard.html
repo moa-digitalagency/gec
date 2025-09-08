@@ -62,6 +62,11 @@
                 <div class="ml-4">
                     <p class="text-sm font-medium text-blue-100">{{ t('user') or 'Utilisateur' }}</p>
                     <p class="text-lg font-bold text-white">{{ current_user.nom_complet }}</p>
+                    {% if current_user.get_decrypted_fonction() %}
+                        <p class="text-xs text-blue-200">{{ current_user.get_decrypted_fonction() }}</p>
+                    {% else %}
+                        <p class="text-xs text-blue-200">(Fonction absente)</p>
+                    {% endif %}
                     {% if current_user.departement %}
                         <p class="text-xs text-blue-200">{{ current_user.departement.nom }}</p>
                     {% endif %}
