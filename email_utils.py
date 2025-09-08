@@ -848,7 +848,9 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
         'nom_logiciel': nom_logiciel,
         'url_courrier': courrier_data.get('url_courrier', '#'),
         'transmis_par': forwarded_by,
-        'forwarded_by': forwarded_by
+        'forwarded_by': forwarded_by,
+        'message_accompagnement': courrier_data.get('message', ''),
+        'piece_jointe': courrier_data.get('attachment_info', '')
     }
     
     # Récupérer le template d'email
@@ -884,7 +886,17 @@ def send_mail_forwarded_notification(user_email, courrier_data, forwarded_by, us
             </div>
             <div class="content">
                 <p>Bonjour {user_name or 'utilisateur'},</p>
-                <p>Un courrier vous a été transmis par <strong>{forwarded_by}</strong>.</p>
+                <p>Un courrier vous a été transmis par <strong>{forwarded_by}</strong>.</p>"""
+        
+        # Ajouter le message d'accompagnement si présent
+        if courrier_data.get("message"):
+            html_content += f'<p><em>Message d\'accompagnement:</em> {courrier_data.get("message", "")}</p>'
+        
+        # Ajouter les informations de pièce jointe si présente
+        if courrier_data.get("attachment_info"):
+            html_content += f'<p><strong>📎 {courrier_data.get("attachment_info", "")}</strong></p>'
+        
+        html_content += f"""
                 
                 <div class="details">
                     <h3>Détails du courrier :</h3>

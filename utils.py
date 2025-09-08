@@ -1170,6 +1170,18 @@ def export_courrier_pdf(courrier):
             status_str = " | ".join(status_parts)
             message_str = forward.message if forward.message else "-"
             
+            # Ajouter l'information de pièce jointe si présente
+            if forward.attached_file and forward.attached_file_original_name:
+                attachment_info = f"📎 Pièce jointe: {forward.attached_file_original_name}"
+                if forward.attached_file_size:
+                    size_mb = forward.attached_file_size / 1024 / 1024
+                    attachment_info += f" ({size_mb:.1f} MB)"
+                    
+                if message_str == "-":
+                    message_str = attachment_info
+                else:
+                    message_str += f"\n{attachment_info}"
+            
             # Combiner message et statut pour garder 4 colonnes comme les commentaires
             message_status = f"{message_str}"
             if status_str != "Non lu":

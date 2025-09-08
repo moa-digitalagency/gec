@@ -4758,7 +4758,9 @@ def forward_mail(courrier_id):
                     'numero_accuse_reception': courrier.numero_accuse_reception,
                     'type_courrier': courrier.type_courrier,
                     'objet': courrier.objet,
-                    'expediteur': courrier.expediteur or courrier.destinataire
+                    'expediteur': courrier.expediteur or courrier.destinataire,
+                    'message': message,
+                    'attachment_info': f"Pièce jointe: {attachment_original_name}" if attachment_original_name else None
                 }
                 if send_mail_forwarded_notification(user.email, courrier_data, current_user.nom_complet):
                     forward.email_sent = True
