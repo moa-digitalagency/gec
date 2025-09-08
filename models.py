@@ -1155,6 +1155,9 @@ class CourrierForward(db.Model):
     forwarded_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     forwarded_to_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     message = db.Column(db.Text, nullable=True)  # Message d'accompagnement
+    attached_file = db.Column(db.String(255), nullable=True)  # Nom du fichier joint (optionnel)
+    attached_file_original_name = db.Column(db.String(255), nullable=True)  # Nom original du fichier
+    attached_file_size = db.Column(db.Integer, nullable=True)  # Taille du fichier en bytes
     date_transmission = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     lu = db.Column(db.Boolean, default=False, index=True)
     date_lecture = db.Column(db.DateTime, nullable=True)
