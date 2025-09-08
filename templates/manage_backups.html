@@ -217,6 +217,13 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-3">
+                            <a href="{{ url_for('validate_backup', filename=backup.filename) }}" 
+                               class="text-green-600 hover:text-green-900 flex items-center"
+                               title="{{ t('validate_backup_integrity') or 'Valider l\'intégrité de la sauvegarde' }}">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                {{ t('validate') or 'Valider' }}
+                            </a>
+                            
                             <a href="{{ url_for('download_backup', filename=backup.filename) }}" 
                                class="text-blue-600 hover:text-blue-900 flex items-center">
                                 <i class="fas fa-download mr-1"></i>

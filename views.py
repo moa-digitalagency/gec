@@ -1562,6 +1562,31 @@ def restore_system():
     
     return redirect(url_for('manage_backups'))
 
+@app.route('/validate_backup/<filename>')
+@login_required
+def validate_backup(filename):
+    """Valider l'intégrité d'un fichier de sauvegarde"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    try:
+        is_valid, message = validate_backup_integrity(filename)
+        
+        if is_valid:
+            flash(f'✅ Validation réussie: {message}', 'success')
+        else:
+            flash(f'❌ Problème détecté: {message}', 'error')
+            
+        log_activity(current_user.id, "VALIDATE_BACKUP", 
+                    f"Validation de sauvegarde: {filename} - {message}")
+                    
+    except Exception as e:
+        logging.error(f"Erreur lors de la validation de sauvegarde: {e}")
+        flash(f'Erreur lors de la validation: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_backups'))
+
 @app.route('/update_system')
 @login_required
 def update_system():
