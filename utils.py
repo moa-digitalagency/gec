@@ -435,6 +435,7 @@ def validate_backup_integrity(backup_filename):
 def create_pre_update_backup():
     """Créer une sauvegarde spéciale avant mise à jour avec protection des paramètres"""
     import json as json_module
+    import logging
     
     # Créer une sauvegarde standard
     backup_filename = create_system_backup()
