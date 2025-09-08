@@ -469,15 +469,44 @@ def create_system_backup():
                         arc_path = os.path.relpath(file_path, '.')
                         zipf.write(file_path, arc_path)
         
-        # Ajouter un manifeste de sauvegarde
+        # Créer un fichier de documentation des variables d'environnement
+        env_doc = {
+            'DATABASE_URL': 'URL de connexion PostgreSQL (requise)',
+            'GEC_MASTER_KEY': 'Clé maître pour le chiffrement (64 caractères hex)',
+            'GEC_PASSWORD_SALT': 'Sel pour les mots de passe (64 caractères hex)',
+            'SENDGRID_API_KEY': 'Clé API SendGrid pour les emails',
+            'SMTP_SERVER': 'Serveur SMTP pour les emails',
+            'SMTP_PORT': 'Port SMTP',
+            'SMTP_EMAIL': 'Adresse email SMTP',
+            'SMTP_PASSWORD': 'Mot de passe SMTP',
+            'SMTP_USE_TLS': 'Utiliser TLS pour SMTP (true/false)',
+            'SESSION_SECRET': 'Clé secrète pour les sessions Flask'
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as env_file:
+            json.dump(env_doc, env_file, indent=2, ensure_ascii=False)
+            zipf.write(env_file.name, 'environment_variables_documentation.json')
+            os.unlink(env_file.name)
+        
+        # Ajouter un manifeste de sauvegarde complet
         import json
         import tempfile
         manifest = {
             'timestamp': timestamp,
-            'version': '1.1.0',
+            'version': '1.2.0',
             'database_type': 'postgresql' if 'postgresql' in os.environ.get('DATABASE_URL', '') else 'sqlite',
-            'backup_type': 'full_system',
-            'files_included': ['database', 'uploads', 'lang', 'config', 'templates']
+            'backup_type': 'full_system_complete',
+            'files_included': [
+                'database', 'uploads', 'forward_attachments', 'lang', 'config', 
+                'templates', 'static', 'exports', 'environment_doc'
+            ],
+            'description': 'Sauvegarde complète du système GEC incluant toutes les données, fichiers et configurations',
+            'restore_instructions': {
+                'database': 'Restaurer avec psql sur PostgreSQL ou copier pour SQLite',
+                'files': 'Extraire tous les dossiers à la racine du nouveau système',
+                'environment': 'Configurer les variables d\'environnement selon environment_variables_documentation.json',
+                'post_restore': 'Redémarrer l\'application après restauration'
+            }
         }
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as manifest_file:
@@ -495,12 +524,32 @@ def create_system_backup():
             if os.path.exists(config_file):
                 zipf.write(config_file)
         
-        # Sauvegarder les templates critiques
+        # Sauvegarder TOUS les templates 
         if os.path.exists('templates'):
-            for template_file in ['new_base.html', 'login.html']:
-                template_path = os.path.join('templates', template_file)
-                if os.path.exists(template_path):
-                    zipf.write(template_path)
+            for root, dirs, files in os.walk('templates'):
+                for file in files:
+                    if file.endswith(('.html', '.htm', '.jinja2')):
+                        file_path = os.path.join(root, file)
+                        arc_path = os.path.relpath(file_path, '.')
+                        zipf.write(file_path, arc_path)
+        
+        # Sauvegarder les fichiers statiques critiques (CSS, JS, images)
+        static_folders = ['static/css', 'static/js', 'static/images', 'static/vendor']
+        for folder in static_folders:
+            if os.path.exists(folder):
+                for root, dirs, files in os.walk(folder):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arc_path = os.path.relpath(file_path, '.')
+                        zipf.write(file_path, arc_path)
+        
+        # Sauvegarder les exports et backups existants comme référence
+        if os.path.exists('exports'):
+            for file in os.listdir('exports'):
+                if file.endswith('.pdf') or file.endswith('.xlsx'):
+                    file_path = os.path.join('exports', file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
     
     return backup_filename
 
