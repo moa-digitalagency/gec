@@ -55,6 +55,67 @@ def inject_system_context():
         get_appellation_entites=get_appellation_entites
     )
 
+def apply_mail_access_filter(query, user):
+    """
+    Applique les restrictions d'accès aux courriers selon les rôles avec exception pour les transmissions.
+    Un courrier transmis à un utilisateur devient accessible même si son rôle ne le permet pas normalement.
+    """
+    from sqlalchemy import exists
+    
+    # Base condition : courriers non supprimés
+    query = query.filter(Courrier.is_deleted == False)
+    
+    # Condition pour courriers transmis à l'utilisateur
+    forwarded_condition = exists().where(
+        and_(
+            CourrierForward.courrier_id == Courrier.id,
+            CourrierForward.forwarded_to_id == user.id
+        )
+    )
+    
+    # Conditions normales selon les permissions
+    if user.has_permission('read_all_mail'):
+        # Super admin voit tout - pas besoin d'ajouter de condition
+        return query
+    elif user.has_permission('read_department_mail'):
+        # Peut voir les courriers de son département OU les courriers qui lui sont transmis
+        if user.departement_id:
+            department_condition = exists().where(
+                and_(
+                    User.id == Courrier.utilisateur_id,
+                    User.departement_id == user.departement_id
+                )
+            )
+            return query.filter(or_(department_condition, forwarded_condition))
+        else:
+            # Pas de département assigné : voir ses propres courriers OU ceux transmis
+            own_mail_condition = (Courrier.utilisateur_id == user.id)
+            return query.filter(or_(own_mail_condition, forwarded_condition))
+    elif user.has_permission('read_own_mail'):
+        # Peut voir ses propres courriers OU ceux transmis
+        own_mail_condition = (Courrier.utilisateur_id == user.id)
+        return query.filter(or_(own_mail_condition, forwarded_condition))
+    else:
+        # Fallback sur l'ancien système avec transmission
+        if user.role == 'super_admin':
+            return query
+        elif user.role == 'admin':
+            if user.departement_id:
+                department_condition = exists().where(
+                    and_(
+                        User.id == Courrier.utilisateur_id,
+                        User.departement_id == user.departement_id
+                    )
+                )
+                return query.filter(or_(department_condition, forwarded_condition))
+            else:
+                own_mail_condition = (Courrier.utilisateur_id == user.id)
+                return query.filter(or_(own_mail_condition, forwarded_condition))
+        else:
+            # Utilisateur normal : ses propres courriers OU ceux transmis
+            own_mail_condition = (Courrier.utilisateur_id == user.id)
+            return query.filter(or_(own_mail_condition, forwarded_condition))
+
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -379,18 +440,9 @@ def dashboard():
         # Use cached statistics for better performance
         stats = get_dashboard_statistics()
         
-        # Get recent mail specific to user permissions (excluding deleted)
-        recent_query = Courrier.query.filter_by(is_deleted=False)
-        
-        # Apply permission filters
-        if current_user.has_permission('read_all_mail'):
-            pass  # Can see all
-        elif current_user.has_permission('read_department_mail') and current_user.departement_id:
-            recent_query = recent_query.join(User, Courrier.utilisateur_id == User.id).filter(
-                User.departement_id == current_user.departement_id
-            )
-        else:
-            recent_query = recent_query.filter(Courrier.utilisateur_id == current_user.id)
+        # Get recent mail specific to user permissions (including forwarded mail)
+        recent_query = Courrier.query
+        recent_query = apply_mail_access_filter(recent_query, current_user)
         
         recent_courriers = recent_query.order_by(
             Courrier.date_enregistrement.desc()
@@ -653,42 +705,9 @@ def view_mail():
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
-    # Construction de la requête avec restrictions selon le rôle (excluant les courriers supprimés)
-    query = Courrier.query.filter_by(is_deleted=False)
-    
-    # Appliquer les restrictions selon les permissions
-    if current_user.has_permission('read_all_mail'):
-        # Peut voir tous les courriers
-        pass
-    elif current_user.has_permission('read_department_mail'):
-        # Peut voir les courriers de son département
-        if current_user.departement_id:
-            query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                User.departement_id == current_user.departement_id
-            )
-        else:
-            # Si pas de département assigné, ne voir que ses propres courriers
-            query = query.filter(Courrier.utilisateur_id == current_user.id)
-    elif current_user.has_permission('read_own_mail'):
-        # Peut voir seulement ses propres courriers
-        query = query.filter(Courrier.utilisateur_id == current_user.id)
-    else:
-        # Fallback sur l'ancien système si pas de permissions spécifiques
-        if current_user.role == 'super_admin':
-            # Super admin voit tout
-            pass
-        elif current_user.role == 'admin':
-            # Admin voit les courriers de son département
-            if current_user.departement_id:
-                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                    User.departement_id == current_user.departement_id
-                )
-            else:
-                # Si admin n'a pas de département assigné, ne voir que ses propres courriers
-                query = query.filter(Courrier.utilisateur_id == current_user.id)
-        else:
-            # Utilisateur normal voit seulement ses propres courriers
-            query = query.filter(Courrier.utilisateur_id == current_user.id)
+    # Construction de la requête avec restrictions selon le rôle (incluant courriers transmis)
+    query = Courrier.query
+    query = apply_mail_access_filter(query, current_user)
     
     # Ajout du filtre pour type de courrier
     type_courrier = request.args.get('type_courrier', '')
@@ -810,34 +829,9 @@ def search_suggestions():
         # Sanitize input
         q = sanitize_input(q)
         
-        # Construire la requête de base avec restrictions selon le rôle
-        query = Courrier.query.filter_by(is_deleted=False)
-        
-        # Appliquer les restrictions de permissions
-        if current_user.has_permission('read_all_mail'):
-            pass
-        elif current_user.has_permission('read_department_mail'):
-            if current_user.departement_id:
-                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                    User.departement_id == current_user.departement_id
-                )
-            else:
-                query = query.filter(Courrier.utilisateur_id == current_user.id)
-        elif current_user.has_permission('read_own_mail'):
-            query = query.filter(Courrier.utilisateur_id == current_user.id)
-        else:
-            # Fallback
-            if current_user.role == 'super_admin':
-                pass
-            elif current_user.role == 'admin':
-                if current_user.departement_id:
-                    query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                        User.departement_id == current_user.departement_id
-                    )
-                else:
-                    query = query.filter(Courrier.utilisateur_id == current_user.id)
-            else:
-                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        # Construire la requête avec restrictions selon le rôle (incluant transmissions)
+        query = Courrier.query
+        query = apply_mail_access_filter(query, current_user)
         
         # Recherche dans tous les champs indexés
         suggestions = set()  # Utiliser un set pour éviter les doublons
@@ -1136,34 +1130,9 @@ def export_mail_list():
         sort_by = request.args.get('sort_by', 'date_enregistrement')
         sort_order = request.args.get('sort_order', 'desc')
         
-        # Build query with same logic as view_mail (without pagination, excluding deleted)
-        query = Courrier.query.filter_by(is_deleted=False)
-        
-        # Apply permission restrictions
-        if current_user.has_permission('read_all_mail'):
-            pass
-        elif current_user.has_permission('read_department_mail'):
-            if current_user.departement_id:
-                query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                    User.departement_id == current_user.departement_id
-                )
-            else:
-                query = query.filter(Courrier.utilisateur_id == current_user.id)
-        elif current_user.has_permission('read_own_mail'):
-            query = query.filter(Courrier.utilisateur_id == current_user.id)
-        else:
-            # Fallback
-            if current_user.role == 'super_admin':
-                pass
-            elif current_user.role == 'admin':
-                if current_user.departement_id:
-                    query = query.join(User, Courrier.utilisateur_id == User.id).filter(
-                        User.departement_id == current_user.departement_id
-                    )
-                else:
-                    query = query.filter(Courrier.utilisateur_id == current_user.id)
-            else:
-                query = query.filter(Courrier.utilisateur_id == current_user.id)
+        # Build query with same logic as view_mail (incluant transmissions)
+        query = Courrier.query
+        query = apply_mail_access_filter(query, current_user)
         
         # Apply filters
         if search:

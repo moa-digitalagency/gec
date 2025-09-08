@@ -213,8 +213,18 @@ class User(UserMixin, db.Model):
         return False
     
     def can_view_courrier(self, courrier):
-        """Vérifie si l'utilisateur peut voir ce courrier"""
-        # Vérifier les permissions spécifiques aux courriers
+        """Vérifie si l'utilisateur peut voir ce courrier (incluant transmissions)"""
+        
+        # Exception : si le courrier a été transmis à cet utilisateur, il peut le voir
+        forwarded_to_user = CourrierForward.query.filter_by(
+            courrier_id=courrier.id,
+            forwarded_to_id=self.id
+        ).first()
+        
+        if forwarded_to_user:
+            return True
+        
+        # Vérifier les permissions normales selon les rôles
         if self.has_permission('read_all_mail'):
             return True
         elif self.has_permission('read_department_mail'):
