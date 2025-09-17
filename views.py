@@ -17,7 +17,7 @@ import logging
 
 from app import app, db
 from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 
 # Le support des langues est maintenant dans utils.py
 from email_utils import send_new_mail_notification, send_mail_forwarded_notification
@@ -3676,28 +3676,7 @@ def restore_database(backup_file_path):
         logging.error(f"Erreur lors de la restauration de la base de données: {e}")
         raise e
 
-def get_backup_files():
-    """Obtenir la liste des fichiers de sauvegarde disponibles"""
-    backup_dir = "backups"
-    if not os.path.exists(backup_dir):
-        return []
-    
-    backups = []
-    for filename in os.listdir(backup_dir):
-        if filename.endswith('.zip') and filename.startswith('gec_backup_'):
-            file_path = os.path.join(backup_dir, filename)
-            file_stat = os.stat(file_path)
-            
-            backups.append({
-                'filename': filename,
-                'size': file_stat.st_size,
-                'date': datetime.fromtimestamp(file_stat.st_mtime),
-                'path': file_path
-            })
-    
-    # Trier par date (plus récent en premier)
-    backups.sort(key=lambda x: x['date'], reverse=True)
-    return backups
+# Function removed - now using get_backup_files from utils.py which handles all backup types
 
 
 @app.route("/security_logs")
