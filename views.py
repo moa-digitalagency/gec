@@ -1534,17 +1534,46 @@ def backup_pre_update():
 @app.route('/download_backup/<filename>')
 @login_required
 def download_backup(filename):
-    """Télécharger un fichier de sauvegarde"""
+    """Télécharger un fichier de sauvegarde - accès restreint aux super admins"""
     if not current_user.is_super_admin():
-        flash('Accès refusé.', 'error')
+        flash('Accès refusé. Seuls les super administrateurs peuvent télécharger les sauvegardes.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    # Validation de sécurité du nom de fichier
+    import os
+    from werkzeug.utils import secure_filename
+    
+    # Sécuriser le nom de fichier et rejeter les extensions non autorisées
+    secure_name = secure_filename(filename)
+    if not secure_name.endswith('.zip'):
+        flash('Seuls les fichiers de sauvegarde (.zip) peuvent être téléchargés.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    # Empêcher la traversée de chemin
+    if '..' in filename or '/' in filename or '\\' in filename:
+        flash('Nom de fichier invalide.', 'error')
         return redirect(url_for('manage_backups'))
     
     # Créer le dossier backups s'il n'existe pas
-    os.makedirs('backups', exist_ok=True)
+    backup_dir = 'backups'
+    os.makedirs(backup_dir, exist_ok=True)
     
-    backup_path = os.path.join('backups', filename)
-    if os.path.exists(backup_path):
-        return send_from_directory('backups', filename, 
+    # Vérifier que le fichier existe et est dans le bon répertoire
+    backup_path = os.path.join(backup_dir, secure_name)
+    backup_path = os.path.abspath(backup_path)
+    backup_dir_abs = os.path.abspath(backup_dir)
+    
+    # S'assurer que le fichier est bien dans le répertoire backups (sécurité)
+    if not backup_path.startswith(backup_dir_abs):
+        flash('Accès non autorisé au fichier.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    if os.path.exists(backup_path) and os.path.isfile(backup_path):
+        # Logger le téléchargement pour audit
+        log_activity(current_user.id, "DOWNLOAD_BACKUP", 
+                    f"Téléchargement de la sauvegarde: {secure_name}")
+        
+        return send_from_directory(backup_dir, secure_name, 
                                  as_attachment=True,
                                  mimetype='application/zip')
     else:
