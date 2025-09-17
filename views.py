@@ -1511,6 +1511,26 @@ def backup_system():
     
     return redirect(url_for('manage_backups'))
 
+@app.route('/backup_pre_update', methods=['POST'])
+@login_required
+def backup_pre_update():
+    """Créer une sauvegarde de sécurité avant mise à jour avec protection des paramètres"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent créer des sauvegardes de sécurité.', 'error')
+        return redirect(url_for('settings'))
+    
+    try:
+        backup_filename = create_pre_update_backup()
+        log_activity(current_user.id, "BACKUP_SECURITE_MAJ", 
+                    f"Création d'une sauvegarde de sécurité avec protection des paramètres: {backup_filename}")
+        flash(f'Sauvegarde de sécurité créée avec succès: {backup_filename}', 'success')
+        flash('La sauvegarde inclut la protection des paramètres critiques pour les mises à jour.', 'info')
+    except Exception as e:
+        logging.error(f"Erreur lors de la création de la sauvegarde de sécurité: {e}")
+        flash(f'Erreur lors de la création de la sauvegarde de sécurité: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_backups'))
+
 @app.route('/download_backup/<filename>')
 @login_required
 def download_backup(filename):

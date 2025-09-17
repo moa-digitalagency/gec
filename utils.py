@@ -437,43 +437,192 @@ def create_pre_update_backup():
     """Créer une sauvegarde spéciale avant mise à jour avec protection des paramètres"""
     import json as json_module
     import logging
+    import zipfile
+    import subprocess
+    import tempfile
+    from datetime import datetime
     
-    # Créer une sauvegarde standard
-    backup_filename = create_system_backup()
+    # Créer le dossier de sauvegarde s'il n'existe pas
+    backup_dir = 'backups'
+    os.makedirs(backup_dir, exist_ok=True)
     
-    # Ajouter des métadonnées spéciales pour les mises à jour
-    backup_path = os.path.join('backups', backup_filename)
+    # Nom spécial pour les sauvegardes de sécurité
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_filename = f"backup_security_pre_update_{timestamp}.zip"
+    backup_path = os.path.join(backup_dir, backup_filename)
     
-    # Créer un fichier de protection des paramètres
-    try:
-        from models import ParametresSysteme
+    with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Sauvegarder la base de données PostgreSQL
+        try:
+            database_url = os.environ.get('DATABASE_URL')
+            if database_url and 'postgresql' in database_url:
+                # Extraire les paramètres de connexion
+                import urllib.parse
+                parsed = urllib.parse.urlparse(database_url)
+                
+                # Créer un dump PostgreSQL
+                with tempfile.NamedTemporaryFile(suffix='.sql', delete=False) as temp_sql:
+                    env = os.environ.copy()
+                    env['PGPASSWORD'] = parsed.password
+                    
+                    cmd = [
+                        'pg_dump',
+                        '-h', parsed.hostname,
+                        '-p', str(parsed.port or 5432),
+                        '-U', parsed.username,
+                        '-d', parsed.path[1:],  # Enlever le '/' initial
+                        '--no-password',
+                        '--clean',
+                        '--if-exists'
+                    ]
+                    
+                    with open(temp_sql.name, 'w') as f:
+                        result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, env=env)
+                        
+                    if result.returncode == 0:
+                        zipf.write(temp_sql.name, 'database_backup.sql')
+                        logging.info("Sauvegarde PostgreSQL créée avec succès")
+                    else:
+                        logging.warning(f"Erreur pg_dump: {result.stderr.decode()}")
+                    
+                    os.unlink(temp_sql.name)
+                    
+        except Exception as e:
+            logging.warning(f"Impossible de créer la sauvegarde PostgreSQL: {e}")
         
-        # Récupérer tous les paramètres système critiques
-        critical_params = [
-            'nom_logiciel', 'nom_organisation', 'adresse_organisation', 
-            'telephone_organisation', 'email_organisation', 'logo_organisation',
-            'fuseau_horaire', 'format_date', 'langue_defaut', 
-            'sendgrid_api_key', 'email_provider', 'smtp_server', 'smtp_port',
-            'smtp_username', 'smtp_password', 'smtp_use_tls',
-            'notify_superadmin_new_mail', 'titre_responsable_structure'
-        ]
+        # Sauvegarder la base de données SQLite (si applicable)
+        if os.path.exists('instance/database.db'):
+            zipf.write('instance/database.db', 'database.db')
         
-        protected_settings = {}
-        for param in critical_params:
-            value = ParametresSysteme.get_valeur(param)
-            if value:
-                protected_settings[param] = value
+        # Sauvegarder les fichiers uploadés
+        if os.path.exists('uploads'):
+            for root, dirs, files in os.walk('uploads'):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
         
-        # Sauvegarder dans un fichier séparé
-        settings_backup_path = backup_path.replace('.zip', '_protected_settings.json')
-        with open(settings_backup_path, 'w', encoding='utf-8') as f:
-            json_module.dump(protected_settings, f, indent=2, ensure_ascii=False)
+        # Sauvegarder les pièces jointes des transmissions
+        if os.path.exists('forward_attachments'):
+            for root, dirs, files in os.walk('forward_attachments'):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
         
-        logging.info(f"Paramètres critiques sauvegardés dans {settings_backup_path}")
+        # Sauvegarder les fichiers de langues
+        if os.path.exists('lang'):
+            for root, dirs, files in os.walk('lang'):
+                for file in files:
+                    if file.endswith('.json'):
+                        file_path = os.path.join(root, file)
+                        arc_path = os.path.relpath(file_path, '.')
+                        zipf.write(file_path, arc_path)
         
-    except Exception as e:
-        logging.warning(f"Impossible de sauvegarder les paramètres critiques: {e}")
+        # Créer un fichier de documentation des variables d'environnement
+        env_doc = {
+            'DATABASE_URL': 'URL de connexion PostgreSQL (requise)',
+            'SESSION_SECRET': 'Clé secrète pour les sessions Flask (requise)',
+            'GEC_MASTER_KEY': 'Clé maître pour le chiffrement (optionnelle)',
+            'GEC_PASSWORD_SALT': 'Sel pour le hashage des mots de passe (optionnel)',
+            'backup_created': datetime.now().isoformat(),
+            'backup_type': 'pre_update_security'
+        }
+        
+        # Ajouter la documentation d'environnement au zip
+        env_doc_json = json_module.dumps(env_doc, indent=2, ensure_ascii=False)
+        zipf.writestr('environment_variables_documentation.json', env_doc_json)
+        
+        # Sauvegarder les templates
+        if os.path.exists('templates'):
+            for root, dirs, files in os.walk('templates'):
+                for file in files:
+                    if file.endswith('.html'):
+                        file_path = os.path.join(root, file)
+                        arc_path = os.path.relpath(file_path, '.')
+                        zipf.write(file_path, arc_path)
+        
+        # Sauvegarder les fichiers statiques importants
+        if os.path.exists('static'):
+            important_static = ['css', 'js', 'favicon.svg']
+            for item in important_static:
+                item_path = os.path.join('static', item)
+                if os.path.exists(item_path):
+                    if os.path.isfile(item_path):
+                        zipf.write(item_path, os.path.relpath(item_path, '.'))
+                    else:
+                        for root, dirs, files in os.walk(item_path):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arc_path = os.path.relpath(file_path, '.')
+                                zipf.write(file_path, arc_path)
+        
+        # Sauvegarder les exports
+        if os.path.exists('exports'):
+            for root, dirs, files in os.walk('exports'):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, '.')
+                    zipf.write(file_path, arc_path)
+        
+        # SECURITY FIX: Inclure les paramètres critiques DANS l'archive zip
+        try:
+            from models import ParametresSysteme
+            
+            # Récupérer tous les paramètres système critiques
+            critical_params = [
+                'nom_logiciel', 'nom_organisation', 'adresse_organisation', 
+                'telephone_organisation', 'email_organisation', 'logo_organisation',
+                'fuseau_horaire', 'format_date', 'langue_defaut', 
+                'sendgrid_api_key', 'email_provider', 'smtp_server', 'smtp_port',
+                'smtp_username', 'smtp_password', 'smtp_use_tls',
+                'notify_superadmin_new_mail', 'titre_responsable_structure'
+            ]
+            
+            protected_settings = {
+                'backup_info': {
+                    'created': datetime.now().isoformat(),
+                    'type': 'pre_update_security',
+                    'version': '2.0'
+                },
+                'critical_settings': {}
+            }
+            
+            for param in critical_params:
+                value = ParametresSysteme.get_valeur(param)
+                if value:
+                    protected_settings['critical_settings'][param] = value
+            
+            # Sauvegarder les paramètres critiques DANS l'archive zip (SÉCURISÉ)
+            protected_json = json_module.dumps(protected_settings, indent=2, ensure_ascii=False)
+            zipf.writestr('protected_settings.json', protected_json)
+            
+            logging.info(f"Paramètres critiques sauvegardés de manière sécurisée dans l'archive")
+            
+        except Exception as e:
+            logging.warning(f"Impossible de sauvegarder les paramètres critiques: {e}")
+        
+        # Créer le manifeste de sauvegarde
+        manifest = {
+            'version': '2.0',
+            'created': datetime.now().isoformat(),
+            'type': 'pre_update_security',
+            'components': {
+                'database': True,
+                'uploads': os.path.exists('uploads'),
+                'forward_attachments': os.path.exists('forward_attachments'),
+                'languages': os.path.exists('lang'),
+                'templates': os.path.exists('templates'),
+                'static_files': os.path.exists('static'),
+                'exports': os.path.exists('exports'),
+                'protected_settings': True
+            }
+        }
+        
+        manifest_json = json_module.dumps(manifest, indent=2, ensure_ascii=False)
+        zipf.writestr('backup_manifest.json', manifest_json)
     
+    logging.info(f"Sauvegarde de sécurité pré-mise à jour créée: {backup_filename}")
     return backup_filename
 
 def create_system_backup():

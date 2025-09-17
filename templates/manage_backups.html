@@ -102,17 +102,31 @@
                             <i class="fas fa-check text-green-600 mr-2"></i>
                             {{ t('user_settings') or 'Paramètres utilisateurs' }}
                         </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-shield-alt text-orange-600 mr-2"></i>
+                            <strong>{{ t('security_backup_feature') or 'Sauvegarde de sécurité : Protection des paramètres critiques' }}</strong>
+                        </li>
                     </ul>
                 </div>
             </div>
             
-            <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_backup') or 'Voulez-vous vraiment créer une sauvegarde ?' }}')">
-                <button type="submit" 
-                        class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                    <i class="fas fa-download mr-2"></i>
-                    {{ t('create_backup_now') or 'Créer la Sauvegarde' }}
-                </button>
-            </form>
+            <div class="space-y-3">
+                <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_backup') or 'Voulez-vous vraiment créer une sauvegarde ?' }}')">
+                    <button type="submit" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-download mr-2"></i>
+                        {{ t('create_backup_now') or 'Créer une Sauvegarde' }}
+                    </button>
+                </form>
+                
+                <form action="{{ url_for('backup_pre_update') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_security_backup') or 'Voulez-vous créer une sauvegarde de sécurité avant mise à jour ?' }}')">
+                    <button type="submit" 
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        {{ t('create_security_backup') or 'Sauvegarde de Sécurité (Avant MAJ)' }}
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
     
@@ -200,10 +214,20 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
-                            <i class="fas fa-file-archive text-blue-600 mr-3"></i>
+                            {% if 'security_pre_update' in backup.filename or 'before_update' in backup.filename %}
+                                <i class="fas fa-shield-alt text-orange-600 mr-3"></i>
+                            {% else %}
+                                <i class="fas fa-file-archive text-blue-600 mr-3"></i>
+                            {% endif %}
                             <div>
                                 <div class="text-sm font-medium text-gray-900">{{ backup.filename }}</div>
-                                <div class="text-sm text-gray-500">{{ t('backup_file') or 'Fichier de sauvegarde' }}</div>
+                                {% if 'security_pre_update' in backup.filename %}
+                                    <div class="text-sm text-orange-600 font-medium">{{ t('security_backup_file') or 'Sauvegarde de sécurité (Avant MAJ)' }}</div>
+                                {% elif 'before_update' in backup.filename %}
+                                    <div class="text-sm text-orange-600 font-medium">{{ t('pre_update_backup') or 'Sauvegarde avant mise à jour' }}</div>
+                                {% else %}
+                                    <div class="text-sm text-gray-500">{{ t('backup_file') or 'Sauvegarde standard' }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </td>
