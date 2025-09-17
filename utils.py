@@ -11,8 +11,8 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
-# Imported locally to avoid circular imports
-from models import LogActivite
+# Import moved to function level to avoid circular import
+# from models import LogActivite
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif', 'svg'}
 
