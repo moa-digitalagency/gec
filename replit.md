@@ -96,3 +96,51 @@ Preferred communication style: Simple, everyday language.
 - Local file system with `/uploads` directory for document storage
 - Configurable upload limits (16MB default)
 - Support for multiple file formats: PDF, images (PNG, JPG, JPEG, TIFF, SVG)
+
+# Maintenance Tools
+
+## Database Cleanup Script
+
+The system includes a comprehensive database cleanup utility (`cleanup_database.py`) for system maintenance and fresh deployments.
+
+### Features
+- **Selective data deletion**: Removes all operational data while preserving system configuration
+- **Super admin preservation**: Keeps the super admin user (sa.gec001) intact
+- **Transaction safety**: All operations wrapped in database transactions with automatic rollback on error
+- **Confirmation prompt**: Requires explicit user confirmation ("OUI") before execution
+- **Statistics reporting**: Shows before/after database statistics
+
+### Data Removed
+- All mail records (courrier)
+- All comments and forwards
+- All notifications and activity logs
+- All IP blocks and security logs
+- All user accounts except super admin
+- Department leadership assignments
+
+### Data Preserved
+- Super admin user account
+- Department definitions
+- Role and permission configurations
+- Mail status definitions
+- Outgoing mail type definitions
+- System parameters and settings
+- Email templates
+- Language translations
+
+### Usage
+```bash
+python cleanup_database.py
+```
+
+The script will:
+1. Display current database statistics
+2. Request confirmation (type "OUI")
+3. Execute cleanup operations
+4. Display final statistics and summary
+
+This tool is ideal for:
+- Preparing demo environments
+- Resetting test instances
+- Initial production deployment setup
+- System maintenance after migration

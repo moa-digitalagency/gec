@@ -459,6 +459,105 @@ psql $DATABASE_URL -c "SELECT 1"
 python -c "from app import db; db.create_all()"
 ```
 
+## 🔧 Outils de Maintenance
+
+### Script de Nettoyage de Base de Données
+
+Le système inclut un utilitaire de nettoyage complet (`cleanup_database.py`) pour la maintenance et les déploiements initiaux.
+
+#### 📋 Fonctionnalités
+- **Suppression sélective** : Retire toutes les données opérationnelles tout en préservant la configuration système
+- **Préservation du super admin** : Garde intact l'utilisateur super admin (sa.gec001)
+- **Sécurité transactionnelle** : Toutes les opérations sont protégées avec rollback automatique en cas d'erreur
+- **Confirmation obligatoire** : Demande une confirmation explicite ("OUI") avant l'exécution
+- **Rapports statistiques** : Affiche les statistiques avant/après nettoyage
+
+#### 🗑️ Données Supprimées
+- ✅ Tous les courriers (entrants et sortants)
+- ✅ Tous les commentaires et transferts
+- ✅ Toutes les notifications
+- ✅ Tous les logs d'activité
+- ✅ Toutes les IP bloquées
+- ✅ Tous les comptes utilisateurs (sauf super admin)
+- ✅ Les affectations de chefs de département
+
+#### 💾 Données Conservées
+- ✓ Compte super administrateur
+- ✓ Définitions des départements
+- ✓ Rôles et permissions
+- ✓ Statuts de courrier
+- ✓ Types de courrier sortant
+- ✓ Paramètres système
+- ✓ Modèles d'email
+- ✓ Fichiers de traduction
+
+#### 🚀 Utilisation du Script
+
+```bash
+# Se positionner dans le répertoire du projet
+cd /chemin/vers/votre/projet-gec
+
+# Exécuter le script de nettoyage
+python cleanup_database.py
+
+# Le script va :
+# 1. Afficher les statistiques actuelles
+# 2. Demander confirmation (taper "OUI")
+# 3. Exécuter les opérations de nettoyage
+# 4. Afficher le résumé final
+```
+
+#### 💡 Cas d'Usage Idéaux
+- **Environnements de démonstration** : Préparation d'instances de démo propres
+- **Instances de test** : Réinitialisation après tests
+- **Déploiement initial** : Configuration d'environnements de production vierges
+- **Migration système** : Nettoyage après migration de données
+- **Formation** : Préparation d'environnements de formation
+
+#### ⚠️ Important
+- Le script requiert une confirmation explicite avant l'exécution
+- **Créez une sauvegarde** avant d'utiliser ce script en production
+- Le super admin par défaut est **sa.gec001** (configurable dans `app.py`)
+- Toutes les opérations sont effectuées dans une transaction unique
+- En cas d'erreur, aucune modification n'est appliquée (rollback automatique)
+
+#### 📊 Exemple de Sortie
+
+```
+╔══════════════════════════════════════════════════════════╗
+║          SCRIPT DE NETTOYAGE BASE DE DONNÉES GEC        ║
+╚══════════════════════════════════════════════════════════╝
+
+📊 Statistiques AVANT nettoyage:
+Utilisateurs: 15
+Courriers: 342
+Commentaires: 89
+Notifications: 127
+Transferts: 56
+Logs d'activité: 1250
+Départements: 5
+IP bloquées: 3
+
+⚠️  ATTENTION: Cette opération va supprimer toutes les données
+   sauf l'utilisateur super admin et les configurations système.
+
+Tapez 'OUI' en majuscules pour confirmer: OUI
+
+🔄 Démarrage du nettoyage...
+
+✅ NETTOYAGE TERMINÉ AVEC SUCCÈS!
+
+📊 Statistiques APRÈS nettoyage:
+Utilisateurs: 1
+Courriers: 0
+Commentaires: 0
+Notifications: 0
+Transferts: 0
+Logs d'activité: 0
+Départements: 5
+IP bloquées: 0
+```
+
 ## Utilisation du Système
 
 ### Mise à Jour Système
