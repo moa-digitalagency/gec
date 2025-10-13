@@ -1,4 +1,4 @@
-modules = ["web", "python-3.11", "nodejs-20", "postgresql-16"]
+modules = ["web", "python-3.11", "bash", "nodejs-20"]
 
 [nix]
 channel = "stable-25_05"
@@ -32,6 +32,10 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 43993
+externalPort = 3000
 
 [agent]
 integrations = ["python_sendgrid==1.0.0"]
