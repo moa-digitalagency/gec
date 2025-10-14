@@ -576,6 +576,132 @@ Départements: 5
 IP bloquées: 0
 ```
 
+### Script de Vérification des Variables d'Environnement / Environment Variables Check Script
+
+Le système inclut un utilitaire pratique (`show_env_keys.py`) pour vérifier et afficher les variables d'environnement configurées.
+
+#### 📋 Fonctionnalités / Features
+- **Affichage sécurisé** : Les valeurs sensibles sont automatiquement masquées partiellement
+- **Vérification complète** : Affiche toutes les variables d'environnement GEC requises
+- **Détection des valeurs manquantes** : Identifie les variables critiques non configurées
+- **Mode export** : Option pour afficher les valeurs complètes (à utiliser avec précaution)
+- **Support bilingue** : Affichage en français et anglais
+
+#### 🔑 Variables Vérifiées / Checked Variables
+- **DATABASE_URL** : URL de connexion PostgreSQL / PostgreSQL connection URL
+- **SESSION_SECRET** : Clé secrète Flask / Flask session secret
+- **GEC_MASTER_KEY** : Clé maître de chiffrement / Master encryption key ⚠️ CRITIQUE
+- **GEC_PASSWORD_SALT** : Sel pour mots de passe / Password salt ⚠️ CRITIQUE
+- **ADMIN_PASSWORD** : Mot de passe admin par défaut / Default admin password
+- **SMTP_SERVER** : Serveur SMTP / SMTP server
+- **SMTP_PORT** : Port SMTP / SMTP port
+- **SMTP_EMAIL** : Email expéditeur / Sender email
+- **SMTP_PASSWORD** : Mot de passe SMTP / SMTP password
+- **SMTP_USE_TLS** : Utiliser TLS / Use TLS
+- **SENDGRID_API_KEY** : Clé API SendGrid / SendGrid API key
+
+#### 🚀 Utilisation du Script / How to Use
+
+##### Mode Standard (Valeurs Masquées) / Standard Mode (Masked Values)
+```bash
+# Se positionner dans le répertoire du projet
+cd /chemin/vers/votre/projet-gec
+
+# Exécuter le script
+python show_env_keys.py
+
+# Le script va afficher :
+# - Liste des variables configurées avec valeurs masquées
+# - Liste des variables manquantes
+# - Résumé des variables critiques
+# - Suggestions de configuration
+```
+
+##### Mode Export (Valeurs Complètes) / Export Mode (Full Values)
+```bash
+# ⚠️ ATTENTION : Utilisez ce mode uniquement dans un environnement sécurisé
+# ⚠️ WARNING: Use this mode only in a secure environment
+
+python show_env_keys.py --export
+# OU / OR
+python show_env_keys.py --full
+
+# Ce mode affiche les valeurs complètes non masquées
+# This mode displays complete unmasked values
+```
+
+#### 📊 Exemple de Sortie / Sample Output
+
+**Mode Standard :**
+```
+================================================================================
+VARIABLES D'ENVIRONNEMENT GEC
+GEC ENVIRONMENT VARIABLES
+================================================================================
+
+📋 VARIABLES CONFIGURÉES / CONFIGURED VARIABLES:
+--------------------------------------------------------------------------------
+
+✅ DATABASE_URL            = post************************************3b7a
+   (URL de connexion PostgreSQL / PostgreSQL connection URL)
+
+✅ SESSION_SECRET          = supe************************************ret1
+   (Clé secrète Flask / Flask session secret)
+
+✅ GEC_MASTER_KEY          = aB3d************************************C0d=
+   (Clé maître de chiffrement / Master encryption key)
+
+✅ GEC_PASSWORD_SALT       = zY9x************************************B6c=
+   (Sel pour mots de passe / Password salt)
+
+❌ SMTP_SERVER             = NON CONFIGURÉE / NOT SET
+   (Serveur SMTP / SMTP server)
+
+--------------------------------------------------------------------------------
+
+📊 RÉSUMÉ / SUMMARY:
+   Variables configurées / Configured: 4/10
+   Variables manquantes / Missing: 6/10
+
+💡 Pour voir les valeurs complètes (export) / To see full values (export):
+   python show_env_keys.py --export
+
+📝 SUGGESTIONS:
+--------------------------------------------------------------------------------
+
+1. Pour générer les clés de sécurité / To generate security keys:
+   python generate_keys.py
+
+2. Pour créer un fichier .env / To create a .env file:
+   Copiez le modèle depuis README-ENV.md
+   Copy the template from README-ENV.md
+
+3. Sur Replit, utilisez l'onglet Secrets / On Replit, use the Secrets tab
+
+================================================================================
+```
+
+#### 💡 Cas d'Usage Idéaux / Ideal Use Cases
+- **Vérification de configuration** : S'assurer que toutes les variables sont configurées correctement
+- **Débogage** : Identifier rapidement les variables manquantes ou mal configurées
+- **Documentation** : Voir quelles variables sont utilisées par le système
+- **Migration** : Vérifier la configuration avant/après migration
+- **Audit de sécurité** : Vérifier que les variables critiques sont définies
+
+#### ⚠️ Important / Important
+- **Les valeurs sensibles sont masquées par défaut** pour la sécurité
+- **N'utilisez le mode `--export` que dans un environnement sécurisé**
+- **Ne partagez jamais les valeurs complètes publiquement**
+- Les variables **GEC_MASTER_KEY** et **GEC_PASSWORD_SALT** sont **critiques** :
+  - Sans elles, les données chiffrées seront perdues à chaque redémarrage
+  - Utilisez `python generate_keys.py` pour les générer en toute sécurité
+  - Conservez-les dans un endroit sécurisé (gestionnaire de secrets, coffre-fort)
+
+#### 🔗 Voir Aussi / See Also
+- **README-ENV.md** : Documentation complète des variables d'environnement
+- **generate_keys.py** : Script pour générer les clés de sécurité
+- **Onglet Secrets Replit** : Interface de gestion des secrets sur Replit
+
 ## Utilisation du Système
 
 ### Mise à Jour Système
