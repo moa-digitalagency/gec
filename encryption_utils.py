@@ -18,6 +18,27 @@ from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
 import logging
 
+def load_env_from_file(env_file='.env'):
+    """
+    Charge les variables d'environnement depuis un fichier .env
+    Cette fonction permet de lire les clés depuis un fichier local si Replit Secrets n'est pas utilisé
+    """
+    if os.path.exists(env_file):
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Ne pas écraser les variables d'environnement existantes
+                    if key not in os.environ:
+                        os.environ[key] = value
+                        logging.debug(f"Variable {key} chargée depuis {env_file}")
+
+# Charger le fichier .env au démarrage si disponible
+load_env_from_file()
+
 class EncryptionManager:
     """Gestionnaire de cryptage pour l'application GEC"""
     
