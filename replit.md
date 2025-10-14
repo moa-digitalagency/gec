@@ -97,6 +97,33 @@ Preferred communication style: Simple, everyday language.
 - Configurable upload limits (16MB default)
 - Support for multiple file formats: PDF, images (PNG, JPG, JPEG, TIFF, SVG)
 
+# Environment Configuration
+
+## Environment Variables Documentation
+
+The system requires several environment variables for proper operation. Complete bilingual documentation (English/French) is available in `README-ENV.md`.
+
+### Critical Variables
+- **DATABASE_URL**: PostgreSQL connection string (provided by Replit)
+- **SESSION_SECRET**: Flask session secret (provided by Replit)
+- **GEC_MASTER_KEY**: Master encryption key for sensitive data (Base64 encoded, must be generated and persisted)
+- **GEC_PASSWORD_SALT**: Salt for password hashing (Base64 encoded, must be generated and persisted)
+
+### Optional Variables
+- **ADMIN_PASSWORD**: Default super admin password (default: TempPassword123!)
+- **SMTP_SERVER**, **SMTP_PORT**, **SMTP_EMAIL**, **SMTP_PASSWORD**, **SMTP_USE_TLS**: Email configuration
+
+### Configuration Files
+- **README-ENV.md**: Complete bilingual documentation of all environment variables
+- **.env.example**: Template file for environment configuration
+- **generate_keys.py**: Utility script to generate secure encryption keys
+
+### Security Notes
+- `GEC_MASTER_KEY` and `GEC_PASSWORD_SALT` are critical and must be generated once and kept secure
+- Without these keys, encrypted data will be lost on application restart
+- Use `python generate_keys.py` to generate secure keys
+- Never commit `.env` file to version control (already in `.gitignore`)
+
 # Maintenance Tools
 
 ## Database Cleanup Script

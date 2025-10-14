@@ -378,20 +378,38 @@ python main.py
 
 ### Variables d'Environnement
 
-Créez un fichier `.env` dans le dossier du projet :
+**📄 Documentation complète disponible dans [README-ENV.md](README-ENV.md)**
+
+Le système nécessite plusieurs variables d'environnement pour fonctionner correctement. Pour une configuration détaillée en français et anglais, consultez le fichier [README-ENV.md](README-ENV.md).
+
+#### Configuration Rapide
+
+1. **Copiez le fichier template** : `.env.example` → `.env`
+2. **Générez les clés de chiffrement** : `python generate_keys.py`
+3. **Remplissez vos valeurs** dans le fichier `.env`
+
+#### Variables Critiques (Production)
 
 ```bash
+# Base de données (Fourni automatiquement sur Replit)
 DATABASE_URL=postgresql://user:password@host:port/database
-SESSION_SECRET=your_secret_key_here
-SENDGRID_API_KEY=your_sendgrid_key
-GEC_MASTER_KEY=your_encryption_key_64_chars_hex
-GEC_PASSWORD_SALT=your_password_salt_64_chars_hex
-SMTP_SERVER=smtp.example.com
+
+# Sécurité (Fourni automatiquement sur Replit)
+SESSION_SECRET=your-secret-key-here
+
+# Clés de chiffrement (CRITIQUE - À générer avec generate_keys.py)
+GEC_MASTER_KEY=votre-cle-master-base64
+GEC_PASSWORD_SALT=votre-sel-base64
+
+# Email (Optionnel)
+SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
-SMTP_EMAIL=your_smtp_email@example.com
-SMTP_PASSWORD=your_smtp_password
-SMTP_USE_TLS=true
+SMTP_EMAIL=notifications@votredomaine.com
+SMTP_PASSWORD=votre-mot-de-passe-smtp
+SMTP_USE_TLS=True
 ```
+
+**⚠️ Important** : Les variables `GEC_MASTER_KEY` et `GEC_PASSWORD_SALT` sont **critiques**. Sans elles, les données chiffrées seront perdues à chaque redémarrage. Utilisez `python generate_keys.py` pour les générer en toute sécurité.
 
 ### Déploiement Production
 
