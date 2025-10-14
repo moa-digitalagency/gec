@@ -114,14 +114,24 @@ The system requires several environment variables for proper operation. Complete
 - **SMTP_SERVER**, **SMTP_PORT**, **SMTP_EMAIL**, **SMTP_PASSWORD**, **SMTP_USE_TLS**: Email configuration
 
 ### Configuration Files
-- **README-ENV.md**: Complete bilingual documentation of all environment variables
+- **README-ENV.md**: Complete bilingual documentation of all environment variables (French/English)
+- **README-ENV-EN.md**: English-only version of environment variables documentation
 - **.env.example**: Template file for environment configuration
 - **generate_keys.py**: Utility script to generate secure encryption keys
+- **show_env_keys.py**: Utility script to display all environment variables with masked sensitive values
+
+### Environment Variable Loading
+- **Automatic .env file loading**: The application can now read environment variables from a `.env` file in addition to system environment variables
+- **Priority order**: System environment variables (Replit Secrets) take precedence over `.env` file values
+- **Backward compatibility**: Automatically generates keys if not found in either source
+- **Use case**: `.env` file is useful for local development or non-Replit deployments
 
 ### Security Notes
 - `GEC_MASTER_KEY` and `GEC_PASSWORD_SALT` are critical and must be generated once and kept secure
 - Without these keys, encrypted data will be lost on application restart
 - Use `python generate_keys.py` to generate secure keys
+- Use `python show_env_keys.py` to view current environment configuration (with masked sensitive values)
+- Use `python show_env_keys.py --export` to export full values for backup
 - Never commit `.env` file to version control (already in `.gitignore`)
 
 # Maintenance Tools
