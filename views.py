@@ -1603,9 +1603,18 @@ def import_courriers():
         try:
             # Options d'import
             skip_existing = request.form.get('skip_existing', 'true') == 'true'
+            assign_to_user_id = request.form.get('assign_to_user_id')
+            
+            # Convertir en int si fourni
+            if assign_to_user_id:
+                try:
+                    assign_to_user_id = int(assign_to_user_id)
+                except ValueError:
+                    flash('ID utilisateur invalide', 'error')
+                    return redirect(url_for('manage_backups'))
             
             # Importer
-            result = import_courriers_from_package(tmp_path, skip_existing=skip_existing)
+            result = import_courriers_from_package(tmp_path, skip_existing=skip_existing, assign_to_user_id=assign_to_user_id)
             
             # Logger l'activité
             log_activity(current_user.id, "IMPORT_COURRIERS", 

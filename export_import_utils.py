@@ -68,6 +68,7 @@ def export_courriers_to_json(courrier_ids=None, export_all=False):
             "autres_informations": courrier.autres_informations,
             "is_deleted": courrier.is_deleted,
             "deleted_at": courrier.deleted_at.isoformat() if courrier.deleted_at else None,
+            "utilisateur_id": courrier.utilisateur_id,
         }
         
         # Déchiffrer les champs sensibles
@@ -250,7 +251,7 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
     return export_path
 
 
-def import_courriers_from_package(package_path, skip_existing=True, remap_users=None):
+def import_courriers_from_package(package_path, skip_existing=True, remap_users=None, assign_to_user_id=None):
     """
     Importe les courriers depuis un package d'export avec rechiffrement
     
@@ -258,6 +259,7 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
         package_path (str): Chemin du fichier ZIP d'export
         skip_existing (bool): Ignorer les courriers existants (par numéro)
         remap_users (dict): Mapping des IDs utilisateurs {ancien_id: nouvel_id}
+        assign_to_user_id (int): ID de l'utilisateur à qui assigner TOUS les courriers importés
         
     Returns:
         dict: Résultat de l'import avec statistiques
@@ -350,11 +352,22 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                     new_courrier.numero_reference = courrier_data["numero_reference"]
                     new_courrier.numero_reference_encrypted = encrypt_sensitive_data(courrier_data["numero_reference"])
                 
-                # Utilisateur par défaut (premier super admin)
+                # Assigner l'utilisateur
                 from models import User
-                default_user = User.query.filter_by(role='super_admin').first()
-                if default_user:
-                    new_courrier.utilisateur_id = default_user.id
+                if assign_to_user_id:
+                    # Utiliser l'utilisateur spécifié
+                    new_courrier.utilisateur_id = assign_to_user_id
+                elif courrier_data.get("utilisateur_id") and not remap_users:
+                    # Conserver l'utilisateur d'origine si pas de remapping
+                    new_courrier.utilisateur_id = courrier_data["utilisateur_id"]
+                elif remap_users and courrier_data.get("utilisateur_id") in remap_users:
+                    # Utiliser le mapping fourni
+                    new_courrier.utilisateur_id = remap_users[courrier_data["utilisateur_id"]]
+                else:
+                    # Utilisateur par défaut (premier super admin)
+                    default_user = User.query.filter_by(role='super_admin').first()
+                    if default_user:
+                        new_courrier.utilisateur_id = default_user.id
                 
                 # Enregistrer le courrier
                 db.session.add(new_courrier)
