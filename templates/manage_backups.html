@@ -183,7 +183,6 @@
 </div>
 
 <!-- Export/Import Courriers Section -->
-{% if current_user.is_super_admin() %}
 <div class="mt-8 grid lg:grid-cols-2 gap-8">
     <!-- Export Courriers Section -->
     <div class="bg-white shadow-rdc rounded-xl">
@@ -347,7 +346,6 @@
         </div>
     </div>
 </div>
-{% endif %}
 
 <!-- Available Backups Table -->
 {% if backup_files %}

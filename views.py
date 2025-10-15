@@ -5476,7 +5476,7 @@ def manage_backups():
     backup_files = get_backup_files() if current_user.is_super_admin() else []
     
     # Récupérer la liste des utilisateurs pour l'import
-    users = User.query.filter_by(is_deleted=False).order_by(User.username).all()
+    users = User.query.filter_by(actif=True).order_by(User.username).all()
     
     return render_template('manage_backups.html', backup_files=backup_files, users=users)
 
