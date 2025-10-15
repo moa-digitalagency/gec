@@ -1,384 +1,635 @@
 # Guide de Mise à Jour via GitHub
 
-Ce guide explique comment mettre à jour votre instance GEC locale depuis GitHub sans perdre vos données actuelles, sur différents systèmes d'exploitation.
+Ce guide explique comment forcer la mise à jour de votre code GEC depuis GitHub **sans toucher** à votre base de données et vos configurations existantes.
+
+## 🎯 Objectif
+
+Mettre à jour **uniquement le code** de l'application depuis GitHub, tout en préservant :
+- ✅ Base de données existante (intacte)
+- ✅ Variables d'environnement (GEC_MASTER_KEY, etc.)
+- ✅ Fichiers uploadés (uploads/)
+- ✅ Configuration personnalisée
+
+Les migrations de base de données se font **automatiquement** au démarrage de l'application.
 
 ## 📋 Prérequis
 
 - Git installé sur votre système
 - Accès au dépôt GitHub du projet GEC
-- Sauvegarde récente de vos données (recommandé)
+- Application arrêtée avant la mise à jour
 
-## 🔄 Processus de Mise à Jour
+## ⚡ Mise à Jour Rapide (Recommandée)
 
-### Étape 1 : Sauvegarde des Données
-
-**IMPORTANT** : Créez toujours une sauvegarde avant toute mise à jour !
-
-#### Via l'Interface Web
-1. Connectez-vous en tant que super administrateur
-2. Allez dans **Gestion des Sauvegardes**
-3. Cliquez sur **"Créer une Sauvegarde"**
-4. Téléchargez le fichier ZIP de sauvegarde
-
-#### Via la Base de Données
-```bash
-# PostgreSQL
-pg_dump -U username -d gec_mines > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# SQLite
-cp gec_mines.db backup_gec_mines_$(date +%Y%m%d_%H%M%S).db
-```
-
-### Étape 2 : Sauvegarder les Fichiers Uploadés
+### Linux / macOS
 
 ```bash
-# Linux / macOS
-cp -r uploads uploads_backup_$(date +%Y%m%d_%H%M%S)
+# 1. Arrêter l'application
+pkill -f "gunicorn.*main:app" || pkill -f "python.*main.py"
 
-# Windows (PowerShell)
-Copy-Item -Path uploads -Destination "uploads_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')" -Recurse
-```
-
-### Étape 3 : Sauvegarder les Variables d'Environnement
-
-**CRITIQUE** : Sauvegardez vos clés de chiffrement !
-
-```bash
-# Linux / macOS
-echo "GEC_MASTER_KEY=$GEC_MASTER_KEY" > .env.backup
-echo "GEC_PASSWORD_SALT=$GEC_PASSWORD_SALT" >> .env.backup
-echo "SESSION_SECRET=$SESSION_SECRET" >> .env.backup
-echo "DATABASE_URL=$DATABASE_URL" >> .env.backup
-
-# Windows (PowerShell)
-"GEC_MASTER_KEY=$env:GEC_MASTER_KEY" | Out-File -FilePath .env.backup
-"GEC_PASSWORD_SALT=$env:GEC_PASSWORD_SALT" | Out-File -Append -FilePath .env.backup
-"SESSION_SECRET=$env:SESSION_SECRET" | Out-File -Append -FilePath .env.backup
-"DATABASE_URL=$env:DATABASE_URL" | Out-File -Append -FilePath .env.backup
-```
-
-### Étape 4 : Mise à Jour du Code
-
-#### Linux / macOS
-
-```bash
-# 1. Sauvegarder les modifications locales non commitées
-git stash
-
-# 2. Récupérer les dernières modifications
+# 2. Forcer la mise à jour du code (écrase les modifications locales du code)
 git fetch origin
+git reset --hard origin/main
 
-# 3. Mettre à jour la branche principale
-git pull origin main
+# 3. Mettre à jour les dépendances Python
+pip install -r requirements.txt --upgrade
+# OU avec uv
+uv pip install -r pyproject.toml --upgrade
 
-# 4. Restaurer vos modifications locales (si nécessaire)
-git stash pop
+# 4. Redémarrer l'application
+gunicorn --bind 0.0.0.0:5000 --reload main:app
+# OU
+python main.py
 ```
 
-#### Windows (PowerShell)
+### Windows (PowerShell)
 
 ```powershell
-# 1. Sauvegarder les modifications locales non commitées
-git stash
+# 1. Arrêter l'application
+Get-Process -Name python,gunicorn -ErrorAction SilentlyContinue | Stop-Process -Force
 
-# 2. Récupérer les dernières modifications
+# 2. Forcer la mise à jour du code
+git fetch origin
+git reset --hard origin/main
+
+# 3. Mettre à jour les dépendances Python
+pip install -r requirements.txt --upgrade
+
+# 4. Redémarrer l'application
+python main.py
+```
+
+## 🔐 Fichiers Protégés (Ne Seront PAS Écrasés)
+
+Ces fichiers/dossiers sont automatiquement ignorés par Git (via `.gitignore`) :
+
+### Données et Configuration
+```
+.env                    # Variables d'environnement (GEC_MASTER_KEY, etc.)
+.env.backup            # Sauvegarde des secrets
+gec_mines.db           # Base de données SQLite
+```
+
+### Fichiers de l'Application
+```
+uploads/               # Fichiers uploadés par les utilisateurs
+exports/               # Exports de courriers
+backups/               # Sauvegardes système
+attached_assets/       # Assets attachés
+cookies.txt            # Cookies de session
+```
+
+### Fichiers Python
+```
+__pycache__/          # Cache Python
+*.pyc                 # Fichiers compilés Python
+venv/                 # Environnement virtuel
+.venv/
+```
+
+**Vérification** : Pour voir quels fichiers sont ignorés
+```bash
+cat .gitignore
+```
+
+## 🔄 Processus Détaillé (Étape par Étape)
+
+### 1. Arrêter l'Application
+
+**Pourquoi ?** Éviter les conflits de fichiers pendant la mise à jour.
+
+#### Linux / macOS
+```bash
+# Trouver le processus
+ps aux | grep -E "gunicorn|python.*main.py"
+
+# Arrêter gunicorn
+pkill -f "gunicorn.*main:app"
+
+# OU arrêter Python
+pkill -f "python.*main.py"
+
+# Vérifier que tout est arrêté
+ps aux | grep -E "gunicorn|python.*main.py"
+```
+
+#### Windows
+```powershell
+# Voir les processus Python
+Get-Process python,gunicorn -ErrorAction SilentlyContinue
+
+# Arrêter tous les processus Python/Gunicorn
+Get-Process -Name python,gunicorn -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Vérifier
+Get-Process python,gunicorn -ErrorAction SilentlyContinue
+```
+
+### 2. Vérifier l'État de Git
+
+```bash
+# Voir votre branche actuelle
+git branch
+
+# Voir les fichiers modifiés localement (code uniquement)
+git status
+
+# Voir les différences
+git diff
+```
+
+**Note** : Les fichiers dans `.gitignore` (BD, uploads, .env) ne seront pas affichés.
+
+### 3. Force Pull depuis GitHub
+
+Cette commande écrase **uniquement les fichiers de code** trackés par Git.
+
+```bash
+# Récupérer les dernières modifications
 git fetch origin
 
-# 3. Mettre à jour la branche principale
+# Forcer la mise à jour (écrase vos modifications de code)
+git reset --hard origin/main
+```
+
+**⚠️ ATTENTION** : `git reset --hard` écrase vos modifications de code local !
+- ✅ Safe : Base de données, uploads, .env sont protégés
+- ❌ Écrasé : Modifications du code Python, templates, CSS
+
+**Alternative si vous voulez garder certaines modifications** :
+```bash
+# Sauvegarder vos modifications locales
+git stash
+
+# Mettre à jour
 git pull origin main
 
-# 4. Restaurer vos modifications locales (si nécessaire)
+# Restaurer vos modifications (peut causer des conflits)
 git stash pop
 ```
 
-### Étape 5 : Mise à Jour des Dépendances
+### 4. Mettre à Jour les Dépendances
 
-#### Linux / macOS
+**Pourquoi ?** Le nouveau code peut nécessiter de nouvelles librairies.
 
+#### Avec pip (Standard)
 ```bash
-# Activer l'environnement virtuel (si utilisé)
-source venv/bin/activate
-
-# Mettre à jour les dépendances
 pip install -r requirements.txt --upgrade
-# OU si vous utilisez uv
+```
+
+#### Avec uv (Replit)
+```bash
 uv pip install -r pyproject.toml --upgrade
 ```
 
-#### Windows
+**Vérification** :
+```bash
+# Voir les packages installés
+pip list
 
-```powershell
-# Activer l'environnement virtuel (si utilisé)
-.\venv\Scripts\Activate.ps1
-
-# Mettre à jour les dépendances
-pip install -r requirements.txt --upgrade
+# Vérifier une librairie spécifique
+pip show flask
 ```
 
-### Étape 6 : Migration de la Base de Données
+### 5. Vérifier les Fichiers de Configuration
 
-L'application GEC gère automatiquement les migrations au démarrage. Le système applique :
-
-1. **Migrations automatiques** (via `migration_utils.py`)
-   - Détecte les nouvelles colonnes manquantes
-   - Ajoute automatiquement les colonnes avec valeurs par défaut
-   - Log toutes les modifications dans la table `migration_log`
-
-2. **Corrections spécifiques à PostgreSQL** (si applicable)
-   - Ajustements de types de données
-   - Optimisations d'index
-
-#### Vérification des Migrations
+**Important** : Assurez-vous que vos variables d'environnement sont toujours là.
 
 ```bash
-# Démarrer l'application
-python main.py
+# Linux / macOS
+cat .env
 
-# Vérifier les logs pour voir les migrations appliquées
-# Vous devriez voir des messages comme :
-# INFO:root:✓ Colonne 'nouveau_champ' ajoutée à la table 'courrier'
-# INFO:root:🔄 2 migration(s) automatique(s) appliquée(s) avec succès
+# Vérifier les clés critiques
+echo $GEC_MASTER_KEY
+echo $GEC_PASSWORD_SALT
+echo $DATABASE_URL
+
+# Windows (PowerShell)
+Get-Content .env
+
+# Vérifier les variables
+echo $env:GEC_MASTER_KEY
+echo $env:GEC_PASSWORD_SALT
 ```
 
-### Étape 7 : Restaurer les Variables d'Environnement
-
-Si vos variables d'environnement ont été réinitialisées :
-
-#### Linux / macOS
-
+**Si vos variables ont disparu** (rare), rechargez-les :
 ```bash
-# Charger depuis le backup
-source .env.backup
+# Linux / macOS
+source .env
+# OU
+export $(cat .env | xargs)
 
-# OU éditer manuellement .env
-nano .env
-```
-
-#### Windows
-
-```powershell
-# Charger depuis le backup
-Get-Content .env.backup | ForEach-Object {
+# Windows
+Get-Content .env | ForEach-Object {
     $name, $value = $_ -split '=', 2
     [Environment]::SetEnvironmentVariable($name, $value, 'Process')
 }
-
-# OU éditer manuellement
-notepad .env
 ```
 
-### Étape 8 : Redémarrer l'Application
+### 6. Redémarrer l'Application
 
-#### Linux / macOS
+L'application va automatiquement :
+1. ✅ Se connecter à votre base de données existante
+2. ✅ Détecter les nouvelles colonnes/tables nécessaires
+3. ✅ Appliquer les migrations automatiquement
+4. ✅ Logger les changements dans `migration_log`
 
+#### Linux / macOS (Production avec Gunicorn)
 ```bash
-# Arrêter l'application existante
-pkill -f "gunicorn.*main:app"
-
-# Redémarrer
 gunicorn --bind 0.0.0.0:5000 --reload main:app
 ```
 
-#### Windows
+#### Linux / macOS (Développement)
+```bash
+python main.py
+```
 
-```powershell
-# Arrêter l'application existante (trouver le PID)
-Get-Process -Name python | Stop-Process -Force
+#### Windows
+```bash
+python main.py
+```
+
+### 7. Vérifier les Migrations Automatiques
+
+**Vérifiez les logs au démarrage** :
+
+```
+INFO:root:Vérification des migrations automatiques...
+INFO:root:✓ Colonne 'nouveau_champ' ajoutée à la table 'courrier'
+INFO:root:✓ Table 'nouvelle_table' créée
+INFO:root:🔄 2 migration(s) automatique(s) appliquée(s) avec succès
+INFO:root:Default super admin user created (username: sa.gec001)
+INFO:root:System parameters and statuses initialized
+```
+
+**Si vous voyez des erreurs de migration** :
+```
+ERROR:root:Erreur lors de la migration: ...
+```
+→ Consultez la section "Résolution de Problèmes" ci-dessous.
+
+### 8. Tester l'Application
+
+**Via le navigateur** :
+1. Ouvrez `http://localhost:5000` (ou votre domaine)
+2. Connectez-vous avec vos identifiants existants
+3. Vérifiez que :
+   - ✅ Connexion fonctionne
+   - ✅ Courriers existants sont visibles
+   - ✅ Données chiffrées sont déchiffrables
+   - ✅ Recherche fonctionne
+   - ✅ Nouvelles fonctionnalités sont présentes
+
+**Vérifier les statistiques** :
+- Tableau de bord : Nombre de courriers
+- Utilisateurs : Liste des utilisateurs
+- Départements : Structure organisationnelle
+
+## 🐛 Résolution de Problèmes
+
+### Problème 1 : "Column does not exist" au démarrage
+
+**Symptôme** :
+```
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: courrier.nouveau_champ
+```
+
+**Cause** : La migration automatique a échoué.
+
+**Solution** :
+```bash
+# 1. Vérifier les logs de migration
+grep "migration" app.log
+
+# 2. Appliquer manuellement si nécessaire
+# Se connecter à la BD
+sqlite3 gec_mines.db  # SQLite
+# OU
+psql -U username -d gec_mines  # PostgreSQL
+
+# 3. Ajouter la colonne manuellement (exemple)
+ALTER TABLE courrier ADD COLUMN nouveau_champ TEXT DEFAULT '';
+
+# 4. Redémarrer l'application
+```
+
+### Problème 2 : "Cannot connect to database"
+
+**Symptôme** :
+```
+sqlalchemy.exc.OperationalError: unable to open database file
+```
+
+**Cause** : Variable `DATABASE_URL` manquante ou incorrecte.
+
+**Solution** :
+```bash
+# Vérifier DATABASE_URL
+echo $DATABASE_URL
+
+# Si vide, la définir
+export DATABASE_URL="sqlite:///gec_mines.db"
+# OU pour PostgreSQL
+export DATABASE_URL="postgresql://user:pass@localhost:5432/gec_mines"
 
 # Redémarrer
-python main.py
 ```
 
-## 🔧 Résolution des Problèmes de Migration
+### Problème 3 : "Encryption key error" / Données illisibles
 
-### Problème : Erreur "Column does not exist"
+**Symptôme** :
+```
+ValueError: Invalid padding bytes
+# OU
+Les données chiffrées ne peuvent pas être déchiffrées
+```
 
-**Cause** : Migration automatique non appliquée
+**Cause** : `GEC_MASTER_KEY` a changé ou est manquante.
 
 **Solution** :
-1. Vérifiez les logs de l'application au démarrage
-2. Si la migration a échoué, appliquez-la manuellement :
-
-```sql
--- PostgreSQL
-ALTER TABLE nom_table ADD COLUMN nom_colonne TYPE_DONNEE DEFAULT valeur_defaut;
-
--- SQLite
-ALTER TABLE nom_table ADD COLUMN nom_colonne TYPE_DONNEE DEFAULT valeur_defaut;
-```
-
-### Problème : Erreur "Encryption key mismatch"
-
-**Cause** : Les clés de chiffrement ont changé
-
-**Solution** :
-1. Restaurez `GEC_MASTER_KEY` et `GEC_PASSWORD_SALT` depuis `.env.backup`
-2. Redémarrez l'application
-
 ```bash
-export GEC_MASTER_KEY="votre_cle_sauvegardee"
-export GEC_PASSWORD_SALT="votre_sel_sauvegarde"
-```
+# 1. Vérifier la clé
+echo $GEC_MASTER_KEY
 
-### Problème : Erreur "IntegrityError" ou "Foreign Key Constraint"
+# 2. Si elle est différente, restaurer l'ancienne
+export GEC_MASTER_KEY="votre_ancienne_cle"
 
-**Cause** : Incohérence dans les données après migration
-
-**Solution** :
-1. Vérifiez les logs pour identifier la contrainte violée
-2. Nettoyez les données orphelines :
-
-```sql
--- Exemple : Supprimer les références à des utilisateurs supprimés
-DELETE FROM courrier WHERE utilisateur_id NOT IN (SELECT id FROM user WHERE actif = TRUE);
-```
-
-### Problème : Données chiffrées illisibles
-
-**Cause** : Perte ou modification de la clé `GEC_MASTER_KEY`
-
-**Solution** :
-1. **Si vous avez la clé de sauvegarde** :
-   ```bash
-   export GEC_MASTER_KEY="cle_de_sauvegarde"
-   ```
-
-2. **Si la clé est perdue** :
-   - Les données chiffrées sont **irrécupérables**
-   - Restaurez depuis une sauvegarde complète
-   - Ou utilisez l'export/import pour migrer les données déchiffrées
-
-## 📦 Cas Particulier : Migration avec Changement de Clé
-
-Si vous devez changer de clé de chiffrement :
-
-### 1. Exporter les Données (avec l'ancienne clé)
-
-```bash
-# Assurez-vous que GEC_MASTER_KEY contient l'ancienne clé
-export GEC_MASTER_KEY="ancienne_cle"
-python main.py
-```
-
-Via l'interface :
-1. **Gestion des Sauvegardes** > **Export de Courriers**
-2. Exportez tous les courriers
-3. Téléchargez le fichier ZIP
-
-### 2. Générer et Configurer la Nouvelle Clé
-
-```bash
-# Générer une nouvelle clé
-python generate_keys.py
-
-# Ou manuellement
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-```bash
-# Configurer la nouvelle clé
-export GEC_MASTER_KEY="nouvelle_cle"
-export GEC_PASSWORD_SALT="nouveau_sel"
-```
-
-### 3. Réinitialiser la Base de Données
-
-```bash
-# PostgreSQL
-psql -U username -d gec_mines -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-
-# SQLite
-rm gec_mines.db
-```
-
-### 4. Redémarrer et Importer
-
-```bash
-python main.py
-```
-
-Via l'interface :
-1. **Gestion des Sauvegardes** > **Import de Courriers**
-2. Uploadez le fichier ZIP d'export
-3. Les données seront re-chiffrées avec la nouvelle clé
-
-## ✅ Vérification Post-Mise à Jour
-
-### 1. Vérifier les Logs
-
-```bash
-# Les logs doivent afficher :
-# ✓ Migrations automatiques appliquées
-# ✓ Admin user created/updated
-# ✓ System parameters initialized
-```
-
-### 2. Tester les Fonctionnalités Clés
-
-- [ ] Connexion avec utilisateur existant
-- [ ] Création d'un nouveau courrier
-- [ ] Recherche et filtrage
-- [ ] Visualisation des pièces jointes
-- [ ] Export/Import de courriers
-
-### 3. Vérifier l'Intégrité des Données
-
-Via l'interface :
-1. **Tableau de Bord** : Vérifiez les statistiques
-2. **Liste des Courriers** : Vérifiez que tous les courriers sont présents
-3. **Recherche** : Testez la recherche sur des données chiffrées
-
-## 🆘 En Cas de Problème Majeur
-
-### Rollback Complet
-
-Si la mise à jour a causé des problèmes critiques :
-
-```bash
-# 1. Revenir à la version précédente du code
-git reset --hard HEAD~1
-
-# 2. Restaurer la base de données
-# PostgreSQL
-psql -U username -d gec_mines < backup_YYYYMMDD_HHMMSS.sql
-
-# SQLite
-cp backup_gec_mines_YYYYMMDD_HHMMSS.db gec_mines.db
-
-# 3. Restaurer les fichiers uploadés
-rm -rf uploads
-mv uploads_backup_YYYYMMDD_HHMMSS uploads
+# 3. Si vous l'avez perdue, restaurer depuis backup
+source .env.backup
 
 # 4. Redémarrer
-python main.py
 ```
 
-## 📝 Checklist de Mise à Jour
+**⚠️ IMPORTANT** : Si vous avez perdu `GEC_MASTER_KEY`, les données chiffrées sont **irrécupérables**.
 
-- [ ] Sauvegarde de la base de données créée
-- [ ] Sauvegarde des fichiers `uploads/` créée
-- [ ] Variables d'environnement sauvegardées (`.env.backup`)
-- [ ] Code mis à jour depuis GitHub (`git pull`)
+### Problème 4 : Conflits Git lors du pull
+
+**Symptôme** :
+```
+error: Your local changes to the following files would be overwritten by merge:
+    views.py
+    models.py
+```
+
+**Solution 1 - Écraser vos modifications** :
+```bash
+git reset --hard origin/main
+```
+
+**Solution 2 - Garder vos modifications** :
+```bash
+# Sauvegarder vos modifications
+git stash
+
+# Mettre à jour
+git pull origin main
+
+# Tenter de restaurer (peut causer des conflits)
+git stash pop
+
+# Si conflits, résoudre manuellement
+git status
+# Éditer les fichiers en conflit
+# Puis
+git add .
+git stash drop
+```
+
+### Problème 5 : Dépendances manquantes après update
+
+**Symptôme** :
+```
+ModuleNotFoundError: No module named 'nouvelle_lib'
+```
+
+**Solution** :
+```bash
+# Réinstaller toutes les dépendances
+pip install -r requirements.txt --upgrade
+
+# OU forcer la réinstallation
+pip install -r requirements.txt --force-reinstall
+
+# Vérifier
+pip list
+```
+
+### Problème 6 : Port 5000 déjà utilisé
+
+**Symptôme** :
+```
+OSError: [Errno 48] Address already in use
+```
+
+**Solution** :
+```bash
+# Linux / macOS - Trouver et tuer le processus
+lsof -ti:5000 | xargs kill -9
+
+# Windows
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# Puis redémarrer
+```
+
+## 📊 Vérifier l'Historique des Migrations
+
+### Via la Base de Données
+
+```sql
+-- Voir toutes les migrations appliquées
+SELECT * FROM migration_log ORDER BY applied_at DESC LIMIT 10;
+
+-- Voir les migrations récentes (aujourd'hui)
+SELECT * FROM migration_log 
+WHERE DATE(applied_at) = DATE('now')
+ORDER BY applied_at DESC;
+
+-- Voir les migrations échouées
+SELECT * FROM migration_log 
+WHERE status = 'error'
+ORDER BY applied_at DESC;
+```
+
+### Via les Logs de l'Application
+
+```bash
+# Linux / macOS
+tail -f app.log | grep migration
+
+# Windows
+Get-Content app.log -Tail 50 | Select-String "migration"
+```
+
+## 🔄 Mise à Jour depuis une Version Spécifique
+
+### Revenir à une Version Précédente (Rollback)
+
+```bash
+# Voir l'historique des commits
+git log --oneline -10
+
+# Revenir à un commit spécifique
+git reset --hard <commit-hash>
+
+# Exemple
+git reset --hard a1b2c3d
+
+# Mettre à jour les dépendances
+pip install -r requirements.txt
+
+# Redémarrer
+```
+
+### Mettre à Jour vers une Branche Spécifique
+
+```bash
+# Voir les branches disponibles
+git branch -a
+
+# Changer de branche
+git checkout develop
+# OU
+git checkout feature/nouvelle-fonctionnalite
+
+# Mettre à jour
+git pull origin develop
+
+# Mettre à jour les dépendances
+pip install -r requirements.txt
+```
+
+## 📋 Script de Mise à Jour Automatique
+
+### Linux / macOS - `update.sh`
+
+Créez un fichier `update.sh` :
+
+```bash
+#!/bin/bash
+set -e
+
+echo "🔄 Mise à jour GEC depuis GitHub..."
+
+# 1. Arrêter l'application
+echo "⏸️  Arrêt de l'application..."
+pkill -f "gunicorn.*main:app" || true
+pkill -f "python.*main.py" || true
+sleep 2
+
+# 2. Forcer la mise à jour du code
+echo "📥 Récupération du code..."
+git fetch origin
+git reset --hard origin/main
+
+# 3. Mettre à jour les dépendances
+echo "📦 Mise à jour des dépendances..."
+pip install -r requirements.txt --upgrade
+
+# 4. Redémarrer l'application
+echo "🚀 Redémarrage de l'application..."
+nohup gunicorn --bind 0.0.0.0:5000 --reload main:app > app.log 2>&1 &
+
+echo "✅ Mise à jour terminée !"
+echo "📋 Vérifiez les logs : tail -f app.log"
+```
+
+**Utilisation** :
+```bash
+chmod +x update.sh
+./update.sh
+```
+
+### Windows - `update.ps1`
+
+Créez un fichier `update.ps1` :
+
+```powershell
+Write-Host "🔄 Mise à jour GEC depuis GitHub..." -ForegroundColor Cyan
+
+# 1. Arrêter l'application
+Write-Host "⏸️  Arrêt de l'application..." -ForegroundColor Yellow
+Get-Process -Name python,gunicorn -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2
+
+# 2. Forcer la mise à jour du code
+Write-Host "📥 Récupération du code..." -ForegroundColor Yellow
+git fetch origin
+git reset --hard origin/main
+
+# 3. Mettre à jour les dépendances
+Write-Host "📦 Mise à jour des dépendances..." -ForegroundColor Yellow
+pip install -r requirements.txt --upgrade
+
+# 4. Redémarrer l'application
+Write-Host "🚀 Redémarrage de l'application..." -ForegroundColor Yellow
+Start-Process python -ArgumentList "main.py" -NoNewWindow
+
+Write-Host "✅ Mise à jour terminée !" -ForegroundColor Green
+```
+
+**Utilisation** :
+```powershell
+.\update.ps1
+```
+
+## ✅ Checklist de Mise à Jour
+
+Avant de commencer :
+- [ ] Application arrêtée
+- [ ] Sauvegarde récente des données (optionnel mais recommandé)
+- [ ] Accès au dépôt GitHub
+
+Mise à jour :
+- [ ] Code mis à jour (`git reset --hard origin/main`)
 - [ ] Dépendances mises à jour (`pip install -r requirements.txt`)
+- [ ] Variables d'environnement vérifiées (`.env`)
 - [ ] Application redémarrée
+
+Vérification :
 - [ ] Logs vérifiés (migrations appliquées)
-- [ ] Tests fonctionnels effectués
-- [ ] Données vérifiées (statistiques, courriers, recherche)
+- [ ] Connexion fonctionne
+- [ ] Données existantes visibles
+- [ ] Nouvelles fonctionnalités accessibles
 
 ## 🔐 Sécurité
 
-**IMPORTANT** : Ne jamais partager ou commiter :
-- `.env` ou `.env.backup`
-- `GEC_MASTER_KEY`
-- `GEC_PASSWORD_SALT`
-- `SESSION_SECRET`
+### Ce qui NE SERA JAMAIS écrasé par Git
 
-Ces informations permettent de déchiffrer toutes vos données sensibles !
+Ces fichiers sont protégés via `.gitignore` :
+- `.env` - Variables d'environnement
+- `gec_mines.db` - Base de données
+- `uploads/` - Fichiers uploadés
+- `backups/` - Sauvegardes
+- `exports/` - Exports de courriers
+
+### Vérifier le .gitignore
+
+```bash
+cat .gitignore
+```
+
+Doit contenir au minimum :
+```
+.env
+.env.backup
+gec_mines.db
+uploads/
+exports/
+backups/
+__pycache__/
+*.pyc
+venv/
+```
 
 ## 📞 Support
 
-En cas de problème pendant la mise à jour :
-1. Consultez les logs de l'application
-2. Vérifiez la table `migration_log` dans la base de données
-3. Référez-vous au `CHANGELOG.md` pour les changements récents
-4. Contactez l'équipe de support avec les logs d'erreur
+En cas de problème :
+1. ✅ Vérifiez les logs : `tail -f app.log`
+2. ✅ Consultez `migration_log` dans la BD
+3. ✅ Vérifiez `CHANGELOG.md` pour les changements récents
+4. ✅ Restaurez depuis backup si nécessaire
+
+---
+
+**Résumé** : `git reset --hard origin/main` + `pip install -r requirements.txt` + redémarrer = Mise à jour complète sans toucher aux données ! 🚀
