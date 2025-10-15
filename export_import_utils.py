@@ -11,7 +11,7 @@ import logging
 import shutil
 from datetime import datetime
 from app import db
-from models import Courrier, CourrierForward, PieceJointe
+from models import Courrier, CourrierForward
 from encryption_utils import encryption_manager, decrypt_sensitive_data, encrypt_sensitive_data
 
 # Version du format d'export pour assurer la compatibilité
@@ -112,21 +112,6 @@ def export_courriers_to_json(courrier_ids=None, export_all=False):
                 "checksum": courrier.fichier_checksum
             }
             export_data["attachments"].append(attachment_data)
-        
-        # Gérer les pièces jointes supplémentaires
-        pieces_jointes = PieceJointe.query.filter_by(courrier_id=courrier.id).all()
-        for pj in pieces_jointes:
-            if pj.fichier_chemin and os.path.exists(pj.fichier_chemin):
-                attachment_data = {
-                    "courrier_id": courrier.id,
-                    "type": "additional",
-                    "pj_id": pj.id,
-                    "filename": pj.fichier_nom,
-                    "path": pj.fichier_chemin,
-                    "encrypted": pj.fichier_encrypted if hasattr(pj, 'fichier_encrypted') else False,
-                    "checksum": pj.fichier_checksum if hasattr(pj, 'fichier_checksum') else None
-                }
-                export_data["attachments"].append(attachment_data)
         
         # Gérer les transmissions
         forwards = CourrierForward.query.filter_by(courrier_id=courrier.id).all()

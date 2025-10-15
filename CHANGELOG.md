@@ -1,5 +1,85 @@
 # Journal des Modifications (CHANGELOG)
 
+## [Correction Export/Import de Courriers] - 2025-10-15
+
+### 🐛 Correction Critique
+
+#### Erreur d'import PieceJointe
+**Problème**: L'export de courriers échouait avec l'erreur `cannot import name 'PieceJointe' from 'models'`
+
+**Cause**: Le fichier `export_import_utils.py` tentait d'importer une classe `PieceJointe` qui n'existe pas dans le modèle de données. Le système GEC stocke une seule pièce jointe par courrier directement dans le modèle `Courrier` via les champs:
+- `fichier_nom`: Nom du fichier
+- `fichier_chemin`: Chemin de stockage
+- `fichier_type`: Type MIME
+- `fichier_checksum`: Somme de contrôle SHA-256
+- `fichier_encrypted`: Indicateur de chiffrement
+
+**Corrections apportées** (export_import_utils.py):
+1. Suppression de l'import inexistant: `from models import Courrier, CourrierForward, PieceJointe` → `from models import Courrier, CourrierForward`
+2. Suppression du code gérant les "pièces jointes supplémentaires" (lignes 117-129) qui n'existent pas dans ce système
+
+### ✅ Fonctionnalité Export/Import Validée
+
+#### Processus d'Export (Déchiffrement)
+L'export effectue les opérations suivantes:
+1. **Déchiffrement des données sensibles**:
+   - Objet du courrier
+   - Expéditeur
+   - Destinataire  
+   - Numéro de référence
+
+2. **Déchiffrement des fichiers**:
+   - Les fichiers chiffrés sont déchiffrés temporairement
+   - Ajoutés au package ZIP en clair
+   - Fichiers temporaires nettoyés automatiquement
+   - En cas d'erreur de déchiffrement, l'export échoue (évite le double chiffrement)
+
+3. **Structure du package d'export** (.zip):
+   ```
+   export_courriers_[timestamp].zip
+   ├── courriers_data.json       # Métadonnées et données déchiffrées
+   └── attachments/              # Fichiers en clair (déchiffrés)
+       └── [courrier_id]_[filename]
+   ```
+
+#### Processus d'Import (Re-chiffrement)
+L'import effectue les opérations suivantes:
+1. **Re-chiffrement des données sensibles**:
+   - Chiffrement avec la clé maître de la nouvelle instance
+   - Stockage dans les champs `*_encrypted`
+
+2. **Re-chiffrement des fichiers**:
+   - Les fichiers en clair sont re-chiffrés avec la clé de la nouvelle instance
+   - Sauvegarde dans le dossier `uploads/`
+   - Extension `.encrypted` ajoutée aux fichiers chiffrés
+
+3. **Gestion des utilisateurs**:
+   - Priorité 1: `assign_to_user_id` (si fourni)
+   - Priorité 2: Utilisateur d'origine (si existe)
+   - Priorité 3: Mapping fourni
+   - Priorité 4: Super admin par défaut
+
+4. **Gestion des doublons**:
+   - Vérification par `numero_accuse_reception`
+   - Option `skip_existing` pour ignorer les doublons
+
+### 🔒 Sécurité
+- ✅ Données sensibles déchiffrées uniquement pendant l'export
+- ✅ Re-chiffrement automatique avec nouvelle clé à l'import
+- ✅ Fichiers temporaires nettoyés après traitement
+- ✅ Support de clés de chiffrement différentes entre instances
+
+### 🌍 Traductions
+**Langues supprimées**: Espagnol (es.json) et Allemand (de.json)
+**Langues conservées**: Français (fr.json) et Anglais (en.json)
+
+Traductions ajoutées pour les deux langues:
+- Toutes les clés de la page `/manage_backups`
+- Fonctionnalités d'export/import de courriers
+- Messages de sécurité et validation
+
+---
+
 ## [Corrections Page Sauvegardes et Traductions] - 2025-10-15
 
 ### 🐛 Corrections de Bugs
