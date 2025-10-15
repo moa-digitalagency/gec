@@ -1630,6 +1630,10 @@ def import_courriers():
                 
                 if result['errors'] > 0:
                     flash(f'{result["errors"]} erreurs rencontrées', 'warning')
+                    # Afficher les détails des erreurs
+                    for detail in result.get('details', []):
+                        if 'Erreur' in detail or 'erreur' in detail:
+                            flash(f'  • {detail}', 'error')
             else:
                 flash(f'Erreur lors de l\'import: {result.get("details", ["Erreur inconnue"])[0]}', 'error')
             

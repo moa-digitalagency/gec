@@ -1,5 +1,67 @@
 # Journal des Modifications (CHANGELOG)
 
+## [Correction Import de Courriers - Affichage des Erreurs] - 2025-10-15
+
+### 🐛 Correction Critique - Import/Export
+
+#### Problème: 0 courriers importés avec erreurs non affichées
+**Symptôme**: L'import de courriers affichait "0 courriers importés" et "2 erreurs rencontrées" mais sans détails sur les erreurs.
+
+**Causes identifiées**:
+1. **Erreurs masquées à l'utilisateur**: Les détails des erreurs étaient dans `result['details']` mais n'étaient pas affichés
+2. **Champ utilisateur_id manquant**: Si aucun utilisateur valide n'était trouvé, le champ `utilisateur_id` (NOT NULL) restait vide, causant une erreur de contrainte SQL
+3. **Manque de logging**: Pas assez de logs pour diagnostiquer les problèmes d'import
+
+**Corrections apportées**:
+
+1. **Affichage des détails d'erreur** (views.py):
+   ```python
+   if result['errors'] > 0:
+       flash(f'{result["errors"]} erreurs rencontrées', 'warning')
+       # Afficher les détails des erreurs
+       for detail in result.get('details', []):
+           if 'Erreur' in detail or 'erreur' in detail:
+               flash(f'  • {detail}', 'error')
+   ```
+   - Les messages d'erreur détaillés sont maintenant affichés à l'utilisateur
+
+2. **Validation robuste de utilisateur_id** (export_import_utils.py):
+   - Ajout de `is_deleted=False` au filtre de recherche super admin
+   - **Fallback intelligent**: Si aucun super admin actif n'existe, utilise le premier utilisateur actif trouvé
+   - **Message d'erreur clair**: Si aucun utilisateur actif n'existe, erreur explicite au lieu d'échec silencieux
+   
+   ```python
+   # Priorité 4: super admin par défaut
+   default_user = User.query.filter_by(role='super_admin', is_deleted=False).first()
+   if default_user:
+       new_courrier.utilisateur_id = default_user.id
+   else:
+       # Fallback: premier utilisateur actif trouvé
+       fallback_user = User.query.filter_by(is_deleted=False).first()
+       if fallback_user:
+           new_courrier.utilisateur_id = fallback_user.id
+       else:
+           raise ValueError("Aucun utilisateur actif trouvé")
+   ```
+
+3. **Logging amélioré**:
+   - Ajout de logs au début de l'import de chaque courrier
+   - Logs lors du skip de courriers existants
+   - Meilleure traçabilité des opérations d'import
+
+**Résultat**:
+- ✅ Les erreurs d'import sont maintenant visibles et compréhensibles
+- ✅ Validation robuste du champ utilisateur_id obligatoire
+- ✅ Messages d'erreur clairs pour faciliter le débogage
+- ✅ Import fonctionnel même sans super admin dans le système
+
+**Action pour l'utilisateur**:
+1. Réessayer l'import - les erreurs seront maintenant affichées clairement
+2. Vérifier qu'au moins un utilisateur actif existe dans le système
+3. Si des courriers sont déjà présents, ils seront ignorés (mode skip_existing par défaut)
+
+---
+
 ## [Correction Page de Connexion et Pages d'Erreur] - 2025-10-15
 
 ### 🐛 Corrections Critiques

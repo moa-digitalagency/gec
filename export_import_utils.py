@@ -285,6 +285,8 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
         # Importer les courriers
         for courrier_data in import_data["courriers"]:
             try:
+                logging.info(f"Début de l'import du courrier: {courrier_data.get('numero_accuse_reception')}")
+                
                 # Vérifier si le courrier existe déjà
                 existing = Courrier.query.filter_by(
                     numero_accuse_reception=courrier_data["numero_accuse_reception"]
@@ -293,6 +295,7 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                 if existing and skip_existing:
                     result["skipped"] += 1
                     result["details"].append(f"Courrier {courrier_data['numero_accuse_reception']} ignoré (existe déjà)")
+                    logging.info(f"Courrier ignoré (existe déjà): {courrier_data['numero_accuse_reception']}")
                     continue
                 
                 # Créer un nouveau courrier
@@ -358,16 +361,30 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                         new_courrier.utilisateur_id = remap_users[courrier_data["utilisateur_id"]]
                     else:
                         # Priorité 4: super admin par défaut
-                        default_user = User.query.filter_by(role='super_admin').first()
+                        default_user = User.query.filter_by(role='super_admin', is_deleted=False).first()
                         if default_user:
                             new_courrier.utilisateur_id = default_user.id
+                        else:
+                            # Fallback: premier utilisateur actif trouvé
+                            fallback_user = User.query.filter_by(is_deleted=False).first()
+                            if fallback_user:
+                                new_courrier.utilisateur_id = fallback_user.id
+                            else:
+                                raise ValueError(f"Impossible d'importer le courrier {courrier_data.get('numero_accuse_reception')}: aucun utilisateur actif trouvé dans le système")
                 
                 # Aucun utilisateur dans les données source
                 else:
                     # Priorité 4: super admin par défaut
-                    default_user = User.query.filter_by(role='super_admin').first()
+                    default_user = User.query.filter_by(role='super_admin', is_deleted=False).first()
                     if default_user:
                         new_courrier.utilisateur_id = default_user.id
+                    else:
+                        # Fallback: premier utilisateur actif trouvé
+                        fallback_user = User.query.filter_by(is_deleted=False).first()
+                        if fallback_user:
+                            new_courrier.utilisateur_id = fallback_user.id
+                        else:
+                            raise ValueError(f"Impossible d'importer le courrier {courrier_data.get('numero_accuse_reception')}: aucun utilisateur actif trouvé dans le système")
                 
                 # Enregistrer le courrier
                 db.session.add(new_courrier)
