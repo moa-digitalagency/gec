@@ -182,6 +182,155 @@
     </div>
 </div>
 
+<!-- Export/Import Courriers Section -->
+{% if current_user.is_super_admin() %}
+<div class="mt-8 grid lg:grid-cols-2 gap-8">
+    <!-- Export Courriers Section -->
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-file-export mr-2 text-green-600"></i>
+                {{ t('export_courriers') or 'Export de Courriers' }}
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-gray-600 mb-4">
+                    {{ t('export_courriers_description') or 'Exportez les courriers pour les transférer vers une autre instance GEC.' }}
+                </p>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h4 class="font-medium text-green-900 mb-3 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        {{ t('export_features') or 'Caractéristiques de l\'export :' }}
+                    </h4>
+                    <ul class="space-y-2 text-sm text-green-800">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('export_decrypts_data') or 'Déchiffrement automatique des données' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('export_includes_attachments') or 'Pièces jointes incluses' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-600 mr-2"></i>
+                            {{ t('export_portable') or 'Format portable entre instances' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-shield-alt text-orange-600 mr-2"></i>
+                            <strong>{{ t('export_security') or 'Package ZIP sécurisé avec données déchiffrées' }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('export_courriers') }}" method="POST" onsubmit="return confirm('{{ t('confirm_export_courriers') or 'Voulez-vous vraiment exporter les courriers ?' }}')">
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="export_all" value="true" class="rounded text-rdc-blue focus:ring-rdc-blue">
+                            <span class="text-sm text-gray-700">{{ t('export_all_courriers') or 'Exporter tous les courriers (incluant supprimés)' }}</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label for="courrier_ids" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ t('specific_courrier_ids') or 'IDs de courriers spécifiques (optionnel)' }}
+                        </label>
+                        <input type="text" 
+                               name="courrier_ids" 
+                               id="courrier_ids" 
+                               placeholder="Ex: 1,2,3,10"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
+                        <p class="mt-1 text-sm text-gray-500">{{ t('courrier_ids_format') or 'Séparez les IDs par des virgules' }}</p>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-file-export mr-2"></i>
+                        {{ t('export_now') or 'Exporter les Courriers' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Import Courriers Section -->
+    <div class="bg-white shadow-rdc rounded-xl">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-file-import mr-2 text-blue-600"></i>
+                {{ t('import_courriers') or 'Import de Courriers' }}
+            </h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-gray-600 mb-4">
+                    {{ t('import_courriers_description') or 'Importez les courriers depuis un package d\'export (.zip).' }}
+                </p>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 class="font-medium text-blue-900 mb-3 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        {{ t('import_features') or 'Caractéristiques de l\'import :' }}
+                    </h4>
+                    <ul class="space-y-2 text-sm text-blue-800">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-blue-600 mr-2"></i>
+                            {{ t('import_encrypts_data') or 'Re-chiffrement automatique avec clé locale' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-blue-600 mr-2"></i>
+                            {{ t('import_handles_duplicates') or 'Gestion des doublons' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-blue-600 mr-2"></i>
+                            {{ t('import_restores_attachments') or 'Restauration des pièces jointes' }}
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                            <strong>{{ t('import_statistics') or 'Statistiques détaillées après import' }}</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form action="{{ url_for('import_courriers') }}" method="POST" enctype="multipart/form-data" 
+                  onsubmit="return confirm('{{ t('confirm_import_courriers') or 'Voulez-vous vraiment importer les courriers depuis ce package ?' }}')">
+                <div class="space-y-4">
+                    <div>
+                        <label for="import_file" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ t('select_export_package') or 'Sélectionner le package d\'export' }}
+                        </label>
+                        <input type="file" 
+                               name="import_file" 
+                               id="import_file" 
+                               accept=".zip" 
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
+                        <p class="mt-1 text-sm text-gray-500">{{ t('export_package_format') or 'Format: export_courriers_*.zip' }}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="skip_existing" value="true" checked class="rounded text-rdc-blue focus:ring-rdc-blue">
+                            <span class="text-sm text-gray-700">{{ t('skip_duplicates') or 'Ignorer les doublons (recommandé)' }}</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-file-import mr-2"></i>
+                        {{ t('import_now') or 'Importer les Courriers' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Available Backups Table -->
 {% if backup_files %}
 <div class="mt-8 bg-white shadow-rdc rounded-xl">
