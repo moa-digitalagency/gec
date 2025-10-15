@@ -5475,7 +5475,10 @@ def manage_backups():
     # Récupérer la liste des fichiers de sauvegarde
     backup_files = get_backup_files() if current_user.is_super_admin() else []
     
-    return render_template('manage_backups.html', backup_files=backup_files)
+    # Récupérer la liste des utilisateurs pour l'import
+    users = User.query.filter_by(is_deleted=False).order_by(User.username).all()
+    
+    return render_template('manage_backups.html', backup_files=backup_files, users=users)
 
 @app.route('/toggle_outgoing_type_status/<int:type_id>', methods=['POST'])
 @login_required
