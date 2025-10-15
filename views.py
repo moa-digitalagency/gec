@@ -123,7 +123,7 @@ def index():
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
-@rate_limit(max_requests=10, per_minutes=15)  # Prevent brute force attacks - Increased from 5 to 10
+@rate_limit(max_requests=30, per_minutes=15)  # Prevent brute force attacks - Increased to allow legitimate retries
 def login():
     client_ip = get_client_ip()
     

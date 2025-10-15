@@ -1,5 +1,42 @@
 # Journal des Modifications (CHANGELOG)
 
+## [Correction Page de Connexion et Pages d'Erreur] - 2025-10-15
+
+### 🐛 Corrections Critiques
+
+#### Page de connexion blanche (erreur 429)
+**Problème**: La page de connexion affichait parfois une page blanche avec seulement le pied de page visible.
+
+**Causes identifiées**:
+1. **Limitation de débit trop stricte**: 10 requêtes/15min bloquait les utilisateurs légitimes
+2. **Page d'erreur 429 cassée**: Template `429.html` plantait avec `'parametres' is undefined`
+3. **Cascade d'erreurs**: L'erreur de la page d'erreur créait une page blanche
+
+**Corrections apportées**:
+
+1. **Augmentation de la limite de débit** (views.py):
+   - Ancien: `@rate_limit(max_requests=10, per_minutes=15)`
+   - Nouveau: `@rate_limit(max_requests=30, per_minutes=15)`
+   - Permet maintenant les tentatives légitimes (fautes de frappe, oubli de mot de passe)
+
+2. **Correction des gestionnaires d'erreur** (app.py):
+   - Gestionnaire 429: Ajout de `parametres` au contexte du template
+   - Gestionnaire 403: Ajout de `parametres` au contexte du template
+   - Gestion des exceptions si `parametres` n'est pas disponible
+
+3. **Renforcement des templates d'erreur**:
+   - `429.html`: `{{ parametres.nom_logiciel if parametres else 'GEC' }}`
+   - `403.html`: `{{ parametres.nom_logiciel if parametres else 'GEC' }}`
+   - Gestion gracieuse de l'absence de `parametres`
+
+**Résultat**:
+- ✅ Page de connexion fonctionne normalement
+- ✅ Plus de pages blanches lors de blocage par rate limit
+- ✅ Pages d'erreur s'affichent correctement
+- ✅ Sécurité maintenue (rate limiting et blocage IP actifs)
+
+---
+
 ## [Correction Export/Import de Courriers] - 2025-10-15
 
 ### 🐛 Correction Critique

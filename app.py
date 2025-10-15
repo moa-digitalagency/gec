@@ -156,21 +156,37 @@ def inject_system_parameters():
 def rate_limit_error(error):
     from flask import request, render_template
     from security_utils import audit_log
+    from models import ParametresSysteme
     try:
         audit_log("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
     except:
         pass
-    return render_template('429.html'), 429
+    
+    # Get system parameters for the template
+    try:
+        parametres = ParametresSysteme.get_parametres()
+    except:
+        parametres = None
+    
+    return render_template('429.html', parametres=parametres), 429
 
 @app.errorhandler(403)
 def forbidden_error(error):
     from flask import request, render_template
     from security_utils import audit_log
+    from models import ParametresSysteme
     try:
         audit_log("ACCESS_DENIED", f"403 error for URL: {request.url}")
     except:
         pass
-    return render_template('403.html'), 403
+    
+    # Get system parameters for the template
+    try:
+        parametres = ParametresSysteme.get_parametres()
+    except:
+        parametres = None
+    
+    return render_template('403.html', parametres=parametres), 403
 
 # Import views
 import views
