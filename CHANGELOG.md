@@ -124,6 +124,40 @@
      - Nombre d'erreurs rencontrées
    - Log de l'activité avec détails
 
+#### Interface Utilisateur (templates/manage_backups.html)
+
+**✅ Intégration UI Complétée - 2025-10-15**
+
+1. **Section Export de Courriers**
+   - Formulaire d'export accessible aux super administrateurs uniquement
+   - Options disponibles:
+     - ☑️ Exporter tous les courriers (incluant supprimés)
+     - 📝 Sélection d'IDs spécifiques (format: 1,2,3,10)
+   - Bouton "Exporter les Courriers" → POST vers `/export_courriers`
+   - Informations affichées:
+     - Déchiffrement automatique des données
+     - Inclusion des pièces jointes
+     - Format portable entre instances
+     - Package ZIP sécurisé
+
+2. **Section Import de Courriers**
+   - Formulaire d'import accessible aux super administrateurs uniquement
+   - Upload de fichier ZIP d'export
+   - Options disponibles:
+     - ☑️ Ignorer les doublons (recommandé, coché par défaut)
+   - Bouton "Importer les Courriers" → POST vers `/import_courriers`
+   - Informations affichées:
+     - Re-chiffrement automatique avec clé locale
+     - Gestion des doublons
+     - Restauration des pièces jointes
+     - Statistiques détaillées après import
+
+3. **Placement dans l'interface**
+   - Nouvellement ajouté dans la page "Gestion des Sauvegardes"
+   - Section située entre les backups système et la table des sauvegardes disponibles
+   - Visible uniquement pour les super administrateurs
+   - Design cohérent avec le reste de l'application (Tailwind CSS)
+
 #### Sécurité et Chiffrement
 
 **Gestion des Clés de Chiffrement**:
