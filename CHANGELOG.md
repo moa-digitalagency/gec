@@ -5,7 +5,7 @@
 ### 🐛 Correction Critique
 
 #### Erreur d'import PieceJointe
-**Problème**: L'export de courriers échouait avec l'erreur `cannot import name 'PieceJointe' from 'models'`
+**Problème**: L'export/import de courriers échouait avec l'erreur `cannot import name 'PieceJointe' from 'models'`
 
 **Cause**: Le fichier `export_import_utils.py` tentait d'importer une classe `PieceJointe` qui n'existe pas dans le modèle de données. Le système GEC stocke une seule pièce jointe par courrier directement dans le modèle `Courrier` via les champs:
 - `fichier_nom`: Nom du fichier
@@ -17,6 +17,37 @@
 **Corrections apportées** (export_import_utils.py):
 1. Suppression de l'import inexistant: `from models import Courrier, CourrierForward, PieceJointe` → `from models import Courrier, CourrierForward`
 2. Suppression du code gérant les "pièces jointes supplémentaires" (lignes 117-129) qui n'existent pas dans ce système
+
+**📋 Guide de Correction pour Anciennes Installations**
+
+Si vous rencontrez cette erreur sur une autre installation GEC, voici comment la corriger:
+
+1. **Ouvrir le fichier `export_import_utils.py`**
+   
+2. **Localiser la ligne d'import** (généralement ligne 14):
+   ```python
+   # ❌ ANCIEN CODE (À CORRIGER):
+   from models import Courrier, CourrierForward, PieceJointe
+   
+   # ✅ NOUVEAU CODE (CORRECT):
+   from models import Courrier, CourrierForward
+   ```
+
+3. **Supprimer toute référence à PieceJointe** dans le fichier:
+   - Rechercher `PieceJointe` dans tout le fichier
+   - Supprimer ou commenter les lignes qui utilisent cette classe
+   - Le système GEC n'a JAMAIS eu de modèle `PieceJointe` séparé
+
+4. **Redémarrer l'application** après la correction
+
+**Vérification rapide:**
+```bash
+# Vérifier qu'il n'y a plus d'import PieceJointe
+grep -n "PieceJointe" export_import_utils.py
+# Cette commande ne devrait rien retourner
+```
+
+**Note importante:** Cette correction est déjà appliquée sur l'installation Replit. Cette section du CHANGELOG est destinée aux utilisateurs qui migrent depuis d'anciennes versions du code.
 
 ### ✅ Fonctionnalité Export/Import Validée
 
