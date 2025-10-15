@@ -1531,6 +1531,111 @@ def backup_pre_update():
     
     return redirect(url_for('manage_backups'))
 
+@app.route('/export_courriers', methods=['POST'])
+@login_required
+def export_courriers():
+    """Exporter les courriers avec déchiffrement pour transfert vers une autre instance"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent exporter les courriers.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    try:
+        from export_import_utils import create_export_package
+        
+        # Options d'export
+        export_all = request.form.get('export_all', 'false') == 'true'
+        courrier_ids_str = request.form.get('courrier_ids', '')
+        
+        courrier_ids = None
+        if courrier_ids_str:
+            try:
+                courrier_ids = [int(id.strip()) for id in courrier_ids_str.split(',') if id.strip()]
+            except ValueError:
+                flash('Format des IDs de courriers invalide', 'error')
+                return redirect(url_for('manage_backups'))
+        
+        export_file = create_export_package(courrier_ids=courrier_ids, export_all=export_all)
+        
+        log_activity(current_user.id, "EXPORT_COURRIERS", 
+                    f"Export de courriers créé: {os.path.basename(export_file)}")
+        
+        flash(f'Export créé avec succès: {os.path.basename(export_file)}', 'success')
+        flash('Les données ont été déchiffrées pour permettre l\'importation sur une autre instance', 'info')
+        
+        return send_file(export_file, as_attachment=True, download_name=os.path.basename(export_file))
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'export des courriers: {e}", exc_info=True)
+        flash(f'Erreur lors de l\'export: {str(e)}', 'error')
+        return redirect(url_for('manage_backups'))
+
+@app.route('/import_courriers', methods=['POST'])
+@login_required
+def import_courriers():
+    """Importer les courriers avec rechiffrement depuis une autre instance"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé. Seuls les super administrateurs peuvent importer les courriers.', 'error')
+        return redirect(url_for('manage_backups'))
+    
+    try:
+        if 'import_file' not in request.files:
+            flash('Aucun fichier d\'import fourni', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        import_file = request.files['import_file']
+        
+        if import_file.filename == '':
+            flash('Aucun fichier sélectionné', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        if not import_file.filename.endswith('.zip'):
+            flash('Le fichier doit être au format ZIP', 'error')
+            return redirect(url_for('manage_backups'))
+        
+        from export_import_utils import import_courriers_from_package
+        
+        # Sauvegarder temporairement le fichier
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as tmp_file:
+            import_file.save(tmp_file.name)
+            tmp_path = tmp_file.name
+        
+        try:
+            # Options d'import
+            skip_existing = request.form.get('skip_existing', 'true') == 'true'
+            
+            # Importer
+            result = import_courriers_from_package(tmp_path, skip_existing=skip_existing)
+            
+            # Logger l'activité
+            log_activity(current_user.id, "IMPORT_COURRIERS", 
+                        f"Import de courriers: {result['imported']} importés, {result['skipped']} ignorés, {result['errors']} erreurs")
+            
+            # Messages de résultat
+            if result['success']:
+                flash(f'Import terminé: {result["imported"]} courriers importés', 'success')
+                flash('Les données ont été rechiffrées avec la clé de cette instance', 'info')
+                
+                if result['skipped'] > 0:
+                    flash(f'{result["skipped"]} courriers ignorés (déjà existants)', 'warning')
+                
+                if result['errors'] > 0:
+                    flash(f'{result["errors"]} erreurs rencontrées', 'warning')
+            else:
+                flash(f'Erreur lors de l\'import: {result.get("details", ["Erreur inconnue"])[0]}', 'error')
+            
+        finally:
+            # Nettoyer le fichier temporaire
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+        
+        return redirect(url_for('manage_backups'))
+        
+    except Exception as e:
+        logging.error(f"Erreur lors de l'import des courriers: {e}", exc_info=True)
+        flash(f'Erreur lors de l\'import: {str(e)}', 'error')
+        return redirect(url_for('manage_backups'))
+
 @app.route('/download_backup/<filename>')
 @login_required
 def download_backup(filename):
