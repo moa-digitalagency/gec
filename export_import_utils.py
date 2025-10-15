@@ -345,15 +345,15 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                 
                 # Priorité 1: assign_to_user_id (si fourni et valide)
                 if assign_to_user_id:
-                    user_exists = User.query.filter_by(id=assign_to_user_id, is_deleted=False).first()
+                    user_exists = User.query.filter_by(id=assign_to_user_id, actif=True).first()
                     if user_exists:
                         new_courrier.utilisateur_id = assign_to_user_id
                     else:
-                        raise ValueError(f"Utilisateur avec ID {assign_to_user_id} introuvable ou supprimé")
+                        raise ValueError(f"Utilisateur avec ID {assign_to_user_id} introuvable ou inactif")
                 
                 # Priorité 2: utilisateur_id d'origine (si existe dans cette instance)
                 elif courrier_data.get("utilisateur_id"):
-                    original_user = User.query.filter_by(id=courrier_data["utilisateur_id"], is_deleted=False).first()
+                    original_user = User.query.filter_by(id=courrier_data["utilisateur_id"], actif=True).first()
                     if original_user:
                         new_courrier.utilisateur_id = courrier_data["utilisateur_id"]
                     elif remap_users and courrier_data["utilisateur_id"] in remap_users:
@@ -361,12 +361,12 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                         new_courrier.utilisateur_id = remap_users[courrier_data["utilisateur_id"]]
                     else:
                         # Priorité 4: super admin par défaut
-                        default_user = User.query.filter_by(role='super_admin', is_deleted=False).first()
+                        default_user = User.query.filter_by(role='super_admin', actif=True).first()
                         if default_user:
                             new_courrier.utilisateur_id = default_user.id
                         else:
                             # Fallback: premier utilisateur actif trouvé
-                            fallback_user = User.query.filter_by(is_deleted=False).first()
+                            fallback_user = User.query.filter_by(actif=True).first()
                             if fallback_user:
                                 new_courrier.utilisateur_id = fallback_user.id
                             else:
@@ -375,12 +375,12 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                 # Aucun utilisateur dans les données source
                 else:
                     # Priorité 4: super admin par défaut
-                    default_user = User.query.filter_by(role='super_admin', is_deleted=False).first()
+                    default_user = User.query.filter_by(role='super_admin', actif=True).first()
                     if default_user:
                         new_courrier.utilisateur_id = default_user.id
                     else:
                         # Fallback: premier utilisateur actif trouvé
-                        fallback_user = User.query.filter_by(is_deleted=False).first()
+                        fallback_user = User.query.filter_by(actif=True).first()
                         if fallback_user:
                             new_courrier.utilisateur_id = fallback_user.id
                         else:
