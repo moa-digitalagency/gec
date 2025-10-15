@@ -352,19 +352,34 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                     new_courrier.numero_reference = courrier_data["numero_reference"]
                     new_courrier.numero_reference_encrypted = encrypt_sensitive_data(courrier_data["numero_reference"])
                 
-                # Assigner l'utilisateur
+                # Assigner l'utilisateur avec validation et priorité correcte
                 from models import User
+                
+                # Priorité 1: assign_to_user_id (si fourni et valide)
                 if assign_to_user_id:
-                    # Utiliser l'utilisateur spécifié
-                    new_courrier.utilisateur_id = assign_to_user_id
-                elif courrier_data.get("utilisateur_id") and not remap_users:
-                    # Conserver l'utilisateur d'origine si pas de remapping
-                    new_courrier.utilisateur_id = courrier_data["utilisateur_id"]
-                elif remap_users and courrier_data.get("utilisateur_id") in remap_users:
-                    # Utiliser le mapping fourni
-                    new_courrier.utilisateur_id = remap_users[courrier_data["utilisateur_id"]]
+                    user_exists = User.query.filter_by(id=assign_to_user_id, is_deleted=False).first()
+                    if user_exists:
+                        new_courrier.utilisateur_id = assign_to_user_id
+                    else:
+                        raise ValueError(f"Utilisateur avec ID {assign_to_user_id} introuvable ou supprimé")
+                
+                # Priorité 2: utilisateur_id d'origine (si existe dans cette instance)
+                elif courrier_data.get("utilisateur_id"):
+                    original_user = User.query.filter_by(id=courrier_data["utilisateur_id"], is_deleted=False).first()
+                    if original_user:
+                        new_courrier.utilisateur_id = courrier_data["utilisateur_id"]
+                    elif remap_users and courrier_data["utilisateur_id"] in remap_users:
+                        # Priorité 3: mapping fourni
+                        new_courrier.utilisateur_id = remap_users[courrier_data["utilisateur_id"]]
+                    else:
+                        # Priorité 4: super admin par défaut
+                        default_user = User.query.filter_by(role='super_admin').first()
+                        if default_user:
+                            new_courrier.utilisateur_id = default_user.id
+                
+                # Aucun utilisateur dans les données source
                 else:
-                    # Utilisateur par défaut (premier super admin)
+                    # Priorité 4: super admin par défaut
                     default_user = User.query.filter_by(role='super_admin').first()
                     if default_user:
                         new_courrier.utilisateur_id = default_user.id
