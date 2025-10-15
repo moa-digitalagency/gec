@@ -1,5 +1,62 @@
 # Journal des Modifications (CHANGELOG)
 
+## [Corrections Page Sauvegardes et Traductions] - 2025-10-15
+
+### 🐛 Corrections de Bugs
+
+#### Page /manage_backups
+**Problème**: La page `/manage_backups` plantait avec une erreur 500 et les sections d'export/import de courriers n'étaient pas visibles.
+
+**Corrections apportées**:
+1. **Correction attribut base de données** (views.py ligne 5482)
+   - Ancienne requête: `User.query.filter_by(is_deleted=False)` 
+   - Nouvelle requête: `User.query.filter_by(actif=True)`
+   - Raison: Le modèle User utilise l'attribut `actif` et non `is_deleted`
+   
+2. **Visibilité des sections Export/Import**
+   - Suppression de la condition Jinja redondante `{% if current_user.is_super_admin() %}`
+   - Déplacement des sections en haut de page (juste après les statistiques)
+   - Ajout d'une bordure violette distinctive pour une meilleure visibilité
+   - Les vérifications de permissions restent actives dans les routes POST
+
+#### Traductions françaises
+**Problème**: Plusieurs termes n'étaient pas traduits et s'affichaient en anglais.
+
+**Traductions ajoutées** (lang/fr.json):
+- `backup_management`: "Gestion des Sauvegardes"
+- `create_security_backup`: "Sauvegarde de Sécurité (Avant MAJ)"
+- `security_backup_feature`: "Sauvegarde de sécurité : Protection des paramètres critiques"
+- `export_courriers`: "Export de Courriers"
+- `import_courriers`: "Import de Courriers"
+- `export_courriers_description`, `import_courriers_description`
+- `export_features`, `import_features`
+- `export_decrypts_data`, `import_encrypts_data`
+- `export_includes_attachments`, `import_restores_attachments`
+- `export_portable`, `import_handles_duplicates`
+- `export_security`, `import_statistics`
+- Et 30+ autres traductions pour la page de gestion des sauvegardes
+
+### 🎨 Améliorations UI/UX
+
+#### Organisation de la page
+- **Nouvelle structure visuelle**:
+  1. Cartes statistiques (en haut)
+  2. **Export/Import de Courriers** (bordure violette - immédiatement visible)
+  3. Création et Restauration de sauvegardes
+  4. Liste des sauvegardes disponibles
+  5. Mise à jour système
+
+- Sections export/import maintenant **hautement visibles** sans scroll
+- Design cohérent avec bordures et icônes colorées
+
+### ✅ Tests Effectués
+- Page `/manage_backups` charge sans erreur (HTTP 200)
+- Formulaires d'export et d'import présents et fonctionnels
+- Toutes les traductions affichées correctement en français
+- Vérifications de sécurité maintenues (super_admin uniquement)
+
+---
+
 ## [Migration Replit Agent] - 2025-10-15
 
 ### ✅ Migration Complétée
