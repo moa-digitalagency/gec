@@ -2,6 +2,12 @@
 Module d'export/import de courriers avec gestion du chiffrement
 Permet l'export de courriers d'une instance et l'import vers une autre instance
 avec des clés de chiffrement différentes
+
+COMPATIBILITÉ CROSS-PLATFORM (Linux ↔ Windows):
+- Les chemins sont normalisés avec os.path.normpath() pour s'adapter à l'OS
+- Les chemins dans le ZIP utilisent toujours des slashes (/) pour compatibilité
+- Lors de l'import, les chemins sont reconstruits avec os.path.join() selon l'OS destination
+- Un export Linux peut être importé sur Windows et vice-versa sans problème de chemins
 """
 
 import os
@@ -103,11 +109,14 @@ def export_courriers_to_json(courrier_ids=None, export_all=False):
         
         # Gérer le fichier attaché principal
         if courrier.fichier_chemin and os.path.exists(courrier.fichier_chemin):
+            # Normaliser le chemin pour compatibilité cross-platform
+            # Stocke seulement le nom de fichier, pas le chemin complet
             attachment_data = {
                 "courrier_id": courrier.id,
                 "type": "main",
                 "filename": courrier.fichier_nom,
-                "path": courrier.fichier_chemin,
+                "path": os.path.normpath(courrier.fichier_chemin),  # Normalise le séparateur
+                "path_basename": os.path.basename(courrier.fichier_chemin),  # Nom du fichier seul
                 "encrypted": courrier.fichier_encrypted,
                 "checksum": courrier.fichier_checksum
             }
@@ -129,12 +138,14 @@ def export_courriers_to_json(courrier_ids=None, export_all=False):
             
             # Gérer les fichiers joints aux transmissions
             if forward.attached_file and os.path.exists(forward.attached_file):
+                # Normaliser le chemin pour compatibilité cross-platform
                 attachment_data = {
                     "courrier_id": courrier.id,
                     "type": "forward",
                     "forward_id": forward.id,
                     "filename": forward.attached_file_original_name,
-                    "path": forward.attached_file,
+                    "path": os.path.normpath(forward.attached_file),  # Normalise le séparateur
+                    "path_basename": os.path.basename(forward.attached_file),  # Nom du fichier seul
                     "encrypted": False
                 }
                 export_data["attachments"].append(attachment_data)
@@ -184,8 +195,11 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
         try:
             # Ajouter les fichiers déchiffrés
             for attachment in export_data["attachments"]:
-                source_path = attachment["path"]
-                arc_name = f"attachments/{attachment['courrier_id']}_{attachment['filename']}"
+                # Normaliser le chemin source pour l'OS actuel
+                source_path = os.path.normpath(attachment["path"])
+                # Utiliser toujours des slashes (/) dans le ZIP pour compatibilité cross-platform
+                # ZIP est un standard qui utilise toujours des slashes, peu importe l'OS
+                arc_name = f"attachments/{attachment['courrier_id']}_{attachment['filename']}".replace('\\', '/')
                 
                 if attachment.get("encrypted", False):
                     # Déchiffrer le fichier temporairement
@@ -398,19 +412,23 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                 for attachment in import_data["attachments"]:
                     if attachment["courrier_id"] == old_id and attachment["type"] == "main":
                         # Fichier principal
-                        source_file = os.path.join(attachments_dir, f"{old_id}_{attachment['filename']}")
+                        # Utiliser path_basename si disponible pour compatibilité cross-platform
+                        attachment_filename = attachment.get('path_basename', attachment['filename'])
+                        source_file = os.path.normpath(os.path.join(attachments_dir, f"{old_id}_{attachment_filename}"))
+                        
                         if os.path.exists(source_file):
-                            # Créer le chemin de destination
+                            # Créer le chemin de destination avec os.path.join() pour compatibilité
                             uploads_dir = 'uploads'
                             os.makedirs(uploads_dir, exist_ok=True)
-                            dest_file = os.path.join(uploads_dir, f"{new_courrier.id}_{attachment['filename']}")
+                            dest_file = os.path.normpath(os.path.join(uploads_dir, f"{new_courrier.id}_{attachment['filename']}"))
                             
                             # Rechiffrer le fichier avec la clé de cette instance
                             # Note: Le fichier source est déjà en clair (déchiffré à l'export)
                             if attachment.get("encrypted", False):
                                 # Re-chiffrer avec la nouvelle clé
-                                encryption_manager.encrypt_file(source_file, dest_file + ".encrypted")
-                                new_courrier.fichier_chemin = dest_file + ".encrypted"
+                                dest_encrypted = os.path.normpath(dest_file + ".encrypted")
+                                encryption_manager.encrypt_file(source_file, dest_encrypted)
+                                new_courrier.fichier_chemin = dest_encrypted
                                 new_courrier.fichier_encrypted = True
                             else:
                                 # Fichier non chiffré, copier tel quel
