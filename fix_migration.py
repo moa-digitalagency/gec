@@ -20,6 +20,7 @@ def fix_parametres_systeme_columns():
         ("appellation_departement", "ALTER TABLE parametres_systeme ADD COLUMN appellation_departement VARCHAR(100) DEFAULT 'Départements'"),
     ]
     
+    conn = None
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
