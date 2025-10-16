@@ -1,0 +1,96 @@
+(.venv) PS C:\Users\HP400G4\gec> git fetch origin
+>> git reset --hard origin/main
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (3/3), done.
+remote: Total 5 (delta 2), reused 5 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (5/5), 4.29 KiB | 29.00 KiB/s, done.
+From https://github.com/moa-digitalagency/gec
+   f2affe8..8c33039  main       -> origin/main
+HEAD is now at 8c33039 Add missing database tables and columns for application functionality
+(.venv) PS C:\Users\HP400G4\gec> python create_missing_tables.py
+🔄 Création des tables manquantes...
+
+✅ Table 'parametres_systeme' créée avec succès
+✅ Table 'migration_log' créée avec succès
+✅ Table 'system_health' créée avec succès
+
+✅ Création des tables terminée avec succès !
+🚀 Vous pouvez maintenant redémarrer l'application
+(.venv) PS C:\Users\HP400G4\gec> python .\main.py
+CRITICAL:root:NOUVELLE CLÉ MAÎTRE GÉNÉRÉE - Configurez GEC_MASTER_KEY dans les variables d'environnement
+CRITICAL:root:IMPORTANT: Clé générée automatiquement - configurez GEC_MASTER_KEY pour la persistence
+CRITICAL:root:NOUVEAU SEL GÉNÉRÉ - Configurez GEC_PASSWORD_SALT dans les variables d'environnement
+CRITICAL:root:IMPORTANT: Sel généré automatiquement - configurez GEC_PASSWORD_SALT pour la persistence
+INFO:root:Vérification des migrations automatiques...
+DEBUG:root:Table migration_log existe déjà
+DEBUG:root:Table system_health existe déjà
+DEBUG:root:Colonne sendgrid_api_key existe déjà dans parametres_systeme
+DEBUG:root:Colonne email_provider existe déjà dans parametres_systeme
+DEBUG:root:Colonne notify_superadmin_new_mail existe déjà dans parametres_systeme
+DEBUG:root:Colonne titre_responsable_structure existe déjà dans parametres_systeme
+DEBUG:root:Colonne attached_file existe déjà dans courrier_forward
+DEBUG:root:Colonne attached_file_original_name existe déjà dans courrier_forward
+DEBUG:root:Colonne attached_file_size existe déjà dans courrier_forward
+INFO:root:✅ Aucune migration nécessaire - Base de données à jour
+DEBUG:root:Contraintes de clés étrangères activées pour SQLite
+Traceback (most recent call last):
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such column: parametres_systeme.smtp_server
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP400G4\gec\main.py", line 1, in <module>
+    from app import app
+  File "C:\Users\HP400G4\gec\app.py", line 105, in <module>
+    parametres = models.ParametresSysteme.get_parametres()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\models.py", line 845, in get_parametres
+    parametres = ParametresSysteme.query.first()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2728, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\orm\query.py", line 2827, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\HP400G4\gec\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: parametres_systeme.smtp_server
+[SQL: SELECT parametres_systeme.id AS parametres_systeme_id, parametres_systeme.nom_logiciel AS parametres_systeme_nom_logiciel, parametres_systeme.logo_url AS parametres_systeme_logo_url, parametres_systeme.mode_numero_accuse AS parametres_systeme_mode_numero_accuse, parametres_systeme.format_numero_accuse AS parametres_systeme_format_numero_accuse, parametres_systeme.adresse_organisme AS parametres_systeme_adresse_organisme, parametres_systeme.telephone AS parametres_systeme_telephone, parametres_systeme.email_contact AS parametres_systeme_email_contact, parametres_systeme.texte_footer AS parametres_systeme_texte_footer, parametres_systeme.copyright_crypte AS parametres_systeme_copyright_crypte, parametres_systeme.logo_pdf AS parametres_systeme_logo_pdf, parametres_systeme.titre_pdf AS parametres_systeme_titre_pdf, parametres_systeme.sous_titre_pdf AS parametres_systeme_sous_titre_pdf, parametres_systeme.pays_pdf AS parametres_systeme_pays_pdf, parametres_systeme.copyright_text AS parametres_systeme_copyright_text, parametres_systeme.smtp_server AS parametres_systeme_smtp_server, parametres_systeme.smtp_port AS parametres_systeme_smtp_port, parametres_systeme.smtp_use_tls AS parametres_systeme_smtp_use_tls, parametres_systeme.smtp_username AS parametres_systeme_smtp_username, parametres_systeme.smtp_password AS parametres_systeme_smtp_password, parametres_systeme.appellation_departement AS parametres_systeme_appellation_departement, parametres_systeme.titre_responsable_structure AS parametres_systeme_titre_responsable_structure, parametres_systeme.email_provider AS parametres_systeme_email_provider, parametres_systeme.sendgrid_api_key AS parametres_systeme_sendgrid_api_key, parametres_systeme.notify_superadmin_new_mail AS parametres_systeme_notify_superadmin_new_mail, parametres_systeme.date_modification AS parametres_systeme_date_modification, parametres_systeme.modifie_par_id AS parametres_systeme_modifie_par_id
+FROM parametres_systeme
+ LIMIT ? OFFSET ?]
+[parameters: (1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+(.venv) PS C:\Users\HP400G4\gec>
