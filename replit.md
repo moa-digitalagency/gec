@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Multi-language Support
 - **Dynamic language detection** from JSON files in `/lang` directory
-- **Currently supported**: French (primary), English, Spanish, German
+- **Currently supported**: French (primary), English
 - **Extensible system** for additional languages
 - **Template-based translations** with fallback mechanisms
 
@@ -114,8 +114,7 @@ The system requires several environment variables for proper operation. Complete
 - **SMTP_SERVER**, **SMTP_PORT**, **SMTP_EMAIL**, **SMTP_PASSWORD**, **SMTP_USE_TLS**: Email configuration
 
 ### Configuration Files
-- **README-ENV.md**: Complete bilingual documentation of all environment variables (French/English)
-- **README-ENV-EN.md**: English-only version of environment variables documentation
+- **docs/CONFIGURATION_ENVIRONNEMENT.md**: Complete bilingual documentation of all environment variables (French/English)
 - **.env.example**: Template file for environment configuration
 - **generate_keys.py**: Utility script to generate secure encryption keys
 - **show_env_keys.py**: Utility script to display all environment variables with masked sensitive values
@@ -181,3 +180,19 @@ This tool is ideal for:
 - Resetting test instances
 - Initial production deployment setup
 - System maintenance after migration
+
+# Documentation
+
+Complete documentation is available in the `/docs` folder:
+
+| Document | Description |
+|----------|-------------|
+| GUIDE_UTILISATEUR.md | User guide for all users |
+| ARCHITECTURE_TECHNIQUE.md | Technical architecture for developers |
+| SECURITE.md | Security features and configuration |
+| INSTALLATION.md | Installation and deployment guide |
+| API_FONCTIONNALITES.md | Features, routes, and data models |
+| ADMINISTRATION.md | Administrator guide |
+| CONFIGURATION_ENVIRONNEMENT.md | Environment variables (bilingual) |
+| GUIDE_EXPORT_IMPORT.md | Cross-platform export/import guide |
+| CHANGELOG.md | Version history and changes |
