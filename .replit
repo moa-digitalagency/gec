@@ -36,10 +36,12 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 43993
-externalPort = 3000
-
 [agent]
-integrations = ["python_sendgrid==1.0.0"]
+integrations = ["python_sendgrid:1.0.0"]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+GEC_MASTER_KEY = "7c8dd41d2b41e446431d4fbf17483f302fe9454234b58ba64b881c2ed3c791b8"
+GEC_PASSWORD_SALT = "195a9c6253f9ea96754889c203a24946"
