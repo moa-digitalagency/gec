@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEC - Gestion Électronique du Courrier | Premium</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header glass">
+        <div class="container nav">
+            <a href="#" class="logo">
+                <i class="fas fa-mail-bulk text-gradient"></i>
+                <span class="text-gradient">GEC</span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="#features" class="nav-link">Fonctionnalités</a>
+                <a href="#how-it-works" class="nav-link">Comment ça marche</a>
+                <a href="#security" class="nav-link">Sécurité</a>
+            </nav>
+
+            <div class="cta-buttons">
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Connexion</a>
+                <a href="{{ url_for('login') }}" class="btn btn-primary">Inscription</a>
+            </div>
+
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-overlay"></div>
+    <div class="mobile-nav">
+        <a href="#features" class="nav-link">Fonctionnalités</a>
+        <a href="#how-it-works" class="nav-link">Comment ça marche</a>
+        <a href="#security" class="nav-link">Sécurité</a>
+        <hr>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary mobile-nav-btn">Connexion</a>
+        <a href="{{ url_for('login') }}" class="btn btn-primary mobile-nav-btn">Inscription</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-text hero-animate">
+                <h1>Simplifiez la gestion de votre <span class="text-gradient">Courrier Administratif</span></h1>
+                <p>Une plateforme unifiée, sécurisée et intuitive pour digitaliser, suivre et archiver l'ensemble de vos flux documentaires.</p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">Commencer maintenant</a>
+                    <a href="#features" class="btn btn-secondary">Découvrir les outils</a>
+                </div>
+            </div>
+
+            <div class="hero-visual hero-animate" style="animation-delay: 0.2s;">
+                <div class="hero-card">
+                    <!-- Abstract UI Mockup -->
+                    <div class="hero-visual-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-bar-long"></div>
+                            <div class="mockup-bar-short"></div>
+                        </div>
+                        <div class="mockup-row">
+                            <div class="mockup-icon-blue"></div>
+                            <div class="mockup-content">
+                                <div class="mockup-line-long"></div>
+                                <div class="mockup-line-short"></div>
+                            </div>
+                        </div>
+                        <div class="mockup-row">
+                            <div class="mockup-icon-green"></div>
+                            <div class="mockup-content">
+                                <div class="mockup-line-medium"></div>
+                                <div class="mockup-line-shortest"></div>
+                            </div>
+                        </div>
+                        <div class="mockup-footer"></div>
+                    </div>
+                </div>
+
+                <!-- Floating Elements -->
+                <div class="floating-badge badge-1">
+                    <i class="fas fa-check-circle text-gradient badge-icon-lg"></i>
+                    <div>
+                        <strong>Traçabilité</strong>
+                        <div class="badge-subtext">Suivi en temps réel</div>
+                    </div>
+                </div>
+
+                <div class="floating-badge badge-2">
+                    <i class="fas fa-shield-alt text-gradient badge-icon-lg"></i>
+                    <div>
+                        <strong>Sécurité</strong>
+                        <div class="badge-subtext">Chiffrement AES-256</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section (Bento Grid) -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Tout ce dont vous avez besoin</h2>
+                <p>Des outils puissants conçus pour l'efficacité administrative.</p>
+            </div>
+
+            <div class="bento-grid">
+                <div class="bento-card bento-large">
+                    <div class="card-icon"><i class="fas fa-chart-pie"></i></div>
+                    <h3>Tableau de Bord Intuitif</h3>
+                    <p>Visualisez vos statistiques, vos tâches en attente et les courriers récents en un coup d'œil. Prenez des décisions éclairées grâce à des données en temps réel.</p>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-icon"><i class="fas fa-lock"></i></div>
+                    <h3>Sécurité Maximale</h3>
+                    <p>Vos données sont chiffrées de bout en bout. Gestion fine des permissions par rôles.</p>
+                </div>
+
+                <div class="bento-card bento-tall">
+                    <div class="card-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <h3>Accessible Partout</h3>
+                    <p>Une interface responsive "Mobile First" qui s'adapte à tous vos appareils. Consultez vos courriers au bureau ou en déplacement.</p>
+                    <div class="tablet-icon-wrapper">
+                        <i class="fas fa-tablet-alt tablet-icon"></i>
+                    </div>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-icon"><i class="fas fa-search"></i></div>
+                    <h3>Recherche Avancée</h3>
+                    <p>Retrouvez n'importe quel document en quelques secondes grâce à nos filtres intelligents.</p>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-icon"><i class="fas fa-history"></i></div>
+                    <h3>Historique Complet</h3>
+                    <p>Traçabilité totale de toutes les actions : création, modification, transmission.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof / Stats -->
+    <section id="security" class="social-proof">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3><span data-target="5000">5000</span>+</h3>
+                    <p>Courriers Traités</p>
+                </div>
+                <div class="stat-item">
+                    <h3><span data-target="99">99</span>%</h3>
+                    <p>Taux de Disponibilité</p>
+                </div>
+                <div class="stat-item">
+                    <h3><span data-target="256">256</span>bits</h3>
+                    <p>Chiffrement Militaire</p>
+                </div>
+                <div class="stat-item">
+                    <h3><span data-target="24">24</span>/7</h3>
+                    <p>Support Technique</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <h3>GEC</h3>
+                    <p>La solution de référence pour la gestion électronique de courrier en République Démocratique du Congo.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Fonctionnalités</a></li>
+                        <li><a href="#">Tarifs</a></li>
+                        <li><a href="#">Mises à jour</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Centre d'aide</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Statut</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Légal</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Confidentialité</a></li>
+                        <li><a href="#">CGU</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 GEC. Tous droits réservés. Made with <i class="fas fa-heart heart-icon"></i> and <i class="fas fa-coffee"></i> By MOA-Digital Agency LLC</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>
