@@ -32,20 +32,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
+            const href = this.getAttribute('href');
+
+            // Handle empty or top links
+            if (href === '#') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            const target = document.querySelector(href);
             if (target) {
                 target.scrollIntoView({
                     behavior: 'smooth'
                 });
                 // Close mobile menu if open
-                mobileNav.classList.remove('active');
-                overlay.classList.remove('active');
+                if (mobileNav) mobileNav.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
         });
     });
 
-    // Intersection Observer for Fade-in Animations
+    // Intersection Observer for Stats Counter
     const observerOptions = {
         root: null,
         rootMargin: '0px',
@@ -55,13 +63,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-
                 // Trigger counter animation if it's a stat item
                 if (entry.target.classList.contains('stat-item')) {
-                    const counter = entry.target.querySelector('h3');
-                    const targetValue = parseInt(counter.getAttribute('data-target'));
-                    animateCounter(counter, targetValue);
+                    const counterSpan = entry.target.querySelector('span[data-target]');
+                    if (counterSpan) {
+                        const targetValue = parseInt(counterSpan.getAttribute('data-target'));
+                        // Start from 0 for animation
+                        counterSpan.textContent = '0';
+                        animateCounter(counterSpan, targetValue);
+                    }
                 }
 
                 observer.unobserve(entry.target);
@@ -69,23 +79,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, observerOptions);
 
-    document.querySelectorAll('.fade-in, .stat-item').forEach(el => {
-        el.classList.add('fade-in'); // Ensure base class is present
+    document.querySelectorAll('.stat-item').forEach(el => {
         observer.observe(el);
     });
 
     // Counter Animation Function
     function animateCounter(element, target) {
         let current = 0;
-        const increment = target / 50; // Adjust speed
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-                element.textContent = target + '+';
-                clearInterval(timer);
+        const duration = 2000; // 2 seconds
+        const startTime = performance.now();
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Ease out cubic
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            current = Math.floor(ease * target);
+            element.textContent = current;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
             } else {
-                element.textContent = Math.ceil(current) + '+';
+                element.textContent = target;
             }
-        }, 30);
+        }
+
+        requestAnimationFrame(update);
     }
 });
