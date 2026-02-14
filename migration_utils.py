@@ -118,20 +118,44 @@ def run_automatic_migrations(app, db):
         #         migrations_applied += 1
         #         logging.info(f"✓ Migration: Colonne {column_name} ajoutée aux paramètres")
         
-        # Migration 3: Futures colonnes pour utilisateurs (désactivées pour l'instant)
-        # Note: 'user' est un mot réservé en PostgreSQL, utiliser des guillemets si nécessaire
-        # future_user_columns = [
-        #     ('avatar_url', 'VARCHAR(500)'),      # Pour avatars utilisateurs
-        #     ('last_activity', 'TIMESTAMP'),      # Pour suivi d'activité
-        #     ('preferences', 'TEXT'),             # Pour préférences utilisateur
-        # ]
-        # 
-        # for column_name, column_type in future_user_columns:
-        #     if add_column_safely(engine, '"user"', column_name, column_type):  # Guillemets pour PostgreSQL
-        #         migrations_applied += 1
-        #         logging.info(f"✓ Migration: Colonne {column_name} ajoutée aux utilisateurs")
+        # Migration 3: Colonnes de sécurité et chiffrement (Utilisateurs)
+        # Note: 'user' est un mot réservé en PostgreSQL, utiliser des guillemets
+        user_security_columns = [
+            ('email_encrypted', 'TEXT'),
+            ('nom_complet_encrypted', 'TEXT'),
+            ('matricule_encrypted', 'TEXT'),
+            ('fonction_encrypted', 'TEXT'),
+            ('password_hash_encrypted', 'TEXT'),
+            ('matricule', 'VARCHAR(50)'),
+            ('fonction', 'VARCHAR(200)'),
+            ('photo_profile', 'VARCHAR(255)')
+        ]
+
+        # Déterminer le nom de la table user avec guillemets pour Postgres si nécessaire
+        user_table_name = '"user"' if get_database_type() == 'postgresql' else 'user'
         
-        # Migration 3: Vérification des colonnes critiques
+        for column_name, column_type in user_security_columns:
+            if add_column_safely(engine, user_table_name, column_name, column_type):
+                migrations_applied += 1
+                logging.info(f"✓ Migration: Colonne {column_name} ajoutée aux utilisateurs")
+
+        # Migration 4: Colonnes de sécurité et chiffrement (Courriers)
+        courrier_security_columns = [
+            ('objet_encrypted', 'TEXT'),
+            ('expediteur_encrypted', 'TEXT'),
+            ('destinataire_encrypted', 'TEXT'),
+            ('numero_reference_encrypted', 'TEXT'),
+            ('fichier_checksum', 'VARCHAR(64)'),
+            ('fichier_encrypted', 'BOOLEAN DEFAULT 0'),
+            ('secretaire_general_copie', 'BOOLEAN')
+        ]
+
+        for column_name, column_type in courrier_security_columns:
+            if add_column_safely(engine, 'courrier', column_name, column_type):
+                migrations_applied += 1
+                logging.info(f"✓ Migration: Colonne {column_name} ajoutée aux courriers")
+
+        # Migration 5: Vérification des colonnes critiques
         critical_columns = [
             ('parametres_systeme', 'email_provider', 'VARCHAR(20) DEFAULT \'sendgrid\''),
             ('parametres_systeme', 'notify_superadmin_new_mail', 'BOOLEAN DEFAULT 1'),
@@ -143,7 +167,7 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Migration: Colonne critique {column} ajoutée à {table}")
         
-        # Migration 4: Ajout des colonnes pour les pièces jointes dans les transmissions
+        # Migration 6: Ajout des colonnes pour les pièces jointes dans les transmissions
         forward_attachment_columns = [
             ('courrier_forward', 'attached_file', 'VARCHAR(255)'),
             ('courrier_forward', 'attached_file_original_name', 'VARCHAR(255)'),
