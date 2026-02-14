@@ -94,7 +94,7 @@ PyYAML==6.0.2                  # Parsing de fichiers YAML
 # - Templates d'email multi-langues configurables (Français/Anglais)
 # - Variables dynamiques dans les emails ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
 # - Interface d'administration pour gestion des templates email
-# - Test SMTP intégré dans l'interface des paramètres système  
+# - Test SMTP intégré dans l'interface des paramètres système
 # - Permissions granulaires pour gestion des templates (manage_email_templates)
 # - Autocomplete de recherche avec suggestions basées sur le texte indexé
 # - Mise à jour du système en ligne (Git) et hors ligne (ZIP) sécurisées
