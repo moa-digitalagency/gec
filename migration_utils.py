@@ -179,6 +179,11 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Migration: Colonne de pièce jointe {column} ajoutée à {table}")
         
+        # Migration 7: Ajout du numéro WhatsApp
+        if add_column_safely(engine, 'parametres_systeme', 'whatsapp_number', 'VARCHAR(20) DEFAULT \'243860493345\''):
+            migrations_applied += 1
+            logging.info(f"✓ Migration: Colonne whatsapp_number ajoutée aux paramètres")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements
