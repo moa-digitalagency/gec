@@ -1346,6 +1346,9 @@ def settings():
             # Choix du fournisseur email
             parametres.email_provider = sanitize_input(request.form.get('email_provider', 'sendgrid').strip())
             
+            # Numéro WhatsApp
+            parametres.whatsapp_number = sanitize_input(request.form.get('whatsapp_number', '243860493345').strip())
+
             # Notifications pour super admin (seuls les super admin peuvent modifier)
             if current_user.is_super_admin():
                 parametres.notify_superadmin_new_mail = bool(request.form.get('notify_superadmin_new_mail'))
@@ -3279,9 +3282,35 @@ def edit_profile():
                          departements=departements,
                          available_languages=get_available_languages())
 
+@app.errorhandler(400)
+def bad_request_error(error):
+    return render_template('400.html'), 400
+
+@app.errorhandler(403)
+def forbidden_error(error):
+    from security_utils import audit_log
+    try:
+        audit_log("ACCESS_DENIED", f"403 error for URL: {request.url}")
+    except:
+        pass
+    return render_template('403.html'), 403
+
 @app.errorhandler(404)
 def not_found_error(error):
-    return render_template('new_base.html'), 404
+    return render_template('404.html'), 404
+
+@app.errorhandler(429)
+def rate_limit_error(error):
+    from security_utils import audit_log
+    try:
+        audit_log("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
+    except:
+        pass
+    return render_template('429.html'), 429
+
+@app.errorhandler(451)
+def unavailable_for_legal_reasons_error(error):
+    return render_template('451.html'), 451
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -5631,4 +5660,3 @@ def delete_backup(filename):
         flash(f'Erreur lors de la suppression: {str(e)}', 'error')
     
     return redirect(url_for('manage_backups'))
-

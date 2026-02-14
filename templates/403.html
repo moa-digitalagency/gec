@@ -1,53 +1,53 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accès refusé - {{ parametres.nom_logiciel if parametres else 'GEC' }}</title>
-    <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'rdc-blue': '#003087',
-                        'rdc-yellow': '#FFD700',
-                        'rdc-red': '#CE1126',
-                        'rdc-green': '#009639'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-    <div class="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-        <div class="mb-6">
-            <div class="mx-auto w-16 h-16 bg-rdc-red rounded-full flex items-center justify-center mb-4">
-                <i class="fas fa-ban text-white text-2xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">Accès refusé</h1>
+{% extends "new_base.html" %}
+
+{% block title %}Accès Interdit - 403 - GEC{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col items-center justify-center p-4">
+    <!-- Lottie Animation -->
+    <div class="w-full max-w-sm mx-auto mb-6">
+        <lottie-player src="https://assets3.lottiefiles.com/packages/lf20_tmsiddoc.json" background="transparent" speed="1" style="width: 250px; height: 250px; margin: 0 auto;" loop autoplay></lottie-player>
+    </div>
+
+    <div class="text-center max-w-2xl mx-auto space-y-6">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Zone Restreinte</h1>
+            <h2 class="text-xl text-red-600 font-semibold mb-4 uppercase tracking-wider"><i class="fas fa-ban mr-2"></i>Accès Interdit (403)</h2>
             <p class="text-gray-600">
-                Vous n'avez pas les permissions nécessaires pour accéder à cette ressource.
+                Halte là ! Vous n'avez pas les accréditations nécessaires pour accéder à cette ressource sécurisée.
             </p>
         </div>
-        
-        <div class="bg-rdc-red bg-opacity-10 border border-rdc-red rounded-lg p-4 mb-6">
-            <p class="text-sm text-gray-700">
-                <strong>Permissions insuffisantes :</strong> Contactez votre administrateur système si vous pensez que c'est une erreur.
-            </p>
+
+        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 inline-block text-left w-full max-w-md shadow-inner">
+            <h3 class="font-bold text-gray-800 mb-3 border-b pb-2"><i class="fas fa-id-badge mr-2 text-rdc-blue"></i>Contrôle d'identité</h3>
+            <ul class="text-sm text-gray-600 space-y-3">
+                <li class="flex items-center">
+                    <span class="w-8 text-center"><i class="fas fa-user-circle text-gray-400 text-lg"></i></span>
+                    <span class="font-medium">Identité :</span>
+                    <span class="ml-2 text-gray-900">{{ current_user.nom_complet }} ({{ current_user.username }})</span>
+                </li>
+                <li class="flex items-center">
+                    <span class="w-8 text-center"><i class="fas fa-user-tag text-gray-400 text-lg"></i></span>
+                    <span class="font-medium">Rôle actuel :</span>
+                    <span class="ml-2 px-2 py-0.5 bg-gray-200 rounded text-xs font-bold uppercase">{{ current_user.role }}</span>
+                </li>
+                <li class="flex items-center text-red-600">
+                    <span class="w-8 text-center"><i class="fas fa-times-circle text-lg"></i></span>
+                    <span class="font-bold">Accès refusé par le protocole de sécurité</span>
+                </li>
+            </ul>
         </div>
-        
-        <div class="space-y-3">
-            <a href="{{ url_for('dashboard') }}" 
-               class="block w-full bg-rdc-blue text-white py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">
-                Retour au tableau de bord
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+            <a href="{{ url_for('dashboard') }}" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90 transition-all font-medium shadow-md flex items-center justify-center">
+                <i class="fas fa-undo mr-2"></i>Retour en lieu sûr
             </a>
-            <p class="text-sm text-gray-500">
-                Code d'erreur: 403 - Forbidden
-            </p>
+            <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium flex items-center justify-center">
+                <i class="fas fa-key mr-2 text-yellow-500"></i>Demander une élévation de privilèges
+            </a>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+{% endblock %}

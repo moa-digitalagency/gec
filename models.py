@@ -796,6 +796,9 @@ class ParametresSysteme(db.Model):
     # Notifications pour super admin
     notify_superadmin_new_mail = db.Column(db.Boolean, nullable=False, default=True)  # Super admin reçoit notifications nouveaux courriers
     
+    # Numéro WhatsApp pour le support
+    whatsapp_number = db.Column(db.String(20), nullable=True, default='243860493345')
+
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Clé étrangère pour tracer qui a modifié
