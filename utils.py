@@ -759,7 +759,7 @@ def create_system_backup():
         config_files = [
             'app.py', 'models.py', 'utils.py', 'views.py', 
             'migration_utils.py', 'email_utils.py', 'security_utils.py',
-            'project-dependencies.txt', 'replit.md'
+            'project-dependencies.txt', 'requirements.txt', 'replit.md'
         ]
         for config_file in config_files:
             if os.path.exists(config_file):
@@ -916,7 +916,7 @@ def restore_system_from_backup(backup_file):
         
         # Restaurer les fichiers de configuration critiques (optionnel et sécurisé)
         config_files_to_restore = [
-            'project-dependencies.txt', 'replit.md'
+            'project-dependencies.txt', 'requirements.txt', 'replit.md'
         ]
         for config_file in config_files_to_restore:
             backup_config_path = os.path.join(temp_dir, config_file)

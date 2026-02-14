@@ -127,7 +127,7 @@ main_installation() {
     
     # Mettre à jour pip et installer les dépendances
     pip install --upgrade pip wheel setuptools
-    pip install -r project-dependencies.txt
+    pip install -r requirements.txt
     
     echo "✅ [OK] Dépendances Python installées avec succès"
     

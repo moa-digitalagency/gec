@@ -95,7 +95,7 @@ if %errorLevel__ neq 0 (
 REM Activer l'environnement virtuel et installer les dependances
 call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip wheel
-python -m pip install -r project-dependencies.txt
+python -m pip install -r requirements.txt
 
 if %errorLevel__ == 0 (
     echo [OK] Dependances installees avec succes

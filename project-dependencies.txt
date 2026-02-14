@@ -6,7 +6,7 @@
 # Python Version: 3.11+
 #
 # Installation:
-# pip install -r project-dependencies.txt
+# pip install -r requirements.txt
 
 # Framework Web Principal
 # -----------------------
@@ -74,7 +74,7 @@ PyYAML==6.0.2                  # Parsing de fichiers YAML
 # 2. Activez l'environnement:
 #    - Linux/Mac: source venv/bin/activate
 #    - Windows: venv\Scripts\activate
-# 3. Installez les dépendances: pip install -r project-dependencies.txt
+# 3. Installez les dépendances: pip install -r requirements.txt
 #
 # Variables d'environnement requises (fichier .env):
 # DATABASE_URL=postgresql://user:password@localhost/gecmines

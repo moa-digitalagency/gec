@@ -99,7 +99,7 @@ if %errorLevel% neq 0 (
 
 call venv\Scripts\activate.bat
 python -m pip install --upgrade pip wheel
-python -m pip install -r project-dependencies.txt
+python -m pip install -r requirements.txt
 
 if %errorLevel% neq 0 (
     echo [ERREUR] Echec de l'installation des dependances

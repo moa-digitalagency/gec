@@ -99,7 +99,7 @@ source .venv/bin/activate
 
 # Mettre à jour pip et installer les dépendances
 pip install --upgrade pip wheel
-pip install -r project-dependencies.txt
+pip install -r requirements.txt
 
 echo "✅ [OK] Dépendances installées avec succès"
 
