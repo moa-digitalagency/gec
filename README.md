@@ -68,7 +68,7 @@ source .venv/bin/activate  # Linux/Mac
 # .\.venv\Scripts\Activate.ps1  # Windows
 
 # 3. Installer les dépendances
-pip install -r project-dependencies.txt
+pip install -r requirements.txt
 
 # 4. Configurer l'environnement
 cp .env.example .env
