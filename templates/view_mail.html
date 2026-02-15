@@ -188,7 +188,7 @@
                 </a>
                 <!-- Quick toggle for sort order -->
                 <button type="button" 
-                        onclick="toggleSortOrder()"
+                        id="sort-order-btn"
                         class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                     <i class="fas fa-sort-amount-{{ 'down' if sort_order == 'desc' else 'up' }} mr-2"></i>
                     {{ 'Plus récent' if sort_order == 'desc' else 'Plus ancien' }} d'abord
@@ -334,8 +334,8 @@
                                     PDF
                                 </a>
                                 {% if current_user.has_permission('delete_mail') %}
-                                <button onclick="confirmDelete({{ courrier.id }}, '{{ courrier.numero_accuse_reception|e }}')" 
-                                   class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-red-600 hover:bg-red-700 transition-colors">
+                                <button data-id="{{ courrier.id }}" data-numero="{{ courrier.numero_accuse_reception|e }}"
+                                   class="delete-btn inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-red-600 hover:bg-red-700 transition-colors">
                                     <i class="fas fa-trash mr-1"></i>
                                     Supprimer
                                 </button>
@@ -474,168 +474,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-
-</style>
-
-<script>
-// Toggle filters based on mail type
-document.addEventListener('DOMContentLoaded', function() {
-    const typeCourrierSelect = document.getElementById('type_courrier');
-    const typeCourrierSortantFilter = document.getElementById('type-courrier-sortant-filter');
-    const sgCopieFilter = document.getElementById('sg-copie-filter');
-    
-    if (typeCourrierSelect) {
-        typeCourrierSelect.addEventListener('change', function() {
-            // Handle outgoing mail type filter
-            if (typeCourrierSortantFilter) {
-                if (this.value === 'SORTANT') {
-                    typeCourrierSortantFilter.style.display = 'block';
-                } else {
-                    typeCourrierSortantFilter.style.display = 'none';
-                    // Reset selection when hiding
-                    const typeCourrierSortantSelect = document.getElementById('type_courrier_sortant_id');
-                    if (typeCourrierSortantSelect) {
-                        typeCourrierSortantSelect.value = '';
-                    }
-                }
-            }
-            
-            // Handle SG en copie filter (only for ENTRANT)
-            if (sgCopieFilter) {
-                if (this.value === 'ENTRANT') {
-                    sgCopieFilter.style.display = 'block';
-                } else {
-                    sgCopieFilter.style.display = 'none';
-                    // Reset selection when hiding
-                    const sgCopieSelect = document.getElementById('sg_copie');
-                    if (sgCopieSelect) {
-                        sgCopieSelect.value = '';
-                    }
-                }
-            }
-        });
-    }
-});
-
-// Toggle sort order
-function toggleSortOrder() {
-    const sortOrderSelect = document.getElementById('sort_order');
-    const currentOrder = sortOrderSelect.value;
-    sortOrderSelect.value = currentOrder === 'desc' ? 'asc' : 'desc';
-    
-    // Submit the form automatically
-    document.querySelector('form').submit();
-}
-
-// Fonction de confirmation pour la suppression
-function confirmDelete(id, numero) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
-        // Créer un formulaire pour envoyer la requête POST
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/delete_courrier/${id}`;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-
-
-// Initialize DataTables if available
-$(document).ready(function() {
-    if (typeof $.fn.DataTable !== 'undefined' && $('#courriers-table').length) {
-        $('#courriers-table').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json"
-            },
-            "order": [[ 5, "desc" ]], // Sort by date column by default
-            "pageLength": 25,
-            "responsive": true,
-            "columnDefs": [
-                { "targets": -1, "orderable": false, "className": "actions-column" } // Make actions column non-sortable
-            ]
-        });
-    }
-});
-
-// Autocomplete pour la recherche
-const searchInput = document.getElementById('search');
-const suggestionsDiv = document.getElementById('searchSuggestions');
-let debounceTimer;
-
-searchInput.addEventListener('input', function() {
-    clearTimeout(debounceTimer);
-    const query = this.value.trim();
-    
-    if (query.length < 2) {
-        suggestionsDiv.classList.add('hidden');
-        return;
-    }
-    
-    debounceTimer = setTimeout(() => {
-        fetch(`/api/search_suggestions?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(suggestions => {
-                if (suggestions.length > 0) {
-                    suggestionsDiv.innerHTML = '';
-                    suggestions.forEach(suggestion => {
-                        const div = document.createElement('div');
-                        div.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 text-sm';
-                        div.textContent = suggestion;
-                        div.addEventListener('click', function() {
-                            searchInput.value = suggestion;
-                            suggestionsDiv.classList.add('hidden');
-                            // Soumettre le formulaire automatiquement
-                            searchInput.form.submit();
-                        });
-                        suggestionsDiv.appendChild(div);
-                    });
-                    suggestionsDiv.classList.remove('hidden');
-                } else {
-                    suggestionsDiv.classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors de la récupération des suggestions:', error);
-                suggestionsDiv.classList.add('hidden');
-            });
-    }, 300); // Délai de 300ms avant d'envoyer la requête
-});
-
-// Cacher les suggestions quand on clique ailleurs
-document.addEventListener('click', function(event) {
-    if (!searchInput.contains(event.target) && !suggestionsDiv.contains(event.target)) {
-        suggestionsDiv.classList.add('hidden');
-    }
-});
-
-// Navigation au clavier dans les suggestions
-searchInput.addEventListener('keydown', function(event) {
-    const suggestions = suggestionsDiv.querySelectorAll('div');
-    const activeSuggestion = suggestionsDiv.querySelector('.bg-gray-100');
-    let index = Array.from(suggestions).indexOf(activeSuggestion);
-    
-    if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        if (index < suggestions.length - 1) {
-            if (activeSuggestion) activeSuggestion.classList.remove('bg-gray-100');
-            suggestions[index + 1].classList.add('bg-gray-100');
-        }
-    } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        if (index > 0) {
-            if (activeSuggestion) activeSuggestion.classList.remove('bg-gray-100');
-            suggestions[index - 1].classList.add('bg-gray-100');
-        }
-    } else if (event.key === 'Enter' && activeSuggestion) {
-        event.preventDefault();
-        searchInput.value = activeSuggestion.textContent;
-        suggestionsDiv.classList.add('hidden');
-        searchInput.form.submit();
-    } else if (event.key === 'Escape') {
-        suggestionsDiv.classList.add('hidden');
-    }
-});
-</script>
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/view_mail.js') }}"></script>
 {% endblock %}

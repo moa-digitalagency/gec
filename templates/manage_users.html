@@ -233,7 +233,7 @@
                             </a>
                             {% if user.id != current_user.id and not (user.role == 'super_admin' and users|selectattr('role', 'equalto', 'super_admin')|list|length <= 1) %}
                             <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" 
-                                  class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                  class="inline delete-user-form">
                                 <button type="submit" 
                                         class="text-red-600 hover:text-red-900" title="Supprimer">
                                     <i class="fas fa-trash"></i>
@@ -261,4 +261,9 @@
     </a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/manage_users.js') }}"></script>
 {% endblock %}
