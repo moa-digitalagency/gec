@@ -13,8 +13,10 @@
                     <div class="mx-auto h-16 w-16 mb-4 flex items-center justify-center">
                         <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" 
                              alt="Logo Organisation" 
-                             class="h-16 w-auto max-w-16 object-contain"
-                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center\'><i class=\'fas fa-mail-bulk text-2xl text-rdc-yellow\'></i></div>';">
+                             class="h-16 w-auto max-w-16 object-contain logo-img">
+                        <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center logo-fallback" style="display: none;">
+                            <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
+                        </div>
                     </div>
                 {% else %}
                     <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center mb-4">

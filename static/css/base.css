@@ -1,0 +1,129 @@
+.bg-rdc-gradient {
+    background: linear-gradient(135deg, #003087 0%, #009639 100%);
+}
+.shadow-rdc {
+    box-shadow: 0 4px 6px -1px rgba(0, 48, 135, 0.1), 0 2px 4px -1px rgba(0, 48, 135, 0.06);
+}
+
+/* Enhanced responsive design for mobile navigation */
+#mobile-menu {
+    position: relative;
+    z-index: 50;
+    transition: all 0.3s ease;
+}
+
+/* Smooth transitions for alerts */
+.mb-4 {
+    transition: opacity 0.3s ease;
+}
+
+/* Improve touch targets pour tous les appareils */
+.text-base {
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+button, a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+
+/* Better spacing for universal menu */
+#mobile-menu .space-y-1 > * + * {
+    margin-top: 0.5rem;
+}
+
+/* Responsive language selector */
+.grid-cols-2 a {
+    padding: 0.75rem;
+    justify-content: center;
+    font-weight: 500;
+}
+
+/* Menu adaptatif selon la taille d'écran - Styles simplifiés */
+@media (max-width: 768px) {
+    #mobile-menu {
+        position: fixed !important;
+        top: 64px !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        overflow-y: auto !important;
+    }
+}
+
+@media (min-width: 769px) {
+    #mobile-menu {
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        border-radius: 0 0 0.5rem 0.5rem !important;
+    }
+}
+
+/* Force menu visibility */
+#mobile-menu:not(.hidden) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#mobile-menu.hidden {
+    display: none !important;
+}
+
+/* Language selector hover effects */
+.group:hover .opacity-0 {
+    opacity: 1;
+}
+
+.group:hover .invisible {
+    visibility: visible;
+}
+
+/* Enhanced responsive design */
+@media (max-width: 640px) {
+    .max-w-7xl {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Stack language buttons on very small screens */
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    /* Better mobile menu spacing */
+    #mobile-menu .px-3 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* User info section styling */
+.text-rdc-yellow {
+    color: #FFD700;
+}
+
+/* Mobile menu animation */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#mobile-menu.show {
+    animation: slideDown 0.3s ease-out;
+}
+
+.lottie-container {
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+}
