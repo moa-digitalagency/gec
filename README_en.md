@@ -15,10 +15,10 @@ GEC is an "Enterprise" class solution for the dematerialization and secure manag
 
 ```mermaid
 graph TD
-    User[User] -->|HTTPS| Proxy[Nginx]
-    Proxy -->|WSGI| App[GEC Core (Flask)]
-    App -->|SQL| DB[(PostgreSQL)]
-    App -->|FS| Storage[Secure Storage]
+    User["User"] -->|HTTPS| Proxy["Nginx"]
+    Proxy -->|WSGI| App["GEC Core (Flask)"]
+    App -->|SQL| DB[("PostgreSQL")]
+    App -->|FS| Storage["Secure Storage"]
 ```
 
 ## 📑 Documentation
