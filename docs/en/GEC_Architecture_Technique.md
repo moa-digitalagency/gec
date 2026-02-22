@@ -10,6 +10,8 @@
 
 The architecture is based on a modular monolithic model using **Flask (Python)** as the backend and **Jinja2 + Tailwind** for the frontend. Persistence is ensured by **PostgreSQL**.
 
+> **Note:** This application is a strict **B2B/Internal tool**. There is no public landing page. The entry point is the login page (`/login`).
+
 ### Architecture Diagram
 
 ```mermaid
@@ -64,6 +66,7 @@ graph TD
 *   **DBMS:** PostgreSQL 14+ (Production) / SQLite (Dev).
 *   **Encryption:** Sensitive data encrypted at rest (AES-256).
 *   **Connection:** Pool via SQLAlchemy Engine.
+*   **Requirement:** **PostgreSQL is strictly mandatory for production environments.** SQLite is reserved solely for local development and testing.
 
 ## 3. Security & Data Flow
 
@@ -82,6 +85,11 @@ graph TD
 *   Uploaded files are NEVER served directly by the web server without validation.
 *   Path: `uploads/{year}/{month}/`.
 *   Naming: `secure_filename` + Unique Timestamp.
+
+### 3.3 Secure Export/Import
+*   **Encryption:** All exports are generated as **AES-256 encrypted ZIP archives** using the `pyzipper` library.
+*   **Security Key:** A unique security key is generated for every export and displayed to the user.
+*   **Import:** The correct security key is **mandatory** to decrypt and import the data.
 
 ## 4. Standard Deployment
 *   **OS:** Linux (Ubuntu/Debian) recommended.

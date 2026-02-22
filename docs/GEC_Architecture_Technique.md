@@ -15,11 +15,15 @@ Le GEC (Gestion Électronique du Courrier) est une application web développée 
 | Langage | Python | 3.11 |
 | Framework Web | Flask | 3.1.x |
 | ORM | SQLAlchemy | 2.x |
-| Base de données | PostgreSQL | 15+ |
+| Base de données | PostgreSQL | 15+ (Production) / SQLite (Dev) |
 | Serveur WSGI | Gunicorn | 23.x |
 | Authentification | Flask-Login | 0.6.x |
 
+> **Note importante :** En production, l'utilisation de **PostgreSQL** est strictement obligatoire. SQLite est réservé uniquement au développement local et aux tests unitaires.
+
 ### Frontend
+
+> L'application est un outil B2B/Interne strict. Il n'existe pas de page d'accueil publique (Landing Page). L'accès se fait directement via la page de connexion (`/login`).
 
 | Composant | Technologie |
 |-----------|-------------|
@@ -385,24 +389,25 @@ Au démarrage de l'application :
 ### Format d'Export
 
 ```
-export_courriers_YYYYMMDD_HHMMSS.zip
-├── courriers_data.json    # Métadonnées (déchiffrées)
-└── attachments/           # Fichiers (déchiffrés)
+export_courriers_YYYYMMDD_HHMMSS.zip (Chiffré AES-256)
+├── courriers_data.json    # Métadonnées (JSON)
+└── attachments/           # Fichiers originaux
     └── {courrier_id}_{filename}
 ```
 
-### Processus
+### Processus Sécurisé
 
 **Export** :
-1. Déchiffrement des données sensibles
-2. Déchiffrement des fichiers attachés
-3. Création du package ZIP
+1. Génération d'une **clé de sécurité unique** (affichée à l'utilisateur).
+2. Création d'une archive ZIP chiffrée en **AES-256** via la bibliothèque `pyzipper`.
+3. Le mot de passe de l'archive est la clé de sécurité générée.
 
 **Import** :
-1. Extraction du package
-2. Re-chiffrement avec la clé de l'instance
-3. Création des enregistrements
-4. Gestion des doublons
+1. Upload de l'archive ZIP chiffrée.
+2. Saisie obligatoire de la **clé de sécurité** (mot de passe).
+3. Déchiffrement de l'archive en mémoire via `pyzipper`.
+4. Re-chiffrement des données avec la clé de l'instance locale.
+5. Création des enregistrements en base.
 
 ---
 
@@ -442,7 +447,7 @@ message = t('dashboard.welcome')
 ### Optimisations Appliquées
 
 - Index sur les colonnes fréquemment interrogées
-- Pool de connexions PostgreSQL (pool_recycle=300)
+- Pool de connexions PostgreSQL (pool_recycle=1800)
 - Cache en mémoire pour les données statiques
 - Pagination des listes
 - Lazy loading des relations

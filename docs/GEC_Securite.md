@@ -4,6 +4,8 @@
 
 Ce document décrit les mesures de sécurité implémentées dans le système GEC. La sécurité est une priorité absolue compte tenu de la nature sensible des courriers administratifs gérés par l'application.
 
+> **Note importante :** Le GEC est une application strictement interne (B2B). Aucune partie de l'application n'est accessible publiquement sans authentification préalable. L'entrée unique est la page de connexion (`/login`).
+
 ---
 
 ## Chiffrement des Données
@@ -304,15 +306,18 @@ Blocage manuel possible par les administrateurs.
 
 ### Export/Import Sécurisé
 
-L'export de courriers :
-1. Déchiffre les données avec la clé source
-2. Stocke les données en clair dans un ZIP
-3. Le ZIP doit être protégé pendant le transport
+Le processus d'export et d'import utilise un chiffrement fort pour garantir la confidentialité des données pendant le transport :
 
-L'import de courriers :
-1. Lit les données en clair du ZIP
-2. Re-chiffre avec la clé de destination
-3. Stocke de manière sécurisée
+**Export (Chiffré) :**
+1. L'application génère une **clé de sécurité unique** (alphanumérique) pour chaque export.
+2. Cette clé est affichée à l'utilisateur, qui doit la conserver précieusement.
+3. Une archive ZIP est créée via la bibliothèque `pyzipper`, chiffrée en **AES-256** avec cette clé.
+4. Le fichier ZIP téléchargé est illisible sans la clé de sécurité.
+
+**Import (Sécurisé) :**
+1. L'utilisateur téléverse l'archive ZIP chiffrée.
+2. Il doit obligatoirement saisir la **clé de sécurité** correspondante.
+3. L'application utilise cette clé pour déchiffrer l'archive en mémoire, puis re-chiffre les données avec les clés de l'instance locale avant de les insérer en base.
 
 ---
 
