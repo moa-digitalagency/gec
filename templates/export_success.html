@@ -28,8 +28,8 @@
                         <h3 class="text-lg font-bold text-orange-900 mb-1">
                             {{ t('security_key') or 'Clé de Sécurité' }}
                         </h3>
-                        <p class="text-sm text-orange-800 mb-3">
-                            {{ t('security_key_warning') or 'ATTENTION : Veuillez copier et conserver cette clé en lieu sûr. Elle est INDISPENSABLE pour importer cette sauvegarde. Sans elle, les données seront irrécupérables.' }}
+                        <p class="text-sm text-orange-800 mb-3 font-bold">
+                            {{ t('security_key_warning') or 'Attention : Copiez et conservez cette clé en lieu sûr. Elle est indispensable pour importer cette sauvegarde. Elle ne sera plus jamais affichée.' }}
                         </p>
                     </div>
                 </div>
@@ -39,7 +39,7 @@
                            id="securityKey"
                            value="{{ password }}"
                            readonly
-                           class="w-full text-center text-2xl font-mono font-bold text-gray-800 bg-white border-2 border-orange-300 rounded-lg py-4 px-4 shadow-inner tracking-widest focus:outline-none focus:border-orange-500">
+                           class="w-full text-center text-4xl font-mono font-bold text-gray-800 bg-white border-2 border-orange-300 rounded-lg py-6 px-4 shadow-inner tracking-widest focus:outline-none focus:border-orange-500 h-20">
 
                     <button onclick="copyToClipboard()"
                             class="absolute right-2 top-2 bottom-2 bg-orange-100 hover:bg-orange-200 text-orange-800 font-medium py-2 px-4 rounded transition duration-200 flex items-center"

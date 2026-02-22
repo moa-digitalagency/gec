@@ -766,5 +766,14 @@
   "pre_update_backup": "Sauvegarde avant mise à jour",
   "backup_file": "Sauvegarde standard",
   "validate_backup_integrity": "Valider l'intégrité de la sauvegarde",
-  "validate": "Valider"
+  "validate": "Valider",
+  "export_success": "Export Réussi",
+  "export_created_successfully": "Package d'export créé avec succès",
+  "export_ready_message": "Votre fichier d'export sécurisé a été généré. Pour assurer la sécurité de vos données, ce fichier est chiffré avec une clé unique.",
+  "security_key": "Clé de Sécurité",
+  "security_key_warning": "Attention : Copiez et conservez cette clé en lieu sûr. Elle est indispensable pour importer cette sauvegarde. Elle ne sera plus jamais affichée.",
+  "copy_to_clipboard": "Copier dans le presse-papier",
+  "copied": "Copié !",
+  "back_to_backups": "Retour aux sauvegardes",
+  "download_file": "Télécharger le fichier"
 }
