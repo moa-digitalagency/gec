@@ -10,6 +10,8 @@
 | PostgreSQL | 14+ |
 | pip | 23+ |
 
+> **Attention :** En production, **PostgreSQL est strictement OBLIGATOIRE**. SQLite ne doit être utilisé que pour le développement local ou les tests.
+
 ### Dépendances Python
 
 Le fichier `pyproject.toml` contient toutes les dépendances nécessaires :
@@ -190,7 +192,7 @@ python show_env_keys.py
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| DATABASE_URL | URL de connexion PostgreSQL | postgresql://user:pass@host:5432/db |
+| DATABASE_URL | URL de connexion PostgreSQL (**OBLIGATOIRE en Prod**) | postgresql://user:pass@host:5432/db |
 | SESSION_SECRET | Secret pour les sessions Flask | chaîne aléatoire 32+ caractères |
 
 ### Variables Critiques (Production)
