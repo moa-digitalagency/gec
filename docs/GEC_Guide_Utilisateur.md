@@ -9,9 +9,11 @@ Bienvenue dans le GEC (Gestion Électronique du Courrier). Cette application vou
 ## 1. Premiers Pas
 
 ### Connexion
+L'application ne dispose pas de page d'accueil publique.
 1. Accédez à l'URL fournie par votre administrateur.
-2. Entrez votre identifiant et mot de passe.
-3. **Note :** Après 8 tentatives échouées, votre accès sera bloqué pour 15 minutes.
+2. Vous serez automatiquement redirigé vers le formulaire de connexion.
+3. Entrez votre identifiant et mot de passe.
+4. **Note :** Après 8 tentatives échouées, votre accès sera bloqué pour 15 minutes.
 
 ### Tableau de Bord (Dashboard)
 Dès la connexion, vous accédez à une vue d'ensemble :

@@ -4,7 +4,40 @@
 
 Le système d'export/import GEC est maintenant **100% compatible** entre Linux et Windows. Vous pouvez exporter des courriers depuis un serveur Linux et les importer sur Windows, ou vice-versa, **sans aucun problème de chemins de fichiers**.
 
-## 🔧 Ce qui a été corrigé
+## 🔐 Sécurité & Chiffrement
+
+Les archives de sauvegarde sont **chiffrées en AES-256**. Cela garantit que les données sensibles ne peuvent pas être lues si le fichier ZIP est intercepté.
+
+Pour chaque export, une **clé de déchiffrement unique de 16 caractères** est générée.
+
+> ⚠️ **ATTENTION :** Vous devez **ABSOLUMENT** copier et sauvegarder cette clé en lieu sûr.
+> Sans cette clé, le fichier ZIP de sauvegarde est **inutilisable**. Il est impossible de restaurer les données sans ce code.
+
+## 📋 Comment utiliser
+
+### Export (Backup)
+
+1. Aller dans **"Paramètres"** → **"Sauvegardes"**.
+2. Cliquer sur **"Créer une sauvegarde"**.
+3. Une fois l'export terminé, vous serez redirigé vers une page de confirmation.
+4. Une **clé de sécurité de 16 caractères** s'affichera à l'écran.
+   - **Copiez cette clé** immédiatement.
+   - Cliquez sur **"Télécharger l'archive"**.
+
+### Import (Restauration)
+
+Pour restaurer une sauvegarde (sur le même serveur ou un autre OS) :
+
+1. Aller dans **"Paramètres"** → **"Sauvegardes"**.
+2. Dans la section **"Restaurer une sauvegarde"** :
+   - Sélectionnez le fichier ZIP de sauvegarde.
+   - Entrez la **Clé de déchiffrement** de 16 caractères associée à ce fichier.
+3. Validez.
+   - Le système déchiffrera l'archive.
+   - Les chemins seront automatiquement convertis pour l'OS de destination (Linux/Windows).
+   - Les données seront restaurées.
+
+## 🔧 Ce qui a été corrigé (Technique)
 
 ### Problème initial
 - Linux utilise des slashes `/` pour les chemins : `uploads/courrier_001.pdf`
@@ -25,46 +58,6 @@ Le système d'export/import GEC est maintenant **100% compatible** entre Linux e
    - Les chemins sont reconstruits avec `os.path.join()` selon l'OS destination
    - Windows → `uploads\fichier.pdf`
    - Linux → `uploads/fichier.pdf`
-
-## 📋 Comment utiliser
-
-### Export depuis Linux
-
-```bash
-# Via l'interface web
-# 1. Aller dans "Paramètres" → "Export/Import"
-# 2. Sélectionner les courriers à exporter
-# 3. Télécharger le fichier ZIP
-
-# Le fichier ZIP généré contiendra :
-# - courriers_data.json (avec chemins normalisés)
-# - attachments/ (avec fichiers déchiffrés)
-```
-
-### Import sur Windows
-
-```powershell
-# Via l'interface web
-# 1. Aller dans "Paramètres" → "Export/Import"
-# 2. Charger le fichier ZIP exporté depuis Linux
-# 3. Les chemins seront automatiquement convertis en format Windows
-# 4. Les fichiers seront rechiffrés avec les clés Windows
-
-# Résultat:
-# - Tous les courriers importés avec succès ✅
-# - Tous les fichiers accessibles ✅
-# - Chemins corrects pour Windows ✅
-```
-
-### Export depuis Windows / Import sur Linux
-
-Fonctionne exactement de la même manière dans l'autre sens !
-
-```bash
-# Sur Linux après import depuis Windows
-# Les chemins Windows (uploads\fichier.pdf) sont convertis en chemins Linux (uploads/fichier.pdf)
-# Tout fonctionne automatiquement !
-```
 
 ## 🔍 Détails techniques
 
@@ -143,21 +136,14 @@ Fonctionne exactement de la même manière dans l'autre sens !
    - Backup cross-platform
 
 2. **Sécurité maintenue** :
-   - Les fichiers sont toujours déchiffrés à l'export
-   - Rechiffrés à l'import avec les clés de destination
-   - Pas de double chiffrement
+   - Les fichiers sont **chiffrés (AES-256)** dans le ZIP
+   - La clé de déchiffrement est unique pour chaque export
+   - Rechiffrés à l'import avec les clés locales de destination
 
 3. **Compatibilité rétroactive** :
    - Les anciens exports fonctionnent toujours
    - Utilise `path_basename` si disponible
    - Sinon, fallback sur `filename`
-
-## 🔐 Sécurité
-
-- Les fichiers dans le ZIP sont **en clair** (déchiffrés)
-- ⚠️ **Protégez le fichier ZIP** pendant le transfert
-- À l'import, rechiffrement automatique avec les clés de destination
-- Chaque instance a ses propres clés de chiffrement
 
 ## 📝 Notes importantes
 
@@ -180,11 +166,11 @@ Fonctionne exactement de la même manière dans l'autre sens !
 2. Refaire l'export
 3. Vérifier le contenu du ZIP
 
-### Problème : Chemins avec caractères spéciaux
+### Problème : Clé de déchiffrement perdue
 
-**Cause** : Caractères non-ASCII dans les noms de fichiers
+**Cause** : La clé n'a pas été sauvegardée lors de l'export.
 
-**Solution** : Les noms de fichiers sont gérés en UTF-8, ça devrait fonctionner. Si problème, renommer le fichier.
+**Solution** : Le ZIP est chiffré et ne peut pas être ouvert. Vous devez refaire l'export et bien noter la clé.
 
 ## 🎯 Résumé
 
@@ -192,7 +178,7 @@ Fonctionne exactement de la même manière dans l'autre sens !
 ✅ **Export Windows → Import Linux** : Fonctionne  
 ✅ **Même plateforme** : Fonctionne  
 ✅ **Chemins normalisés automatiquement**  
-✅ **Fichiers rechiffrés avec bonnes clés**  
+✅ **Archive sécurisée par clé unique (AES-256)**
 ✅ **Pas de perte de données**  
 
 ---

@@ -6,6 +6,8 @@ Ce guide est destiné aux administrateurs système et super administrateurs du G
 
 > **Note :** Certaines fonctionnalités décrites ici nécessitent le rôle `super_admin`.
 
+> **Accès :** L'application est strictement interne. L'URL racine (`/`) redirige automatiquement vers la page d'authentification (`/login`). Il n'y a pas de page d'accueil publique.
+
 ---
 
 ## 1. Gestion des Utilisateurs et Rôles
