@@ -21,10 +21,30 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30  # 30 jours
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///gec_mines.db")
+# Strict enforcement of DATABASE_URL and PostgreSQL for production
+database_url = os.environ.get("DATABASE_URL")
+flask_env = os.environ.get("FLASK_ENV", "development")
+
+if flask_env == "production":
+    if not database_url:
+        raise RuntimeError("CRITICAL: DATABASE_URL is required in production environment.")
+    if not database_url.startswith(("postgresql://", "postgresql+psycopg2://")):
+        raise RuntimeError("CRITICAL: Production environment requires PostgreSQL (DATABASE_URL must start with postgresql://)")
+
+# Fallback to SQLite only for development if DATABASE_URL is not set
+if not database_url:
+    database_url = "sqlite:///gec_mines.db"
+    logging.warning("DATABASE_URL not set. Using SQLite for development.")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+
+# Optimized connection pool settings
+# Note: pool_size and max_overflow are ignored by SQLite (which uses SingletonThreadPool/NullPool)
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
+    "pool_size": 10,           # Keep 10 connections open
+    "pool_recycle": 300,       # Recycle connections every 5 minutes
+    "pool_pre_ping": True,     # Check connection health before usage
+    "max_overflow": 5,         # Allow 5 extra connections during bursts
     "echo": False,
 }
 # Configure upload settings

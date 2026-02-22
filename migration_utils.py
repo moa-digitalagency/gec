@@ -7,6 +7,14 @@ import os
 from sqlalchemy import text, inspect
 from flask import current_app
 
+def get_database_type():
+    """Détermine le type de base de données (SQLite ou PostgreSQL)"""
+    database_url = os.environ.get("DATABASE_URL", "sqlite:///gec_mines.db")
+    if database_url and (database_url.startswith("postgresql://") or database_url.startswith("postgres://")):
+        return "postgresql"
+    else:
+        return "sqlite"
+
 def check_column_exists(engine, table_name, column_name):
     """Vérifie si une colonne existe dans une table"""
     try:
@@ -21,6 +29,11 @@ def add_column_safely(engine, table_name, column_name, column_definition):
     """Ajoute une colonne de manière sécurisée si elle n'existe pas"""
     try:
         if not check_column_exists(engine, table_name, column_name):
+            # Normalisation des booléens pour PostgreSQL vs SQLite
+            if "DEFAULT 1" in column_definition or "DEFAULT 0" in column_definition:
+                 if get_database_type() == "postgresql":
+                     column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
+
             sql = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
             logging.info(f"Ajout de la colonne {column_name} à la table {table_name}")
             with engine.connect() as connection:
@@ -73,20 +86,24 @@ def run_automatic_migrations(app, db):
         
         engine = db.engine
         migrations_applied = 0
+        db_type = get_database_type()
+
+        # Définition du type auto-incrément selon la DB
+        pk_type = "SERIAL PRIMARY KEY" if db_type == "postgresql" else "INTEGER PRIMARY KEY"
         
         # Vérifier et créer les tables manquantes si nécessaire
         required_tables = {
-            'migration_log': '''
+            'migration_log': f'''
                 CREATE TABLE migration_log (
-                    id SERIAL PRIMARY KEY,
+                    id {pk_type},
                     migration_name VARCHAR(255) NOT NULL,
                     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     version VARCHAR(50)
                 )
             ''',
-            'system_health': '''
+            'system_health': f'''
                 CREATE TABLE system_health (
-                    id SERIAL PRIMARY KEY,
+                    id {pk_type},
                     check_name VARCHAR(255) NOT NULL,
                     status VARCHAR(50) NOT NULL,
                     last_check TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -105,19 +122,6 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration: Colonne sendgrid_api_key ajoutée")
         
-        # Migration 2: Futures colonnes pour paramètres système (désactivées pour l'instant)
-        # Ces colonnes seront ajoutées quand les fonctionnalités correspondantes seront développées
-        # future_parametres_columns = [
-        #     ('notification_templates', 'TEXT'),  # Pour futurs templates de notification
-        #     ('backup_settings', 'TEXT'),          # Pour paramètres de sauvegarde
-        #     ('theme_settings', 'TEXT'),           # Pour paramètres de thème
-        # ]
-        # 
-        # for column_name, column_type in future_parametres_columns:
-        #     if add_column_safely(engine, 'parametres_systeme', column_name, column_type):
-        #         migrations_applied += 1
-        #         logging.info(f"✓ Migration: Colonne {column_name} ajoutée aux paramètres")
-        
         # Migration 3: Colonnes de sécurité et chiffrement (Utilisateurs)
         # Note: 'user' est un mot réservé en PostgreSQL, utiliser des guillemets
         user_security_columns = [
@@ -132,7 +136,7 @@ def run_automatic_migrations(app, db):
         ]
 
         # Déterminer le nom de la table user avec guillemets pour Postgres si nécessaire
-        user_table_name = '"user"' if get_database_type() == 'postgresql' else 'user'
+        user_table_name = '"user"' if db_type == 'postgresql' else 'user'
         
         for column_name, column_type in user_security_columns:
             if add_column_safely(engine, user_table_name, column_name, column_type):
@@ -146,7 +150,7 @@ def run_automatic_migrations(app, db):
             ('destinataire_encrypted', 'TEXT'),
             ('numero_reference_encrypted', 'TEXT'),
             ('fichier_checksum', 'VARCHAR(64)'),
-            ('fichier_encrypted', 'BOOLEAN DEFAULT 0'),
+            ('fichier_encrypted', 'BOOLEAN DEFAULT FALSE'),
             ('secretaire_general_copie', 'BOOLEAN')
         ]
 
@@ -157,9 +161,9 @@ def run_automatic_migrations(app, db):
 
         # Migration 5: Vérification des colonnes critiques
         critical_columns = [
-            ('parametres_systeme', 'email_provider', 'VARCHAR(20) DEFAULT \'sendgrid\''),
-            ('parametres_systeme', 'notify_superadmin_new_mail', 'BOOLEAN DEFAULT 1'),
-            ('parametres_systeme', 'titre_responsable_structure', 'VARCHAR(100) DEFAULT \'Secrétaire Général\''),
+            ('parametres_systeme', 'email_provider', "VARCHAR(20) DEFAULT 'sendgrid'"),
+            ('parametres_systeme', 'notify_superadmin_new_mail', 'BOOLEAN DEFAULT TRUE'),
+            ('parametres_systeme', 'titre_responsable_structure', "VARCHAR(100) DEFAULT 'Secrétaire Général'"),
         ]
         
         for table, column, definition in critical_columns:
@@ -180,7 +184,7 @@ def run_automatic_migrations(app, db):
                 logging.info(f"✓ Migration: Colonne de pièce jointe {column} ajoutée à {table}")
         
         # Migration 7: Ajout du numéro WhatsApp
-        if add_column_safely(engine, 'parametres_systeme', 'whatsapp_number', 'VARCHAR(20) DEFAULT \'243860493345\''):
+        if add_column_safely(engine, 'parametres_systeme', 'whatsapp_number', "VARCHAR(20) DEFAULT '243860493345'"):
             migrations_applied += 1
             logging.info(f"✓ Migration: Colonne whatsapp_number ajoutée aux paramètres")
 
@@ -199,12 +203,15 @@ def run_automatic_migrations(app, db):
 def create_migration_table(engine):
     """Crée une table pour tracker les migrations appliquées (pour usage future)"""
     try:
-        sql = """
+        db_type = get_database_type()
+        pk_type = "SERIAL PRIMARY KEY" if db_type == "postgresql" else "INTEGER PRIMARY KEY"
+
+        sql = f"""
         CREATE TABLE IF NOT EXISTS migration_log (
-            id INTEGER PRIMARY KEY,
+            id {pk_type},
             migration_name VARCHAR(255) NOT NULL,
             applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            success BOOLEAN DEFAULT 1
+            success BOOLEAN DEFAULT TRUE
         )
         """
         with engine.connect() as connection:
@@ -227,14 +234,6 @@ def log_migration(engine, migration_name, success=True):
         logging.debug(f"Migration {migration_name} enregistrée dans le log")
     except Exception as e:
         logging.warning(f"Impossible d'enregistrer la migration {migration_name}: {e}")
-
-def get_database_type():
-    """Détermine le type de base de données (SQLite ou PostgreSQL)"""
-    database_url = os.environ.get("DATABASE_URL", "sqlite:///gec_mines.db")
-    if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
-        return "postgresql"
-    else:
-        return "sqlite"
 
 def apply_database_specific_fixes(engine):
     """Applique des corrections spécifiques au type de base de données"""
