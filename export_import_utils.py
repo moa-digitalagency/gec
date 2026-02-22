@@ -25,10 +25,11 @@ from encryption_utils import encryption_manager, decrypt_sensitive_data, encrypt
 # Version du format d'export pour assurer la compatibilité
 EXPORT_FORMAT_VERSION = "1.0.0"
 
-def generate_secure_key(length=16):
+def generate_secure_key(length=12):
     """Génère une clé de sécurité alphanumérique robuste"""
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(length))
+    # Utilise token_urlsafe pour générer une clé cryptographiquement sûre
+    # 12 bytes donnent environ 16 caractères en base64 URL-safe
+    return secrets.token_urlsafe(length)
 
 def export_courriers_to_json(courrier_ids=None, export_all=False):
     """
@@ -196,7 +197,7 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
         zipf.setpassword(password.encode('utf-8'))
 
         # Ajouter le fichier JSON
-        json_filename = "courriers_data.json"
+        json_filename = "data.json"
         json_data = json.dumps(export_data, indent=2, ensure_ascii=False)
         zipf.writestr(json_filename, json_data)
         
@@ -307,11 +308,15 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
             result["details"].append(f"Erreur lors de l'ouverture de l'archive: {str(e)}")
             return result
         
-        # Lire le fichier JSON
-        json_path = os.path.join(temp_dir, 'courriers_data.json')
+        # Lire le fichier JSON (supporte data.json et fallback sur courriers_data.json)
+        json_path = os.path.join(temp_dir, 'data.json')
+        if not os.path.exists(json_path):
+            # Fallback pour compatibilité ascendante
+            json_path = os.path.join(temp_dir, 'courriers_data.json')
+
         if not os.path.exists(json_path):
             result["success"] = False
-            result["details"].append("Fichier courriers_data.json introuvable dans le package")
+            result["details"].append("Fichier data.json ou courriers_data.json introuvable dans le package")
             return result
         
         with open(json_path, 'r', encoding='utf-8') as f:
