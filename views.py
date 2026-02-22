@@ -120,7 +120,7 @@ def apply_mail_access_filter(query, user):
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return render_template('landing.html')
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 @rate_limit(max_requests=30, per_minutes=15)  # Prevent brute force attacks - Increased to allow legitimate retries
