@@ -27,8 +27,8 @@ All technical and functional documentation can be found in the `docs/` folder.
 
 | Document | Description |
 |----------|-------------|
-| [**📖 The Features Bible**](docs/GEC_features_full_list_en.md) | Exhaustive list of all features. |
-| [**🏗 Technical Architecture**](docs/GEC_technical_architecture_en.md) | Stack, data flows, and security. |
+| [**📖 The Features Bible**](docs/en/GEC_Features_List.md) | Exhaustive list of all features. |
+| [**🏗 Technical Architecture**](docs/en/GEC_Architecture_Technique.md) | Stack, data flows, and security. |
 | [**⚖️ License**](LICENSE_en) | Terms of use and ownership. |
 
 ## 🚀 Quick Install
