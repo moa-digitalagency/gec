@@ -294,12 +294,13 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
             # Extraire le package avec pyzipper (supporte chiffrement AES)
             with pyzipper.AESZipFile(package_path, 'r') as zipf:
                 if password:
-                    zipf.setpassword(password.encode('utf-8'))
-                zipf.extractall(temp_dir)
+                    zipf.extractall(temp_dir, pwd=password.encode('utf-8'))
+                else:
+                    zipf.extractall(temp_dir)
         except RuntimeError as e:
             if 'Bad password' in str(e) or 'password required' in str(e):
                 result["success"] = False
-                result["details"].append("Mot de passe incorrect ou requis pour cette archive.")
+                result["details"].append("Clé de déchiffrement incorrecte ou archive corrompue.")
                 return result
             raise e
         except Exception as e:
