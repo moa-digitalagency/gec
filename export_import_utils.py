@@ -12,7 +12,6 @@ COMPATIBILITÉ CROSS-PLATFORM (Linux ↔ Windows):
 
 import os
 import json
-import zipfile
 import logging
 import shutil
 import secrets
