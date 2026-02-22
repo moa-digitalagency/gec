@@ -27,9 +27,9 @@ flask_env = os.environ.get("FLASK_ENV", "development")
 
 if flask_env == "production":
     if not database_url:
-        raise RuntimeError("CRITICAL: DATABASE_URL is required in production environment.")
+        raise RuntimeError("En production, une base de données PostgreSQL est obligatoire.")
     if not database_url.startswith(("postgresql://", "postgresql+psycopg2://")):
-        raise RuntimeError("CRITICAL: Production environment requires PostgreSQL (DATABASE_URL must start with postgresql://)")
+        raise RuntimeError("En production, une base de données PostgreSQL est obligatoire.")
 
 # Fallback to SQLite only for development if DATABASE_URL is not set
 if not database_url:
@@ -42,7 +42,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 # Note: pool_size and max_overflow are ignored by SQLite (which uses SingletonThreadPool/NullPool)
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_size": 10,           # Keep 10 connections open
-    "pool_recycle": 300,       # Recycle connections every 5 minutes
+    "pool_recycle": 1800,      # Recycle connections every 30 minutes
     "pool_pre_ping": True,     # Check connection health before usage
     "max_overflow": 5,         # Allow 5 extra connections during bursts
     "echo": False,
