@@ -118,6 +118,7 @@ def apply_mail_access_filter(query, user):
 
 @app.route('/')
 def index():
+    # Application strictement B2B/Interne : redirection directe vers login ou dashboard
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
