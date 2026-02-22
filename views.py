@@ -1636,6 +1636,9 @@ def import_courriers():
             assign_to_user_id = request.form.get('assign_to_user_id')
             password = request.form.get('import_password', '').strip() or None
             
+            if password:
+                logging.info(f"Tentative d'import avec mot de passe pour le fichier {import_file.filename}")
+
             # Convertir en int si fourni
             if assign_to_user_id:
                 try:

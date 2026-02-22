@@ -16,6 +16,7 @@ import logging
 import shutil
 import secrets
 import string
+import zipfile
 import pyzipper
 from datetime import datetime
 from app import db
@@ -297,12 +298,10 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
                     zipf.extractall(temp_dir, pwd=password.encode('utf-8'))
                 else:
                     zipf.extractall(temp_dir)
-        except RuntimeError as e:
-            if 'Bad password' in str(e) or 'password required' in str(e):
-                result["success"] = False
-                result["details"].append("Clé de déchiffrement incorrecte ou archive corrompue.")
-                return result
-            raise e
+        except (RuntimeError, pyzipper.BadZipFile, zipfile.BadZipFile):
+            result["success"] = False
+            result["details"].append("Erreur : La clé de déchiffrement est incorrecte ou l'archive est corrompue.")
+            return result
         except Exception as e:
             result["success"] = False
             result["details"].append(f"Erreur lors de l'ouverture de l'archive: {str(e)}")
