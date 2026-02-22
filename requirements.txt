@@ -27,6 +27,7 @@ cryptography==45.0.6            # Chiffrement AES-256 (version mise à jour)
 bcrypt==4.3.0                  # Hachage sécurisé des mots de passe (version mise à jour)
 pycryptodome==3.23.0            # Opérations cryptographiques supplémentaires (version mise à jour)
 email-validator==2.2.0         # Validation des adresses email
+pyzipper==0.3.6                # Gestion des archives ZIP avec chiffrement AES
 
 # Génération de Documents
 # -----------------------
