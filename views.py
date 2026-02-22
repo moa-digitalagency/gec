@@ -1557,19 +1557,45 @@ def export_courriers():
                 flash('Format des IDs de courriers invalide', 'error')
                 return redirect(url_for('manage_backups'))
         
-        export_file = create_export_package(courrier_ids=courrier_ids, export_all=export_all)
+        export_file, password = create_export_package(courrier_ids=courrier_ids, export_all=export_all)
+        filename = os.path.basename(export_file)
         
         log_activity(current_user.id, "EXPORT_COURRIERS", 
-                    f"Export de courriers créé: {os.path.basename(export_file)}")
+                    f"Export de courriers chiffré créé: {filename}")
         
-        flash(f'Export créé avec succès: {os.path.basename(export_file)}', 'success')
-        flash('Les données ont été déchiffrées pour permettre l\'importation sur une autre instance', 'info')
-        
-        return send_file(export_file, as_attachment=True, download_name=os.path.basename(export_file))
+        # Rendre le template de succès avec le mot de passe
+        return render_template('export_success.html',
+                             password=password,
+                             filename=filename)
         
     except Exception as e:
         logging.error(f"Erreur lors de l'export des courriers: {e}", exc_info=True)
         flash(f'Erreur lors de l\'export: {str(e)}', 'error')
+        return redirect(url_for('manage_backups'))
+
+@app.route('/download_export/<filename>')
+@login_required
+def download_export(filename):
+    """Télécharger un fichier d'export sécurisé"""
+    if not current_user.is_super_admin():
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('manage_backups'))
+
+    # Validation du nom de fichier
+    secure_name = secure_filename(filename)
+    if not secure_name.endswith('.zip') or 'export_courriers' not in secure_name:
+        flash('Fichier invalide.', 'error')
+        return redirect(url_for('manage_backups'))
+
+    export_dir = 'exports'
+    file_path = os.path.join(export_dir, secure_name)
+
+    if os.path.exists(file_path):
+        log_activity(current_user.id, "DOWNLOAD_EXPORT",
+                    f"Téléchargement de l'export: {secure_name}")
+        return send_from_directory(export_dir, secure_name, as_attachment=True)
+    else:
+        flash('Fichier d\'export introuvable.', 'error')
         return redirect(url_for('manage_backups'))
 
 @app.route('/import_courriers', methods=['POST'])
@@ -1607,6 +1633,7 @@ def import_courriers():
             # Options d'import
             skip_existing = request.form.get('skip_existing', 'true') == 'true'
             assign_to_user_id = request.form.get('assign_to_user_id')
+            password = request.form.get('import_password', '').strip() or None
             
             # Convertir en int si fourni
             if assign_to_user_id:
@@ -1617,7 +1644,7 @@ def import_courriers():
                     return redirect(url_for('manage_backups'))
             
             # Importer
-            result = import_courriers_from_package(tmp_path, skip_existing=skip_existing, assign_to_user_id=assign_to_user_id)
+            result = import_courriers_from_package(tmp_path, skip_existing=skip_existing, assign_to_user_id=assign_to_user_id, password=password)
             
             # Logger l'activité
             log_activity(current_user.id, "IMPORT_COURRIERS", 

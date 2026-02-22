@@ -15,6 +15,9 @@ import json
 import zipfile
 import logging
 import shutil
+import secrets
+import string
+import pyzipper
 from datetime import datetime
 from app import db
 from models import Courrier, CourrierForward
@@ -22,6 +25,11 @@ from encryption_utils import encryption_manager, decrypt_sensitive_data, encrypt
 
 # Version du format d'export pour assurer la compatibilité
 EXPORT_FORMAT_VERSION = "1.0.0"
+
+def generate_secure_key(length=16):
+    """Génère une clé de sécurité alphanumérique robuste"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for i in range(length))
 
 def export_courriers_to_json(courrier_ids=None, export_all=False):
     """
@@ -160,7 +168,7 @@ def export_courriers_to_json(courrier_ids=None, export_all=False):
 
 def create_export_package(courrier_ids=None, export_all=False, output_dir='exports'):
     """
-    Crée un package d'export complet avec JSON et fichiers
+    Crée un package d'export complet avec JSON et fichiers, chiffré en AES-256
     
     Args:
         courrier_ids (list): Liste des IDs de courriers à exporter
@@ -168,7 +176,7 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
         output_dir (str): Répertoire de sortie
         
     Returns:
-        str: Chemin du fichier ZIP créé
+        tuple: (Chemin du fichier ZIP créé, Mot de passe généré)
     """
     # Créer le dossier d'export s'il n'existe pas
     os.makedirs(output_dir, exist_ok=True)
@@ -181,7 +189,13 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
     export_filename = f"export_courriers_{timestamp}.zip"
     export_path = os.path.join(output_dir, export_filename)
     
-    with zipfile.ZipFile(export_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    # Générer une clé de sécurité robuste
+    password = generate_secure_key()
+
+    # Utiliser pyzipper pour créer une archive chiffrée AES
+    with pyzipper.AESZipFile(export_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zipf:
+        zipf.setpassword(password.encode('utf-8'))
+
         # Ajouter le fichier JSON
         json_filename = "courriers_data.json"
         json_data = json.dumps(export_data, indent=2, ensure_ascii=False)
@@ -246,11 +260,11 @@ def create_export_package(courrier_ids=None, export_all=False, output_dir='expor
         logging.error(error_message)
         raise ValueError(error_message)
     
-    logging.info(f"Package d'export créé avec succès: {export_path}")
-    return export_path
+    logging.info(f"Package d'export chiffré créé avec succès: {export_path}")
+    return export_path, password
 
 
-def import_courriers_from_package(package_path, skip_existing=True, remap_users=None, assign_to_user_id=None):
+def import_courriers_from_package(package_path, skip_existing=True, remap_users=None, assign_to_user_id=None, password=None):
     """
     Importe les courriers depuis un package d'export avec rechiffrement
     
@@ -259,6 +273,7 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
         skip_existing (bool): Ignorer les courriers existants (par numéro)
         remap_users (dict): Mapping des IDs utilisateurs {ancien_id: nouvel_id}
         assign_to_user_id (int): ID de l'utilisateur à qui assigner TOUS les courriers importés
+        password (str): Mot de passe pour déchiffrer l'archive (optionnel)
         
     Returns:
         dict: Résultat de l'import avec statistiques
@@ -275,9 +290,22 @@ def import_courriers_from_package(package_path, skip_existing=True, remap_users=
     
     # Créer un dossier temporaire pour l'extraction
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Extraire le package
-        with zipfile.ZipFile(package_path, 'r') as zipf:
-            zipf.extractall(temp_dir)
+        try:
+            # Extraire le package avec pyzipper (supporte chiffrement AES)
+            with pyzipper.AESZipFile(package_path, 'r') as zipf:
+                if password:
+                    zipf.setpassword(password.encode('utf-8'))
+                zipf.extractall(temp_dir)
+        except RuntimeError as e:
+            if 'Bad password' in str(e) or 'password required' in str(e):
+                result["success"] = False
+                result["details"].append("Mot de passe incorrect ou requis pour cette archive.")
+                return result
+            raise e
+        except Exception as e:
+            result["success"] = False
+            result["details"].append(f"Erreur lors de l'ouverture de l'archive: {str(e)}")
+            return result
         
         # Lire le fichier JSON
         json_path = os.path.join(temp_dir, 'courriers_data.json')

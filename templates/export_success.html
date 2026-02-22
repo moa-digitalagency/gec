@@ -1,0 +1,111 @@
+{% extends "new_base.html" %}
+
+{% block title %}{{ t('export_success') or 'Export Réussi' }} - GEC{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mt-10">
+    <!-- Success Header -->
+    <div class="bg-white shadow-rdc rounded-xl overflow-hidden border border-green-200 mb-8">
+        <div class="bg-green-50 px-6 py-4 border-b border-green-200 flex items-center">
+            <div class="rounded-full bg-green-100 p-2 mr-3 text-green-600">
+                <i class="fas fa-check text-xl"></i>
+            </div>
+            <h1 class="text-xl font-bold text-green-900">
+                {{ t('export_created_successfully') or 'Package d\'export créé avec succès' }}
+            </h1>
+        </div>
+
+        <div class="p-8">
+            <p class="text-gray-600 mb-6">
+                {{ t('export_ready_message') or 'Votre fichier d\'export sécurisé a été généré. Pour assurer la sécurité de vos données, ce fichier est chiffré avec une clé unique.' }}
+            </p>
+
+            <!-- Key Display Section -->
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-8">
+                <div class="flex items-start mb-4">
+                    <i class="fas fa-key text-orange-500 text-xl mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-orange-900 mb-1">
+                            {{ t('security_key') or 'Clé de Sécurité' }}
+                        </h3>
+                        <p class="text-sm text-orange-800 mb-3">
+                            {{ t('security_key_warning') or 'ATTENTION : Veuillez copier et conserver cette clé en lieu sûr. Elle est INDISPENSABLE pour importer cette sauvegarde. Sans elle, les données seront irrécupérables.' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="text"
+                           id="securityKey"
+                           value="{{ password }}"
+                           readonly
+                           class="w-full text-center text-2xl font-mono font-bold text-gray-800 bg-white border-2 border-orange-300 rounded-lg py-4 px-4 shadow-inner tracking-widest focus:outline-none focus:border-orange-500">
+
+                    <button onclick="copyToClipboard()"
+                            class="absolute right-2 top-2 bottom-2 bg-orange-100 hover:bg-orange-200 text-orange-800 font-medium py-2 px-4 rounded transition duration-200 flex items-center"
+                            title="{{ t('copy_to_clipboard') or 'Copier dans le presse-papier' }}">
+                        <i class="fas fa-copy mr-2"></i>
+                        <span id="copyBtnText">{{ t('copy') or 'Copier' }}</span>
+                    </button>
+                </div>
+                <p id="copyFeedback" class="text-green-600 text-sm mt-2 text-center hidden font-medium">
+                    <i class="fas fa-check mr-1"></i> {{ t('copied') or 'Copié !' }}
+                </p>
+            </div>
+
+            <!-- File Info -->
+            <div class="flex items-center justify-center mb-8 text-gray-600">
+                <i class="fas fa-file-archive text-gray-400 mr-2"></i>
+                <span class="font-mono bg-gray-100 px-2 py-1 rounded border border-gray-200">{{ filename }}</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url_for('manage_backups') }}"
+                   class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200 font-medium text-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    {{ t('back_to_backups') or 'Retour' }}
+                </a>
+
+                <a href="{{ url_for('download_export', filename=filename) }}"
+                   onclick="return confirmDownload()"
+                   class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition duration-200 font-bold text-center flex items-center justify-center">
+                    <i class="fas fa-download mr-2"></i>
+                    {{ t('download_file') or 'Télécharger le fichier' }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard() {
+        var copyText = document.getElementById("securityKey");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+        navigator.clipboard.writeText(copyText.value).then(function() {
+            // Feedback visuel
+            var btnText = document.getElementById("copyBtnText");
+            var originalText = btnText.innerText;
+            btnText.innerText = "{{ t('copied') or 'Copié !' }}";
+
+            document.getElementById("copyFeedback").classList.remove("hidden");
+
+            setTimeout(function() {
+                btnText.innerText = originalText;
+                document.getElementById("copyFeedback").classList.add("hidden");
+            }, 2000);
+        }, function(err) {
+            console.error('Erreur lors de la copie: ', err);
+            // Fallback
+            document.execCommand('copy');
+        });
+    }
+
+    function confirmDownload() {
+        // Optionnel : on pourrait forcer l'utilisateur à cocher une case disant "J'ai copié la clé"
+        return true;
+    }
+</script>
+{% endblock %}
