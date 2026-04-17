@@ -1033,7 +1033,6 @@ def verify_backup_integrity(backup_filename):
         return False, f"Erreur lors de la vérification: {str(e)}"
 
 def log_activity(user_id, action, description, courrier_id=None):
-def log_activity(user_id, action, description, courrier_id=None):
     """Enregistrer une activité dans les logs"""
     try:
         from flask import request

@@ -18,9 +18,20 @@ def get_database_type():
 def check_column_exists(engine, table_name, column_name):
     """Vérifie si une colonne existe dans une table"""
     try:
-        inspector = inspect(engine)
-        columns = [col['name'] for col in inspector.get_columns(table_name)]
-        return column_name in columns
+        db_type = get_database_type()
+        # Normalize table name: strip surrounding quotes for information_schema lookup
+        bare_name = table_name.strip('"')
+        if db_type == "postgresql":
+            with engine.connect() as conn:
+                result = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = 'public' AND table_name = :table AND column_name = :col"
+                ), {"table": bare_name, "col": column_name})
+                return result.fetchone() is not None
+        else:
+            inspector = inspect(engine)
+            columns = [col['name'] for col in inspector.get_columns(bare_name)]
+            return column_name in columns
     except Exception as e:
         logging.warning(f"Impossible de vérifier la colonne {column_name} dans {table_name}: {e}")
         return False
@@ -34,7 +45,8 @@ def add_column_safely(engine, table_name, column_name, column_definition):
                  if get_database_type() == "postgresql":
                      column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
 
-            sql = f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}"
+            quoted = table_name if table_name.startswith('"') else (f'"{table_name}"' if get_database_type() == "postgresql" else table_name)
+            sql = f"ALTER TABLE {quoted} ADD COLUMN {column_name} {column_definition}"
             logging.info(f"Ajout de la colonne {column_name} à la table {table_name}")
             with engine.connect() as connection:
                 connection.execute(text(sql))
@@ -293,7 +305,7 @@ def run_automatic_migrations(app, db):
                     ))
                     if not result.fetchone():
                         conn.execute(text("""
-                            CREATE INDEX CONCURRENTLY idx_courrier_fts
+                            CREATE INDEX idx_courrier_fts
                             ON courrier
                             USING gin(
                                 to_tsvector('french',
