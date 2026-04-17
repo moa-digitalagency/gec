@@ -1,617 +1,275 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('backup_management') or 'Gestion des Sauvegardes' }} - GEC{% endblock %}
+{% block title %}Sauvegardes & Mises à jour — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-                <i class="fas fa-database mr-3 text-rdc-blue"></i>
-                {{ t('backup_management') or 'Gestion des Sauvegardes' }}
-            </h1>
-            <p class="mt-2 text-gray-600">{{ t('backup_management_description') or 'Créez et gérez les sauvegardes complètes du système' }}</p>
-        </div>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Sauvegardes</span>
     </div>
+    <h1 class="gec-page-title"><i class="fas fa-database" style="color:var(--primary);margin-right:.5rem;"></i>Sauvegardes & Mises à jour</h1>
+    <p class="gec-page-subtitle">Gérez les sauvegardes et les mises à jour du système</p>
+  </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white rounded-xl shadow-rdc p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">
-                <i class="fas fa-archive text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">{{ backup_files|length }}</h3>
-                <p class="text-gray-600">{{ t('available_backups') or 'Sauvegardes disponibles' }}</p>
-            </div>
-        </div>
+<!-- Stats -->
+<div class="gec-grid-3" style="margin-bottom:1.5rem;">
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#ECFDF5;color:var(--success);"><i class="fas fa-archive"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value">{{ backup_files|length }}</div>
+      <div class="gec-stat-label">Sauvegardes disponibles</div>
     </div>
-    
-    <div class="bg-white rounded-xl shadow-rdc p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                <i class="fas fa-clock text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">
-                    {% if backup_files %}
-                        {{ backup_files[0].date.strftime('%d/%m/%Y') }}
-                    {% else %}
-                        {{ t('never') or 'Jamais' }}
-                    {% endif %}
-                </h3>
-                <p class="text-gray-600">{{ t('last_backup') or 'Dernière sauvegarde' }}</p>
-            </div>
-        </div>
+  </div>
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:var(--info-light);color:var(--primary);"><i class="fas fa-clock"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value" style="font-size:1rem;">{% if backup_files %}{{ backup_files[0].date.strftime('%d/%m/%Y') }}{% else %}Jamais{% endif %}</div>
+      <div class="gec-stat-label">Dernière sauvegarde</div>
     </div>
-    
-    <div class="bg-white rounded-xl shadow-rdc p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-orange-100 text-orange-600">
-                <i class="fas fa-hdd text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">
-                    {% set total_size = backup_files | sum(attribute='size') %}
-                    {{ "%.1f MB"|format(total_size / 1024 / 1024) if total_size else '0 MB' }}
-                </h3>
-                <p class="text-gray-600">{{ t('total_size') or 'Taille totale' }}</p>
-            </div>
-        </div>
+  </div>
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#FFF7ED;color:var(--warning);"><i class="fas fa-hdd"></i></div>
+    <div class="gec-stat-body">
+      {% set total_size = backup_files | sum(attribute='size') %}
+      <div class="gec-stat-value">{{ "%.1f MB"|format(total_size / 1024 / 1024) if total_size else '0 MB' }}</div>
+      <div class="gec-stat-label">Taille totale</div>
     </div>
+  </div>
 </div>
 
-<!-- Export/Import Courriers Section -->
-<div class="mb-8 grid lg:grid-cols-2 gap-8">
-    <!-- Export Courriers Section -->
-    <div class="bg-white shadow-rdc rounded-xl border-2 border-purple-200">
-        <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-file-export mr-2 text-green-600"></i>
-                {{ t('export_courriers') or 'Export de Courriers' }}
-            </h2>
-        </div>
-        <div class="p-6">
-            <div class="mb-6">
-                <p class="text-gray-600 mb-4">
-                    {{ t('export_courriers_description') or 'Exportez les courriers pour les transférer vers une autre instance GEC.' }}
-                </p>
-                
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                    <h4 class="font-medium text-green-900 mb-3 flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        {{ t('export_features') or 'Caractéristiques de l\'export :' }}
-                    </h4>
-                    <ul class="space-y-2 text-sm text-green-800">
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('export_decrypts_data') or 'Déchiffrement automatique des données' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('export_includes_attachments') or 'Pièces jointes incluses' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('export_portable') or 'Format portable entre instances' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-shield-alt text-orange-600 mr-2"></i>
-                            <strong>{{ t('export_security') or 'Package ZIP sécurisé avec données déchiffrées' }}</strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <form action="{{ url_for('export_courriers') }}" method="POST" onsubmit="return confirm('{{ t('confirm_export_courriers') or 'Voulez-vous vraiment exporter les courriers ?' }}')">
-                <div class="space-y-4">
-                    <div>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="export_all" value="true" class="rounded text-rdc-blue focus:ring-rdc-blue">
-                            <span class="text-sm text-gray-700">{{ t('export_all_courriers') or 'Exporter tous les courriers (incluant supprimés)' }}</span>
-                        </label>
-                    </div>
-                    
-                    <div>
-                        <label for="courrier_ids" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('specific_courrier_ids') or 'IDs de courriers spécifiques (optionnel)' }}
-                        </label>
-                        <input type="text" 
-                               name="courrier_ids" 
-                               id="courrier_ids" 
-                               placeholder="Ex: 1,2,3,10"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
-                        <p class="mt-1 text-sm text-gray-500">{{ t('courrier_ids_format') or 'Séparez les IDs par des virgules' }}</p>
-                    </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-file-export mr-2"></i>
-                        {{ t('export_now') or 'Exporter les Courriers' }}
-                    </button>
-                </div>
-            </form>
-        </div>
+<!-- Export / Import courriers -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-file-export" style="color:var(--success);"></i> Export de Courriers</span>
     </div>
-    
-    <!-- Import Courriers Section -->
-    <div class="bg-white shadow-rdc rounded-xl border-2 border-purple-200">
-        <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-file-import mr-2 text-blue-600"></i>
-                {{ t('import_courriers') or 'Import de Courriers' }}
-            </h2>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <p style="font-size:.875rem;color:var(--t-secondary);">Exportez les courriers pour les transférer vers une autre instance GEC.</p>
+      <div class="gec-alert gec-alert-success" style="margin:0;">
+        <i class="fas fa-check-circle"></i>
+        <ul style="margin:0;padding-left:1rem;font-size:.8125rem;line-height:1.7;">
+          <li>Déchiffrement automatique des données</li>
+          <li>Pièces jointes incluses</li>
+          <li>Format portable entre instances</li>
+        </ul>
+      </div>
+      <form action="{{ url_for('export_courriers') }}" method="POST" onsubmit="return confirm('Exporter les courriers ?')">
+        <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:.75rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;cursor:pointer;">
+            <input type="checkbox" name="export_all" value="true" style="accent-color:var(--primary);">
+            <span>Exporter tous les courriers (incluant supprimés)</span>
+          </label>
+          <div class="gec-form-group">
+            <label class="gec-label">IDs spécifiques (optionnel)</label>
+            <input type="text" name="courrier_ids" class="gec-input" placeholder="Ex: 1,2,3,10">
+            <p class="gec-form-hint">Séparez les IDs par des virgules</p>
+          </div>
         </div>
-        <div class="p-6">
-            <div class="mb-6">
-                <p class="text-gray-600 mb-4">
-                    {{ t('import_courriers_description') or 'Importez les courriers depuis un package d\'export (.zip).' }}
-                </p>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h4 class="font-medium text-blue-900 mb-3 flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        {{ t('import_features') or 'Caractéristiques de l\'import :' }}
-                    </h4>
-                    <ul class="space-y-2 text-sm text-blue-800">
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-blue-600 mr-2"></i>
-                            {{ t('import_encrypts_data') or 'Re-chiffrement automatique avec clé locale' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-blue-600 mr-2"></i>
-                            {{ t('import_handles_duplicates') or 'Gestion des doublons' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-blue-600 mr-2"></i>
-                            {{ t('import_restores_attachments') or 'Restauration des pièces jointes' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-chart-bar text-green-600 mr-2"></i>
-                            <strong>{{ t('import_statistics') or 'Statistiques détaillées après import' }}</strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <form action="{{ url_for('import_courriers') }}" method="POST" enctype="multipart/form-data" 
-                  onsubmit="return confirm('{{ t('confirm_import_courriers') or 'Voulez-vous vraiment importer les courriers depuis ce package ?' }}')">
-                <div class="space-y-4">
-                    <div>
-                        <label for="import_file" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('select_export_package') or 'Sélectionner le package d\'export' }}
-                        </label>
-                        <input type="file" 
-                               name="import_file" 
-                               id="import_file" 
-                               accept=".zip" 
-                               required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
-                        <p class="mt-1 text-sm text-gray-500">{{ t('export_package_format') or 'Format: export_courriers_*.zip' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label for="import_password" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('decryption_key') or 'Clé de déchiffrement' }}
-                        </label>
-                        <div class="relative">
-                            <input type="password"
-                                   name="import_password"
-                                   id="import_password"
-                                   required
-                                   placeholder="{{ t('enter_security_key') or 'Saisissez la clé de sécurité...' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent pr-10">
-                            <button type="button"
-                                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
-                                    onclick="togglePasswordVisibility('import_password', this)">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <p class="mt-1 text-sm text-gray-500">{{ t('import_password_help') or 'Requis pour les exports sécurisés (générés après la mise à jour).' }}</p>
-                    </div>
+        <button type="submit" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-file-export"></i> Exporter les Courriers</button>
+      </form>
+    </div>
+  </div>
 
-                    <div>
-                        <label for="assign_to_user_id" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('assign_to_user') or 'Assigner les courriers à l\'utilisateur' }}
-                        </label>
-                        <select name="assign_to_user_id" 
-                                id="assign_to_user_id" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
-                            <option value="">{{ t('keep_original_user') or 'Conserver l\'utilisateur d\'origine' }}</option>
-                            {% for user in users %}
-                                <option value="{{ user.id }}" {% if user.id == current_user.id %}selected{% endif %}>
-                                    {{ user.username }} - {{ user.nom_complet or user.username }}
-                                    {% if user.role == 'super_admin' %}(Super Admin){% elif user.role == 'admin' %}(Admin){% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">{{ t('assign_user_help') or 'Si sélectionné, TOUS les courriers seront assignés à cet utilisateur' }}</p>
-                    </div>
-                    
-                    <div>
-                        <label class="flex items-center space-x-2">
-                            <input type="checkbox" name="skip_existing" value="true" checked class="rounded text-rdc-blue focus:ring-rdc-blue">
-                            <span class="text-sm text-gray-700">{{ t('skip_duplicates') or 'Ignorer les doublons (recommandé)' }}</span>
-                        </label>
-                    </div>
-                    
-                    <button type="submit" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-file-import mr-2"></i>
-                        {{ t('import_now') or 'Importer les Courriers' }}
-                    </button>
-                </div>
-            </form>
-        </div>
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-file-import" style="color:var(--primary);"></i> Import de Courriers</span>
     </div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <p style="font-size:.875rem;color:var(--t-secondary);">Importez des courriers depuis un package d'export (.zip).</p>
+      <div class="gec-alert gec-alert-info" style="margin:0;">
+        <i class="fas fa-info-circle"></i>
+        <ul style="margin:0;padding-left:1rem;font-size:.8125rem;line-height:1.7;">
+          <li>Re-chiffrement automatique avec clé locale</li>
+          <li>Gestion des doublons</li>
+          <li>Restauration des pièces jointes</li>
+        </ul>
+      </div>
+      <form action="{{ url_for('import_courriers') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('Importer les courriers depuis ce package ?')" style="display:flex;flex-direction:column;gap:.625rem;">
+        <div class="gec-form-group">
+          <label class="gec-label">Package d'export (.zip)</label>
+          <input type="file" name="import_file" accept=".zip" required class="gec-input" style="padding:.4rem .75rem;">
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label">Clé de déchiffrement</label>
+          <div style="position:relative;">
+            <input type="password" name="import_password" id="importPwd" required class="gec-input" placeholder="Clé de sécurité..." style="padding-right:2.5rem;">
+            <button type="button" onclick="togglePwd('importPwd',this)" style="position:absolute;right:.625rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t-muted);cursor:pointer;"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label">Assigner à l'utilisateur</label>
+          <select name="assign_to_user_id" class="gec-select">
+            <option value="">Conserver l'utilisateur d'origine</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if user.id == current_user.id %}selected{% endif %}>{{ user.username }} — {{ user.nom_complet or user.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;cursor:pointer;">
+          <input type="checkbox" name="skip_existing" value="true" checked style="accent-color:var(--primary);">
+          <span>Ignorer les doublons (recommandé)</span>
+        </label>
+        <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;"><i class="fas fa-file-import"></i> Importer les Courriers</button>
+      </form>
+    </div>
+  </div>
 </div>
 
-<!-- Main Content -->
-<div class="grid lg:grid-cols-2 gap-8">
-    <!-- Create Backup Section -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-plus-circle mr-2 text-green-600"></i>
-                {{ t('create_backup') or 'Créer une Sauvegarde' }}
-            </h2>
-        </div>
-        <div class="p-6">
-            <div class="mb-6">
-                <p class="text-gray-600 mb-4">
-                    {{ t('backup_create_description') or 'Créez une sauvegarde complète incluant la base de données, les fichiers et la configuration.' }}
-                </p>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h4 class="font-medium text-blue-900 mb-3 flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        {{ t('backup_includes') or 'La sauvegarde inclut :' }}
-                    </h4>
-                    <ul class="space-y-2 text-sm text-blue-800">
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('database_complete') or 'Base de données complète' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('uploaded_files') or 'Fichiers téléchargés (pièces jointes)' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('system_configuration') or 'Configuration système' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-check text-green-600 mr-2"></i>
-                            {{ t('user_settings') or 'Paramètres utilisateurs' }}
-                        </li>
-                        <li class="flex items-center">
-                            <i class="fas fa-shield-alt text-orange-600 mr-2"></i>
-                            <strong>{{ t('security_backup_feature') or 'Sauvegarde de sécurité : Protection des paramètres critiques' }}</strong>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="space-y-3">
-                <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_backup') or 'Voulez-vous vraiment créer une sauvegarde ?' }}')">
-                    <button type="submit" 
-                            class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-download mr-2"></i>
-                        {{ t('create_backup_now') or 'Créer une Sauvegarde' }}
-                    </button>
-                </form>
-                
-                <form action="{{ url_for('backup_pre_update') }}" method="POST" onsubmit="return confirm('{{ t('confirm_create_security_backup') or 'Voulez-vous créer une sauvegarde de sécurité avant mise à jour ?' }}')">
-                    <button type="submit" 
-                            class="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-shield-alt mr-2"></i>
-                        {{ t('create_security_backup') or 'Sauvegarde de Sécurité (Avant MAJ)' }}
-                    </button>
-                </form>
-            </div>
-        </div>
+<!-- Backup / Restore -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-plus-circle" style="color:var(--success);"></i> Créer une Sauvegarde</span>
     </div>
-    
-    <!-- Restore System Section -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-upload mr-2 text-orange-600"></i>
-                {{ t('restore_system') or 'Restaurer le Système' }}
-            </h2>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <div class="gec-alert gec-alert-info" style="margin:0;">
+        <i class="fas fa-info-circle"></i>
+        <div style="font-size:.8125rem;">
+          <strong style="display:block;margin-bottom:.25rem;">La sauvegarde inclut :</strong>
+          <ul style="margin:0;padding-left:1rem;line-height:1.7;">
+            <li>Base de données complète</li>
+            <li>Pièces jointes (fichiers téléchargés)</li>
+            <li>Configuration système</li>
+            <li>Paramètres utilisateurs</li>
+          </ul>
         </div>
-        <div class="p-6">
-            <div class="mb-6">
-                <p class="text-gray-600 mb-4">
-                    {{ t('restore_description') or 'Restaurez le système depuis un fichier de sauvegarde (.zip).' }}
-                </p>
-                
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <div class="flex">
-                        <i class="fas fa-exclamation-triangle text-red-600 mt-1 mr-2"></i>
-                        <div>
-                            <h4 class="font-medium text-red-900 mb-2">{{ t('warning') or 'Attention !' }}</h4>
-                            <p class="text-sm text-red-800">
-                                {{ t('restore_warning') or 'La restauration remplacera toutes les données actuelles. Cette action est irréversible.' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <form action="{{ url_for('restore_system') }}" method="POST" enctype="multipart/form-data" 
-                  onsubmit="return confirm('{{ t('confirm_restore') or 'Voulez-vous vraiment restaurer le système ? Toutes les données actuelles seront remplacées !' }}')">
-                <div class="mb-4">
-                    <label for="backup_file" class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ t('select_backup_file') or 'Sélectionner le fichier de sauvegarde' }}
-                    </label>
-                    <input type="file" 
-                           name="backup_file" 
-                           id="backup_file" 
-                           accept=".zip" 
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent">
-                    <p class="mt-1 text-sm text-gray-500">{{ t('backup_file_format') or 'Format accepté : fichiers .zip uniquement' }}</p>
-                </div>
-                
-                <button type="submit" 
-                        class="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                    <i class="fas fa-upload mr-2"></i>
-                    {{ t('restore_now') or 'Restaurer le Système' }}
-                </button>
-            </form>
-        </div>
+      </div>
+      <form action="{{ url_for('backup_system') }}" method="POST" onsubmit="return confirm('Créer une sauvegarde ?')">
+        <button type="submit" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-download"></i> Créer une Sauvegarde</button>
+      </form>
+      <form action="{{ url_for('backup_pre_update') }}" method="POST" onsubmit="return confirm('Créer une sauvegarde de sécurité avant mise à jour ?')">
+        <button type="submit" class="gec-btn gec-btn-secondary" style="width:100%;justify-content:center;color:var(--warning);"><i class="fas fa-shield-alt"></i> Sauvegarde Avant MAJ</button>
+      </form>
     </div>
+  </div>
+
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-upload" style="color:var(--warning);"></i> Restaurer le Système</span>
+    </div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <div class="gec-alert gec-alert-danger" style="margin:0;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div style="font-size:.8125rem;"><strong>Attention !</strong><br>La restauration remplacera toutes les données actuelles. Cette action est irréversible.</div>
+      </div>
+      <form action="{{ url_for('restore_system') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('⚠️ Restaurer le système ? Toutes les données actuelles seront remplacées !')">
+        <div class="gec-form-group" style="margin-bottom:.75rem;">
+          <label class="gec-label">Fichier de sauvegarde (.zip)</label>
+          <input type="file" name="backup_file" accept=".zip" required class="gec-input" style="padding:.4rem .75rem;">
+        </div>
+        <button type="submit" class="gec-btn gec-btn-danger" style="width:100%;justify-content:center;"><i class="fas fa-upload"></i> Restaurer le Système</button>
+      </form>
+    </div>
+  </div>
 </div>
 
-<!-- Available Backups Table -->
-{% if backup_files %}
-<div class="mt-8 bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-history mr-2 text-blue-600"></i>
-            {{ t('available_backups') or 'Sauvegardes Disponibles' }}
-        </h2>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {{ t('filename') or 'Nom du fichier' }}
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {{ t('date_created') or 'Date de création' }}
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {{ t('file_size') or 'Taille' }}
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {{ t('actions') or 'Actions' }}
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for backup in backup_files %}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            {% if 'security_pre_update' in backup.filename or 'before_update' in backup.filename %}
-                                <i class="fas fa-shield-alt text-orange-600 mr-3"></i>
-                            {% else %}
-                                <i class="fas fa-file-archive text-blue-600 mr-3"></i>
-                            {% endif %}
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">{{ backup.filename }}</div>
-                                {% if 'security_pre_update' in backup.filename %}
-                                    <div class="text-sm text-orange-600 font-medium">{{ t('security_backup_file') or 'Sauvegarde de sécurité (Avant MAJ)' }}</div>
-                                {% elif 'before_update' in backup.filename %}
-                                    <div class="text-sm text-orange-600 font-medium">{{ t('pre_update_backup') or 'Sauvegarde avant mise à jour' }}</div>
-                                {% else %}
-                                    <div class="text-sm text-gray-500">{{ t('backup_file') or 'Sauvegarde standard' }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ backup.date.strftime('%d/%m/%Y à %H:%M') }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {{ "%.2f MB"|format(backup.size / 1024 / 1024) }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div class="flex space-x-3">
-                            <a href="{{ url_for('validate_backup', filename=backup.filename) }}" 
-                               class="text-green-600 hover:text-green-900 flex items-center"
-                               title="{{ t('validate_backup_integrity') or 'Valider l\'intégrité de la sauvegarde' }}">
-                                <i class="fas fa-check-circle mr-1"></i>
-                                {{ t('validate') or 'Valider' }}
-                            </a>
-                            
-                            <a href="{{ url_for('download_backup', filename=backup.filename) }}" 
-                               class="text-blue-600 hover:text-blue-900 flex items-center">
-                                <i class="fas fa-download mr-1"></i>
-                                {{ t('download') or 'Télécharger' }}
-                            </a>
-                            
-                            <form action="{{ url_for('restore_from_backup', filename=backup.filename) }}" 
-                                  method="POST" 
-                                  class="inline"
-                                  onsubmit="return confirm('⚠️ ATTENTION : Restaurer cette sauvegarde remplacera TOUTES les données actuelles (base de données, fichiers, configuration). Cette action est IRRÉVERSIBLE. Êtes-vous absolument sûr de vouloir continuer ?')">
-                                <button type="submit" 
-                                        class="text-orange-600 hover:text-orange-900 flex items-center">
-                                    <i class="fas fa-undo mr-1"></i>
-                                    {{ t('restore') or 'Restaurer' }}
-                                </button>
-                            </form>
-                            
-                            <form action="{{ url_for('delete_backup', filename=backup.filename) }}" 
-                                  method="POST" 
-                                  class="inline"
-                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement cette sauvegarde ? Cette action ne peut pas être annulée.')">
-                                <button type="submit" 
-                                        class="text-red-600 hover:text-red-900 flex items-center">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    {{ t('delete') or 'Supprimer' }}
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<!-- Backups table -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-history"></i> Sauvegardes disponibles</span>
+  </div>
+  {% if backup_files %}
+  <div class="gec-table-wrap">
+    <table class="gec-table">
+      <thead>
+        <tr>
+          <th>Fichier</th>
+          <th>Date</th>
+          <th>Taille</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for backup in backup_files %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.625rem;">
+              {% if 'security_pre_update' in backup.filename or 'before_update' in backup.filename %}
+              <i class="fas fa-shield-alt" style="color:var(--warning);"></i>
+              {% else %}
+              <i class="fas fa-file-archive" style="color:var(--primary);"></i>
+              {% endif %}
+              <div>
+                <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">{{ backup.filename }}</div>
+                <div style="font-size:.75rem;color:var(--t-muted);">
+                  {% if 'security_pre_update' in backup.filename or 'before_update' in backup.filename %}
+                  <span style="color:var(--warning);">Sauvegarde de sécurité (Avant MAJ)</span>
+                  {% else %}Sauvegarde standard{% endif %}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:.875rem;white-space:nowrap;">{{ backup.date.strftime('%d/%m/%Y à %H:%M') }}</td>
+          <td><span class="gec-badge gec-badge-blue">{{ "%.2f MB"|format(backup.size / 1024 / 1024) }}</span></td>
+          <td>
+            <div style="display:flex;gap:.375rem;align-items:center;">
+              <a href="{{ url_for('validate_backup', filename=backup.filename) }}" class="gec-btn gec-btn-ghost gec-btn-sm" style="color:var(--success);" title="Valider l'intégrité"><i class="fas fa-check-circle"></i></a>
+              <a href="{{ url_for('download_backup', filename=backup.filename) }}" class="gec-btn gec-btn-ghost gec-btn-sm" title="Télécharger"><i class="fas fa-download"></i></a>
+              <form action="{{ url_for('restore_from_backup', filename=backup.filename) }}" method="POST" class="inline" onsubmit="return confirm('⚠️ Restaurer cette sauvegarde ? Toutes les données actuelles seront remplacées !')">
+                <button type="submit" class="gec-btn gec-btn-ghost gec-btn-sm" style="color:var(--warning);" title="Restaurer"><i class="fas fa-undo"></i></button>
+              </form>
+              <form action="{{ url_for('delete_backup', filename=backup.filename) }}" method="POST" class="inline" onsubmit="return confirm('Supprimer définitivement cette sauvegarde ?')">
+                <button type="submit" class="gec-btn gec-btn-ghost gec-btn-sm" style="color:var(--danger);" title="Supprimer"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="gec-empty">
+    <div class="gec-empty-icon"><i class="fas fa-archive"></i></div>
+    <div class="gec-empty-title">Aucune sauvegarde</div>
+    <div class="gec-empty-desc">Créez votre première sauvegarde pour sécuriser vos données.</div>
+    <form action="{{ url_for('backup_system') }}" method="POST" style="margin-top:1rem;">
+      <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Créer la première sauvegarde</button>
+    </form>
+  </div>
+  {% endif %}
 </div>
-{% else %}
-<div class="mt-8 bg-white shadow-rdc rounded-xl">
-    <div class="p-8 text-center">
-        <i class="fas fa-archive text-4xl text-gray-400 mb-4"></i>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_backups_found') or 'Aucune sauvegarde trouvée' }}</h3>
-        <p class="text-gray-600 mb-6">{{ t('no_backups_description') or 'Créez votre première sauvegarde pour sécuriser vos données.' }}</p>
-        <form action="{{ url_for('backup_system') }}" method="POST" class="inline">
-            <button type="submit" 
-                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center mx-auto">
-                <i class="fas fa-plus mr-2"></i>
-                {{ t('create_first_backup') or 'Créer la première sauvegarde' }}
-            </button>
+
+<!-- System Update -->
+<div class="gec-card">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-sync-alt" style="color:#8B5CF6;"></i> Mise à Jour Système</span>
+  </div>
+  <div class="gec-card-body">
+    <div class="gec-grid-2" style="gap:1.25rem;">
+      <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:1.25rem;">
+        <div style="font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem;"><i class="fas fa-cloud-download-alt" style="color:var(--primary);"></i> Mise à jour en ligne</div>
+        <p style="font-size:.8125rem;color:var(--t-secondary);margin-bottom:.875rem;">Rechercher et installer les mises à jour depuis le serveur Git.</p>
+        <form action="{{ url_for('update_online') }}" method="POST" onsubmit="return confirm('Effectuer une mise à jour Git ? Une sauvegarde complète sera créée automatiquement.')">
+          <button type="submit" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-cloud-download-alt"></i> Mettre à jour depuis Git</button>
         </form>
-    </div>
-</div>
-{% endif %}
-
-<!-- System Update Section -->
-<div class="mt-8 bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-sync-alt mr-2 text-purple-600"></i>
-            {{ t('system_update') or 'Mise à Jour Système' }}
-        </h2>
-    </div>
-    <div class="p-6">
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- Online Update -->
-            <div class="border border-gray-200 rounded-lg p-4">
-                <h3 class="font-medium text-gray-900 mb-3 flex items-center">
-                    <i class="fas fa-cloud-download-alt mr-2 text-blue-600"></i>
-                    {{ t('online_update') or 'Mise à jour en ligne' }}
-                </h3>
-                <p class="text-sm text-gray-600 mb-4">
-                    {{ t('online_update_description') or 'Rechercher et installer les mises à jour depuis le serveur.' }}
-                </p>
-                <form action="{{ url_for('update_online') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir effectuer une mise à jour Git ? Une sauvegarde complète sera créée automatiquement.')">
-                    <button type="submit" 
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-cloud-download-alt mr-2"></i>
-                        {{ t('check_updates') or 'Mettre à jour depuis Git' }}
-                    </button>
-                </form>
-                
-                <div class="mt-3 text-xs text-gray-500">
-                    <div class="flex items-start">
-                        <i class="fas fa-shield-alt text-green-500 mr-1 mt-0.5"></i>
-                        <span>Sauvegarde automatique créée avant mise à jour</span>
-                    </div>
-                    <div class="flex items-start mt-1">
-                        <i class="fas fa-check text-green-500 mr-1 mt-0.5"></i>
-                        <span>Base de données, fichiers et configuration préservés</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Offline Update -->
-            <div class="border border-gray-200 rounded-lg p-4">
-                <h3 class="font-medium text-gray-900 mb-3 flex items-center">
-                    <i class="fas fa-file-upload mr-2 text-green-600"></i>
-                    {{ t('offline_update') or 'Mise à jour hors ligne' }}
-                </h3>
-                <p class="text-sm text-gray-600 mb-4">
-                    {{ t('offline_update_description') or 'Installer une mise à jour depuis un fichier .zip.' }}
-                </p>
-                <form action="{{ url_for('update_offline') }}" method="POST" enctype="multipart/form-data">
-                    <input type="file" 
-                           name="update_file" 
-                           accept=".zip" 
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rdc-blue focus:border-transparent mb-3">
-                    <button type="submit" 
-                            class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center justify-center">
-                        <i class="fas fa-upload mr-2"></i>
-                        {{ t('install_update') or 'Installer la mise à jour' }}
-                    </button>
-                </form>
-            </div>
+        <div style="margin-top:.625rem;font-size:.75rem;color:var(--t-muted);display:flex;flex-direction:column;gap:.25rem;">
+          <span><i class="fas fa-shield-alt" style="color:var(--success);margin-right:.25rem;"></i>Sauvegarde automatique avant mise à jour</span>
+          <span><i class="fas fa-check" style="color:var(--success);margin-right:.25rem;"></i>Base de données et fichiers préservés</span>
         </div>
-        
-        <!-- Informations importantes sur la mise à jour -->
-        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 class="font-medium text-blue-900 mb-2 flex items-center">
-                <i class="fas fa-info-circle mr-2"></i>
-                Informations importantes sur la mise à jour Git
-            </h4>
-            <div class="text-sm text-blue-800 space-y-1">
-                <div class="flex items-start">
-                    <i class="fas fa-database text-green-600 mr-2 mt-0.5"></i>
-                    <span><strong>Base de données complète</strong> - Toutes les tables PostgreSQL sauvegardées</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-file-archive text-green-600 mr-2 mt-0.5"></i>
-                    <span><strong>Fichiers téléchargés</strong> - Toutes les pièces jointes préservées</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-cogs text-green-600 mr-2 mt-0.5"></i>
-                    <span><strong>Configuration système</strong> - Paramètres et variables d'environnement</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-users-cog text-green-600 mr-2 mt-0.5"></i>
-                    <span><strong>Paramètres utilisateurs</strong> - Comptes, rôles et permissions</span>
-                </div>
-                <div class="flex items-start">
-                    <i class="fas fa-shield-alt text-green-600 mr-2 mt-0.5"></i>
-                    <span><strong>Sauvegarde automatique</strong> - Créée avant chaque mise à jour</span>
-                </div>
-            </div>
-        </div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r-md);padding:1.25rem;">
+        <div style="font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem;"><i class="fas fa-file-upload" style="color:var(--success);"></i> Mise à jour hors ligne</div>
+        <p style="font-size:.8125rem;color:var(--t-secondary);margin-bottom:.875rem;">Installer une mise à jour depuis un fichier .zip.</p>
+        <form action="{{ url_for('update_offline') }}" method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:.625rem;">
+          <input type="file" name="update_file" accept=".zip" required class="gec-input" style="padding:.4rem .75rem;">
+          <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;"><i class="fas fa-upload"></i> Installer la mise à jour</button>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function togglePasswordVisibility(inputId, button) {
-    const input = document.getElementById(inputId);
-    const icon = button.querySelector('i');
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
+function togglePwd(id,btn){
+  const i=document.getElementById(id);const icon=btn.querySelector('i');
+  if(i.type==='password'){i.type='text';icon.classList.replace('fa-eye','fa-eye-slash');}
+  else{i.type='password';icon.classList.replace('fa-eye-slash','fa-eye');}
 }
-
-// Auto-refresh backup list every 30 seconds
-setInterval(() => {
-    // Refresh the page content without full reload
-    if (document.querySelector('.backup-table')) {
-        fetch(window.location.href)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const newDoc = parser.parseFromString(html, 'text/html');
-                const newTable = newDoc.querySelector('.backup-table');
-                if (newTable) {
-                    document.querySelector('.backup-table').innerHTML = newTable.innerHTML;
-                }
-            })
-            .catch(console.error);
-    }
-}, 30000);
 </script>
 {% endblock %}

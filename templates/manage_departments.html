@@ -1,146 +1,111 @@
 {% extends "new_base.html" %}
-
-{% block title %}Gestion des {{ get_appellation_entites() }} - {{ t('app_name') }}{% endblock %}
+{% block title %}Gestion des {{ get_appellation_entites() }} — GEC{% endblock %}
 
 {% block content %}
-<!-- En-tête avec bouton d'ajout -->
-<div class="flex justify-between items-center mb-6">
-    <div>
-        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-building mr-3 text-rdc-blue"></i>
-            {{ t('departments_management') or 'Gestion des' }} {{ get_appellation_entites() }}
-        </h1>
-        <p class="text-gray-600 mt-2">{{ t('manage_departments') or 'Gérez les' }} {{ get_appellation_entites()|lower }} et assignez les chefs de {{ get_appellation_entites()[:-1]|lower }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">{{ get_appellation_entites() }}</span>
     </div>
-    <div class="flex space-x-3">
-        <a href="{{ url_for('add_department') }}" 
-           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-            <i class="fas fa-plus mr-2"></i>
-            {{ t('new_department') or 'Nouveau' }} {{ get_appellation_entites()[:-1] }}
-        </a>
-    </div>
+    <h1 class="gec-page-title"><i class="fas fa-building" style="color:var(--primary);margin-right:.5rem;"></i>Gestion des {{ get_appellation_entites() }}</h1>
+    <p class="gec-page-subtitle">Gérez les {{ get_appellation_entites()|lower }} et assignez les responsables</p>
+  </div>
+  <a href="{{ url_for('add_department') }}" class="gec-btn gec-btn-primary">
+    <i class="fas fa-plus"></i> Nouveau {{ get_appellation_entites()[:-1] }}
+  </a>
 </div>
 
-<!-- Liste des {{ get_appellation_entites()|lower }} -->
-<div class="bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-list mr-2 text-rdc-blue"></i>
-            {{ t('departments_list') or get_appellation_entites() }} ({{ departements|length }})
-        </h2>
-    </div>
-    <div class="p-6">
-        {% if departements %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('department') or get_appellation_entites()[:-1] }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('code') or 'Code' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('department_head') or 'Chef de' }} {{ get_appellation_entites()[:-1] }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('users_count') or 'Utilisateurs' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('status') or 'Statut' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('actions') or 'Actions' }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for dept in departements %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="h-10 w-10 rounded-full bg-rdc-blue bg-opacity-10 flex items-center justify-center mr-3">
-                                    <i class="fas fa-building text-rdc-blue"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ dept.nom }}</div>
-                                    <div class="text-xs text-gray-500">{{ dept.description or t('no_description') or 'Aucune description' }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {{ dept.code }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if dept.chef_departement %}
-                                <div class="flex items-center">
-                                    <img src="{{ dept.chef_departement.get_profile_photo_url() }}" 
-                                         alt="Photo" 
-                                         class="h-8 w-8 rounded-full mr-2">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ dept.chef_departement.nom_complet }}</div>
-                                        <div class="text-xs text-gray-500">{{ dept.chef_departement.email }}</div>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <span class="text-gray-400 italic">{{ t('not_assigned') or 'Non assigné' }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ dept.utilisateurs|length }} utilisateur{{ 's' if dept.utilisateurs|length > 1 else '' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if dept.actif %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-1"></i>
-                                    {{ t('active') or 'Actif' }}
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    <i class="fas fa-times-circle mr-1"></i>
-                                    {{ t('inactive') or 'Inactif' }}
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-2">
-                                <a href="{{ url_for('edit_department', dept_id=dept.id) }}" 
-                                   class="text-blue-600 hover:text-blue-900">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                {% if dept.utilisateurs|length == 0 %}
-                                <form method="POST" action="{{ url_for('delete_department', dept_id=dept.id) }}" 
-                                      onsubmit="return confirm('{{ t('confirm_delete_department') or 'Êtes-vous sûr de vouloir supprimer ce' }} {{ get_appellation_entites()[:-1]|lower }} ?')" 
-                                      class="inline">
-                                    <button type="submit" class="text-red-600 hover:text-red-900">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-12">
-            <i class="fas fa-building text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_departments') or 'Aucun' }} {{ get_appellation_entites()[:-1]|lower }}</h3>
-            <p class="text-gray-500 mb-6">{{ t('create_first_department') or 'Commencez par créer votre premier' }} {{ get_appellation_entites()[:-1]|lower }}.</p>
-            <a href="{{ url_for('add_department') }}" 
-               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                <i class="fas fa-plus mr-2"></i>
-                {{ t('create_department') or 'Créer un' }} {{ get_appellation_entites()[:-1]|lower }}
-            </a>
-        </div>
-        {% endif %}
-    </div>
+<div class="gec-card">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-list"></i> {{ get_appellation_entites() }} ({{ departements|length }})</span>
+  </div>
+
+  {% if departements %}
+  <div class="gec-table-wrap">
+    <table class="gec-table">
+      <thead>
+        <tr>
+          <th>{{ get_appellation_entites()[:-1] }}</th>
+          <th>Code</th>
+          <th>Responsable</th>
+          <th>Utilisateurs</th>
+          <th>Statut</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in departements %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <div style="width:36px;height:36px;border-radius:var(--r-md);background:var(--primary-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-building" style="color:var(--primary);font-size:.875rem;"></i>
+              </div>
+              <div>
+                <div style="font-weight:600;color:var(--t-primary);font-size:.875rem;">{{ dept.nom }}</div>
+                {% if dept.description %}
+                <div style="font-size:.75rem;color:var(--t-muted);">{{ dept.description }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td><span class="gec-badge gec-badge-gray">{{ dept.code }}</span></td>
+          <td>
+            {% if dept.chef_departement %}
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <div class="gec-avatar gec-avatar-sm">
+                <img src="{{ dept.chef_departement.get_profile_photo_url() }}" alt="{{ dept.chef_departement.nom_complet }}">
+              </div>
+              <div>
+                <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">{{ dept.chef_departement.nom_complet }}</div>
+                <div style="font-size:.75rem;color:var(--t-muted);">{{ dept.chef_departement.email }}</div>
+              </div>
+            </div>
+            {% else %}
+            <span style="color:var(--t-placeholder);font-style:italic;">Non assigné</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="gec-badge gec-badge-blue"><i class="fas fa-users"></i> {{ dept.utilisateurs|length }}</span>
+          </td>
+          <td>
+            {% if dept.actif %}
+            <span class="gec-badge gec-badge-green"><i class="fas fa-check-circle"></i> Actif</span>
+            {% else %}
+            <span class="gec-badge gec-badge-red"><i class="fas fa-times-circle"></i> Inactif</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right;">
+            <div class="gec-actions-row" style="justify-content:flex-end;">
+              <a href="{{ url_for('edit_department', dept_id=dept.id) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Modifier">
+                <i class="fas fa-edit"></i>
+              </a>
+              {% if dept.utilisateurs|length == 0 %}
+              <form method="POST" action="{{ url_for('delete_department', dept_id=dept.id) }}"
+                    onsubmit="return confirm('Supprimer ce {{ get_appellation_entites()[:-1]|lower }} ?')" class="inline">
+                <button type="submit" class="gec-btn gec-btn-icon gec-btn-sm" style="color:var(--danger);background:transparent;border:none;" title="Supprimer">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="gec-empty">
+    <div class="gec-empty-icon"><i class="fas fa-building"></i></div>
+    <div class="gec-empty-title">Aucun {{ get_appellation_entites()[:-1]|lower }}</div>
+    <div class="gec-empty-desc">Commencez par créer votre premier {{ get_appellation_entites()[:-1]|lower }}.</div>
+    <a href="{{ url_for('add_department') }}" class="gec-btn gec-btn-primary">
+      <i class="fas fa-plus"></i> Créer un {{ get_appellation_entites()[:-1]|lower }}
+    </a>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

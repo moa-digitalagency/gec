@@ -1,200 +1,115 @@
 {% extends "new_base.html" %}
-
-{% block title %}Gestion des Templates Email - GEC{% endblock %}
+{% block title %}Templates Email — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <div class="flex justify-between items-start">
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Templates Email</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-envelope-open-text" style="color:var(--primary);margin-right:.5rem;"></i>Templates Email</h1>
+    <p class="gec-page-subtitle">Configurez les templates pour les notifications en français et anglais</p>
+  </div>
+  <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau template</a>
+</div>
+
+{% if templates %}
+<div class="gec-grid-2">
+  {% for template in templates %}
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <div style="width:40px;height:40px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+          {% if template.type_template == 'new_mail' %}background:#ECFDF5;color:var(--success);
+          {% elif template.type_template == 'mail_forwarded' %}background:var(--info-light);color:var(--primary);
+          {% else %}background:var(--body-bg);color:var(--t-muted);{% endif %}">
+          <i class="fas {% if template.type_template == 'new_mail' %}fa-bell{% elif template.type_template == 'mail_forwarded' %}fa-share{% else %}fa-envelope{% endif %}"></i>
+        </div>
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-                <i class="fas fa-envelope-open-text mr-3 text-rdc-blue"></i>
-                {{ t('email_templates_management') or 'Gestion des Templates Email' }}
-            </h1>
-            <p class="mt-2 text-gray-600">{{ t('configure_email_templates') or 'Configurez les templates d\'email pour les notifications en français et anglais' }}</p>
+          <span class="gec-card-title">
+            {% if template.type_template == 'new_mail' %}Nouveau Courrier
+            {% elif template.type_template == 'mail_forwarded' %}Transmission Courrier
+            {% else %}{{ template.type_template.replace('_',' ').title() }}{% endif %}
+          </span>
+          <div style="display:flex;gap:.375rem;margin-top:.25rem;">
+            <span class="gec-badge {% if template.langue == 'fr' %}gec-badge-blue{% else %}gec-badge-green{% endif %}" style="font-size:.625rem;">
+              {% if template.langue == 'fr' %}🇫🇷 Français{% else %}🇬🇧 English{% endif %}
+            </span>
+            <span class="gec-badge {% if template.actif %}gec-badge-green{% else %}gec-badge-red{% endif %}" style="font-size:.625rem;">
+              {% if template.actif %}Actif{% else %}Inactif{% endif %}
+            </span>
+          </div>
         </div>
-        <a href="{{ url_for('add_email_template') }}" 
-           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-            <i class="fas fa-plus mr-2"></i>
-            {{ t('new_template') or 'Nouveau Template' }}
-        </a>
+      </div>
+      <div style="display:flex;gap:.375rem;">
+        <a href="{{ url_for('edit_email_template', template_id=template.id) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Modifier"><i class="fas fa-edit"></i></a>
+        <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template|safe }}', '{{ template.langue|safe }}')" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" style="color:var(--danger);" title="Supprimer" type="button"><i class="fas fa-trash"></i></button>
+      </div>
     </div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.625rem;">
+      <div>
+        <div style="font-size:.75rem;color:var(--t-muted);margin-bottom:.25rem;">Sujet</div>
+        <div style="font-size:.875rem;color:var(--t-primary);background:var(--body-bg);padding:.375rem .625rem;border-radius:var(--r-sm);">{{ template.sujet }}</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--t-muted);margin-bottom:.25rem;">Aperçu HTML</div>
+        <div style="font-size:.75rem;color:var(--t-secondary);background:var(--body-bg);padding:.375rem .625rem;border-radius:var(--r-sm);max-height:64px;overflow:hidden;line-height:1.5;">
+          {{ template.contenu_html[:200] }}{% if template.contenu_html|length > 200 %}…{% endif %}
+        </div>
+      </div>
+      <div style="font-size:.75rem;color:var(--t-muted);display:flex;justify-content:space-between;padding-top:.375rem;border-top:1px solid var(--border);">
+        <span>Par {{ template.cree_par.nom_complet }} — {{ template.date_creation.strftime('%d/%m/%Y') }}</span>
+        {% if template.date_modification > template.date_creation %}<span>Modifié le {{ template.date_modification.strftime('%d/%m/%Y') }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
-
-<!-- Templates Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {% for template in templates %}
-    <div class="bg-white shadow-rdc rounded-xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        {% if template.type_template == 'new_mail' %}
-                            <i class="fas fa-bell text-2xl text-rdc-blue"></i>
-                        {% elif template.type_template == 'mail_forwarded' %}
-                            <i class="fas fa-share text-2xl text-rdc-green"></i>
-                        {% else %}
-                            <i class="fas fa-envelope text-2xl text-gray-500"></i>
-                        {% endif %}
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-gray-900">
-                            {% if template.type_template == 'new_mail' %}
-                                Nouveau Courrier
-                            {% elif template.type_template == 'mail_forwarded' %}
-                                Transmission Courrier
-                            {% else %}
-                                {{ template.type_template.title() }}
-                            {% endif %}
-                        </h3>
-                        <div class="flex items-center mt-1">
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                                {% if template.langue == 'fr' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
-                                {% if template.langue == 'fr' %}
-                                    🇫🇷 Français
-                                {% else %}
-                                    🇺🇸 English
-                                {% endif %}
-                            </span>
-                            <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                                {% if template.actif %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                {% if template.actif %}
-                                    <i class="fas fa-check-circle mr-1"></i>Actif
-                                {% else %}
-                                    <i class="fas fa-times-circle mr-1"></i>Inactif
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <a href="{{ url_for('edit_email_template', template_id=template.id) }}" 
-                       class="text-rdc-blue hover:text-blue-700 transition-colors"
-                       title="Modifier">
-                        <i class="fas fa-edit text-lg"></i>
-                    </a>
-                    <button onclick="confirmDelete({{ template.id }}, '{{ template.type_template|safe }}', '{{ template.langue|safe }}')" 
-                            class="text-red-600 hover:text-red-700 transition-colors"
-                            title="Supprimer"
-                            type="button">
-                        <i class="fas fa-trash text-lg"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="px-6 py-4">
-            <div class="space-y-3">
-                <div>
-                    <label class="text-sm font-medium text-gray-500">{{ t('template_subject') or 'Sujet :' }}</label>
-                    <p class="text-sm text-gray-900 bg-gray-50 px-2 py-1 rounded">{{ template.sujet }}</p>
-                </div>
-                
-                <div>
-                    <label class="text-sm font-medium text-gray-500">{{ t('html_preview') or 'Aperçu HTML :' }}</label>
-                    <div class="mt-1 border border-gray-200 rounded bg-gray-50 p-2 max-h-32 overflow-y-auto">
-                        <div class="text-xs text-gray-600">
-                            {{ template.contenu_html[:200] }}{% if template.contenu_html|length > 200 %}...{% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="text-xs text-gray-500 flex items-center justify-between">
-                    <span>{{ t('created_by') or 'Créé par' }} {{ template.cree_par.nom_complet }} le {{ template.date_creation.strftime('%d/%m/%Y') }}</span>
-                    {% if template.date_modification > template.date_creation %}
-                        <span>{{ t('modified_on') or 'Modifié le' }} {{ template.date_modification.strftime('%d/%m/%Y') }}</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="lg:col-span-2">
-        <div class="text-center py-12">
-            <i class="fas fa-envelope-open-text text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_email_templates') or 'Aucun template email' }}</h3>
-            <p class="text-gray-500 mb-6">{{ t('create_first_template') or 'Commencez par créer votre premier template d\'email pour les notifications.' }}</p>
-            <a href="{{ url_for('add_email_template') }}" 
-               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700">
-                <i class="fas fa-plus mr-2"></i>
-                {{ t('create_template') or 'Créer un Template' }}
-            </a>
-        </div>
-    </div>
-    {% endfor %}
+{% else %}
+<div class="gec-card">
+  <div class="gec-empty">
+    <div class="gec-empty-icon"><i class="fas fa-envelope-open-text"></i></div>
+    <div class="gec-empty-title">Aucun template email</div>
+    <div class="gec-empty-desc">Créez votre premier template pour les notifications.</div>
+    <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary" style="margin-top:1rem;"><i class="fas fa-plus"></i> Créer un template</a>
+  </div>
 </div>
+{% endif %}
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-2">{{ t('confirm_template_deletion') or 'Confirmer la suppression' }}</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="deleteMessage">
-                    {{ t('confirm_delete_template') or 'Êtes-vous sûr de vouloir supprimer ce template ?' }}
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="confirmDelete" 
-                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    {{ t('delete') or 'Supprimer' }}
-                </button>
-                <button onclick="closeDeleteModal()" 
-                        class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    {{ t('cancel') or 'Annuler' }}
-                </button>
-            </div>
-        </div>
+<!-- Delete Modal -->
+<div id="deleteModal" class="gec-modal-overlay" style="display:none;" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="gec-modal" style="max-width:420px;">
+    <div class="gec-modal-header">
+      <span class="gec-modal-title"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Confirmer la suppression</span>
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon"><i class="fas fa-times"></i></button>
     </div>
+    <div class="gec-modal-body">
+      <p id="deleteMessage" style="font-size:.9375rem;color:var(--t-secondary);"></p>
+    </div>
+    <div class="gec-modal-footer">
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-secondary">Annuler</button>
+      <button id="confirmDeleteBtn" class="gec-btn gec-btn-danger"><i class="fas fa-trash"></i> Supprimer</button>
+    </div>
+  </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
-let deleteTemplateId = null;
-
-function confirmDelete(templateId, typeTemplate, langue) {
-    deleteTemplateId = templateId;
-    const message = `Êtes-vous sûr de vouloir supprimer le template "${typeTemplate}" en ${langue === 'fr' ? 'français' : 'anglais'} ?`;
-    document.getElementById('deleteMessage').textContent = message;
-    document.getElementById('deleteModal').classList.remove('hidden');
+let deleteTemplateId=null;
+function confirmDelete(id,type,lang){
+  deleteTemplateId=id;
+  document.getElementById('deleteMessage').textContent=`Supprimer le template "${type}" en ${lang==='fr'?'français':'anglais'} ?`;
+  document.getElementById('deleteModal').style.display='flex';
 }
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-    deleteTemplateId = null;
-}
-
-document.getElementById('confirmDelete').addEventListener('click', function() {
-    if (deleteTemplateId) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/delete_email_template/${deleteTemplateId}`;
-        
-        // Add CSRF token if needed
-        const csrfToken = document.querySelector('meta[name=csrf-token]');
-        if (csrfToken) {
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = 'csrf_token';
-            tokenInput.value = csrfToken.getAttribute('content');
-            form.appendChild(tokenInput);
-        }
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-});
-
-// Close modal when clicking outside
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeDeleteModal();
-    }
+function closeDeleteModal(){document.getElementById('deleteModal').style.display='none';deleteTemplateId=null;}
+document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
+  if(deleteTemplateId){
+    const f=document.createElement('form');f.method='POST';f.action=`/delete_email_template/${deleteTemplateId}`;
+    document.body.appendChild(f);f.submit();
+  }
 });
 </script>
 {% endblock %}

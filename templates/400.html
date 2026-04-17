@@ -1,37 +1,44 @@
 {% extends "new_base.html" %}
-
-{% block title %}Mauvaise Requête - 400 - GEC{% endblock %}
+{% block title %}Mauvaise Requête — 400 — GEC{% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex flex-col items-center justify-center p-4">
-    <!-- Lottie Animation -->
-    <div class="w-full max-w-sm mx-auto mb-6">
-        <lottie-player src="https://assets5.lottiefiles.com/packages/lf20_qpwbv897.json" background="transparent" speed="1" style="width: 300px; height: 300px; margin: 0 auto;" loop autoplay></lottie-player>
+<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+  <div style="max-width:560px;width:100%;text-align:center;display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- Code -->
+    <div style="font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--warning),#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">400</div>
+
+    <!-- Card -->
+    <div class="gec-card">
+      <div style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7);padding:1.25rem 1.5rem;border-bottom:1px solid rgba(245,158,11,.2);border-radius:var(--card-radius) var(--card-radius) 0 0;">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div style="width:44px;height:44px;border-radius:50%;background:#F59E0B;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-question" style="color:white;font-size:1.125rem;"></i>
+          </div>
+          <div style="text-align:left;">
+            <h1 style="font-size:1.125rem;font-weight:700;color:#92400E;margin-bottom:.125rem;">J'ai presque compris…</h1>
+            <p style="font-size:.875rem;color:#B45309;font-style:italic;">…mais ta demande est mal fichue.</p>
+          </div>
+        </div>
+      </div>
+      <div class="gec-card-body" style="text-align:left;">
+        <p style="font-size:.875rem;color:var(--t-secondary);margin-bottom:.875rem;">Le serveur essaie vraiment de coopérer, mais la syntaxe de votre requête lui donne la migraine.</p>
+        <div class="gec-alert gec-alert-warning" style="font-size:.8125rem;">
+          <i class="fas fa-terminal"></i>
+          <div><strong>Diagnostic :</strong> Erreur de syntaxe client. (Oui, c'est probablement vous, pas moi. Sans rancune ? 😉)</div>
+        </div>
+      </div>
     </div>
 
-    <div class="text-center max-w-2xl mx-auto space-y-6">
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-r-lg shadow-sm text-left">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Erreur 400 : J'ai presque compris...</h1>
-            <p class="text-xl text-rdc-blue italic font-medium">...mais ta demande est mal fichue.</p>
-            <div class="mt-4 text-gray-700">
-                <p class="mb-2">Le serveur essaie vraiment de coopérer, mais la syntaxe de votre requête lui donne la migraine.</p>
-                <p class="text-sm bg-white p-3 rounded border border-yellow-200 mt-3">
-                    <i class="fas fa-terminal mr-2 text-gray-400"></i>
-                    <strong>Diagnostic :</strong> Erreur de syntaxe client. (Oui, c'est probablement vous, pas moi. Sans rancune ? 😉)
-                </p>
-            </div>
-        </div>
-
-        <div class="flex justify-center space-x-4">
-            <a href="{{ url_for('dashboard') }}" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90 transition-all font-medium shadow-md">
-                <i class="fas fa-redo mr-2"></i>Réessayer proprement
-            </a>
-            <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium">
-                <i class="fab fa-whatsapp mr-2 text-green-500"></i>C'est un bug ? Signaler
-            </a>
-        </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-primary">
+        <i class="fas fa-redo"></i> Réessayer proprement
+      </a>
+      <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="gec-btn gec-btn-secondary">
+        <i class="fab fa-whatsapp" style="color:#16a34a;"></i> C'est un bug ? Signaler
+      </a>
     </div>
+
+  </div>
 </div>
-
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 {% endblock %}

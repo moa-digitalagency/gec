@@ -48,7 +48,7 @@
       <i class="fas fa-clock"></i>
     </div>
     <div class="gec-stat-body">
-      <div class="gec-stat-label">EN_COURS &gt; 7 jours</div>
+      <div class="gec-stat-label">En cours &gt; 7 jours</div>
       <div class="gec-stat-value" style="color:{% if role_data.en_cours_retard > 0 %}var(--danger){% else %}var(--success){% endif %};">
         {{ role_data.en_cours_retard }}
       </div>
@@ -101,20 +101,20 @@
     </div>
     <div class="gec-card-body-sm">
       {% set statut_styles = {
-        'RECU':     ('gec-status-recu',     'fa-envelope'),
-        'EN_COURS': ('gec-status-en_cours', 'fa-spinner'),
-        'TRAITE':   ('gec-status-traite',   'fa-check-circle'),
-        'ARCHIVE':  ('gec-status-archive',  'fa-archive'),
-        'URGENT':   ('gec-status-urgent',   'fa-exclamation-circle'),
-        'REJETE':   ('gec-status-rejete',   'fa-times-circle')
+        'RECU':     ('gec-status-recu',     'fa-envelope',          'Reçu'),
+        'EN_COURS': ('gec-status-en_cours', 'fa-spinner',           'En cours'),
+        'TRAITE':   ('gec-status-traite',   'fa-check-circle',      'Traité'),
+        'ARCHIVE':  ('gec-status-archive',  'fa-archive',           'Archivé'),
+        'URGENT':   ('gec-status-urgent',   'fa-exclamation-circle','Urgent'),
+        'REJETE':   ('gec-status-rejete',   'fa-times-circle',      'Rejeté')
       } %}
       <div style="display:flex;flex-direction:column;gap:0.625rem;">
         {% for statut, count in role_data.statut_counts.items() %}
-        {% set style = statut_styles.get(statut, ('gec-badge-gray','fa-circle')) %}
+        {% set style = statut_styles.get(statut, ('gec-badge-gray','fa-circle', statut.replace('_',' ')|title)) %}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
           <span class="gec-badge {{ style[0] }}">
             <i class="fas {{ style[1] }}" style="font-size:0.5rem;"></i>
-            {{ statut }}
+            {{ style[2] }}
           </span>
           <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
             {% set pct = [(count / [total_courriers, 1]|max * 100)|int, 100]|min %}
@@ -162,7 +162,7 @@
     </div>
     <div class="gec-card-body" style="text-align:center;">
       <div style="font-size:3.5rem;font-weight:800;color:var(--danger);line-height:1;">{{ role_data.en_cours_retard }}</div>
-      <p style="font-size:0.875rem;color:var(--t-muted);margin:0.5rem 0 1.25rem;">courrier(s) EN_COURS &gt; 7 jours</p>
+      <p style="font-size:0.875rem;color:var(--t-muted);margin:0.5rem 0 1.25rem;">courrier(s) <strong>en cours</strong> depuis plus de 7 jours</p>
       <div style="display:flex;gap:0.625rem;justify-content:center;">
         <a href="{{ url_for('view_mail', statut='EN_COURS') }}" class="gec-btn gec-btn-secondary gec-btn-sm">
           <i class="fas fa-eye"></i>Voir

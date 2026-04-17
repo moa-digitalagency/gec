@@ -1,98 +1,63 @@
 {% extends "new_base.html" %}
-
-{% block title %}Nouveau {{ get_appellation_entites()[:-1] }} - {{ t('app_name') }}{% endblock %}
+{% block title %}Nouveau {{ get_appellation_entites()[:-1] }} — GEC{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-    <!-- En-tête -->
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-plus-circle mr-3 text-rdc-blue"></i>
-            Nouveau {{ get_appellation_entites()[:-1] }}
-        </h1>
-        <p class="text-gray-600 mt-2">Créez un nouveau {{ get_appellation_entites()[:-1]|lower }} avec ses informations</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('manage_departments') }}">{{ get_appellation_entites() }}</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Nouveau</span>
     </div>
+    <h1 class="gec-page-title"><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:.5rem;"></i>Nouveau {{ get_appellation_entites()[:-1] }}</h1>
+    <p class="gec-page-subtitle">Créer une nouvelle entité organisationnelle</p>
+  </div>
+  <a href="{{ url_for('manage_departments') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
+</div>
 
-    <!-- Formulaire -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900">Informations du {{ get_appellation_entites()[:-1]|lower }}</h2>
+<div style="max-width:560px;">
+  <form method="POST">
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-building"></i> Informations du {{ get_appellation_entites()[:-1] }}</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+
+        <div class="gec-form-group">
+          <label class="gec-label" for="nom"><i class="fas fa-tag" style="color:var(--primary);"></i> Nom <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="nom" name="nom" required class="gec-input" placeholder="Ex: Direction Générale">
         </div>
-        <form method="POST" class="p-6 space-y-6">
-            <!-- Nom du {{ get_appellation_entites()[:-1]|lower }} -->
-            <div>
-                <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-building mr-1 text-rdc-blue"></i>
-                    Nom du {{ get_appellation_entites()[:-1]|lower }}
-                </label>
-                <input type="text" 
-                       id="nom" 
-                       name="nom" 
-                       required
-                       placeholder="Ex: Direction Générale"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-            </div>
 
-            <!-- Code du {{ get_appellation_entites()[:-1]|lower }} -->
-            <div>
-                <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-tag mr-1 text-rdc-blue"></i>
-                    Code du {{ get_appellation_entites()[:-1]|lower }}
-                </label>
-                <input type="text" 
-                       id="code" 
-                       name="code" 
-                       required
-                       maxlength="10"
-                       placeholder="Ex: SG"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                <p class="text-xs text-gray-500 mt-1">Code court unique (max 10 caractères)</p>
-            </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="code"><i class="fas fa-tag" style="color:var(--primary);"></i> Code <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="code" name="code" required maxlength="10" class="gec-input" placeholder="Ex: DG">
+          <p class="gec-form-hint">Code court unique (max 10 caractères).</p>
+        </div>
 
-            <!-- Description -->
-            <div>
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-align-left mr-1 text-rdc-blue"></i>
-                    Description
-                </label>
-                <textarea id="description" 
-                          name="description" 
-                          rows="3"
-                          placeholder="Description du {{ get_appellation_entites()[:-1]|lower }} et de ses missions"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"></textarea>
-            </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="description"><i class="fas fa-align-left" style="color:var(--primary);"></i> Description</label>
+          <textarea id="description" name="description" rows="3" class="gec-textarea"
+                    placeholder="Description du {{ get_appellation_entites()[:-1]|lower }} et de ses missions"></textarea>
+        </div>
 
-            <!-- Chef de {{ get_appellation_entites()[:-1]|lower }} -->
-            <div>
-                <label for="chef_departement_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-user-tie mr-1 text-rdc-blue"></i>
-                    Chef de {{ get_appellation_entites()[:-1]|lower }}
-                </label>
-                <select id="chef_departement_id" 
-                        name="chef_departement_id"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                    <option value="">Sélectionner un chef de {{ get_appellation_entites()[:-1]|lower }}</option>
-                    {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.nom_complet }} ({{ user.email }})</option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs text-gray-500 mt-1">Optionnel - Peut être assigné plus tard</p>
-            </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="chef_departement_id"><i class="fas fa-user-tie" style="color:var(--primary);"></i> Responsable</label>
+          <select id="chef_departement_id" name="chef_departement_id" class="gec-select">
+            <option value="">Aucun responsable assigné</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.nom_complet }} ({{ user.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
 
-            <!-- Boutons d'action -->
-            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <a href="{{ url_for('manage_departments') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Annuler
-                </a>
-                <button type="submit" 
-                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                    <i class="fas fa-save mr-2"></i>
-                    Créer le {{ get_appellation_entites()[:-1]|lower }}
-                </button>
-            </div>
-        </form>
+      </div>
+      <div class="gec-card-footer" style="display:flex;justify-content:flex-end;gap:.75rem;">
+        <a href="{{ url_for('manage_departments') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</a>
+        <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-save"></i> Créer</button>
+      </div>
     </div>
+  </form>
 </div>
 {% endblock %}

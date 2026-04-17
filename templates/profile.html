@@ -1,253 +1,136 @@
 {% extends "new_base.html" %}
-
-{% block title %}Mon Profil - GEC{% endblock %}
+{% block title %}Mon Profil — GEC{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="mb-6">
-    <nav class="flex" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-            <li>
-                <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
-                    <i class="fas fa-home"></i>
-                    <span class="sr-only">Accueil</span>
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <span class="text-sm font-medium text-gray-900">Mon Profil</span>
-                </div>
-            </li>
-        </ol>
-    </nav>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Mon Profil</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-user-circle" style="color:var(--primary);margin-right:.5rem;"></i>Mon Profil</h1>
+    <p class="gec-page-subtitle">Informations personnelles et paramètres du compte</p>
+  </div>
+  <a href="{{ url_for('edit_profile') }}" class="gec-btn gec-btn-primary"><i class="fas fa-edit"></i> Modifier</a>
 </div>
 
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-user-circle mr-3 text-rdc-blue"></i>
-        Mon Profil
-    </h1>
-    <p class="mt-2 text-gray-600">Consultez et gérez vos informations personnelles</p>
+<!-- Profile header card -->
+<div class="gec-card" style="margin-bottom:1.5rem;overflow:visible;">
+  <div style="background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 100%);padding:2rem;border-radius:var(--card-radius) var(--card-radius) 0 0;position:relative;">
+    <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+      <div class="gec-avatar" style="width:80px;height:80px;font-size:1.375rem;border:3px solid rgba(255,255,255,.2);flex-shrink:0;">
+        {% if user.photo_profile %}
+          <img src="{{ user.get_profile_photo_url() }}" alt="{{ user.nom_complet }}">
+        {% else %}
+          {{ user.nom_complet[:2].upper() }}
+        {% endif %}
+      </div>
+      <div style="color:white;">
+        <h2 style="font-size:1.375rem;font-weight:700;margin-bottom:.25rem;">{{ user.nom_complet }}</h2>
+        <p style="color:rgba(255,255,255,.7);font-size:.875rem;margin-bottom:.5rem;"><i class="fas fa-at" style="margin-right:.375rem;"></i>{{ user.username }}</p>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          {% if user.role == 'super_admin' %}
+          <span class="gec-badge" style="background:rgba(239,68,68,.2);color:#FCA5A5;"><i class="fas fa-crown"></i> Super Admin</span>
+          {% elif user.role == 'admin' %}
+          <span class="gec-badge" style="background:rgba(245,158,11,.2);color:#FDE68A;"><i class="fas fa-user-shield"></i> Admin</span>
+          {% else %}
+          <span class="gec-badge" style="background:rgba(59,130,246,.2);color:#93C5FD;"><i class="fas fa-user"></i> Utilisateur</span>
+          {% endif %}
+          {% if user.actif %}
+          <span class="gec-badge" style="background:rgba(16,185,129,.2);color:#6EE7B7;"><i class="fas fa-check-circle"></i> Actif</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="gec-card-body">
+    <div class="gec-grid-2">
+      <!-- Infos personnelles -->
+      <div>
+        <div class="gec-section-title" style="margin-bottom:.75rem;"><i class="fas fa-id-card"></i> Informations personnelles</div>
+        <div class="gec-info-list">
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-envelope"></i> Email</span>
+            <span class="gec-info-val">{{ user.email }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-id-badge"></i> Matricule</span>
+            <span class="gec-info-val">{{ user.matricule or '—' }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-briefcase"></i> Fonction</span>
+            <span class="gec-info-val">{{ user.fonction or '—' }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-building"></i> {{ get_appellation_entites()[:-1] }}</span>
+            <span class="gec-info-val">{{ user.departement.nom if user.departement else '—' }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-language"></i> Langue</span>
+            <span class="gec-info-val">{{ user.langue|upper }}</span>
+          </div>
+        </div>
+      </div>
+      <!-- Infos compte -->
+      <div>
+        <div class="gec-section-title" style="margin-bottom:.75rem;"><i class="fas fa-sliders-h"></i> Informations du compte</div>
+        <div class="gec-info-list">
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-calendar-plus"></i> Créé le</span>
+            <span class="gec-info-val">
+              {% if user.date_creation %}{{ user.date_creation.strftime('%d/%m/%Y') }}{% else %}—{% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-clock"></i> Dernière connexion</span>
+            <span class="gec-info-val">
+              {% if user.derniere_connexion %}{{ user.derniere_connexion.strftime('%d/%m/%Y à %H:%M') }}{% else %}—{% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-shield-alt"></i> 2FA</span>
+            <span class="gec-info-val">
+              {% if user.totp_secret %}
+              <span class="gec-badge gec-badge-green"><i class="fas fa-check-circle"></i> Activé</span>
+              {% else %}
+              <span class="gec-badge gec-badge-gray"><i class="fas fa-times-circle"></i> Désactivé</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Profile Card -->
-<div class="max-w-4xl">
-    <div class="bg-white shadow-rdc rounded-xl overflow-hidden">
-        <!-- Header with photo -->
-        <div class="bg-gradient-to-r from-rdc-blue to-blue-600 px-6 py-8">
-            <div class="flex items-center space-x-6">
-                <div class="flex-shrink-0">
-                    {% if user.photo_profile %}
-                        <img src="{{ user.get_profile_photo_url() }}" 
-                             alt="Photo de {{ user.nom_complet }}" 
-                             class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
-                    {% else %}
-                        <div class="w-24 h-24 rounded-full bg-white flex items-center justify-center border-4 border-white shadow-lg">
-                            <span class="text-rdc-blue text-2xl font-bold">
-                                {{ user.nom_complet[:2].upper() }}
-                            </span>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="text-white">
-                    <h2 class="text-2xl font-bold">{{ user.nom_complet }}</h2>
-                    <p class="text-blue-100 flex items-center mt-1">
-                        <i class="fas fa-at mr-2"></i>{{ user.username }}
-                    </p>
-                    <div class="flex items-center mt-2">
-                        {% if user.role == 'super_admin' %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                <i class="fas fa-crown mr-1"></i>Super Administrateur
-                            </span>
-                        {% elif user.role == 'admin' %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                <i class="fas fa-user-shield mr-1"></i>Administrateur
-                            </span>
-                        {% else %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                <i class="fas fa-user mr-1"></i>Utilisateur
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+<!-- 2FA Section (super_admin only) -->
+{% if current_user.is_super_admin() %}
+<div class="gec-card">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-shield-alt"></i> Authentification à deux facteurs (2FA)</span>
+  </div>
+  <div class="gec-card-body">
+    {% if user.totp_secret %}
+    <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div class="gec-alert gec-alert-success" style="margin-bottom:1rem;">
+          <i class="fas fa-check-circle"></i>
+          <div><strong>2FA activé</strong><br><span style="font-size:.8125rem;">Votre compte est protégé par une authentification à deux facteurs.</span></div>
         </div>
-
-        <!-- Content -->
-        <div class="px-6 py-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Informations personnelles -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-user mr-2 text-rdc-blue"></i>
-                        Informations personnelles
-                    </h3>
-                    
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Email:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">{{ user.email }}</span>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <i class="fas fa-language w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Langue:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">
-                                {% if user.langue == 'fr' %}
-                                    🇫🇷 Français
-                                {% else %}
-                                    🇺🇸 English
-                                {% endif %}
-                            </span>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar-alt w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Membre depuis:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">
-                                {{ user.date_creation.strftime('%d/%m/%Y') if user.date_creation else 'N/A' }}
-                            </span>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <i class="fas fa-check-circle w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Statut:</span>
-                            {% if user.actif %}
-                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check mr-1"></i>Actif
-                                </span>
-                            {% else %}
-                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    <i class="fas fa-ban mr-1"></i>Inactif
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Informations professionnelles -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-briefcase mr-2 text-rdc-blue"></i>
-                        Informations professionnelles
-                    </h3>
-                    
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <i class="fas fa-id-badge w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Matricule:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">
-                                {{ user.matricule or 'Non défini' }}
-                            </span>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <i class="fas fa-user-tie w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">Fonction:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">
-                                {{ user.fonction or 'Non définie' }}
-                            </span>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <i class="fas fa-building w-5 text-gray-400 mr-3"></i>
-                            <span class="text-sm text-gray-600">{{ get_appellation_entites()[:-1] }}:</span>
-                            <span class="ml-2 text-sm font-medium text-gray-900">
-                                {% if user.departement %}
-                                    {{ user.departement.nom }} ({{ user.departement.code }})
-                                {% else %}
-                                    Non défini
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Actions -->
-        <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
-            <div class="text-sm text-gray-500">
-                <i class="fas fa-info-circle mr-1"></i>
-                Dernière mise à jour: {{ user.date_creation.strftime('%d/%m/%Y à %H:%M') if user.date_creation else 'N/A' }}
-            </div>
-            <a href="{{ url_for('edit_profile') }}"
-               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                <i class="fas fa-edit mr-2"></i>
-                Modifier mon profil
-            </a>
-        </div>
+        <form method="POST" action="{{ url_for('disable_2fa') }}" onsubmit="return confirm('Désactiver la 2FA réduira la sécurité de votre compte. Continuer ?')">
+          <button type="submit" class="gec-btn gec-btn-danger"><i class="fas fa-shield-alt"></i> Désactiver la 2FA</button>
+        </form>
+      </div>
     </div>
-
-    <!-- 2FA Section (super_admin uniquement) -->
-    {% if current_user.role == 'super_admin' %}
-    <div class="bg-white shadow-rdc rounded-xl mt-6">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-shield-alt text-rdc-blue"></i>
-                Double Authentification (2FA)
-            </h2>
-        </div>
-        <div class="p-6">
-            {% if current_user.totp_enabled %}
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                        <i class="fas fa-check-circle"></i> Activée
-                    </span>
-                    <p class="text-sm text-gray-600">Votre compte est protégé par la double authentification TOTP.</p>
-                </div>
-                <div>
-                    <button onclick="document.getElementById('disable-2fa-modal').style.display='flex'"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
-                        <i class="fas fa-lock-open"></i> Désactiver la 2FA
-                    </button>
-                </div>
-            </div>
-
-            <!-- Disable modal -->
-            <div id="disable-2fa-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
-                <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Désactiver la 2FA</h3>
-                    <p class="text-sm text-gray-500 mb-5">Saisissez votre code TOTP actuel pour confirmer.</p>
-                    <form method="POST" action="{{ url_for('disable_2fa') }}" autocomplete="off">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="text" name="token" inputmode="numeric" maxlength="7"
-                               placeholder="000 000" autofocus
-                               class="w-full text-center text-2xl font-bold tracking-widest border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none mb-4">
-                        <div class="flex gap-3">
-                            <button type="button" onclick="document.getElementById('disable-2fa-modal').style.display='none'"
-                                    class="flex-1 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                                Annuler
-                            </button>
-                            <button type="submit"
-                                    class="flex-1 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
-                                Confirmer
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {% else %}
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                        <i class="fas fa-lock-open"></i> Non activée
-                    </span>
-                    <p class="text-sm text-gray-600">Renforcez la sécurité de votre compte avec l'authentification à deux facteurs.</p>
-                </div>
-                <a href="{{ url_for('setup_2fa') }}"
-                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                    <i class="fas fa-shield-alt"></i> Activer la 2FA
-                </a>
-            </div>
-            {% endif %}
-        </div>
+    {% else %}
+    <div class="gec-alert gec-alert-warning" style="margin-bottom:1rem;">
+      <i class="fas fa-exclamation-triangle"></i>
+      <div><strong>2FA non activée</strong><br><span style="font-size:.8125rem;">En tant que super administrateur, il est fortement recommandé d'activer la 2FA.</span></div>
     </div>
+    <a href="{{ url_for('setup_2fa') }}" class="gec-btn gec-btn-primary"><i class="fas fa-lock"></i> Configurer la 2FA</a>
     {% endif %}
+  </div>
 </div>
+{% endif %}
 {% endblock %}

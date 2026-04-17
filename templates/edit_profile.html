@@ -1,536 +1,215 @@
 {% extends "new_base.html" %}
-
-{% block title %}Modifier Mon Profil - GEC{% endblock %}
+{% block title %}Modifier Mon Profil — GEC{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="mb-6">
-    <nav class="flex" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-            <li>
-                <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
-                    <i class="fas fa-home"></i>
-                    <span class="sr-only">Accueil</span>
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <a href="{{ url_for('profile') }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                        Mon Profil
-                    </a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <span class="text-sm font-medium text-gray-900">Modifier</span>
-                </div>
-            </li>
-        </ol>
-    </nav>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('profile') }}">Mon Profil</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Modifier</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-user-edit" style="color:var(--primary);margin-right:.5rem;"></i>Modifier Mon Profil</h1>
+    <p class="gec-page-subtitle">Mettez à jour vos informations personnelles et professionnelles</p>
+  </div>
+  <a href="{{ url_for('profile') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
 </div>
 
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-user-edit mr-3 text-rdc-blue"></i>
-        Modifier Mon Profil
-    </h1>
-    <p class="mt-2 text-gray-600">Mettez à jour vos informations personnelles et professionnelles</p>
-</div>
+<div style="max-width:680px;">
+  <form method="POST" enctype="multipart/form-data">
 
-<!-- Form -->
-<div class="max-w-2xl">
-    <form method="POST" enctype="multipart/form-data" class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
-            <h2 class="text-xl font-semibold text-white flex items-center">
-                <i class="fas fa-user-cog mr-2"></i>
-                Mes Informations
-            </h2>
+    <!-- Informations de base -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-id-card"></i> Informations personnelles</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-group">
+          <label class="gec-label" for="nom_complet"><i class="fas fa-user" style="color:var(--primary);font-size:.75rem;"></i> Nom complet <span style="color:var(--danger);">*</span></label>
+          <input type="text" name="nom_complet" id="nom_complet" value="{{ user.nom_complet }}" required class="gec-input">
         </div>
-        
-        <div class="p-6 space-y-6">
-            <!-- Nom complet -->
-            <div>
-                <label for="nom_complet" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-id-card mr-1 text-rdc-blue"></i>
-                    Nom complet *
-                </label>
-                <input type="text" 
-                       name="nom_complet" 
-                       id="nom_complet"
-                       value="{{ user.nom_complet }}"
-                       required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-            </div>
-            
-            <!-- Email -->
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-envelope mr-1 text-rdc-blue"></i>
-                    Email *
-                    {% if not current_user.is_super_admin() %}
-                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
-                    {% endif %}
-                </label>
-                <input type="email" 
-                       name="email" 
-                       id="email"
-                       value="{{ user.email }}"
-                       required
-                       {% if not current_user.is_super_admin() %}readonly{% endif %}
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}">
-                {% if not current_user.is_super_admin() %}
-                <p class="text-xs text-red-500 mt-1">
-                    <i class="fas fa-lock mr-1"></i>
-                    Ce champ ne peut être modifié que par un super administrateur.
-                </p>
-                {% endif %}
-            </div>
-            
-            <!-- Nouveau mot de passe -->
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-lock mr-1 text-rdc-blue"></i>
-                    Nouveau mot de passe
-                </label>
-                <input type="password" 
-                       name="password" 
-                       id="password"
-                       minlength="6"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Laisser vide pour conserver le mot de passe actuel">
-                <p class="text-xs text-gray-500 mt-1">Laisser vide si vous ne souhaitez pas changer le mot de passe</p>
-            </div>
-            
-            <!-- Language -->
-            <div>
-                <label for="langue" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-language mr-1 text-rdc-blue"></i>
-                    Langue *
-                </label>
-                <select name="langue" 
-                        id="langue"
-                        required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    {% for code, info in available_languages.items() %}
-                    <option value="{{ code }}" {% if user.langue == code %}selected{% endif %}>
-                        {{ info.flag }} {{ info.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Matricule -->
-            <div>
-                <label for="matricule" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-id-badge mr-1 text-rdc-blue"></i>
-                    Matricule
-                    {% if not current_user.is_super_admin() %}
-                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
-                    {% endif %}
-                </label>
-                <input type="text" 
-                       name="matricule" 
-                       id="matricule"
-                       value="{{ user.matricule or '' }}"
-                       {% if not current_user.is_super_admin() %}readonly{% endif %}
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}"
-                       placeholder="{% if current_user.is_super_admin() %}Entrez votre matricule (optionnel){% else %}Non modifiable{% endif %}">
-                {% if current_user.is_super_admin() %}
-                <p class="text-xs text-gray-500 mt-1">Numéro d'identification unique de l'employé</p>
-                {% else %}
-                <p class="text-xs text-red-500 mt-1">
-                    <i class="fas fa-lock mr-1"></i>
-                    Ce champ ne peut être modifié que par un super administrateur.
-                </p>
-                {% endif %}
-            </div>
-            
-            <!-- Fonction -->
-            <div>
-                <label for="fonction" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-briefcase mr-1 text-rdc-blue"></i>
-                    Fonction / Poste
-                    {% if not current_user.is_super_admin() %}
-                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
-                    {% endif %}
-                </label>
-                <input type="text" 
-                       name="fonction" 
-                       id="fonction"
-                       value="{{ user.fonction or '' }}"
-                       {% if not current_user.is_super_admin() %}readonly{% endif %}
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}"
-                       placeholder="{% if current_user.is_super_admin() %}Ex: Secrétaire, Directeur, Agent{% else %}Non modifiable{% endif %}">
-                {% if current_user.is_super_admin() %}
-                <p class="text-xs text-gray-500 mt-1">Poste ou fonction exercé dans l'organisation</p>
-                {% else %}
-                <p class="text-xs text-red-500 mt-1">
-                    <i class="fas fa-lock mr-1"></i>
-                    Ce champ ne peut être modifié que par un super administrateur.
-                </p>
-                {% endif %}
-            </div>
-            
-            <!-- {{ get_appellation_entites()[:-1] }} -->
-            <div>
-                <label for="departement_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-building mr-1 text-rdc-blue"></i>
-                    {{ get_appellation_entites()[:-1] }}
-                    {% if not current_user.is_super_admin() %}
-                        <span class="text-xs text-gray-500">(Seuls les super administrateurs peuvent modifier ceci)</span>
-                    {% endif %}
-                </label>
-                <select name="departement_id" 
-                        id="departement_id"
-                        {% if not current_user.is_super_admin() %}disabled{% endif %}
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue {% if not current_user.is_super_admin() %}bg-gray-100 cursor-not-allowed{% endif %}">
-                    <option value="">{% if current_user.is_super_admin() %}Aucun {{ get_appellation_entites()[:-1]|lower }}{% else %}Non modifiable{% endif %}</option>
-                    {% if current_user.is_super_admin() %}
-                    {% for dept in departements %}
-                    <option value="{{ dept.id }}" {% if user.departement_id == dept.id %}selected{% endif %}>
-                        {{ dept.nom }} ({{ dept.code }})
-                    </option>
-                    {% endfor %}
-                    {% else %}
-                    {% if user.departement and user.departement.nom %}
-                    <option value="{{ user.departement.id }}" selected>
-                        {{ user.departement.nom }} ({{ user.departement.code }})
-                    </option>
-                    {% endif %}
-                    {% endif %}
-                </select>
-                {% if current_user.is_super_admin() %}
-                <p class="text-xs text-gray-500 mt-1">{{ get_appellation_entites()[:-1] }} d'affectation</p>
-                {% else %}
-                <p class="text-xs text-red-500 mt-1">
-                    <i class="fas fa-lock mr-1"></i>
-                    Ce champ ne peut être modifié que par un super administrateur.
-                </p>
-                {% endif %}
-            </div>
-            
-            <!-- Photo de profil -->
-            <div>
-                <label for="photo_profile" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-camera mr-1 text-rdc-blue"></i>
-                    Photo de profil
-                </label>
-                
-                <!-- Photo actuelle -->
-                {% if user.photo_profile %}
-                <div class="mb-4">
-                    <div class="flex items-center space-x-4">
-                        <img src="{{ user.get_profile_photo_url() }}" 
-                             alt="Photo de {{ user.nom_complet }}" 
-                             class="w-20 h-20 rounded-full object-cover border-4 border-gray-200 shadow-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Photo actuelle</p>
-                            <p class="text-xs text-gray-500">Choisissez une nouvelle photo pour la remplacer</p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Prévisualisation et crop -->
-                <div id="image-preview-container" class="mb-4 hidden">
-                    <div class="space-y-4">
-                        <!-- Zone de crop -->
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <canvas id="crop-canvas" class="border border-gray-300 rounded max-w-full"></canvas>
-                        </div>
-                        
-                        <!-- Contrôles de crop -->
-                        <div class="flex items-center space-x-4">
-                            <button type="button" 
-                                    onclick="applyCrop()" 
-                                    class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-crop mr-2"></i>Recadrer
-                            </button>
-                            <button type="button" 
-                                    onclick="resetCrop()" 
-                                    class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
-                                <i class="fas fa-undo mr-2"></i>Réinitialiser
-                            </button>
-                            <button type="button" 
-                                    onclick="removeImagePreview()" 
-                                    class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
-                                <i class="fas fa-times mr-2"></i>Supprimer
-                            </button>
-                        </div>
-                        
-                        <!-- Prévisualisation finale -->
-                        <div class="text-center">
-                            <div class="inline-block">
-                                <img id="final-preview" class="w-32 h-32 object-cover rounded-full border-4 border-rdc-blue shadow-lg">
-                                <p class="text-sm text-gray-600 mt-2">Nouvelle photo (prévisualisation)</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Input file avec style personnalisé -->
-                <div class="relative">
-                    <input type="file" 
-                           name="photo_profile" 
-                           id="photo_profile"
-                           accept="image/*"
-                           onchange="previewImage(this)"
-                           class="sr-only">
-                    <label for="photo_profile" 
-                           class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                        <i class="fas fa-upload mr-2 text-rdc-blue"></i>
-                        {% if user.photo_profile %}Changer ma photo{% else %}Ajouter une photo{% endif %}
-                    </label>
-                    <span id="file-name" class="ml-3 text-sm text-gray-500"></span>
-                </div>
-                
-                <p class="text-xs text-gray-500 mt-2">
-                    Formats acceptés: JPG, PNG, GIF (max 5 Mo)<br>
-                    Recommandé: Photo carrée, minimum 200x200 pixels
-                </p>
-            </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="email">
+            <i class="fas fa-envelope" style="color:var(--primary);font-size:.75rem;"></i> Email <span style="color:var(--danger);">*</span>
+            {% if not current_user.is_super_admin() %}<span style="font-size:.7rem;font-weight:400;color:var(--t-muted);">(Super admin uniquement)</span>{% endif %}
+          </label>
+          <input type="email" name="email" id="email" value="{{ user.email }}" required
+                 {% if not current_user.is_super_admin() %}readonly{% endif %}
+                 class="gec-input" style="{% if not current_user.is_super_admin() %}background:var(--body-bg);color:var(--t-muted);cursor:not-allowed;{% endif %}">
+          {% if not current_user.is_super_admin() %}<p class="gec-form-hint"><i class="fas fa-lock" style="margin-right:.25rem;"></i>Modifiable uniquement par un super administrateur.</p>{% endif %}
         </div>
-        
-        <!-- Actions -->
-        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between">
-            <a href="{{ url_for('profile') }}" 
-               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Retour au profil
-            </a>
-            <button type="submit" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                <i class="fas fa-save mr-2"></i>
-                Sauvegarder
-            </button>
+        <div class="gec-form-group">
+          <label class="gec-label" for="password"><i class="fas fa-lock" style="color:var(--primary);font-size:.75rem;"></i> Nouveau mot de passe</label>
+          <div style="position:relative;">
+            <input type="password" name="password" id="password" minlength="6" class="gec-input" placeholder="Laisser vide pour conserver l'actuel" style="padding-right:2.5rem;">
+            <button type="button" onclick="togglePwd('password',this)" style="position:absolute;right:.625rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t-muted);cursor:pointer;"><i class="fas fa-eye"></i></button>
+          </div>
+          <p class="gec-form-hint">Laisser vide si vous ne souhaitez pas changer le mot de passe</p>
         </div>
-    </form>
-</div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="langue"><i class="fas fa-language" style="color:var(--primary);font-size:.75rem;"></i> Langue <span style="color:var(--danger);">*</span></label>
+          <select name="langue" id="langue" required class="gec-select">
+            {% for code, info in available_languages.items() %}
+            <option value="{{ code }}" {% if user.langue == code %}selected{% endif %}>{{ info.flag }} {{ info.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
 
-<!-- JavaScript pour la prévisualisation et le crop d'image -->
+    <!-- Informations professionnelles -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-briefcase"></i> Informations professionnelles</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-group">
+          <label class="gec-label" for="matricule">
+            <i class="fas fa-id-badge" style="color:var(--primary);font-size:.75rem;"></i> Matricule
+            {% if not current_user.is_super_admin() %}<span style="font-size:.7rem;font-weight:400;color:var(--t-muted);">(Super admin uniquement)</span>{% endif %}
+          </label>
+          <input type="text" name="matricule" id="matricule" value="{{ user.matricule or '' }}"
+                 {% if not current_user.is_super_admin() %}readonly{% endif %}
+                 class="gec-input" placeholder="{% if current_user.is_super_admin() %}Numéro de matricule{% else %}Non modifiable{% endif %}"
+                 style="{% if not current_user.is_super_admin() %}background:var(--body-bg);color:var(--t-muted);cursor:not-allowed;{% endif %}">
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="fonction">
+            <i class="fas fa-briefcase" style="color:var(--primary);font-size:.75rem;"></i> Fonction / Poste
+            {% if not current_user.is_super_admin() %}<span style="font-size:.7rem;font-weight:400;color:var(--t-muted);">(Super admin uniquement)</span>{% endif %}
+          </label>
+          <input type="text" name="fonction" id="fonction" value="{{ user.fonction or '' }}"
+                 {% if not current_user.is_super_admin() %}readonly{% endif %}
+                 class="gec-input" placeholder="{% if current_user.is_super_admin() %}Ex: Directeur, Agent...{% else %}Non modifiable{% endif %}"
+                 style="{% if not current_user.is_super_admin() %}background:var(--body-bg);color:var(--t-muted);cursor:not-allowed;{% endif %}">
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="departement_id">
+            <i class="fas fa-building" style="color:var(--primary);font-size:.75rem;"></i> {{ get_appellation_entites()[:-1] }}
+            {% if not current_user.is_super_admin() %}<span style="font-size:.7rem;font-weight:400;color:var(--t-muted);">(Super admin uniquement)</span>{% endif %}
+          </label>
+          <select name="departement_id" id="departement_id"
+                  {% if not current_user.is_super_admin() %}disabled{% endif %}
+                  class="gec-select" style="{% if not current_user.is_super_admin() %}background:var(--body-bg);color:var(--t-muted);cursor:not-allowed;{% endif %}">
+            <option value="">{% if current_user.is_super_admin() %}Aucun{% else %}Non modifiable{% endif %}</option>
+            {% if current_user.is_super_admin() %}
+              {% for dept in departements %}
+              <option value="{{ dept.id }}" {% if user.departement_id == dept.id %}selected{% endif %}>{{ dept.nom }} ({{ dept.code }})</option>
+              {% endfor %}
+            {% else %}
+              {% if user.departement %}
+              <option value="{{ user.departement.id }}" selected>{{ user.departement.nom }} ({{ user.departement.code }})</option>
+              {% endif %}
+            {% endif %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo de profil -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-camera"></i> Photo de profil</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        {% if user.photo_profile %}
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <img src="{{ user.get_profile_photo_url() }}" alt="{{ user.nom_complet }}" class="gec-avatar" style="width:64px;height:64px;font-size:1rem;">
+          <div style="font-size:.875rem;color:var(--t-secondary);">Photo actuelle<br><span style="font-size:.75rem;color:var(--t-muted);">Choisissez une nouvelle image pour la remplacer</span></div>
+        </div>
+        {% endif %}
+
+        <div id="image-preview-container" class="hidden" style="display:none;">
+          <div style="display:flex;flex-direction:column;gap:.875rem;">
+            <div style="background:var(--body-bg);padding:1rem;border-radius:var(--r-md);">
+              <canvas id="crop-canvas" style="border:1px solid var(--border);border-radius:var(--r-sm);max-width:100%;"></canvas>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+              <button type="button" onclick="applyCrop()" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-crop"></i> Recadrer</button>
+              <button type="button" onclick="resetCrop()" class="gec-btn gec-btn-secondary gec-btn-sm"><i class="fas fa-undo"></i> Réinitialiser</button>
+              <button type="button" onclick="removeImagePreview()" class="gec-btn gec-btn-secondary gec-btn-sm" style="color:var(--danger);"><i class="fas fa-times"></i> Supprimer</button>
+            </div>
+            <div style="text-align:center;">
+              <img id="final-preview" class="gec-avatar" style="width:96px;height:96px;font-size:1.25rem;display:none;">
+              <p style="font-size:.75rem;color:var(--t-muted);margin-top:.375rem;">Prévisualisation</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <input type="file" name="photo_profile" id="photo_profile" accept="image/*" onchange="previewImage(this)" style="display:none;">
+          <label for="photo_profile" class="gec-btn gec-btn-secondary" style="cursor:pointer;display:inline-flex;">
+            <i class="fas fa-upload"></i> {% if user.photo_profile %}Changer la photo{% else %}Ajouter une photo{% endif %}
+          </label>
+          <span id="file-name" style="margin-left:.75rem;font-size:.875rem;color:var(--t-muted);"></span>
+        </div>
+        <p style="font-size:.75rem;color:var(--t-muted);">Formats: JPG, PNG, GIF — Max 5 Mo — Photo carrée recommandée (min 200×200 px)</p>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;">
+      <a href="{{ url_for('profile') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</a>
+      <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-let originalImage = null;
-let croppedImage = null;
-let canvas = null;
-let ctx = null;
-let isDragging = false;
-let startX = 0;
-let startY = 0;
-let cropArea = { x: 0, y: 0, width: 200, height: 200 };
-
-function previewImage(input) {
-    const file = input.files[0];
-    const container = document.getElementById('image-preview-container');
-    const fileName = document.getElementById('file-name');
-    
-    if (file) {
-        // Validation de la taille
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            alert('La taille du fichier dépasse 5 Mo. Veuillez choisir une image plus petite.');
-            removeImagePreview();
-            return;
-        }
-        
-        // Validation du type
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        if (!allowedTypes.includes(file.type)) {
-            alert('Format non supporté. Veuillez choisir une image JPG, PNG ou GIF.');
-            removeImagePreview();
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            originalImage = new Image();
-            originalImage.onload = function() {
-                setupCropCanvas();
-                container.classList.remove('hidden');
-            };
-            originalImage.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-        fileName.textContent = file.name;
+let originalImage=null,croppedImage=null,canvas=null,ctx=null,isDragging=false,startX=0,startY=0;
+let cropArea={x:0,y:0,width:200,height:200};
+function togglePwd(id,btn){const i=document.getElementById(id);const ic=btn.querySelector('i');if(i.type==='password'){i.type='text';ic.classList.replace('fa-eye','fa-eye-slash');}else{i.type='password';ic.classList.replace('fa-eye-slash','fa-eye');}}
+function previewImage(input){
+  const file=input.files[0];const container=document.getElementById('image-preview-container');const fileName=document.getElementById('file-name');
+  if(file){
+    if(file.size>5*1024*1024){alert('La taille dépasse 5 Mo.');removeImagePreview();return;}
+    if(!['image/jpeg','image/png','image/gif'].includes(file.type)){alert('Format non supporté (JPG, PNG, GIF uniquement).');removeImagePreview();return;}
+    const reader=new FileReader();
+    reader.onload=function(e){originalImage=new Image();originalImage.onload=function(){setupCropCanvas();container.style.display='block';};originalImage.src=e.target.result;};
+    reader.readAsDataURL(file);fileName.textContent=file.name;
+  }
+}
+function setupCropCanvas(){
+  canvas=document.getElementById('crop-canvas');ctx=canvas.getContext('2d');
+  const maxW=400,maxH=400;let {width:w,height:h}=originalImage;
+  if(w>maxW||h>maxH){const r=Math.min(maxW/w,maxH/h);w*=r;h*=r;}
+  canvas.width=w;canvas.height=h;
+  cropArea={x:(w-200)/2,y:(h-200)/2,width:200,height:200};
+  drawCanvas();setupCropEvents();
+}
+function drawCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(originalImage,0,0,canvas.width,canvas.height);
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(cropArea.x,cropArea.y,cropArea.width,cropArea.height);
+  ctx.drawImage(originalImage,0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='var(--primary)';ctx.lineWidth=2;ctx.strokeRect(cropArea.x,cropArea.y,cropArea.width,cropArea.height);
+  ctx.fillStyle='var(--primary)';const cs=8;
+  [[cropArea.x,cropArea.y],[cropArea.x+cropArea.width,cropArea.y],[cropArea.x,cropArea.y+cropArea.height],[cropArea.x+cropArea.width,cropArea.y+cropArea.height]].forEach(([cx,cy])=>ctx.fillRect(cx-cs/2,cy-cs/2,cs,cs));
+}
+function setupCropEvents(){
+  canvas.addEventListener('mousedown',e=>{const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(x>=cropArea.x&&x<=cropArea.x+cropArea.width&&y>=cropArea.y&&y<=cropArea.y+cropArea.height){isDragging=true;startX=x-cropArea.x;startY=y-cropArea.y;canvas.style.cursor='move';}});
+  canvas.addEventListener('mousemove',e=>{if(!isDragging)return;const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;cropArea.x=Math.max(0,Math.min(canvas.width-cropArea.width,x-startX));cropArea.y=Math.max(0,Math.min(canvas.height-cropArea.height,y-startY));drawCanvas();});
+  canvas.addEventListener('mouseup',()=>{isDragging=false;canvas.style.cursor='crosshair';});
+  canvas.style.cursor='crosshair';
+}
+function applyCrop(){
+  if(!originalImage)return;const sx=originalImage.width/canvas.width,sy=originalImage.height/canvas.height;
+  const tc=document.createElement('canvas');const tctx=tc.getContext('2d');tc.width=cropArea.width*sx;tc.height=cropArea.height*sy;
+  tctx.drawImage(originalImage,cropArea.x*sx,cropArea.y*sy,cropArea.width*sx,cropArea.height*sy,0,0,tc.width,tc.height);
+  const fp=document.getElementById('final-preview');fp.src=tc.toDataURL('image/jpeg',0.8);fp.style.display='block';croppedImage=fp.src;
+}
+function resetCrop(){if(originalImage){setupCropCanvas();const fp=document.getElementById('final-preview');fp.src='';fp.style.display='none';croppedImage=null;}}
+function removeImagePreview(){
+  document.getElementById('image-preview-container').style.display='none';document.getElementById('photo_profile').value='';document.getElementById('file-name').textContent='';
+  const fp=document.getElementById('final-preview');fp.src='';fp.style.display='none';originalImage=null;croppedImage=null;canvas=null;ctx=null;
+}
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelector('form').addEventListener('submit',function(){
+    if(croppedImage){
+      const bc=atob(croppedImage.split(',')[1]),bn=new Array(bc.length);for(let i=0;i<bc.length;i++)bn[i]=bc.charCodeAt(i);
+      const blob=new Blob([new Uint8Array(bn)],{type:'image/jpeg'});
+      const dt=new DataTransfer();dt.items.add(new File([blob],'cropped_image.jpg',{type:'image/jpeg'}));
+      document.getElementById('photo_profile').files=dt.files;
     }
-}
-
-function setupCropCanvas() {
-    canvas = document.getElementById('crop-canvas');
-    ctx = canvas.getContext('2d');
-    
-    // Redimensionner l'image pour le canvas
-    const maxWidth = 400;
-    const maxHeight = 400;
-    let { width, height } = originalImage;
-    
-    if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width *= ratio;
-        height *= ratio;
-    }
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    // Initialiser la zone de crop au centre
-    cropArea = {
-        x: (width - 200) / 2,
-        y: (height - 200) / 2,
-        width: 200,
-        height: 200
-    };
-    
-    drawCanvas();
-    setupCropEvents();
-}
-
-function drawCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Dessiner l'image
-    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
-    
-    // Dessiner l'overlay sombre
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Effacer la zone de crop
-    ctx.clearRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-    
-    // Redessiner l'image dans la zone de crop
-    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
-    
-    // Dessiner le cadre de crop
-    ctx.strokeStyle = '#003087';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-    
-    // Dessiner les coins pour le redimensionnement
-    ctx.fillStyle = '#003087';
-    const cornerSize = 8;
-    ctx.fillRect(cropArea.x - cornerSize/2, cropArea.y - cornerSize/2, cornerSize, cornerSize);
-    ctx.fillRect(cropArea.x + cropArea.width - cornerSize/2, cropArea.y - cornerSize/2, cornerSize, cornerSize);
-    ctx.fillRect(cropArea.x - cornerSize/2, cropArea.y + cropArea.height - cornerSize/2, cornerSize, cornerSize);
-    ctx.fillRect(cropArea.x + cropArea.width - cornerSize/2, cropArea.y + cropArea.height - cornerSize/2, cornerSize, cornerSize);
-}
-
-function setupCropEvents() {
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.style.cursor = 'crosshair';
-}
-
-function handleMouseDown(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
-        y >= cropArea.y && y <= cropArea.y + cropArea.height) {
-        isDragging = true;
-        startX = x - cropArea.x;
-        startY = y - cropArea.y;
-        canvas.style.cursor = 'move';
-    }
-}
-
-function handleMouseMove(e) {
-    if (!isDragging) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    cropArea.x = Math.max(0, Math.min(canvas.width - cropArea.width, x - startX));
-    cropArea.y = Math.max(0, Math.min(canvas.height - cropArea.height, y - startY));
-    
-    drawCanvas();
-}
-
-function handleMouseUp() {
-    isDragging = false;
-    canvas.style.cursor = 'crosshair';
-}
-
-function applyCrop() {
-    if (!originalImage) return;
-    
-    // Calculer les proportions pour l'image originale
-    const scaleX = originalImage.width / canvas.width;
-    const scaleY = originalImage.height / canvas.height;
-    
-    // Créer un canvas temporaire pour le crop
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = cropArea.width * scaleX;
-    tempCanvas.height = cropArea.height * scaleY;
-    
-    // Extraire la zone croppée
-    tempCtx.drawImage(
-        originalImage,
-        cropArea.x * scaleX, cropArea.y * scaleY,
-        cropArea.width * scaleX, cropArea.height * scaleY,
-        0, 0,
-        tempCanvas.width, tempCanvas.height
-    );
-    
-    // Afficher la prévisualisation finale
-    const finalPreview = document.getElementById('final-preview');
-    finalPreview.src = tempCanvas.toDataURL('image/jpeg', 0.8);
-    
-    // Stocker l'image croppée
-    croppedImage = tempCanvas.toDataURL('image/jpeg', 0.8);
-}
-
-function resetCrop() {
-    if (originalImage) {
-        setupCropCanvas();
-        document.getElementById('final-preview').src = '';
-        croppedImage = null;
-    }
-}
-
-function removeImagePreview() {
-    const container = document.getElementById('image-preview-container');
-    const input = document.getElementById('photo_profile');
-    const fileName = document.getElementById('file-name');
-    const finalPreview = document.getElementById('final-preview');
-    
-    container.classList.add('hidden');
-    input.value = '';
-    fileName.textContent = '';
-    finalPreview.src = '';
-    originalImage = null;
-    croppedImage = null;
-    canvas = null;
-    ctx = null;
-}
-
-// Ajouter l'image croppée au formulaire avant soumission
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        if (croppedImage) {
-            // Convertir l'image croppée en Blob et l'ajouter au FormData
-            const byteCharacters = atob(croppedImage.split(',')[1]);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'image/jpeg' });
-            
-            // Remplacer le fichier original par l'image croppée
-            const fileInput = document.getElementById('photo_profile');
-            const dt = new DataTransfer();
-            dt.items.add(new File([blob], 'cropped_image.jpg', { type: 'image/jpeg' }));
-            fileInput.files = dt.files;
-        }
-    });
+  });
 });
 </script>
 {% endblock %}

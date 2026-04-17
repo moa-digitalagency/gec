@@ -1,66 +1,165 @@
 <!DOCTYPE html>
 <html lang="fr" id="html-root">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vérification 2FA — GEC</title>
-    <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
-    <script>(function(){ if(localStorage.getItem('gec-dark')==='1') document.documentElement.classList.add('dark'); })();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vérification 2FA — GEC</title>
+  <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/design-system.css') }}" rel="stylesheet">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <script>(function(){ if(localStorage.getItem('gec-dark')==='1') document.documentElement.classList.add('dark'); })();</script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #312e81 100%);
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0,0,0,.4);
+    }
+    .auth-header {
+      background: linear-gradient(135deg, var(--primary), #1e3a8a);
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+    .auth-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .auth-body {
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .totp-input {
+      width: 100%;
+      text-align: center;
+      font-size: 2rem;
+      font-family: monospace;
+      font-weight: 700;
+      letter-spacing: .5rem;
+      padding: .875rem 1rem;
+      background: var(--body-bg);
+      border: 2px solid var(--border);
+      border-radius: var(--r-md);
+      color: var(--t-primary);
+      outline: none;
+      transition: border-color .2s;
+      box-sizing: border-box;
+    }
+    .totp-input:focus { border-color: var(--primary); }
+    .submit-btn {
+      width: 100%;
+      padding: .875rem 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--r-md);
+      font-size: .9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      transition: opacity .2s, transform .1s;
+    }
+    .submit-btn:hover { opacity: .9; transform: translateY(-1px); }
+    .submit-btn:active { transform: translateY(0); }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .8125rem;
+      color: rgba(255,255,255,.6);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .back-link:hover { color: white; }
+    .timer-ring {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .75rem;
+      color: var(--t-muted);
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 min-h-screen flex items-center justify-center p-4">
-<div class="w-full max-w-md">
-    <div class="bg-white rounded-2xl shadow-2xl p-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <i class="fas fa-shield-alt text-3xl text-blue-600"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900">Double Authentification</h1>
-            <p class="text-sm text-gray-500 mt-2">Saisissez le code à 6 chiffres de votre application d'authentification</p>
-        </div>
-
-        {% if error %}
-        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-sm text-red-700">
-            <i class="fas fa-exclamation-circle"></i>{{ error }}
-        </div>
-        {% endif %}
-
-        <form method="POST" autocomplete="off">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Code TOTP</label>
-                <input type="text" name="token" inputmode="numeric" pattern="[0-9 ]{6,7}"
-                       maxlength="7" autofocus autocomplete="one-time-code"
-                       placeholder="000 000"
-                       class="w-full text-center text-3xl font-bold tracking-widest border-2 border-gray-300 rounded-xl px-4 py-3
-                              focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
-                <p class="text-xs text-gray-400 text-center mt-2">Le code se renouvelle toutes les 30 secondes</p>
-            </div>
-
-            <button type="submit"
-                    class="w-full py-3 px-6 text-white font-semibold bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
-                <i class="fas fa-check-circle"></i>
-                Vérifier le code
-            </button>
-        </form>
-
-        <div class="mt-6 text-center">
-            <a href="{{ url_for('login') }}" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                <i class="fas fa-arrow-left mr-1"></i>Retour à la connexion
-            </a>
-        </div>
+<body>
+<div class="auth-card">
+  <div class="auth-header">
+    <div class="auth-icon">
+      <i class="fas fa-shield-alt" style="color:white;font-size:1.75rem;"></i>
     </div>
+    <h1 style="font-size:1.125rem;font-weight:700;color:white;margin-bottom:.375rem;">Double Authentification</h1>
+    <p style="font-size:.8125rem;color:rgba(255,255,255,.75);">Saisissez le code à 6 chiffres de votre application d'authentification</p>
+  </div>
+
+  <div class="auth-body">
+
+    {% if error %}
+    <div class="gec-alert gec-alert-danger">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="POST" autocomplete="off" style="display:flex;flex-direction:column;gap:1rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label style="display:block;font-size:.8125rem;font-weight:600;color:var(--t-secondary);margin-bottom:.5rem;text-align:center;">
+          <i class="fas fa-mobile-alt" style="margin-right:.375rem;color:var(--primary);"></i>Code TOTP
+        </label>
+        <input type="text" name="token" inputmode="numeric" pattern="[0-9 ]{6,7}"
+               maxlength="7" autofocus autocomplete="one-time-code"
+               placeholder="000 000"
+               class="totp-input">
+        <div style="text-align:center;margin-top:.5rem;" class="timer-ring">
+          <i class="fas fa-sync-alt" style="animation:spin 30s linear infinite;"></i>
+          Le code se renouvelle toutes les 30 secondes
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">
+        <i class="fas fa-check-circle"></i>
+        Vérifier le code
+      </button>
+    </form>
+
+    <div style="text-align:center;padding-top:.25rem;">
+      <a href="{{ url_for('login') }}" class="back-link">
+        <i class="fas fa-arrow-left"></i>
+        Retour à la connexion
+      </a>
+    </div>
+
+  </div>
 </div>
 
-<!-- Auto-format input -->
 <script>
 document.querySelector('input[name="token"]')?.addEventListener('input', function() {
-    let v = this.value.replace(/\D/g, '').slice(0, 6);
-    this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
+  let v = this.value.replace(/\D/g, '').slice(0, 6);
+  this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
 });
 </script>
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
 </body>
 </html>

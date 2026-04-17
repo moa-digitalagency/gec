@@ -1,45 +1,46 @@
 {% extends "new_base.html" %}
-
-{% block title %}Contenu Indisponible - 451 - GEC{% endblock %}
+{% block title %}Contenu Indisponible — 451 — GEC{% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex flex-col items-center justify-center p-4 bg-gray-900 text-gray-100 rounded-xl overflow-hidden relative shadow-2xl">
+<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+  <div style="max-width:560px;width:100%;display:flex;flex-direction:column;gap:1.5rem;align-items:center;">
 
-    <!-- Background Effect -->
-    <div class="absolute inset-0 bg-black opacity-50"></div>
-    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+    <!-- Code with dark/dramatic styling -->
+    <div style="font-size:5rem;font-weight:900;line-height:1;font-family:monospace;letter-spacing:.1em;background:linear-gradient(135deg,#EF4444,#9B1C1C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">451</div>
 
-    <!-- Lottie Animation -->
-    <div class="w-full max-w-sm mx-auto mb-8 relative z-10">
-        <!-- Placeholder for burning book animation -->
-        <lottie-player src="https://assets10.lottiefiles.com/packages/lf20_w51pcehl.json" background="transparent" speed="1" style="width: 250px; height: 250px; margin: 0 auto;" loop autoplay></lottie-player>
+    <!-- Main card with dark tone -->
+    <div class="gec-card" style="width:100%;overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#1e1b4b,#1f2937);padding:1.5rem;border-radius:var(--card-radius) var(--card-radius) 0 0;border-bottom:3px solid #dc2626;">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.875rem;">
+          <i class="fas fa-fire-alt" style="color:#f87171;font-size:1.5rem;"></i>
+          <div>
+            <div style="font-size:1.25rem;font-weight:700;color:white;letter-spacing:.05em;">CENSURÉ / INDISPONIBLE</div>
+            <div style="font-size:.75rem;color:#9ca3af;font-family:monospace;">HTTP 451 — Unavailable For Legal Reasons</div>
+          </div>
+        </div>
+        <blockquote style="border-left:3px solid #dc2626;padding-left:.875rem;font-style:italic;color:#d1d5db;font-size:.875rem;line-height:1.6;font-family:Georgia,serif;margin:0;">
+          "C'était un plaisir de brûler."<br>
+          <cite style="font-size:.75rem;color:#9ca3af;font-style:normal;">— Ray Bradbury, Fahrenheit 451</cite>
+        </blockquote>
+      </div>
+      <div class="gec-card-body">
+        <div class="gec-alert gec-alert-danger" style="font-size:.8125rem;">
+          <i class="fas fa-gavel"></i>
+          <span>Cette ressource a été bloquée pour des raisons légales ou de conformité.</span>
+        </div>
+        <p style="font-size:.8125rem;color:var(--t-secondary);margin-top:.75rem;">Comme dans le roman dystopique, certaines informations sont parfois soustraites au regard public pour des raisons de sécurité ou de réglementation.</p>
+      </div>
     </div>
 
-    <div class="text-center max-w-2xl mx-auto space-y-6 relative z-10 p-6">
-        <div class="border-l-4 border-red-600 pl-6 text-left bg-gray-800 bg-opacity-50 p-6 rounded-r-lg backdrop-blur-sm">
-            <h1 class="text-5xl font-mono font-bold text-red-500 mb-2 tracking-widest">ERREUR 451</h1>
-            <h2 class="text-2xl font-bold text-white mb-4 uppercase tracking-wider">Censuré / Indisponible</h2>
-            <p class="text-gray-400 text-lg leading-relaxed font-mono italic mb-4">
-                "C'était un plaisir de brûler." <br>— Ray Bradbury, Fahrenheit 451.
-            </p>
-            <p class="text-gray-300 border-t border-gray-700 pt-4">
-                Cette ressource a été bloquée pour des raisons légales ou de conformité.
-                Comme dans le roman dystopique, certaines informations sont parfois soustraites au regard public pour des raisons de sécurité ou de réglementation.
-            </p>
-        </div>
-
-        <div class="mt-12 flex justify-center gap-4">
-            <a href="{{ url_for('dashboard') }}" class="inline-flex items-center px-6 py-3 border border-gray-600 text-base font-medium rounded-md text-gray-300 bg-gray-800 hover:bg-gray-700 hover:text-white transition-all hover:border-red-500">
-                <i class="fas fa-shield-alt mr-2"></i>
-                Retour en zone sûre
-            </a>
-            <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="inline-flex items-center px-6 py-3 border border-red-900 text-base font-medium rounded-md text-red-100 bg-red-900 bg-opacity-50 hover:bg-opacity-100 transition-all">
-                <i class="fas fa-gavel mr-2"></i>
-                Contester
-            </a>
-        </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-secondary">
+        <i class="fas fa-shield-alt"></i> Retour en zone sûre
+      </a>
+      <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="gec-btn gec-btn-danger">
+        <i class="fas fa-gavel"></i> Contester
+      </a>
     </div>
+
+  </div>
 </div>
-
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 {% endblock %}

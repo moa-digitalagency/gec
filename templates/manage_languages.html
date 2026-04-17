@@ -1,278 +1,154 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('language_management') or 'Gestion des Langues' }} - GEC{% endblock %}
+{% block title %}Gestion des Langues — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-globe mr-3 text-rdc-blue"></i>
-        {{ t('language_management') or 'Gestion des Langues' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('manage_languages_description') or 'Gérez les langues disponibles dans le système' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Langues</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-globe" style="color:var(--primary);margin-right:.5rem;"></i>Gestion des Langues</h1>
+    <p class="gec-page-subtitle">Gérez les langues disponibles dans le système</p>
+  </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Languages List -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-list mr-2 text-rdc-blue"></i>
-                    {{ t('available_languages') or 'Langues Disponibles' }}
-                </h2>
-            </div>
-            <div class="p-6">
-                {% if languages %}
-                <div class="space-y-4">
-                    {% for lang_code, lang_info in languages.items() %}
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="text-2xl mr-3">{{ lang_info.flag }}</div>
-                                <div>
-                                    <h3 class="text-lg font-medium text-gray-900">{{ lang_info.name }}</h3>
-                                    <p class="text-sm text-gray-500">{{ lang_code.upper() }} - {{ t('language_code') or 'Code de langue' }}</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                                <!-- Toggle Switch -->
-                                <div class="flex items-center">
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" 
-                                               class="sr-only peer" 
-                                               {% if lang_info.enabled %}checked{% endif %}
-                                               onchange="toggleLanguage('{{ lang_code }}', this.checked)">
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-rdc-blue peer-focus:ring-opacity-25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rdc-blue"></div>
-                                        <span class="ml-3 text-sm font-medium text-gray-700">
-                                            {% if lang_info.enabled %}
-                                                {{ t('enabled') or 'Activée' }}
-                                            {% else %}
-                                                {{ t('disabled') or 'Désactivée' }}
-                                            {% endif %}
-                                        </span>
-                                    </label>
-                                </div>
-                                
-                                <!-- Actions -->
-                                <div class="flex space-x-2">
-                                    <!-- Download -->
-                                    <a href="{{ url_for('download_language', lang_code=lang_code) }}" 
-                                       class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue"
-                                       title="{{ t('download_language_file') or 'Télécharger le fichier de langue' }}">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                    
-                                    <!-- Delete (except French) -->
-                                    {% if lang_code != 'fr' %}
-                                    <button onclick="deleteLanguage('{{ lang_code }}')" 
-                                            class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                            title="{{ t('delete_language_file') or 'Supprimer le fichier de langue' }}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-12">
-                    <i class="fas fa-globe text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('no_languages') or 'Aucune langue' }}</h3>
-                    <p class="text-gray-500 mb-6">{{ t('no_languages_description') or 'Aucune langue n\'est configurée dans le système.' }}</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<div class="gec-two-col" style="grid-template-columns:1fr 300px;">
+
+  <!-- Languages list -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-language"></i> Langues disponibles</span>
+      {% if languages %}<span class="gec-badge gec-badge-blue">{{ languages|length }}</span>{% endif %}
     </div>
-    
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Upload New Language -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-upload mr-2 text-rdc-blue"></i>
-                    {{ t('upload_new_language') or 'Ajouter une Langue' }}
-                </h2>
-            </div>
-            <div class="p-6">
-                <form method="POST" action="{{ url_for('upload_language') }}" enctype="multipart/form-data" class="space-y-4">
-                    <!-- Language Code -->
-                    <div>
-                        <label for="lang_code" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('language_code') or 'Code de Langue' }}
-                        </label>
-                        <input type="text" 
-                               id="lang_code" 
-                               name="lang_code" 
-                               required
-                               maxlength="2"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="ex: es, de, it">
-                        <p class="mt-1 text-sm text-gray-500">{{ t('language_code_help') or 'Code ISO à 2 lettres (ex: es pour espagnol)' }}</p>
-                    </div>
-                    
-                    <!-- File Upload -->
-                    <div>
-                        <label for="language_file" class="block text-sm font-medium text-gray-700 mb-2">
-                            {{ t('language_file') or 'Fichier de Langue' }}
-                        </label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors">
-                            <div class="space-y-1 text-center">
-                                <i class="fas fa-file-upload text-4xl text-gray-400"></i>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="language_file" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-blue focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
-                                        <span>{{ t('upload_file') or 'Choisir un fichier' }}</span>
-                                        <input id="language_file" name="language_file" type="file" class="sr-only" accept=".json" required>
-                                    </label>
-                                    <p class="pl-1">{{ t('or_drag_drop') or 'ou glisser-déposer' }}</p>
-                                </div>
-                                <p class="text-xs text-gray-500">JSON jusqu'à 10MB</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Submit Button -->
-                    <button type="submit" 
-                            class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                        <i class="fas fa-upload mr-2"></i>
-                        {{ t('upload_language') or 'Uploader la Langue' }}
-                    </button>
-                </form>
-            </div>
+    {% if languages %}
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      {% for lang_code, lang_info in languages.items() %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);">
+        <div style="display:flex;align-items:center;gap:.875rem;">
+          <div style="font-size:1.5rem;line-height:1;">{{ lang_info.flag }}</div>
+          <div>
+            <div style="font-weight:600;color:var(--t-primary);">{{ lang_info.name }}</div>
+            <div style="font-size:.75rem;color:var(--t-muted);font-family:monospace;">{{ lang_code.upper() }}</div>
+          </div>
         </div>
-        
-        <!-- Information -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div class="flex items-start">
-                <i class="fas fa-info-circle text-blue-500 mr-3 mt-1"></i>
-                <div>
-                    <h3 class="text-lg font-medium text-blue-900 mb-2">{{ t('language_management_info') or 'Information' }}</h3>
-                    <ul class="text-blue-700 text-sm space-y-1">
-                        <li>• {{ t('language_management_info_1') or 'Les langues désactivées ne sont pas visibles dans l\'interface' }}</li>
-                        <li>• {{ t('language_management_info_2') or 'Le français ne peut pas être supprimé (langue de référence)' }}</li>
-                        <li>• {{ t('language_management_info_3') or 'Les fichiers JSON doivent respecter la structure des clés existantes' }}</li>
-                        <li>• {{ t('language_management_info_4') or 'Les changements prennent effet immédiatement' }}</li>
-                    </ul>
-                </div>
-            </div>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <label class="gec-toggle-wrap" style="gap:.5rem;">
+            <span class="gec-toggle">
+              <input type="checkbox" {% if lang_info.enabled %}checked{% endif %} onchange="toggleLanguage('{{ lang_code }}', this.checked)">
+              <span class="gec-toggle-slider"></span>
+            </span>
+            <span class="gec-toggle-label" style="font-size:.8125rem;">{% if lang_info.enabled %}Activée{% else %}Désactivée{% endif %}</span>
+          </label>
+          <a href="{{ url_for('download_language', lang_code=lang_code) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Télécharger le fichier JSON"><i class="fas fa-download"></i></a>
+          {% if lang_code != 'fr' %}
+          <button onclick="deleteLanguage('{{ lang_code }}')" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" style="color:var(--danger);" title="Supprimer"><i class="fas fa-trash"></i></button>
+          {% else %}
+          <span class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" style="color:var(--t-muted);cursor:not-allowed;" title="La langue française ne peut pas être supprimée"><i class="fas fa-lock"></i></span>
+          {% endif %}
         </div>
+      </div>
+      {% endfor %}
     </div>
+    {% else %}
+    <div class="gec-empty">
+      <div class="gec-empty-icon"><i class="fas fa-globe"></i></div>
+      <div class="gec-empty-title">Aucune langue configurée</div>
+      <div class="gec-empty-desc">Ajoutez des fichiers de langue depuis le panneau de droite.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Upload form -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-upload"></i> Ajouter une langue</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+        <form method="POST" action="{{ url_for('upload_language') }}" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:.875rem;">
+          <div class="gec-form-group">
+            <label class="gec-label" for="lang_code">Code de langue</label>
+            <input type="text" id="lang_code" name="lang_code" required maxlength="2" class="gec-input" placeholder="ex: es, de, it" style="font-family:monospace;text-transform:lowercase;">
+            <p class="gec-form-hint">Code ISO à 2 lettres (ex: es pour espagnol)</p>
+          </div>
+          <div class="gec-form-group">
+            <label class="gec-label">Fichier de langue</label>
+            <div class="gec-upload-zone" id="uploadZone" style="cursor:pointer;" onclick="document.getElementById('language_file').click()">
+              <i class="fas fa-file-code" style="font-size:2rem;color:var(--t-muted);margin-bottom:.5rem;"></i>
+              <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);" id="uploadLabel">Cliquer pour choisir</div>
+              <div style="font-size:.75rem;color:var(--t-muted);">Fichier JSON uniquement</div>
+              <input id="language_file" name="language_file" type="file" accept=".json" required style="display:none;" onchange="updateLabel(this)">
+            </div>
+          </div>
+          <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;"><i class="fas fa-upload"></i> Uploader</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="gec-alert gec-alert-info" style="margin:0;">
+      <i class="fas fa-info-circle"></i>
+      <div style="font-size:.8125rem;">
+        <ul style="margin:0;padding-left:1rem;line-height:1.7;">
+          <li>Les langues désactivées ne sont pas visibles.</li>
+          <li>Le français ne peut pas être supprimé.</li>
+          <li>Les fichiers JSON doivent respecter la structure des clés existantes.</li>
+          <li>Les changements prennent effet immédiatement.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('confirm_language_deletion') or 'Confirmer la suppression' }}</h3>
-            <p class="text-sm text-gray-500 mb-4">
-                {{ t('confirm_delete_language') or 'Êtes-vous sûr de vouloir supprimer ce fichier de langue ?' }}
-                <br><strong id="languageToDelete"></strong>
-            </p>
-            <div class="flex justify-center space-x-4">
-                <button onclick="closeDeleteModal()" 
-                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
-                    {{ t('cancel') or 'Annuler' }}
-                </button>
-                <button id="confirmDeleteBtn" 
-                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-                    {{ t('delete') or 'Supprimer' }}
-                </button>
-            </div>
-        </div>
+<!-- Delete Modal -->
+<div id="deleteModal" class="gec-modal-overlay" style="display:none;" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="gec-modal" style="max-width:400px;">
+    <div class="gec-modal-header">
+      <span class="gec-modal-title"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Confirmer la suppression</span>
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon"><i class="fas fa-times"></i></button>
     </div>
+    <div class="gec-modal-body">
+      <p style="color:var(--t-secondary);">Supprimer le fichier de langue <strong id="languageToDelete" style="color:var(--t-primary);"></strong> ?<br><span style="font-size:.8125rem;color:var(--danger);">Cette action est irréversible.</span></p>
+    </div>
+    <div class="gec-modal-footer">
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-secondary">Annuler</button>
+      <button id="confirmDeleteBtn" class="gec-btn gec-btn-danger"><i class="fas fa-trash"></i> Supprimer</button>
+    </div>
+  </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function toggleLanguage(langCode, enabled) {
-    fetch(`/toggle_language/${langCode}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ enabled: enabled })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mettre à jour l'affichage
-            const statusSpan = event.target.parentElement.querySelector('span');
-            statusSpan.textContent = enabled ? 'Activée' : 'Désactivée';
-            
-            // Afficher un message de succès
-            showNotification(data.message, 'success');
-        } else {
-            // Revenir à l'état précédent
-            event.target.checked = !enabled;
-            showNotification(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        event.target.checked = !enabled;
-        showNotification('Erreur lors de la modification', 'error');
-    });
+function updateLabel(input){if(input.files.length>0)document.getElementById('uploadLabel').textContent=input.files[0].name;}
+function toggleLanguage(code,enabled){
+  fetch(`/toggle_language/${code}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})})
+  .then(r=>r.json()).then(d=>{if(d.success){location.reload();}else{alert(d.message||'Erreur');}})
+  .catch(()=>alert('Erreur réseau'));
 }
-
-function deleteLanguage(langCode) {
-    document.getElementById('languageToDelete').textContent = langCode.toUpperCase();
-    document.getElementById('deleteModal').classList.remove('hidden');
-    
-    document.getElementById('confirmDeleteBtn').onclick = function() {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/delete_language/${langCode}`;
-        document.body.appendChild(form);
-        form.submit();
-    };
+function deleteLanguage(code){
+  document.getElementById('languageToDelete').textContent=code.toUpperCase();
+  document.getElementById('deleteModal').style.display='flex';
+  document.getElementById('confirmDeleteBtn').onclick=function(){
+    const f=document.createElement('form');f.method='POST';f.action=`/delete_language/${code}`;document.body.appendChild(f);f.submit();
+  };
 }
+function closeDeleteModal(){document.getElementById('deleteModal').style.display='none';}
 
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-
-function showNotification(message, type) {
-    // Créer une notification temporaire
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-md shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-    }`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-// Gestion du drag & drop pour l'upload
-const dropZone = document.querySelector('.border-dashed');
-const fileInput = document.getElementById('language_file');
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('border-rdc-blue', 'bg-blue-50');
-});
-
-dropZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('border-rdc-blue', 'bg-blue-50');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('border-rdc-blue', 'bg-blue-50');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0 && files[0].name.endsWith('.json')) {
-        fileInput.files = files;
-    }
+// Drag & drop
+const zone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('language_file');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='var(--primary)';});
+zone.addEventListener('dragleave',()=>{zone.style.borderColor='';});
+zone.addEventListener('drop',e=>{
+  e.preventDefault();zone.style.borderColor='';
+  const files=e.dataTransfer.files;
+  if(files.length>0&&files[0].name.endsWith('.json')){
+    const dt=new DataTransfer();dt.items.add(files[0]);fileInput.files=dt.files;
+    document.getElementById('uploadLabel').textContent=files[0].name;
+  }
 });
 </script>
 {% endblock %}

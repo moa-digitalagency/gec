@@ -26,13 +26,34 @@
   <!-- Dark mode init — before render to avoid flash -->
   <script>(function(){if(localStorage.getItem('gec-dark')==='1')document.documentElement.classList.add('dark');})();</script>
 
+  <style>
+  /* ── Collapsible sidebar sub-groups ─────────────────────── */
+  .gec-nav-group-toggle {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem .75rem; margin: .125rem .5rem;
+    border-radius: var(--r-md, 8px);
+    cursor: pointer; user-select: none;
+    color: var(--sb-text, #94a3b8);
+    font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    transition: background .15s, color .15s;
+  }
+  .gec-nav-group-toggle:hover { background: rgba(255,255,255,.06); color: var(--sb-text-active, #e2e8f0); }
+  .gec-nav-group-toggle .gec-nav-icon { font-size: .875rem; width: 1.375rem; text-align: center; opacity: .7; }
+  .gec-nav-group-toggle .gec-group-label { flex: 1; }
+  .gec-nav-group-toggle .gec-group-chevron { font-size: .625rem; transition: transform .2s; opacity: .6; }
+  .gec-nav-group-toggle.open .gec-group-chevron { transform: rotate(180deg); }
+  .gec-nav-group-body { overflow: hidden; transition: max-height .25s ease; }
+  .gec-nav-group-body.collapsed { max-height: 0 !important; }
+  .gec-nav-group-body .gec-nav-item { padding-left: 2.25rem; }
+  /* Active group highlight */
+  .gec-nav-group-toggle.group-active { color: var(--sb-text-active, #e2e8f0); }
+  .gec-nav-group-toggle.group-active .gec-nav-icon { opacity: 1; }
+  </style>
+
   {% block head %}{% endblock %}
 </head>
 <body>
 
-{# ─────────────────────────────────────────────────────────
-   AUTHENTICATED: Sidebar + Topbar + main wrapper OPEN
-   ───────────────────────────────────────────────────────── #}
 {% if current_user.is_authenticated %}
 {% set sys = get_system_params() %}
 {% set cur = request.endpoint %}
@@ -41,7 +62,7 @@
 <!-- Mobile overlay -->
 <div class="gec-sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
 
-<!-- ── SIDEBAR ──────────────────────────────────────────── -->
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
 <aside class="gec-sidebar" id="gec-sidebar">
 
   <!-- Logo Header -->
@@ -55,7 +76,7 @@
       {% endif %}
       <div style="min-width:0;">
         <div class="gec-sidebar-logo-text">{{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}</div>
-        <div class="gec-sidebar-logo-sub">Courrier Électronique</div>
+        <div class="gec-sidebar-logo-sub">Gestion Électronique du Courrier</div>
       </div>
     </a>
   </div>
@@ -63,33 +84,35 @@
   <!-- Navigation -->
   <nav class="gec-sidebar-nav">
 
+    <!-- ── PRINCIPAL ── -->
     <span class="gec-nav-section-label">Principal</span>
 
     <a href="{{ url_for('dashboard') }}"
        class="gec-nav-item {% if cur == 'dashboard' %}active{% endif %}">
       <i class="fas fa-home gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('dashboard') or 'Tableau de Bord' }}</span>
+      <span class="gec-nav-label">Tableau de Bord</span>
     </a>
 
     <a href="{{ url_for('notifications') }}"
        class="gec-nav-item {% if cur == 'notifications' %}active{% endif %}">
       <i class="fas fa-bell gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('notifications.notifications') or 'Notifications' }}</span>
+      <span class="gec-nav-label">Notifications</span>
       {% if unread > 0 %}<span class="gec-nav-badge">{{ unread if unread <= 99 else '99+' }}</span>{% endif %}
     </a>
 
+    <!-- ── COURRIERS ── -->
     <span class="gec-nav-section-label">Courriers</span>
 
     <a href="{{ url_for('register_mail') }}"
        class="gec-nav-item {% if cur == 'register_mail' %}active{% endif %}">
       <i class="fas fa-plus-circle gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('register_mail') or 'Nouveau Courrier' }}</span>
+      <span class="gec-nav-label">Nouveau Courrier</span>
     </a>
 
     <a href="{{ url_for('view_mail') }}"
        class="gec-nav-item {% if cur in ['view_mail','mail_detail','edit_courrier'] %}active{% endif %}">
       <i class="fas fa-inbox gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('view_mail') or 'Consulter' }}</span>
+      <span class="gec-nav-label">Tous les Courriers</span>
     </a>
 
     <a href="{{ url_for('kanban_view') }}"
@@ -101,7 +124,7 @@
     <a href="{{ url_for('search') }}"
        class="gec-nav-item {% if cur == 'search' %}active{% endif %}">
       <i class="fas fa-search gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('advanced_search') or 'Recherche' }}</span>
+      <span class="gec-nav-label">Recherche Avancée</span>
     </a>
 
     <a href="{{ url_for('analytics') }}"
@@ -114,13 +137,17 @@
     <a href="{{ url_for('trash') }}"
        class="gec-nav-item {% if cur == 'trash' %}active{% endif %}">
       <i class="fas fa-trash-alt gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ t('trash') or 'Corbeille' }}</span>
+      <span class="gec-nav-label">Corbeille</span>
     </a>
     {% endif %}
 
+    <!-- ── ADMINISTRATION ── -->
     {% if current_user.has_permission('manage_users') or current_user.is_super_admin() or current_user.role == 'admin' %}
     <span class="gec-nav-section-label">Administration</span>
 
+    {% set admin_active = cur in ['manage_users','add_user','edit_user','manage_departments','add_department','edit_department','manage_roles','add_role','edit_role','manage_statuses','manage_outgoing_types','edit_outgoing_type','add_outgoing_type'] %}
+
+    <!-- Utilisateurs -->
     {% if current_user.has_permission('manage_users') or current_user.is_super_admin() %}
     <a href="{{ url_for('manage_users') }}"
        class="gec-nav-item {% if 'user' in cur %}active{% endif %}">
@@ -130,44 +157,131 @@
     {% endif %}
 
     {% if current_user.is_super_admin() %}
-    <a href="{{ url_for('manage_departments') }}"
-       class="gec-nav-item {% if 'department' in cur %}active{% endif %}">
-      <i class="fas fa-building gec-nav-icon"></i>
-      <span class="gec-nav-label">{{ get_appellation_entites() or 'Départements' }}</span>
-    </a>
-    <a href="{{ url_for('manage_roles') }}"
-       class="gec-nav-item {% if 'role' in cur %}active{% endif %}">
-      <i class="fas fa-shield-alt gec-nav-icon"></i>
-      <span class="gec-nav-label">Rôles & Permissions</span>
-    </a>
-    {% endif %}
+    <!-- Collapsible: Structure organisationnelle -->
+    <div class="gec-nav-group-toggle {% if cur in ['manage_departments','add_department','edit_department','manage_roles','add_role','edit_role'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('org-group', this)" id="org-group-toggle">
+      <i class="fas fa-sitemap gec-nav-icon"></i>
+      <span class="gec-group-label">Structure</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['manage_departments','add_department','edit_department','manage_roles','add_role','edit_role'] %}collapsed{% endif %}"
+         id="org-group" style="max-height:200px;">
+      <a href="{{ url_for('manage_departments') }}"
+         class="gec-nav-item {% if 'department' in cur %}active{% endif %}">
+        <i class="fas fa-building gec-nav-icon"></i>
+        <span class="gec-nav-label">{{ get_appellation_entites() or 'Départements' }}</span>
+      </a>
+      <a href="{{ url_for('manage_roles') }}"
+         class="gec-nav-item {% if 'role' in cur %}active{% endif %}">
+        <i class="fas fa-shield-alt gec-nav-icon"></i>
+        <span class="gec-nav-label">Rôles & Permissions</span>
+      </a>
+    </div>
     {% endif %}
 
+    <!-- Courriers admin -->
+    <div class="gec-nav-group-toggle {% if cur in ['manage_statuses','manage_outgoing_types','edit_outgoing_type','add_outgoing_type'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('courier-admin-group', this)" id="courier-admin-group-toggle">
+      <i class="fas fa-sliders-h gec-nav-icon"></i>
+      <span class="gec-group-label">Paramètres courriers</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['manage_statuses','manage_outgoing_types','edit_outgoing_type','add_outgoing_type'] %}collapsed{% endif %}"
+         id="courier-admin-group" style="max-height:200px;">
+      <a href="{{ url_for('manage_statuses') }}"
+         class="gec-nav-item {% if cur == 'manage_statuses' %}active{% endif %}">
+        <i class="fas fa-tags gec-nav-icon"></i>
+        <span class="gec-nav-label">Statuts</span>
+      </a>
+      <a href="{{ url_for('manage_outgoing_types') }}"
+         class="gec-nav-item {% if 'outgoing_type' in cur %}active{% endif %}">
+        <i class="fas fa-mail-bulk gec-nav-icon"></i>
+        <span class="gec-nav-label">Types sortants</span>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- ── SYSTÈME ── -->
     {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
     <span class="gec-nav-section-label">Système</span>
 
+    <!-- Paramètres principaux -->
     <a href="{{ url_for('settings') }}"
        class="gec-nav-item {% if cur == 'settings' %}active{% endif %}">
       <i class="fas fa-cog gec-nav-icon"></i>
       <span class="gec-nav-label">Configuration</span>
     </a>
 
+    <!-- Email & Templates -->
+    <div class="gec-nav-group-toggle {% if cur in ['manage_email_templates','add_email_template','edit_email_template'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('email-group', this)" id="email-group-toggle">
+      <i class="fas fa-envelope gec-nav-icon"></i>
+      <span class="gec-group-label">Email</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['manage_email_templates','add_email_template','edit_email_template'] %}collapsed{% endif %}"
+         id="email-group" style="max-height:200px;">
+      <a href="{{ url_for('manage_email_templates') }}"
+         class="gec-nav-item {% if 'email_template' in cur %}active{% endif %}">
+        <i class="fas fa-file-alt gec-nav-icon"></i>
+        <span class="gec-nav-label">Modèles Email</span>
+      </a>
+    </div>
+
     {% if current_user.is_super_admin() %}
-    <a href="{{ url_for('security_settings') }}"
-       class="gec-nav-item {% if cur == 'security_settings' %}active{% endif %}">
+    <!-- Sécurité & Logs -->
+    <div class="gec-nav-group-toggle {% if cur in ['security_settings','view_logs','security_logs'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('security-group', this)" id="security-group-toggle">
       <i class="fas fa-shield-virus gec-nav-icon"></i>
-      <span class="gec-nav-label">Sécurité</span>
-    </a>
-    <a href="{{ url_for('manage_backups') }}"
-       class="gec-nav-item {% if cur == 'manage_backups' %}active{% endif %}">
-      <i class="fas fa-database gec-nav-icon"></i>
-      <span class="gec-nav-label">Sauvegardes</span>
-    </a>
-    <a href="{{ url_for('view_logs') }}"
-       class="gec-nav-item {% if cur in ['view_logs','security_logs'] %}active{% endif %}">
-      <i class="fas fa-list-alt gec-nav-icon"></i>
-      <span class="gec-nav-label">Journaux</span>
-    </a>
+      <span class="gec-group-label">Sécurité & Logs</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['security_settings','view_logs','security_logs'] %}collapsed{% endif %}"
+         id="security-group" style="max-height:200px;">
+      <a href="{{ url_for('security_settings') }}"
+         class="gec-nav-item {% if cur == 'security_settings' %}active{% endif %}">
+        <i class="fas fa-lock gec-nav-icon"></i>
+        <span class="gec-nav-label">Sécurité</span>
+      </a>
+      <a href="{{ url_for('view_logs') }}"
+         class="gec-nav-item {% if cur == 'view_logs' %}active{% endif %}">
+        <i class="fas fa-list-alt gec-nav-icon"></i>
+        <span class="gec-nav-label">Logs d'Activité</span>
+      </a>
+      <a href="{{ url_for('security_logs') }}"
+         class="gec-nav-item {% if cur == 'security_logs' %}active{% endif %}">
+        <i class="fas fa-exclamation-triangle gec-nav-icon"></i>
+        <span class="gec-nav-label">Logs de Sécurité</span>
+      </a>
+    </div>
+
+    <!-- Infra -->
+    <div class="gec-nav-group-toggle {% if cur in ['manage_backups','manage_languages','update_system'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('infra-group', this)" id="infra-group-toggle">
+      <i class="fas fa-server gec-nav-icon"></i>
+      <span class="gec-group-label">Infrastructure</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['manage_backups','manage_languages','update_system'] %}collapsed{% endif %}"
+         id="infra-group" style="max-height:200px;">
+      <a href="{{ url_for('manage_backups') }}"
+         class="gec-nav-item {% if cur == 'manage_backups' %}active{% endif %}">
+        <i class="fas fa-database gec-nav-icon"></i>
+        <span class="gec-nav-label">Sauvegardes</span>
+      </a>
+      <a href="{{ url_for('manage_languages') }}"
+         class="gec-nav-item {% if cur == 'manage_languages' %}active{% endif %}">
+        <i class="fas fa-language gec-nav-icon"></i>
+        <span class="gec-nav-label">Langues</span>
+      </a>
+      {% if url_for('update_system', _external=False) is defined or true %}
+      <a href="{{ url_for('update_system') if 'update_system' in url_map_endpoints else '#' }}"
+         class="gec-nav-item {% if cur == 'update_system' %}active{% endif %}">
+        <i class="fas fa-sync-alt gec-nav-icon"></i>
+        <span class="gec-nav-label">Mise à jour</span>
+      </a>
+      {% endif %}
+    </div>
     {% endif %}
     {% endif %}
 
@@ -191,18 +305,18 @@
       </div>
       <i class="fas fa-ellipsis-v" style="color:var(--sb-section);font-size:0.75rem;"></i>
     </div>
-    <div id="sb-user-menu" style="display:none;padding-top:0.25rem;">
-      <a href="{{ url_for('profile') }}" class="gec-nav-item" style="padding:0.4rem 0.625rem;">
+    <div id="sb-user-menu" style="display:none;padding-top:.25rem;">
+      <a href="{{ url_for('profile') }}" class="gec-nav-item" style="padding:.4rem .625rem;">
         <i class="fas fa-user-circle gec-nav-icon"></i><span class="gec-nav-label">Mon Profil</span>
       </a>
-      <a href="{{ url_for('edit_profile') }}" class="gec-nav-item" style="padding:0.4rem 0.625rem;">
+      <a href="{{ url_for('edit_profile') }}" class="gec-nav-item" style="padding:.4rem .625rem;">
         <i class="fas fa-user-edit gec-nav-icon"></i><span class="gec-nav-label">Modifier Profil</span>
       </a>
       {% for lang_code, lang_info in get_available_languages().items() %}
       <a href="{{ url_for('set_language_route', lang_code=lang_code) }}"
          class="gec-nav-item {% if current_language == lang_code %}active{% endif %}"
-         style="padding:0.4rem 0.625rem;">
-        <span class="gec-nav-icon" style="font-size:0.9rem;">{{ lang_info.flag }}</span>
+         style="padding:.4rem .625rem;">
+        <span class="gec-nav-icon" style="font-size:.9rem;">{{ lang_info.flag }}</span>
         <span class="gec-nav-label">{{ lang_info.name }}</span>
       </a>
       {% endfor %}
@@ -235,10 +349,10 @@
             {% if current_user.photo_profile %}<img src="{{ current_user.get_profile_photo_url() }}" alt="">
             {% else %}{{ current_user.nom_complet[:2].upper() }}{% endif %}
           </div>
-          <span class="gec-tb-name" style="font-size:0.875rem;font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <span class="gec-tb-name" style="font-size:.875rem;font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             {{ current_user.nom_complet }}
           </span>
-          <i class="fas fa-chevron-down" style="font-size:0.625rem;color:var(--t-muted);"></i>
+          <i class="fas fa-chevron-down" style="font-size:.625rem;color:var(--t-muted);"></i>
         </button>
         <div class="gec-dropdown-menu">
           <div class="gec-dropdown-header">{{ current_user.nom_complet }}</div>
@@ -274,7 +388,6 @@
 
   <main class="gec-main">
 
-{# ── Unauthenticated: flash + no layout wrappers ───────── #}
 {% else %}
 {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
 <div class="gec-flash-container" id="flash-container" style="top:1rem;">
@@ -292,10 +405,8 @@
 {% endif %}{% endwith %}
 {% endif %}
 
-{# ── SINGLE CONTENT BLOCK (defined once) ─────────────────── #}
 {% block content %}{% endblock %}
 
-{# ── Close authenticated wrappers ─────────────────────────── #}
 {% if current_user.is_authenticated %}
   </main>
 </div><!-- end content-wrapper -->
@@ -361,6 +472,26 @@ document.addEventListener('click',function(e){
   var dd=document.getElementById('tb-user-dd');
   if(dd&&!dd.contains(e.target))dd.classList.remove('open');
 });
+
+// Collapsible nav groups
+function toggleNavGroup(groupId, toggleEl) {
+  var body = document.getElementById(groupId);
+  if (!body) return;
+  var isOpen = !body.classList.contains('collapsed');
+  if (isOpen) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.offsetHeight; // force reflow
+    body.style.maxHeight = '0';
+    setTimeout(function(){ body.classList.add('collapsed'); body.style.maxHeight = ''; }, 250);
+    toggleEl.classList.remove('open');
+  } else {
+    body.classList.remove('collapsed');
+    body.style.maxHeight = body.scrollHeight + 200 + 'px';
+    toggleEl.classList.add('open');
+    setTimeout(function(){ body.style.maxHeight = ''; }, 280);
+  }
+}
+
 // Auto-dismiss flash after 5s
 setTimeout(function(){
   var c=document.getElementById('flash-container');

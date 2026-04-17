@@ -1,779 +1,424 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }} - {{ super() }}{% endblock %}
+{% block title %}{{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }} — GEC{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="mb-8 flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-gray-900">
-            <i class="fas fa-chart-bar mr-3 text-rdc-blue"></i>
-            {{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }}
-        </h1>
-        <div class="flex space-x-4">
-            <a href="{{ url_for('export_analytics', format='excel') }}" 
-               class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
-                <i class="fas fa-file-excel mr-2"></i>{{ t('export_excel') or 'Export Excel' }}
-            </a>
-            <a href="{{ url_for('export_analytics', format='pdf') }}"
-               class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
-                <i class="fas fa-file-pdf mr-2"></i>{{ t('export_pdf') or 'Export PDF' }}
-            </a>
-        </div>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Analytique</span>
     </div>
-
-    <!-- Filtre temporel -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold mb-4">
-            <i class="fas fa-filter mr-2 text-purple-600"></i>
-            {{ t('time_filter') or 'Filtre Temporel' }}
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button onclick="filterByPeriod('day')" class="filter-btn bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors" data-period="day">
-                <i class="fas fa-calendar-day mr-2"></i>{{ t('today') or "Aujourd'hui" }}
-            </button>
-            <button onclick="filterByPeriod('week')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="week">
-                <i class="fas fa-calendar-week mr-2"></i>{{ t('this_week') or 'Cette Semaine' }}
-            </button>
-            <button onclick="filterByPeriod('month')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="month">
-                <i class="fas fa-calendar-alt mr-2"></i>{{ t('this_month') or 'Ce Mois' }}
-            </button>
-            <button onclick="filterByPeriod('year')" class="filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors" data-period="year">
-                <i class="fas fa-calendar mr-2"></i>{{ t('this_year') or 'Cette Année' }}
-            </button>
-        </div>
-        <div class="mt-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <label for="customDate" class="text-sm font-medium text-gray-700">{{ t('custom_period') or 'Période personnalisée' }} :</label>
-                <input type="date" id="dateFrom" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <span class="text-gray-500">{{ t('to') or 'à' }}</span>
-                <input type="date" id="dateTo" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <button onclick="filterByCustom()" class="bg-green-500 text-white px-4 py-1 rounded text-sm hover:bg-green-600">
-                    {{ t('apply') or 'Appliquer' }}
-                </button>
-            </div>
-            <button onclick="resetFilter()" class="bg-gray-500 text-white px-4 py-1 rounded text-sm hover:bg-gray-600">
-                <i class="fas fa-undo mr-1"></i>{{ t('reset') or 'Réinitialiser' }}
-            </button>
-        </div>
-    </div>
-
-    <!-- Statistiques principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">{{ t('total_mail') or 'Total Courriers' }}</p>
-                    <p class="text-3xl font-bold text-gray-900">{{ total_courriers }}</p>
-                </div>
-                <div class="p-3 bg-blue-100 rounded-full">
-                    <i class="fas fa-envelope text-2xl text-blue-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">{{ t('incoming_mail') or 'Courriers Entrants' }}</p>
-                    <p class="text-3xl font-bold text-green-600">{{ courriers_entrants }}</p>
-                </div>
-                <div class="p-3 bg-green-100 rounded-full">
-                    <i class="fas fa-inbox text-2xl text-green-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Courriers Sortants</p>
-                    <p class="text-3xl font-bold text-yellow-600">{{ courriers_sortants }}</p>
-                </div>
-                <div class="p-3 bg-yellow-100 rounded-full">
-                    <i class="fas fa-paper-plane text-2xl text-yellow-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Temps Moyen Traitement</p>
-                    <p class="text-3xl font-bold text-purple-600">{{ avg_processing_time }} j</p>
-                </div>
-                <div class="p-3 bg-purple-100 rounded-full">
-                    <i class="fas fa-clock text-2xl text-purple-600"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistiques par période -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-calendar-week mr-2 text-blue-600"></i>
-                7 Derniers Jours
-            </h3>
-            <p class="text-4xl font-bold text-blue-600">{{ courriers_7_days }}</p>
-            <p class="text-sm text-gray-600">courriers enregistrés</p>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-calendar-alt mr-2 text-green-600"></i>
-                30 Derniers Jours
-            </h3>
-            <p class="text-4xl font-bold text-green-600">{{ courriers_30_days }}</p>
-            <p class="text-sm text-gray-600">courriers enregistrés</p>
-        </div>
-    </div>
-
-    <!-- Graphiques -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Graphique volume par jour -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-chart-line mr-2 text-blue-600"></i>
-                Volume par Jour (30 derniers jours)
-            </h3>
-            <div style="height: 300px;">
-                <canvas id="dailyChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Graphique répartition par statut -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-chart-pie mr-2 text-green-600"></i>
-                Répartition par Statut
-            </h3>
-            <div style="height: 300px;">
-                <canvas id="statusChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Volume mensuel -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold mb-4">
-            <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
-            Volume par Mois (12 derniers mois)
-        </h3>
-        <div style="height: 400px;">
-            <canvas id="monthlyChart"></canvas>
-        </div>
-    </div>
-
-    <!-- === NOUVELLES STATISTIQUES DÉTAILLÉES === -->
-    
-    <!-- Statistiques par département -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h3 class="text-lg font-semibold mb-4">
-            <i class="fas fa-building mr-2 text-indigo-600"></i>
-            Statistiques par {{ get_appellation_entites()[:-1] }}
-        </h3>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="space-y-3">
-                {% for dept in dept_stats %}
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <div class="flex-1">
-                        <span class="text-sm font-medium text-gray-700">{{ dept.departement }}</span>
-                        <div class="flex space-x-4 mt-1">
-                            <span class="text-xs text-green-600">↗ {{ dept.entrants }}</span>
-                            <span class="text-xs text-yellow-600">↗ {{ dept.sortants }}</span>
-                        </div>
-                    </div>
-                    <span class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full font-semibold">{{ dept.total }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            <div style="height: 300px;">
-                <canvas id="deptChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Statistiques par utilisateur et Performance -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Top utilisateurs -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-user-friends mr-2 text-purple-600"></i>
-                Top 10 Utilisateurs Actifs
-            </h3>
-            <div class="space-y-3">
-                {% for user in user_stats %}
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <div class="flex-1">
-                        <span class="text-sm font-medium text-gray-700">{{ user.nom_complet }}</span>
-                        <div class="flex space-x-4 mt-1">
-                            <span class="text-xs text-green-600">E: {{ user.entrants }}</span>
-                            <span class="text-xs text-yellow-600">S: {{ user.sortants }}</span>
-                        </div>
-                    </div>
-                    <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full font-semibold">{{ user.total }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <!-- Performance par département -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-clock mr-2 text-orange-600"></i>
-                Performance par {{ get_appellation_entites()[:-1] }}
-            </h3>
-            <div class="space-y-3">
-                {% for dept in dept_performance %}
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
-                    <div class="flex-1">
-                        <span class="text-sm font-medium text-gray-700">{{ dept.departement }}</span>
-                        <div class="text-xs text-gray-500 mt-1">{{ dept.total }} courriers traités</div>
-                    </div>
-                    <div class="text-right">
-                        <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full font-semibold">
-                            {{ "%.1f"|format(dept.temps_moyen or 0) }}j
-                        </span>
-                        <div class="text-xs text-gray-500 mt-1">temps moyen</div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Analyses temporelles avancées -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <!-- Répartition par jour de la semaine -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-calendar-week mr-2 text-teal-600"></i>
-                Par Jour de la Semaine
-            </h3>
-            <div style="height: 250px;">
-                <canvas id="weekdayChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Répartition par heure -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-clock mr-2 text-pink-600"></i>
-                Par Heure de la Journée
-            </h3>
-            <div style="height: 250px;">
-                <canvas id="hourlyChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Évolution des statuts -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-chart-line mr-2 text-cyan-600"></i>
-                Évolution des Statuts
-            </h3>
-            <div style="height: 250px;">
-                <canvas id="weeklyStatusChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Évolutions à long terme -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Évolution des types sur 6 mois -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-exchange-alt mr-2 text-emerald-600"></i>
-                Évolution Types (6 mois)
-            </h3>
-            <div style="height: 300px;">
-                <canvas id="typeEvolutionChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Tendance annuelle -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-chart-area mr-2 text-rose-600"></i>
-                Tendance sur 24 Mois
-            </h3>
-            <div style="height: 300px;">
-                <canvas id="yearlyTrendChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top expéditeurs et destinataires -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Top expéditeurs -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-user-tie mr-2 text-blue-600"></i>
-                Top 10 Expéditeurs
-            </h3>
-            <div class="space-y-2">
-                {% for sender in top_senders %}
-                <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
-                    <span class="text-sm text-gray-700">{{ sender.expediteur }}</span>
-                    <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-semibold">
-                        {{ sender.count }}
-                    </span>
-                </div>
-                {% endfor %}
-                {% if not top_senders %}
-                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Top destinataires -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold mb-4">
-                <i class="fas fa-users mr-2 text-green-600"></i>
-                Top 10 Destinataires
-            </h3>
-            <div class="space-y-2">
-                {% for recipient in top_recipients %}
-                <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
-                    <span class="text-sm text-gray-700">{{ recipient.destinataire }}</span>
-                    <span class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs font-semibold">
-                        {{ recipient.count }}
-                    </span>
-                </div>
-                {% endfor %}
-                {% if not top_recipients %}
-                <p class="text-gray-500 text-center py-4">Aucune donnée disponible</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    <h1 class="gec-page-title"><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:.5rem;"></i>{{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }}</h1>
+    <p class="gec-page-subtitle">Statistiques et visualisations de l'activité courrier</p>
+  </div>
+  <div style="display:flex;gap:.75rem;">
+    <a href="{{ url_for('export_analytics', format='excel') }}" class="gec-btn gec-btn-secondary">
+      <i class="fas fa-file-excel" style="color:#16a34a;"></i> {{ t('export_excel') or 'Export Excel' }}
+    </a>
+    <a href="{{ url_for('export_analytics', format='pdf') }}" class="gec-btn gec-btn-secondary">
+      <i class="fas fa-file-pdf" style="color:var(--danger);"></i> {{ t('export_pdf') or 'Export PDF' }}
+    </a>
+  </div>
 </div>
 
+<!-- Time filter -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-filter"></i> {{ t('time_filter') or 'Filtre Temporel' }}</span></div>
+  <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+    <div class="gec-grid-4">
+      <button onclick="filterByPeriod('day')" class="gec-btn filter-btn {% if request.args.get('period') == 'day' %}gec-btn-primary{% else %}gec-btn-secondary{% endif %}" data-period="day">
+        <i class="fas fa-calendar-day"></i> {{ t('today') or "Aujourd'hui" }}
+      </button>
+      <button onclick="filterByPeriod('week')" class="gec-btn filter-btn {% if request.args.get('period') == 'week' %}gec-btn-primary{% else %}gec-btn-secondary{% endif %}" data-period="week">
+        <i class="fas fa-calendar-week"></i> {{ t('this_week') or 'Cette Semaine' }}
+      </button>
+      <button onclick="filterByPeriod('month')" class="gec-btn filter-btn {% if request.args.get('period') == 'month' %}gec-btn-primary{% else %}gec-btn-secondary{% endif %}" data-period="month">
+        <i class="fas fa-calendar-alt"></i> {{ t('this_month') or 'Ce Mois' }}
+      </button>
+      <button onclick="filterByPeriod('year')" class="gec-btn filter-btn {% if request.args.get('period') == 'year' %}gec-btn-primary{% else %}gec-btn-secondary{% endif %}" data-period="year">
+        <i class="fas fa-calendar"></i> {{ t('this_year') or 'Cette Année' }}
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <span style="font-size:.8125rem;font-weight:500;color:var(--t-secondary);">{{ t('custom_period') or 'Période personnalisée' }} :</span>
+      <input type="date" id="dateFrom" class="gec-input" style="width:auto;" value="{{ request.args.get('date_from', '') }}">
+      <span style="color:var(--t-muted);font-size:.875rem;">→</span>
+      <input type="date" id="dateTo" class="gec-input" style="width:auto;" value="{{ request.args.get('date_to', '') }}">
+      <button onclick="filterByCustom()" class="gec-btn gec-btn-primary gec-btn-sm">
+        <i class="fas fa-check"></i> {{ t('apply') or 'Appliquer' }}
+      </button>
+      <button onclick="resetFilter()" class="gec-btn gec-btn-secondary gec-btn-sm">
+        <i class="fas fa-undo"></i> {{ t('reset') or 'Réinitialiser' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Main stats -->
+<div class="gec-grid-4" style="margin-bottom:1.5rem;">
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#EFF6FF;color:var(--primary);"><i class="fas fa-envelope"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value">{{ total_courriers }}</div>
+      <div class="gec-stat-label">{{ t('total_mail') or 'Total Courriers' }}</div>
+    </div>
+  </div>
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#ECFDF5;color:var(--success);"><i class="fas fa-inbox"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value" style="color:var(--success);">{{ courriers_entrants }}</div>
+      <div class="gec-stat-label">{{ t('incoming_mail') or 'Courriers Entrants' }}</div>
+    </div>
+  </div>
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#FFFBEB;color:var(--warning);"><i class="fas fa-paper-plane"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value" style="color:var(--warning);">{{ courriers_sortants }}</div>
+      <div class="gec-stat-label">Courriers Sortants</div>
+    </div>
+  </div>
+  <div class="gec-card gec-stat-card">
+    <div class="gec-stat-icon" style="background:#F5F3FF;color:#8B5CF6;"><i class="fas fa-clock"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-value" style="color:#8B5CF6;">{{ avg_processing_time }} j</div>
+      <div class="gec-stat-label">Temps Moyen Traitement</div>
+    </div>
+  </div>
+</div>
+
+<!-- Period stats -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card" style="text-align:center;">
+    <div class="gec-card-body" style="padding:1.5rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;">
+        <i class="fas fa-calendar-week" style="color:var(--primary);"></i>
+        <span style="font-weight:600;color:var(--t-primary);">7 Derniers Jours</span>
+      </div>
+      <div style="font-size:2.5rem;font-weight:800;color:var(--primary);line-height:1;">{{ courriers_7_days }}</div>
+      <div style="font-size:.8125rem;color:var(--t-muted);margin-top:.375rem;">courriers enregistrés</div>
+    </div>
+  </div>
+  <div class="gec-card" style="text-align:center;">
+    <div class="gec-card-body" style="padding:1.5rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;">
+        <i class="fas fa-calendar-alt" style="color:var(--success);"></i>
+        <span style="font-weight:600;color:var(--t-primary);">30 Derniers Jours</span>
+      </div>
+      <div style="font-size:2.5rem;font-weight:800;color:var(--success);line-height:1;">{{ courriers_30_days }}</div>
+      <div style="font-size:.8125rem;color:var(--t-muted);margin-top:.375rem;">courriers enregistrés</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row 1 -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-line" style="color:var(--primary);"></i> Volume par Jour (30 derniers jours)</span></div>
+    <div class="gec-card-body"><div style="height:280px;"><canvas id="dailyChart"></canvas></div></div>
+  </div>
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-pie" style="color:var(--success);"></i> Répartition par Statut</span></div>
+    <div class="gec-card-body"><div style="height:280px;"><canvas id="statusChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- Monthly chart -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-bar" style="color:#8B5CF6;"></i> Volume par Mois (12 derniers mois)</span></div>
+  <div class="gec-card-body"><div style="height:360px;"><canvas id="monthlyChart"></canvas></div></div>
+</div>
+
+<!-- Dept stats -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-building" style="color:#4F46E5;"></i> Statistiques par {{ get_appellation_entites()[:-1] }}</span></div>
+  <div class="gec-card-body">
+    <div class="gec-grid-2">
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        {% for dept in dept_stats %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.625rem .875rem;background:var(--body-bg);border-radius:var(--r-md);">
+          <div>
+            <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">{{ dept.departement }}</div>
+            <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">
+              <span style="color:var(--success);">↑ {{ dept.entrants }} entrants</span>
+              &nbsp;·&nbsp;
+              <span style="color:var(--warning);">↑ {{ dept.sortants }} sortants</span>
+            </div>
+          </div>
+          <span class="gec-badge gec-badge-blue">{{ dept.total }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="height:280px;"><canvas id="deptChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Users + Performance -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-user-friends" style="color:#8B5CF6;"></i> Top 10 Utilisateurs Actifs</span></div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for user in user_stats %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.625rem .875rem;background:var(--body-bg);border-radius:var(--r-md);">
+        <div>
+          <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">{{ user.nom_complet }}</div>
+          <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">
+            <span style="color:var(--success);">E: {{ user.entrants }}</span>
+            &nbsp;·&nbsp;
+            <span style="color:var(--warning);">S: {{ user.sortants }}</span>
+          </div>
+        </div>
+        <span class="gec-badge" style="background:#F5F3FF;color:#8B5CF6;">{{ user.total }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-clock" style="color:#EA580C;"></i> Performance par {{ get_appellation_entites()[:-1] }}</span></div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.5rem;">
+      {% for dept in dept_performance %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.625rem .875rem;background:var(--body-bg);border-radius:var(--r-md);">
+        <div>
+          <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">{{ dept.departement }}</div>
+          <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">{{ dept.total }} courriers traités</div>
+        </div>
+        <div style="text-align:right;">
+          <span class="gec-badge" style="background:#FFF7ED;color:#EA580C;">{{ "%.1f"|format(dept.temps_moyen or 0) }}j</span>
+          <div style="font-size:.6875rem;color:var(--t-muted);margin-top:.25rem;">temps moyen</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Temporal charts -->
+<div class="gec-grid-3" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-calendar-week" style="color:#0D9488;"></i> Par Jour de la Semaine</span></div>
+    <div class="gec-card-body"><div style="height:240px;"><canvas id="weekdayChart"></canvas></div></div>
+  </div>
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-clock" style="color:#EC4899;"></i> Par Heure de la Journée</span></div>
+    <div class="gec-card-body"><div style="height:240px;"><canvas id="hourlyChart"></canvas></div></div>
+  </div>
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-line" style="color:#0891B2;"></i> Évolution des Statuts</span></div>
+    <div class="gec-card-body"><div style="height:240px;"><canvas id="weeklyStatusChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- Evolution charts -->
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-exchange-alt" style="color:#059669;"></i> Évolution Types (6 mois)</span></div>
+    <div class="gec-card-body"><div style="height:280px;"><canvas id="typeEvolutionChart"></canvas></div></div>
+  </div>
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-area" style="color:#E11D48;"></i> Tendance sur 24 Mois</span></div>
+    <div class="gec-card-body"><div style="height:280px;"><canvas id="yearlyTrendChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- Top senders/recipients -->
+<div class="gec-grid-2">
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-user-tie" style="color:var(--primary);"></i> Top 10 Expéditeurs</span></div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.375rem;">
+      {% for sender in top_senders %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;border-radius:var(--r-sm);transition:background .1s;"
+           onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:.8125rem;color:var(--t-secondary);">{{ sender.expediteur }}</span>
+        <span class="gec-badge gec-badge-blue">{{ sender.count }}</span>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:1.5rem;color:var(--t-muted);font-size:.8125rem;">Aucune donnée disponible</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="gec-card">
+    <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-users" style="color:var(--success);"></i> Top 10 Destinataires</span></div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.375rem;">
+      {% for recipient in top_recipients %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;border-radius:var(--r-sm);transition:background .1s;"
+           onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:.8125rem;color:var(--t-secondary);">{{ recipient.destinataire }}</span>
+        <span class="gec-badge gec-badge-green">{{ recipient.count }}</span>
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:1.5rem;color:var(--t-muted);font-size:.8125rem;">Aucune donnée disponible</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
 <script>
-// Données depuis le backend
 const dailyData = {{ daily_data|safe }};
 const statusData = {{ status_data|safe }};
 const monthlyVolumes = {{ monthly_volumes|tojson }};
-
-// Nouvelles données détaillées
 const weeklyStatus = {{ weekly_status|safe }};
 const typeEvolution = {{ type_evolution|safe }};
 const weekdayData = {{ weekday_data|safe }};
 const hourlyData = {{ hourly_data|safe }};
 const yearlyEvolution = {{ yearly_evolution|safe }};
 
-// Configuration des couleurs
-const rdcColors = {
-    blue: '#003087',
-    yellow: '#FFD700',
-    red: '#CE1126',
-    green: '#009639',
-    indigo: '#4F46E5',
-    purple: '#7C3AED',
-    pink: '#EC4899',
-    teal: '#0D9488',
-    orange: '#EA580C',
-    emerald: '#059669',
-    rose: '#E11D48',
-    cyan: '#0891B2'
+// Chart.js defaults for dark mode awareness
+const isDark = document.documentElement.classList.contains('dark');
+const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+const tickColor = isDark ? '#94a3b8' : '#6b7280';
+
+Chart.defaults.color = tickColor;
+Chart.defaults.borderColor = gridColor;
+
+const c = {
+  blue:    '#3B82F6',
+  green:   '#10B981',
+  yellow:  '#F59E0B',
+  red:     '#EF4444',
+  indigo:  '#6366F1',
+  purple:  '#8B5CF6',
+  pink:    '#EC4899',
+  teal:    '#14B8A6',
+  orange:  '#F97316',
+  emerald: '#059669',
+  rose:    '#F43F5E',
+  cyan:    '#06B6D4'
 };
 
-// Graphique volume par jour
-const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-new Chart(dailyCtx, {
-    type: 'line',
-    data: {
-        labels: dailyData.dates,
-        datasets: [{
-            label: 'Nombre de courriers',
-            data: dailyData.counts,
-            borderColor: rdcColors.blue,
-            backgroundColor: 'rgba(0, 48, 135, 0.1)',
-            tension: 0.3,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
-        }
-    }
+// Daily
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: {
+    labels: dailyData.dates,
+    datasets: [{ label: 'Courriers', data: dailyData.counts, borderColor: c.blue, backgroundColor: c.blue+'20', tension: 0.3, fill: true, pointRadius: 3 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
 });
 
-// Graphique répartition par statut
-const statusCtx = document.getElementById('statusChart').getContext('2d');
-new Chart(statusCtx, {
-    type: 'doughnut',
-    data: {
-        labels: statusData.labels,
-        datasets: [{
-            data: statusData.counts,
-            backgroundColor: [
-                rdcColors.blue,
-                rdcColors.green,
-                rdcColors.yellow,
-                rdcColors.red,
-                '#6B7280',
-                '#9333EA',
-                '#F59E0B',
-                '#10B981'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
-    }
+// Status doughnut
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: statusData.labels,
+    datasets: [{ data: statusData.counts, backgroundColor: [c.blue,c.green,c.yellow,c.red,'#6B7280',c.purple,c.orange,c.teal] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
 });
 
-// Graphique volume mensuel
-const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-new Chart(monthlyCtx, {
-    type: 'bar',
-    data: {
-        labels: monthlyVolumes.map(v => v.month),
-        datasets: [{
-            label: 'Nombre de courriers',
-            data: monthlyVolumes.map(v => v.count),
-            backgroundColor: rdcColors.green,
-            borderColor: rdcColors.green,
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
-        }
-    }
+// Monthly bar
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyVolumes.map(v => v.month),
+    datasets: [{ label: 'Courriers', data: monthlyVolumes.map(v => v.count), backgroundColor: c.green+'99', borderColor: c.green, borderWidth: 1 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
 });
 
-// === NOUVEAUX GRAPHIQUES DÉTAILLÉS ===
-
-// 1. Graphique par département
-const deptCtx = document.getElementById('deptChart').getContext('2d');
+// Dept chart
 const deptLabels = {{ dept_stats | map(attribute='departement') | list | tojson }};
 const deptCounts = {{ dept_stats | map(attribute='total') | list | tojson }};
-
-new Chart(deptCtx, {
-    type: 'bar',
-    data: {
-        labels: deptLabels,
-        datasets: [{
-            label: 'Total Courriers',
-            data: deptCounts,
-            backgroundColor: rdcColors.indigo + '80',
-            borderColor: rdcColors.indigo,
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: deptLabels,
+    datasets: [{ label: 'Total', data: deptCounts, backgroundColor: c.indigo+'80', borderColor: c.indigo, borderWidth: 2 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
 });
 
-// 2. Graphique par jour de la semaine
-const weekdayCtx = document.getElementById('weekdayChart').getContext('2d');
-new Chart(weekdayCtx, {
-    type: 'radar',
-    data: {
-        labels: weekdayData.labels,
-        datasets: [{
-            label: 'Courriers',
-            data: weekdayData.counts,
-            borderColor: rdcColors.teal,
-            backgroundColor: rdcColors.teal + '40',
-            pointBackgroundColor: rdcColors.teal,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            r: {
-                beginAtZero: true
-            }
-        }
-    }
+// Weekday radar
+new Chart(document.getElementById('weekdayChart'), {
+  type: 'radar',
+  data: {
+    labels: weekdayData.labels,
+    datasets: [{ label: 'Courriers', data: weekdayData.counts, borderColor: c.teal, backgroundColor: c.teal+'40', pointBackgroundColor: c.teal, fill: true }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { beginAtZero: true } } }
 });
 
-// 3. Graphique par heure de la journée
-const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
-new Chart(hourlyCtx, {
-    type: 'bar',
-    data: {
-        labels: hourlyData.hours,
-        datasets: [{
-            label: 'Volume par heure',
-            data: hourlyData.counts,
-            backgroundColor: rdcColors.pink + '80',
-            borderColor: rdcColors.pink,
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
+// Hourly
+new Chart(document.getElementById('hourlyChart'), {
+  type: 'bar',
+  data: {
+    labels: hourlyData.hours,
+    datasets: [{ label: 'Volume', data: hourlyData.counts, backgroundColor: c.pink+'80', borderColor: c.pink, borderWidth: 1 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
 });
 
-// 4. Évolution hebdomadaire des statuts
-const weeklyStatusCtx = document.getElementById('weeklyStatusChart').getContext('2d');
+// Weekly status
 const statusLabels = Object.keys(weeklyStatus);
-const statusTypes = ['ENTRANT', 'SORTANT', 'EN_COURS', 'TRAITE'];
-const statusDatasets = statusTypes.map((status, index) => ({
-    label: status,
-    data: statusLabels.map(week => weeklyStatus[week][status] || 0),
-    borderColor: [rdcColors.blue, rdcColors.green, rdcColors.yellow, rdcColors.red][index],
-    backgroundColor: [rdcColors.blue, rdcColors.green, rdcColors.yellow, rdcColors.red][index] + '40',
-    tension: 0.4
-}));
-
-new Chart(weeklyStatusCtx, {
-    type: 'line',
-    data: {
-        labels: statusLabels,
-        datasets: statusDatasets
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
+new Chart(document.getElementById('weeklyStatusChart'), {
+  type: 'line',
+  data: {
+    labels: statusLabels,
+    datasets: ['ENTRANT','SORTANT','EN_COURS','TRAITE'].map((s,i) => ({
+      label: s, data: statusLabels.map(w => weeklyStatus[w][s] || 0),
+      borderColor: [c.blue,c.green,c.yellow,c.red][i], backgroundColor: [c.blue,c.green,c.yellow,c.red][i]+'40', tension: 0.4
+    }))
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
 });
 
-// 5. Évolution des types sur 6 mois
-const typeEvolutionCtx = document.getElementById('typeEvolutionChart').getContext('2d');
+// Type evolution
 const typeMonths = Object.keys(typeEvolution);
-const typeDatasets = [{
-    label: 'ENTRANT',
-    data: typeMonths.map(month => typeEvolution[month]['ENTRANT'] || 0),
-    borderColor: rdcColors.emerald,
-    backgroundColor: rdcColors.emerald + '40',
-    fill: false
-}, {
-    label: 'SORTANT', 
-    data: typeMonths.map(month => typeEvolution[month]['SORTANT'] || 0),
-    borderColor: rdcColors.orange,
-    backgroundColor: rdcColors.orange + '40',
-    fill: false
-}];
-
-new Chart(typeEvolutionCtx, {
-    type: 'line',
-    data: {
-        labels: typeMonths,
-        datasets: typeDatasets
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
+new Chart(document.getElementById('typeEvolutionChart'), {
+  type: 'line',
+  data: {
+    labels: typeMonths,
+    datasets: [
+      { label: 'ENTRANT', data: typeMonths.map(m => typeEvolution[m]['ENTRANT'] || 0), borderColor: c.emerald, fill: false },
+      { label: 'SORTANT', data: typeMonths.map(m => typeEvolution[m]['SORTANT'] || 0), borderColor: c.orange, fill: false }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
 });
 
-// 6. Tendance annuelle sur 24 mois
-const yearlyTrendCtx = document.getElementById('yearlyTrendChart').getContext('2d');
-new Chart(yearlyTrendCtx, {
-    type: 'line',
-    data: {
-        labels: yearlyEvolution.map(d => d.month),
-        datasets: [{
-            label: 'Entrants',
-            data: yearlyEvolution.map(d => d.entrants),
-            borderColor: rdcColors.rose,
-            backgroundColor: rdcColors.rose + '20',
-            fill: '+1'
-        }, {
-            label: 'Sortants',
-            data: yearlyEvolution.map(d => d.sortants),
-            borderColor: rdcColors.cyan,
-            backgroundColor: rdcColors.cyan + '20',
-            fill: 'origin'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                stacked: false
-            }
-        },
-        interaction: {
-            intersect: false,
-            mode: 'index'
-        }
-    }
+// Yearly trend
+new Chart(document.getElementById('yearlyTrendChart'), {
+  type: 'line',
+  data: {
+    labels: yearlyEvolution.map(d => d.month),
+    datasets: [
+      { label: 'Entrants', data: yearlyEvolution.map(d => d.entrants), borderColor: c.rose, backgroundColor: c.rose+'20', fill: '+1' },
+      { label: 'Sortants', data: yearlyEvolution.map(d => d.sortants), borderColor: c.cyan, backgroundColor: c.cyan+'20', fill: 'origin' }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } }, interaction: { intersect: false, mode: 'index' } }
 });
 
-// === FONCTIONS DE FILTRAGE TEMPOREL ===
-
-let currentPeriod = 'all';
-let originalData = {
-    dailyData: dailyData,
-    statusData: statusData,
-    monthlyVolumes: monthlyVolumes
-};
-
+// Filter functions
 function filterByPeriod(period) {
-    currentPeriod = period;
-    updateFilterButtons(period);
-    
-    // Redirection vers la page avec le paramètre de filtre
-    let url = new URL(window.location);
-    url.searchParams.set('period', period);
-    window.location = url;
+  let url = new URL(window.location);
+  url.searchParams.set('period', period);
+  window.location = url;
 }
 
 function filterByCustom() {
-    const dateFrom = document.getElementById('dateFrom').value;
-    const dateTo = document.getElementById('dateTo').value;
-    
-    if (!dateFrom || !dateTo) {
-        alert('Veuillez sélectionner les deux dates');
-        return;
-    }
-    
-    if (new Date(dateFrom) > new Date(dateTo)) {
-        alert('La date de début doit être antérieure à la date de fin');
-        return;
-    }
-    
-    currentPeriod = 'custom';
-    updateFilterButtons('custom');
-    
-    // Redirection avec dates personnalisées
-    let url = new URL(window.location);
-    url.searchParams.set('period', 'custom');
-    url.searchParams.set('date_from', dateFrom);
-    url.searchParams.set('date_to', dateTo);
-    window.location = url;
+  const df = document.getElementById('dateFrom').value;
+  const dt = document.getElementById('dateTo').value;
+  if (!df || !dt) { alert('Veuillez sélectionner les deux dates'); return; }
+  if (new Date(df) > new Date(dt)) { alert('La date de début doit être antérieure à la date de fin'); return; }
+  let url = new URL(window.location);
+  url.searchParams.set('period', 'custom');
+  url.searchParams.set('date_from', df);
+  url.searchParams.set('date_to', dt);
+  window.location = url;
 }
 
 function resetFilter() {
-    currentPeriod = 'all';
-    updateFilterButtons('all');
-    
-    // Redirection sans paramètres de filtre
-    let url = new URL(window.location);
-    url.searchParams.delete('period');
-    url.searchParams.delete('date_from');
-    url.searchParams.delete('date_to');
-    window.location = url;
+  let url = new URL(window.location);
+  url.searchParams.delete('period');
+  url.searchParams.delete('date_from');
+  url.searchParams.delete('date_to');
+  window.location = url;
 }
-
-function updateFilterButtons(activePeriod) {
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('bg-blue-500', 'text-white');
-        btn.classList.add('bg-gray-200', 'text-gray-700');
-    });
-    
-    if (activePeriod !== 'custom' && activePeriod !== 'all') {
-        const activeBtn = document.querySelector(`[data-period="${activePeriod}"]`);
-        if (activeBtn) {
-            activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
-            activeBtn.classList.add('bg-blue-500', 'text-white');
-        }
-    }
-}
-
-// Initialiser l'état du filtre au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const period = urlParams.get('period');
-    
-    if (period) {
-        updateFilterButtons(period);
-        
-        if (period === 'custom') {
-            const dateFrom = urlParams.get('date_from');
-            const dateTo = urlParams.get('date_to');
-            if (dateFrom) document.getElementById('dateFrom').value = dateFrom;
-            if (dateTo) document.getElementById('dateTo').value = dateTo;
-        }
-    }
-});
 </script>
 {% endblock %}

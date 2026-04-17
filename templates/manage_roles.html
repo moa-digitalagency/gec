@@ -1,267 +1,169 @@
 {% extends "new_base.html" %}
-
-{% block title %}Gestion des Rôles - GEC{% endblock %}
+{% block title %}Gestion des Rôles — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8 flex justify-between items-start">
-    <div>
-        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-user-shield mr-3 text-rdc-blue"></i>
-            {{ t('roles_permissions_management') or 'Gestion des Rôles et Permissions' }}
-        </h1>
-        <p class="mt-2 text-gray-600">{{ t('configure_user_roles') or 'Configuration des rôles utilisateur et de leurs permissions' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Rôles & Permissions</span>
     </div>
-    <a href="{{ url_for('add_role') }}" 
-       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-        <i class="fas fa-plus mr-2"></i>
-        {{ t('new_role') or 'Nouveau Rôle' }}
-    </a>
+    <h1 class="gec-page-title"><i class="fas fa-user-shield" style="color:var(--primary);margin-right:.5rem;"></i>Gestion des Rôles</h1>
+    <p class="gec-page-subtitle">Configuration des rôles utilisateur et de leurs permissions</p>
+  </div>
+  <a href="{{ url_for('add_role') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau rôle</a>
 </div>
 
-<!-- Roles Overview Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    {% for role_key, role_data in roles_permissions.items() %}
-    <div class="bg-white rounded-xl shadow-rdc overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="h-10 w-10 rounded-full {{ role_data.color }} flex items-center justify-center mr-3">
-                        <i class="{{ role_data.icon }}"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">{{ role_data.name }}</h3>
-                        <p class="text-sm text-gray-500">{{ role_data.count }} utilisateur(s)</p>
-                    </div>
-                </div>
-                {% if role_data.modifiable %}
-                <div class="flex space-x-2">
-                    <a href="{{ url_for('edit_role', role_id=role_data.id) }}" 
-                       class="text-rdc-blue hover:text-rdc-green transition-colors">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <button onclick="confirmDeleteRole('{{ role_data.id|e }}', '{{ role_data.name|e }}')"
-                            class="text-red-500 hover:text-red-700 transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                {% endif %}
-            </div>
+<!-- Stats -->
+<div class="gec-grid-4" style="margin-bottom:1.5rem;">
+  {% set total_u = (roles_permissions.get('super_admin',{}).get('count',0) + roles_permissions.get('admin',{}).get('count',0) + roles_permissions.get('user',{}).get('count',0)) %}
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon blue"><i class="fas fa-users"></i></div>
+    <div class="gec-stat-body"><div class="gec-stat-label">Total utilisateurs</div><div class="gec-stat-value">{{ total_u }}</div></div>
+  </div>
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon red"><i class="fas fa-crown"></i></div>
+    <div class="gec-stat-body"><div class="gec-stat-label">Super Admins</div><div class="gec-stat-value">{{ roles_permissions.get('super_admin',{}).get('count',0) }}</div></div>
+  </div>
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon orange"><i class="fas fa-shield-alt"></i></div>
+    <div class="gec-stat-body"><div class="gec-stat-label">Admins</div><div class="gec-stat-value">{{ roles_permissions.get('admin',{}).get('count',0) }}</div></div>
+  </div>
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon blue"><i class="fas fa-user"></i></div>
+    <div class="gec-stat-body"><div class="gec-stat-label">Utilisateurs</div><div class="gec-stat-value">{{ roles_permissions.get('user',{}).get('count',0) }}</div></div>
+  </div>
+</div>
+
+<!-- Roles Cards -->
+<div class="gec-grid-3" style="margin-bottom:1.5rem;">
+  {% for role_key, role_data in roles_permissions.items() %}
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <div class="gec-stat-icon" style="width:40px;height:40px;background:{{ role_data.bg_color|default('rgba(59,130,246,.12)') }};color:{{ role_data.text_color|default('#2563EB') }};">
+          <i class="{{ role_data.icon|default('fas fa-user') }}"></i>
         </div>
-        <div class="px-6 py-4">
-            <p class="text-gray-600 text-sm mb-4">{{ role_data.description }}</p>
-            <div class="space-y-2">
-                <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</div>
-                {% for permission in role_data.permissions %}
-                    {% if permission in all_permissions %}
-                    <div class="flex items-center text-sm">
-                        <i class="fas fa-check text-green-500 mr-2 text-xs"></i>
-                        <span class="text-gray-700">{{ all_permissions[permission].name }}</span>
-                    </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
+        <div>
+          <div style="font-weight:600;color:var(--t-primary);">{{ role_data.name }}</div>
+          <div style="font-size:.75rem;color:var(--t-muted);">{{ role_data.count }} utilisateur(s)</div>
         </div>
+      </div>
+      {% if role_data.modifiable %}
+      <div class="gec-actions-row">
+        <a href="{{ url_for('edit_role', role_id=role_data.id) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Modifier"><i class="fas fa-edit"></i></a>
+        <button onclick="confirmDeleteRole('{{ role_data.id|e }}','{{ role_data.name|e }}')" class="gec-btn gec-btn-icon gec-btn-sm" style="color:var(--danger);background:none;border:none;" title="Supprimer"><i class="fas fa-trash"></i></button>
+      </div>
+      {% endif %}
     </div>
-    {% endfor %}
+    <div class="gec-card-body">
+      <p style="font-size:.8125rem;color:var(--t-muted);margin-bottom:.75rem;">{{ role_data.description }}</p>
+      <div style="font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t-muted);margin-bottom:.5rem;">Permissions</div>
+      <div style="display:flex;flex-direction:column;gap:.375rem;">
+        {% for permission in role_data.permissions[:5] %}
+          {% if permission in all_permissions %}
+          <div style="display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--t-secondary);">
+            <i class="fas fa-check" style="color:var(--success);font-size:.6875rem;width:12px;"></i>
+            {{ all_permissions[permission].name }}
+          </div>
+          {% endif %}
+        {% endfor %}
+        {% if role_data.permissions|length > 5 %}
+        <div style="font-size:.75rem;color:var(--t-muted);margin-top:.25rem;">+ {{ role_data.permissions|length - 5 }} autres permissions</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 
 <!-- Permissions Matrix -->
-<div class="bg-white rounded-xl shadow-rdc overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-table mr-2 text-rdc-blue"></i>
-            {{ t('permissions_matrix') or 'Matrice des Permissions' }}
-        </h2>
-        <p class="text-sm text-gray-600 mt-1">{{ t('permissions_overview') or 'Vue d\'ensemble des permissions par rôle' }}</p>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {{ t('permission') or 'Permission' }}
-                    </th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <div class="flex items-center justify-center">
-                            <i class="fas fa-crown text-yellow-500 mr-1"></i>
-                            {{ t('super_admin') or 'Super Admin' }}
-                        </div>
-                    </th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <div class="flex items-center justify-center">
-                            <i class="fas fa-shield-alt text-blue-500 mr-1"></i>
-                            {{ t('admin') or 'Admin' }}
-                        </div>
-                    </th>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <div class="flex items-center justify-center">
-                            <i class="fas fa-user text-gray-500 mr-1"></i>
-                            {{ t('user') or 'Utilisateur' }}
-                        </div>
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% set categories = {} %}
-                {% for perm_key, perm_data in all_permissions.items() %}
-                    {% if perm_data.category not in categories %}
-                        {% set _ = categories.update({perm_data.category: []}) %}
-                    {% endif %}
-                    {% set _ = categories[perm_data.category].append((perm_key, perm_data)) %}
-                {% endfor %}
-                
-                {% for category, perms in categories.items() %}
-                    <tr class="bg-gray-50">
-                        <td colspan="4" class="px-6 py-2 text-sm font-medium text-gray-900 bg-gray-100">
-                            <i class="fas fa-folder mr-2 text-rdc-blue"></i>
-                            {{ category }}
-                        </td>
-                    </tr>
-                    {% for perm_key, perm_data in perms %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ perm_data.name }}</div>
-                            <div class="text-xs text-gray-500">{{ perm_data.description }}</div>
-                        </td>
-                        {% for role_key in ['super_admin', 'admin', 'user'] %}
-                        <td class="px-6 py-4 text-center">
-                            {% if role_key in roles_permissions and perm_key in roles_permissions[role_key].permissions %}
-                                <i class="fas fa-check-circle text-green-500 text-lg"></i>
-                            {% else %}
-                                <i class="fas fa-times-circle text-red-300 text-lg"></i>
-                            {% endif %}
-                        </td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-table"></i> Matrice des permissions</span>
+    <span style="font-size:.8125rem;color:var(--t-muted);">Vue d'ensemble par rôle</span>
+  </div>
+  <div class="gec-table-wrap">
+    <table class="gec-table">
+      <thead>
+        <tr>
+          <th>Permission</th>
+          <th style="text-align:center;"><i class="fas fa-crown" style="color:#F59E0B;"></i> Super Admin</th>
+          <th style="text-align:center;"><i class="fas fa-shield-alt" style="color:var(--primary);"></i> Admin</th>
+          <th style="text-align:center;"><i class="fas fa-user" style="color:var(--t-muted);"></i> Utilisateur</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set categories = {} %}
+        {% for perm_key, perm_data in all_permissions.items() %}
+          {% if perm_data.category not in categories %}{% set _ = categories.update({perm_data.category:[]}) %}{% endif %}
+          {% set _ = categories[perm_data.category].append((perm_key, perm_data)) %}
+        {% endfor %}
+        {% for category, perms in categories.items() %}
+        <tr>
+          <td colspan="4" style="background:var(--body-bg);padding:.5rem 1rem;">
+            <span style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--t-muted);">
+              <i class="fas fa-folder" style="color:var(--primary);margin-right:.375rem;"></i>{{ category }}
+            </span>
+          </td>
+        </tr>
+        {% for perm_key, perm_data in perms %}
+        <tr>
+          <td>
+            <div style="font-weight:500;color:var(--t-primary);font-size:.875rem;">{{ perm_data.name }}</div>
+            <div style="font-size:.75rem;color:var(--t-muted);">{{ perm_data.description }}</div>
+          </td>
+          {% for role_key in ['super_admin','admin','user'] %}
+          <td style="text-align:center;">
+            {% if role_key in roles_permissions and perm_key in roles_permissions[role_key].permissions %}
+            <i class="fas fa-check-circle" style="color:var(--success);font-size:1rem;"></i>
+            {% else %}
+            <i class="fas fa-times-circle" style="color:var(--border);font-size:1rem;"></i>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- Statistiques -->
-<div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                <i class="fas fa-users text-blue-500"></i>
-            </div>
-            <div>
-                {% set total_users = (roles_permissions.get('super_admin', {}).get('count', 0) + roles_permissions.get('admin', {}).get('count', 0) + roles_permissions.get('user', {}).get('count', 0)) %}
-                <div class="text-2xl font-bold text-gray-900">{{ total_users }}</div>
-                <div class="text-xs text-gray-500">{{ t('total_users') or 'Total utilisateurs' }}</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
-                <i class="fas fa-crown text-yellow-500"></i>
-            </div>
-            <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('super_admin', {}).get('count', 0) }}</div>
-                <div class="text-xs text-gray-500">{{ t('super_admins') or 'Super Admins' }}</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                <i class="fas fa-shield-alt text-green-500"></i>
-            </div>
-            <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('admin', {}).get('count', 0) }}</div>
-                <div class="text-xs text-gray-500">{{ t('administrators') or 'Administrateurs' }}</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center mr-3">
-                <i class="fas fa-user text-gray-500"></i>
-            </div>
-            <div>
-                <div class="text-2xl font-bold text-gray-900">{{ roles_permissions.get('user', {}).get('count', 0) }}</div>
-                <div class="text-xs text-gray-500">{{ t('users') or 'Utilisateurs' }}</div>
-            </div>
-        </div>
-    </div>
+<!-- Info notice -->
+<div class="gec-alert gec-alert-info">
+  <i class="fas fa-info-circle"></i>
+  <div>
+    <strong>Information sur la gestion des rôles</strong>
+    <p style="margin:.5rem 0 0;font-size:.8125rem;">Les permissions sont définies dans le code pour garantir la sécurité du système. Pour modifier les permissions d'un rôle existant, contactez l'équipe de développement.</p>
+  </div>
 </div>
 
-<!-- Information Notice -->
-<div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-    <div class="flex items-start">
-        <i class="fas fa-info-circle text-blue-500 mr-3 mt-1"></i>
-        <div>
-            <h3 class="text-lg font-medium text-blue-900 mb-2">{{ t('role_management_info') or 'Information sur la gestion des rôles' }}</h3>
-            <p class="text-blue-700 text-sm mb-3">
-                {{ t('permissions_defined_code') or 'Les permissions sont actuellement définies dans le code de l\'application pour garantir la sécurité et la stabilité du système.' }}
-            </p>
-            <ul class="text-blue-700 text-sm space-y-1">
-                <li><strong>{{ t('super_admin') or 'Super Administrateur' }} :</strong> {{ t('super_admin_description') or 'Accès complet à toutes les fonctionnalités (incluant les mises à jour et sauvegardes)' }}</li>
-                <li><strong>{{ t('admin') or 'Administrateur' }} :</strong> {{ t('admin_description') or 'Gestion des courriers et configuration système' }}</li>
-                <li><strong>{{ t('user') or 'Utilisateur' }} :</strong> {{ t('user_description') or 'Enregistrement et consultation des courriers' }}</li>
-            </ul>
-            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                <p class="text-yellow-800 text-sm">
-                    <strong>{{ t('note') or 'Note' }}:</strong> {{ t('update_permission_note') or 'La permission "Gestion des mises à jour" peut être accordée à d\'autres rôles pour permettre l\'accès aux fonctions de mise à jour du système.' }}
-                </p>
-            </div>
-            <p class="text-blue-600 text-xs mt-3 italic">
-                {{ t('contact_development_team') or 'Pour modifier les permissions d\'un rôle, contactez l\'équipe de développement.' }}
-            </p>
-        </div>
+<!-- Delete Modal -->
+<div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:500;align-items:center;justify-content:center;">
+  <div class="gec-modal">
+    <div class="gec-modal-header">
+      <span class="gec-modal-title"><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:.5rem;"></i>Confirmer la suppression</span>
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon"><i class="fas fa-times"></i></button>
     </div>
-</div>
-
-<!-- Modal de confirmation de suppression -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('confirm_role_deletion') or 'Confirmer la suppression' }}</h3>
-            <p class="text-sm text-gray-500 mb-4">
-                {{ t('confirm_delete_role') or 'Êtes-vous sûr de vouloir supprimer le rôle' }} "<span id="roleNameToDelete"></span>" ?
-                {{ t('role_deletion_irreversible') or 'Cette action est irréversible.' }}
-            </p>
-            <div class="flex justify-center space-x-4">
-                <button onclick="closeDeleteModal()" 
-                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
-                    {{ t('cancel') or 'Annuler' }}
-                </button>
-                <form id="deleteForm" method="POST" class="inline">
-                    <button type="submit" 
-                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-                        {{ t('delete') or 'Supprimer' }}
-                    </button>
-                </form>
-            </div>
-        </div>
+    <div class="gec-modal-body">
+      <p style="font-size:.875rem;color:var(--t-secondary);">Supprimer le rôle "<strong id="roleNameToDelete"></strong>" ? Cette action est irréversible.</p>
     </div>
+    <div class="gec-modal-footer">
+      <button onclick="closeDeleteModal()" class="gec-btn gec-btn-secondary">Annuler</button>
+      <form id="deleteForm" method="POST" class="inline">
+        <button type="submit" class="gec-btn gec-btn-danger"><i class="fas fa-trash"></i> Supprimer</button>
+      </form>
+    </div>
+  </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function confirmDeleteRole(roleId, roleName) {
-    document.getElementById('roleNameToDelete').textContent = roleName;
-    document.getElementById('deleteForm').action = '/delete_role/' + roleId;
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-
-// Fermer le modal en cliquant à l'extérieur
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeDeleteModal();
-    }
-});
+function confirmDeleteRole(id,name){document.getElementById('roleNameToDelete').textContent=name;document.getElementById('deleteForm').action='/delete_role/'+id;document.getElementById('deleteModal').style.display='flex';}
+function closeDeleteModal(){document.getElementById('deleteModal').style.display='none';}
+document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
 </script>
 {% endblock %}

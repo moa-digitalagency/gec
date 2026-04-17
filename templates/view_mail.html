@@ -1,575 +1,427 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('view_mail') or 'Consulter Courriers' }} - GEC{% endblock %}
+{% block title %}{{ t('view_mail') or 'Consulter Courriers' }} — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-list mr-3 text-rdc-blue"></i>
-        {{ t('view_mail') or 'Consulter les Courriers' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('browse_filter_all_mail') or 'Parcourez et filtrez tous les courriers enregistrés' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Courriers</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-list" style="color:var(--primary);margin-right:.5rem;"></i>{{ t('view_mail') or 'Consulter les Courriers' }}</h1>
+    <p class="gec-page-subtitle">{{ t('browse_filter_all_mail') or 'Parcourez et filtrez tous les courriers enregistrés' }}</p>
+  </div>
+  <div style="display:flex;gap:.75rem;">
+    <a href="{{ url_for('kanban') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-columns"></i> Vue Kanban</a>
+    <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau Courrier</a>
+  </div>
 </div>
 
-<!-- Two Column Layout -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Filters Card -->
-        <div class="bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-filter mr-2 text-rdc-blue"></i>
-            {{ t('filters_search') or 'Filtres et Recherche' }}
-        </h2>
-    </div>
-    <div class="p-6">
-        <form method="GET" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Search Input -->
-                <div class="lg:col-span-3">
-                    <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-search mr-1 text-rdc-blue"></i>
-                        {{ t('text_search') or 'Recherche Textuelle' }}
-                    </label>
-                    <div class="relative">
-                        <input type="text" 
-                               id="search" 
-                               name="search" 
-                               value="{{ search }}" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="{{ t('search_placeholder') or 'N° accusé, référence, objet, expéditeur, destinataire...' }}"
-                               autocomplete="off">
-                        <div id="searchSuggestions" class="absolute z-10 w-full bg-white mt-1 rounded-md shadow-lg hidden">
-                            <!-- Les suggestions apparaîtront ici -->
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Type Filter -->
-                <div>
-                    <label for="type_courrier" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
-                        {{ t('type') or 'Type' }}
-                    </label>
-                    <select id="type_courrier" 
-                            name="type_courrier"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <option value="">{{ t('all') or 'Tous' }}</option>
-                        <option value="ENTRANT" {% if type_courrier == 'ENTRANT' %}selected{% endif %}>{{ t('incoming') or 'Entrant' }}</option>
-                        <option value="SORTANT" {% if type_courrier == 'SORTANT' %}selected{% endif %}>{{ t('outgoing') or 'Sortant' }}</option>
-                    </select>
-                </div>
-                
-                <!-- Type Courrier Sortant Filter -->
-                <div id="type-courrier-sortant-filter" style="{% if type_courrier != 'SORTANT' %}display:none;{% endif %}">
-                    <label for="type_courrier_sortant_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-tag mr-1 text-rdc-green"></i>
-                        {{ t('outgoing_mail_type') or 'Type de Courrier Sortant' }}
-                    </label>
-                    <select id="type_courrier_sortant_id" 
-                            name="type_courrier_sortant_id"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <option value="">{{ t('all_types') or 'Tous les types' }}</option>
-                        {% for type in types_courrier_sortant %}
-                        {% if type.actif %}
-                        <option value="{{ type.id }}" {% if type_courrier_sortant_id|string == type.id|string %}selected{% endif %}>
-                            {{ type.nom }}
-                        </option>
-                        {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <!-- Date From -->
-                <div>
-                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                        {{ t('registration_start_date') or 'Date Enregistrement Début' }}
-                    </label>
-                    <input type="date" 
-                           id="date_from" 
-                           name="date_from" 
-                           value="{{ date_from }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- Date To -->
-                <div>
-                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1 text-rdc-green"></i>
-                        {{ t('registration_end_date') or 'Date Enregistrement Fin' }}
-                    </label>
-                    <input type="date" 
-                           id="date_to" 
-                           name="date_to" 
-                           value="{{ date_to }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- Date Rédaction From -->
-                <div>
-                    <label for="date_redaction_from" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar-edit mr-1 text-purple-500"></i>
-                        Date Rédaction Début
-                    </label>
-                    <input type="date" 
-                           id="date_redaction_from" 
-                           name="date_redaction_from" 
-                           value="{{ date_redaction_from }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- Date Rédaction To -->
-                <div>
-                    <label for="date_redaction_to" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-calendar-edit mr-1 text-purple-500"></i>
-                        Date Rédaction Fin
-                    </label>
-                    <input type="date" 
-                           id="date_redaction_to" 
-                           name="date_redaction_to" 
-                           value="{{ date_redaction_to }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                </div>
-                
-                <!-- SG en Copie Filter (pour courriers entrants uniquement) -->
-                <div id="sg-copie-filter" style="{% if type_courrier != 'ENTRANT' %}display:none;{% endif %}">
-                    <label for="sg_copie" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-copy mr-1 text-indigo-500"></i>
-                        {{ get_titre_responsable() }} en Copie
-                    </label>
-                    <select id="sg_copie" 
-                            name="sg_copie"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <option value="">Tous</option>
-                        <option value="oui" {% if sg_copie == 'oui' %}selected{% endif %}>Oui</option>
-                        <option value="non" {% if sg_copie == 'non' %}selected{% endif %}>Non</option>
-                    </select>
-                </div>
-                
-                <!-- Sort By -->
-                <div>
-                    <label for="sort_by" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-sort mr-1 text-rdc-yellow"></i>
-                        Trier par
-                    </label>
-                    <select id="sort_by" 
-                            name="sort_by"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <option value="date_enregistrement" {% if sort_by == 'date_enregistrement' %}selected{% endif %}>Date</option>
-                        <option value="numero_accuse_reception" {% if sort_by == 'numero_accuse_reception' %}selected{% endif %}>N° Accusé</option>
-                        <option value="expediteur" {% if sort_by == 'expediteur' %}selected{% endif %}>Contact</option>
-                        <option value="objet" {% if sort_by == 'objet' %}selected{% endif %}>Objet</option>
-                    </select>
-                </div>
-                
-                <!-- Sort Order (hidden but in the same row) -->
-                <div class="hidden">
-                    <select id="sort_order" name="sort_order">
-                        <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Décroissant</option>
-                        <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Croissant</option>
-                    </select>
-                </div>
+<div class="gec-two-col" style="--sidebar:260px;">
+
+  <!-- Main -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Filters -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-filter"></i> {{ t('filters_search') or 'Filtres et Recherche' }}</span></div>
+      <div class="gec-card-body">
+        <form method="GET" id="filterForm" style="display:flex;flex-direction:column;gap:1rem;">
+
+          <!-- Search -->
+          <div class="gec-form-group" style="margin:0;">
+            <div style="position:relative;">
+              <input type="text" id="search" name="search" value="{{ search }}" autocomplete="off"
+                     placeholder="{{ t('search_placeholder') or 'N° accusé, référence, objet, expéditeur...' }}"
+                     class="gec-input" style="padding-right:2.5rem;">
+              <i class="fas fa-search" style="position:absolute;right:.875rem;top:50%;transform:translateY(-50%);color:var(--t-muted);font-size:.875rem;pointer-events:none;"></i>
+              <div id="searchSuggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 24px rgba(0,0,0,.15);margin-top:2px;display:none;overflow:hidden;"></div>
             </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button type="submit" 
-                        class="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                    <i class="fas fa-search mr-2"></i>
-                    Filtrer
-                </button>
-                <a href="{{ url_for('view_mail') }}" 
-                   class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Réinitialiser
-                </a>
-                <!-- Quick toggle for sort order -->
-                <button type="button" 
-                        id="sort-order-btn"
-                        class="flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-sort-amount-{{ 'down' if sort_order == 'desc' else 'up' }} mr-2"></i>
-                    {{ 'Plus récent' if sort_order == 'desc' else 'Plus ancien' }} d'abord
-                </button>
+          </div>
+
+          <!-- Row: type + statut + sortant type -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;">
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label"><i class="fas fa-exchange-alt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('type') or 'Type' }}</label>
+              <select id="type_courrier" name="type_courrier" class="gec-select">
+                <option value="">{{ t('all') or 'Tous' }}</option>
+                <option value="ENTRANT" {% if type_courrier == 'ENTRANT' %}selected{% endif %}>{{ t('incoming') or 'Entrant' }}</option>
+                <option value="SORTANT" {% if type_courrier == 'SORTANT' %}selected{% endif %}>{{ t('outgoing') or 'Sortant' }}</option>
+              </select>
             </div>
+            <div class="gec-form-group" id="type-courrier-sortant-filter" style="margin:0;{% if type_courrier != 'SORTANT' %}display:none;{% endif %}">
+              <label class="gec-label"><i class="fas fa-tag" style="color:var(--success);font-size:.75rem;"></i> Type Sortant</label>
+              <select id="type_courrier_sortant_id" name="type_courrier_sortant_id" class="gec-select">
+                <option value="">Tous les types</option>
+                {% for type in types_courrier_sortant %}{% if type.actif %}
+                <option value="{{ type.id }}" {% if type_courrier_sortant_id|string == type.id|string %}selected{% endif %}>{{ type.nom }}</option>
+                {% endif %}{% endfor %}
+              </select>
+            </div>
+            <div class="gec-form-group" id="sg-copie-filter" style="margin:0;{% if type_courrier != 'ENTRANT' %}display:none;{% endif %}">
+              <label class="gec-label"><i class="fas fa-copy" style="color:#8B5CF6;font-size:.75rem;"></i> {{ get_titre_responsable() }} copie</label>
+              <select id="sg_copie" name="sg_copie" class="gec-select">
+                <option value="">Tous</option>
+                <option value="oui" {% if sg_copie == 'oui' %}selected{% endif %}>Oui</option>
+                <option value="non" {% if sg_copie == 'non' %}selected{% endif %}>Non</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row: dates -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem;">
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label"><i class="fas fa-calendar" style="color:var(--success);font-size:.75rem;"></i> Enreg. début</label>
+              <input type="date" name="date_from" value="{{ date_from }}" class="gec-input">
+            </div>
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label"><i class="fas fa-calendar" style="color:var(--success);font-size:.75rem;"></i> Enreg. fin</label>
+              <input type="date" name="date_to" value="{{ date_to }}" class="gec-input">
+            </div>
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label"><i class="fas fa-calendar-edit" style="color:#8B5CF6;font-size:.75rem;"></i> Réd. début</label>
+              <input type="date" name="date_redaction_from" value="{{ date_redaction_from }}" class="gec-input">
+            </div>
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label"><i class="fas fa-calendar-edit" style="color:#8B5CF6;font-size:.75rem;"></i> Réd. fin</label>
+              <input type="date" name="date_redaction_to" value="{{ date_redaction_to }}" class="gec-input">
+            </div>
+          </div>
+
+          <!-- Row: sort + actions -->
+          <div style="display:flex;align-items:flex-end;gap:.75rem;flex-wrap:wrap;">
+            <div class="gec-form-group" style="margin:0;min-width:140px;">
+              <label class="gec-label"><i class="fas fa-sort" style="color:var(--warning);font-size:.75rem;"></i> Trier par</label>
+              <select name="sort_by" class="gec-select">
+                <option value="date_enregistrement" {% if sort_by == 'date_enregistrement' %}selected{% endif %}>Date</option>
+                <option value="numero_accuse_reception" {% if sort_by == 'numero_accuse_reception' %}selected{% endif %}>N° Accusé</option>
+                <option value="expediteur" {% if sort_by == 'expediteur' %}selected{% endif %}>Contact</option>
+                <option value="objet" {% if sort_by == 'objet' %}selected{% endif %}>Objet</option>
+              </select>
+            </div>
+            <input type="hidden" id="sort_order" name="sort_order" value="{{ sort_order or 'desc' }}">
+            <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-filter"></i> Filtrer</button>
+            <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Réinitialiser</a>
+            <button type="button" id="sort-order-btn" class="gec-btn gec-btn-secondary">
+              <i class="fas fa-sort-amount-{{ 'down' if sort_order == 'desc' else 'up' }}"></i>
+              {{ 'Plus récent' if sort_order == 'desc' else 'Plus ancien' }} d'abord
+            </button>
+          </div>
+
         </form>
-        </div>
+      </div>
     </div>
 
     <!-- Results -->
-    <div class="bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-table mr-2 text-rdc-blue"></i>
-                Résultats de la Recherche
-            </h2>
-            <div class="flex items-center space-x-3">
-                {% if courriers %}
-                <!-- Export Button -->
-                <div class="flex items-center space-x-2">
-                    <a href="{{ url_for('export_mail_list', **request.args) }}"
-                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors">
-                        <i class="fas fa-file-pdf mr-2"></i>
-                        Exporter en PDF
-                    </a>
-                    <a href="{{ url_for('export_mail_list_excel', **request.args) }}"
-                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">
-                        <i class="fas fa-file-excel mr-2"></i>
-                        Exporter en Excel
-                    </a>
-                </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rdc-blue text-white">
-                    {{ pagination.total }} courrier{{ 's' if pagination.total > 1 else '' }} trouvé{{ 's' if pagination.total > 1 else '' }}
-                    {% if pagination.pages > 1 %} - Page {{ pagination.page }}/{{ pagination.pages }}{% endif %}
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-table"></i> Résultats</span>
+        <div style="display:flex;align-items:center;gap:.625rem;">
+          {% if courriers %}
+          <a href="{{ url_for('export_mail_list', **request.args) }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+            <i class="fas fa-file-pdf" style="color:var(--danger);"></i> PDF
+          </a>
+          <a href="{{ url_for('export_mail_list_excel', **request.args) }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+            <i class="fas fa-file-excel" style="color:var(--success);"></i> Excel
+          </a>
+          <span class="gec-badge gec-badge-blue">
+            {{ pagination.total }} courrier{{ 's' if pagination.total > 1 else '' }}{% if pagination.pages > 1 %} — Page {{ pagination.page }}/{{ pagination.pages }}{% endif %}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Bulk action bar -->
+      <div id="bulk-bar" style="display:none;padding:.75rem 1rem;background:#EFF6FF;border-bottom:1px solid #BFDBFE;">
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+          <span style="font-size:.875rem;font-weight:600;color:#1e40af;"><span id="selected-count">0</span> sélectionné(s)</span>
+          <form id="bulk-form" method="POST" action="{{ url_for('bulk_action') }}" style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div id="bulk-ids-container"></div>
+            <select name="action" id="bulk-action-select" class="gec-select" style="width:auto;font-size:.8125rem;">
+              <option value="">-- Choisir une action --</option>
+              <option value="statut_recu">Marquer : REÇU</option>
+              <option value="statut_en_cours">Marquer : EN COURS</option>
+              <option value="statut_traite">Marquer : TRAITÉ</option>
+              <option value="statut_archive">Marquer : ARCHIVÉ</option>
+              {% if current_user.has_permission('delete_mail') %}
+              <option value="delete">Supprimer la sélection</option>
+              {% endif %}
+            </select>
+            <button type="button" onclick="submitBulkAction()" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-check"></i> Appliquer</button>
+          </form>
+          <button type="button" onclick="clearSelection()" class="gec-btn gec-btn-ghost gec-btn-sm">Désélectionner tout</button>
+        </div>
+      </div>
+
+      {% if courriers %}
+      <div class="gec-table-wrap">
+        <table class="gec-table" id="courriers-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">
+                <input type="checkbox" id="select-all" title="Tout sélectionner" onchange="toggleSelectAll(this)" style="cursor:pointer;">
+              </th>
+              <th>N° Accusé</th>
+              <th>Type</th>
+              <th>Référence</th>
+              <th>Contact</th>
+              <th>Objet</th>
+              <th>Date Réd.</th>
+              <th>Date Enreg.</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in courriers %}
+            <tr class="courrier-row">
+              <td>
+                <input type="checkbox" value="{{ c.id }}" class="row-checkbox" onchange="updateBulkBar()" style="cursor:pointer;">
+              </td>
+              <td style="white-space:nowrap;">
+                <span class="gec-badge gec-badge-blue" style="font-family:monospace;">{{ c.numero_accuse_reception }}</span>
+              </td>
+              <td style="white-space:nowrap;">
+                <span class="gec-badge {% if c.type_courrier == 'ENTRANT' %}gec-badge-blue{% else %}gec-badge-green{% endif %}">
+                  <i class="fas {{ 'fa-inbox' if c.type_courrier == 'ENTRANT' else 'fa-paper-plane' }}" style="margin-right:.25rem;font-size:.6rem;"></i>{{ c.type_courrier }}
                 </span>
+                {% if c.type_courrier == 'SORTANT' and c.type_courrier_sortant %}
+                <div style="margin-top:.25rem;">
+                  <span class="gec-badge gec-badge-green" style="font-size:.625rem;"><i class="fas fa-tag" style="margin-right:.25rem;font-size:.5rem;"></i>{{ c.type_courrier_sortant.nom }}</span>
+                </div>
                 {% endif %}
-            </div>
+              </td>
+              <td style="white-space:nowrap;font-size:.8125rem;">
+                {% if c.numero_reference %}
+                <span class="gec-badge gec-badge-gray">{{ c.numero_reference }}</span>
+                {% else %}
+                <span style="color:var(--t-muted);font-size:.75rem;">—</span>
+                {% endif %}
+              </td>
+              <td style="font-size:.8125rem;">
+                <div style="font-size:.6875rem;color:var(--t-muted);">{{ c.get_label_contact() }}:</div>
+                <div style="font-weight:500;color:var(--t-primary);">{{ c.get_contact_principal() }}</div>
+              </td>
+              <td style="font-size:.8125rem;">
+                <div style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t-secondary);" title="{{ c.objet }}">{{ c.objet }}</div>
+                {% set tag_list = c.tags.all() %}
+                {% if tag_list %}
+                <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.25rem;">
+                  {% for ct in tag_list[:3] %}
+                  <span style="font-size:.625rem;padding:.125rem .5rem;border-radius:999px;font-weight:500;background-color:{{ ct.tag.couleur }}22;color:{{ ct.tag.couleur }};">{{ ct.tag.nom }}</span>
+                  {% endfor %}
+                  {% if tag_list|length > 3 %}<span style="font-size:.625rem;color:var(--t-muted);">+{{ tag_list|length - 3 }}</span>{% endif %}
+                </div>
+                {% endif %}
+              </td>
+              <td style="white-space:nowrap;font-size:.8125rem;">
+                {% if c.date_redaction %}
+                <span class="gec-badge gec-badge-blue" style="font-size:.65rem;"><i class="fas fa-calendar-edit" style="margin-right:.25rem;font-size:.5rem;"></i>{{ format_date(c.date_redaction) }}</span>
+                {% else %}
+                <span style="color:var(--t-muted);font-size:.75rem;">—</span>
+                {% endif %}
+              </td>
+              <td style="white-space:nowrap;font-size:.8125rem;color:var(--t-muted);">
+                {{ format_date(c.date_enregistrement, include_time=True) if c.date_enregistrement else '—' }}
+              </td>
+              <td style="white-space:nowrap;">
+                <span class="{{ c.statut_color }} gec-badge" style="font-size:.65rem;">{{ c.statut.replace('_',' ')|title }}</span>
+                {% if c.due_date and c.statut not in ['TRAITE','ARCHIVE'] %}
+                  {% if c.due_date < now().date() %}
+                  <span class="gec-badge gec-badge-red" style="font-size:.6rem;margin-left:.25rem;"><i class="fas fa-clock" style="margin-right:.2rem;"></i>Retard</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td style="white-space:nowrap;">
+                <div style="display:flex;gap:.375rem;">
+                  <a href="{{ url_for('mail_detail', id=c.id) }}" class="gec-btn gec-btn-primary gec-btn-sm gec-btn-icon" title="Voir"><i class="fas fa-eye"></i></a>
+                  <a href="{{ url_for('export_pdf', id=c.id) }}" class="gec-btn gec-btn-secondary gec-btn-sm gec-btn-icon" title="PDF" style="color:var(--danger);"><i class="fas fa-file-pdf"></i></a>
+                  {% if current_user.has_permission('delete_mail') %}
+                  <button data-id="{{ c.id }}" data-numero="{{ c.numero_accuse_reception|e }}"
+                          class="delete-btn gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Supprimer" style="color:var(--danger);"><i class="fas fa-trash"></i></button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if pagination and pagination.pages > 1 %}
+      <div class="gec-card-footer">
+        <div class="gec-pagination">
+          <span class="gec-pagination-info">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+          <div class="gec-pagination-pages">
+            {% if pagination.has_prev %}<a href="{{ url_for('view_mail', page=pagination.prev_num, **request.args) }}" class="gec-page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+            {% for pn in pagination.iter_pages() %}
+              {% if pn %}<a href="{{ url_for('view_mail', page=pn, **request.args) }}" class="gec-page-btn {% if pn == pagination.page %}active{% endif %}">{{ pn }}</a>
+              {% else %}<span class="gec-page-btn" style="cursor:default;">…</span>{% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}<a href="{{ url_for('view_mail', page=pagination.next_num, **request.args) }}" class="gec-page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+          </div>
         </div>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="gec-empty">
+        <div class="gec-empty-icon"><i class="fas fa-search"></i></div>
+        <div class="gec-empty-title">Aucun courrier trouvé</div>
+        <div class="gec-empty-desc">
+          Essayez de modifier vos critères de recherche ou
+          <a href="{{ url_for('register_mail') }}" style="color:var(--primary);">enregistrez un nouveau courrier</a>.
+        </div>
+        <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary" style="margin-top:1rem;"><i class="fas fa-refresh"></i> Voir tous les courriers</a>
+      </div>
+      {% endif %}
+
     </div>
-    <div class="p-6">
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Quick actions -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-bolt"></i> Actions Rapides</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.5rem;padding-top:.75rem;padding-bottom:.75rem;">
+        {% set actions = [
+          (url_for('register_mail'), 'fa-plus-circle', 'var(--primary)', 'Nouveau Courrier', 'Enregistrer un courrier'),
+          (url_for('search'), 'fa-search', 'var(--warning)', 'Recherche Avancée', 'Critères spécifiques'),
+          (url_for('kanban'), 'fa-columns', '#8B5CF6', 'Vue Kanban', 'Gérer par statut'),
+          (url_for('dashboard'), 'fa-home', 'var(--success)', 'Dashboard', "Retour à l'accueil"),
+        ] %}
+        {% for href, icon, color, label, desc in actions %}
+        <a href="{{ href }}" style="display:flex;align-items:center;gap:.75rem;padding:.75rem;border-radius:var(--r-md);border:1px solid var(--border);text-decoration:none;transition:background .15s;color:inherit;"
+           onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background='transparent'">
+          <i class="fas {{ icon }}" style="color:{{ color }};width:16px;text-align:center;"></i>
+          <div>
+            <div style="font-weight:500;font-size:.875rem;color:var(--t-primary);">{{ label }}</div>
+            <div style="font-size:.75rem;color:var(--t-muted);">{{ desc }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Stats + quick filters -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-chart-bar"></i> Statistiques</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.75rem;">
         {% if courriers %}
-
-        <!-- Barre d'actions groupées (visible quand sélection active) -->
-        <div id="bulk-bar" class="hidden mb-4 flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <span class="text-sm font-medium text-blue-800">
-                <span id="selected-count">0</span> sélectionné(s)
-            </span>
-            <div class="flex items-center gap-2 ml-auto">
-                <form id="bulk-form" method="POST" action="{{ url_for('bulk_action') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div id="bulk-ids-container"></div>
-                    <div class="flex items-center gap-2">
-                        <select name="action" id="bulk-action-select"
-                                class="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="">-- Choisir une action --</option>
-                            <option value="statut_recu">Marquer : REÇU</option>
-                            <option value="statut_en_cours">Marquer : EN COURS</option>
-                            <option value="statut_traite">Marquer : TRAITÉ</option>
-                            <option value="statut_archive">Marquer : ARCHIVÉ</option>
-                            {% if current_user.has_permission('delete_mail') %}
-                            <option value="delete">Supprimer la sélection</option>
-                            {% endif %}
-                        </select>
-                        <button type="button" onclick="submitBulkAction()"
-                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                            <i class="fas fa-check mr-1"></i>Appliquer
-                        </button>
-                    </div>
-                </form>
-                <button type="button" onclick="clearSelection()"
-                        class="text-sm text-gray-500 hover:text-gray-700 underline">Désélectionner tout</button>
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200" id="courriers-table">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 w-10">
-                            <input type="checkbox" id="select-all" title="Tout sélectionner"
-                                   class="h-4 w-4 text-rdc-blue border-gray-300 rounded cursor-pointer"
-                                   onchange="toggleSelectAll(this)">
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            N° Accusé
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Type
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Référence
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Expéditeur/Destinataire
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Objet
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date Rédaction
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date Enregistrement
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Statut
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider actions-column">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for courrier in courriers %}
-                    <tr class="hover:bg-gray-50 courrier-row">
-                        <td class="px-4 py-4 whitespace-nowrap">
-                            <input type="checkbox" value="{{ courrier.id }}"
-                                   class="row-checkbox h-4 w-4 text-rdc-blue border-gray-300 rounded cursor-pointer"
-                                   onchange="updateBulkBar()">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rdc-blue text-white">
-                                {{ courrier.numero_accuse_reception }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ courrier.get_type_color() }}">
-                                    <i class="fas {{ 'fa-inbox' if courrier.type_courrier == 'ENTRANT' else 'fa-paper-plane' }} mr-1"></i>
-                                    {{ courrier.type_courrier }}
-                                </span>
-                                {% if courrier.type_courrier == 'SORTANT' and courrier.type_courrier_sortant %}
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="fas fa-tag mr-1"></i>
-                                        {{ courrier.type_courrier_sortant.nom }}
-                                    </span>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if courrier.numero_reference %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {{ courrier.numero_reference }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-400 text-sm">Non référencé</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div>
-                                <span class="text-xs text-gray-400">{{ courrier.get_label_contact() }}:</span><br>
-                                <span class="font-medium">{{ courrier.get_contact_principal() }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
-                            <div class="max-w-xs truncate" title="{{ courrier.objet }}">
-                                {{ courrier.objet }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {% if courrier.date_redaction %}
-                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                    <i class="fas fa-calendar-edit mr-1"></i>
-                                    {{ format_date(courrier.date_redaction) }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-400 text-sm">Non renseignée</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ format_date(courrier.date_enregistrement, include_time=True) if courrier.date_enregistrement else 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ courrier.statut_color }}">
-                                {{ courrier.statut }}
-                            </span>
-                            {% if courrier.due_date and courrier.statut not in ['TRAITE','ARCHIVE'] %}
-                                {% if courrier.due_date < now().date() %}
-                                <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
-                                    <i class="fas fa-clock mr-0.5"></i>Retard
-                                </span>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
-                            <div class="flex space-x-2">
-                                <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
-                                   class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                                    <i class="fas fa-eye mr-1"></i>
-                                    Voir
-                                </a>
-                                <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
-                                   class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-rdc-red hover:bg-opacity-90 transition-colors">
-                                    <i class="fas fa-file-pdf mr-1"></i>
-                                    PDF
-                                </a>
-                                {% if current_user.has_permission('delete_mail') %}
-                                <button data-id="{{ courrier.id }}" data-numero="{{ courrier.numero_accuse_reception|e }}"
-                                   class="delete-btn inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-red-600 hover:bg-red-700 transition-colors">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Supprimer
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-12">
-            <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun courrier trouvé</h3>
-            <p class="text-gray-500 mb-6">Essayez de modifier vos critères de recherche ou 
-                <a href="{{ url_for('register_mail') }}" class="text-rdc-blue hover:underline">enregistrez un nouveau courrier</a>.
-            </p>
-            <a href="{{ url_for('view_mail') }}" 
-               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                <i class="fas fa-refresh mr-2"></i>
-                Voir tous les courriers
-            </a>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.625rem .875rem;background:var(--body-bg);border-radius:var(--r-md);">
+          <div style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:500;color:var(--t-primary);">
+            <i class="fas fa-list-ul" style="color:var(--primary);"></i> Total trouvé
+          </div>
+          <span class="gec-badge gec-badge-blue">{{ pagination.total if pagination else courriers|length }}</span>
         </div>
         {% endif %}
-        </div>
-    </div>
+
+        <div style="height:1px;background:var(--border);"></div>
+
+        <div style="font-size:.75rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;">Filtres rapides</div>
+        {% for href, icon, color, label in [
+          (url_for('view_mail'), 'fa-list', 'var(--t-muted)', 'Tous les courriers'),
+          (url_for('view_mail', sort_by='date_enregistrement', sort_order='desc'), 'fa-clock', 'var(--primary)', 'Plus récents'),
+          (url_for('view_mail', statut='RECU'), 'fa-inbox', 'var(--primary)', 'Reçus'),
+          (url_for('view_mail', statut='EN_COURS'), 'fa-spinner', 'var(--warning)', 'En cours'),
+          (url_for('view_mail', type_courrier='ENTRANT'), 'fa-inbox', 'var(--success)', 'Entrants'),
+          (url_for('view_mail', type_courrier='SORTANT'), 'fa-paper-plane', 'var(--warning)', 'Sortants'),
+        ] %}
+        <a href="{{ href }}" style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:var(--r-sm);font-size:.8125rem;color:var(--t-secondary);text-decoration:none;transition:background .1s;"
+           onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background='transparent'">
+          <i class="fas {{ icon }}" style="color:{{ color }};width:14px;text-align:center;font-size:.75rem;"></i>
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
     </div>
 
-    <!-- Sidebar - Actions Rapides -->
-    <div class="lg:col-span-1 space-y-6">
-        <!-- Actions Rapides -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
-                    Actions Rapides
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <a href="{{ url_for('register_mail') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
-                        <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">Nouveau Courrier</p>
-                            <p class="text-sm text-gray-500">Enregistrer un courrier</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ url_for('search') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group w-full">
-                        <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">Recherche</p>
-                            <p class="text-sm text-gray-500">Recherche avancée</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ url_for('dashboard') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-rdc-green rounded-lg hover:bg-green-50 transition-colors group w-full">
-                        <i class="fas fa-home text-2xl text-rdc-green mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">Dashboard</p>
-                            <p class="text-sm text-gray-500">Retour à l'accueil</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-purple-500 rounded-lg hover:bg-purple-50 transition-colors group w-full">
-                        <i class="fas fa-clock text-2xl text-purple-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">Récents</p>
-                            <p class="text-sm text-gray-500">Derniers courriers</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Statistiques -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-chart-bar mr-2 text-rdc-blue"></i>
-                    Statistiques
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    {% if courriers %}
-                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <div class="flex items-center">
-                            <i class="fas fa-list-ul text-rdc-blue mr-2"></i>
-                            <span class="text-sm font-medium text-gray-700">Total trouvé</span>
-                        </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rdc-blue text-white">
-                            {{ pagination.total if pagination else courriers|length }}
-                        </span>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="border-t pt-4">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                            <i class="fas fa-filter mr-2 text-rdc-green"></i>
-                            Filtres rapides
-                        </h3>
-                        <div class="space-y-2">
-                            <a href="{{ url_for('view_mail') }}" 
-                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                                <i class="fas fa-list mr-2"></i>
-                                Tous les courriers
-                            </a>
-                            <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
-                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                                <i class="fas fa-clock mr-2"></i>
-                                Plus récents
-                            </a>
-                            <a href="{{ url_for('view_mail', statut='RECU') }}" 
-                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                                <i class="fas fa-inbox mr-2"></i>
-                                Reçus
-                            </a>
-                            <a href="{{ url_for('view_mail', statut='EN_COURS') }}" 
-                               class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                                <i class="fas fa-spinner mr-2"></i>
-                                En cours
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<!-- Custom JS -->
 <script src="{{ url_for('static', filename='js/view_mail.js') }}"></script>
 <script>
+// Bulk actions
 function getSelectedIds() {
-    return Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+  return Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
 }
 function updateBulkBar() {
-    const ids = getSelectedIds();
-    const bar = document.getElementById('bulk-bar');
-    document.getElementById('selected-count').textContent = ids.length;
-    bar.classList.toggle('hidden', ids.length === 0);
-    const all = document.querySelectorAll('.row-checkbox');
-    const selectAll = document.getElementById('select-all');
-    if (all.length > 0) {
-        selectAll.checked = ids.length === all.length;
-        selectAll.indeterminate = ids.length > 0 && ids.length < all.length;
-    }
+  const ids = getSelectedIds();
+  const bar = document.getElementById('bulk-bar');
+  document.getElementById('selected-count').textContent = ids.length;
+  bar.style.display = ids.length === 0 ? 'none' : 'block';
+  const all = document.querySelectorAll('.row-checkbox');
+  const sa = document.getElementById('select-all');
+  if (all.length > 0) {
+    sa.checked = ids.length === all.length;
+    sa.indeterminate = ids.length > 0 && ids.length < all.length;
+  }
 }
 function toggleSelectAll(cb) {
-    document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = cb.checked; });
-    updateBulkBar();
+  document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = cb.checked; });
+  updateBulkBar();
 }
 function clearSelection() {
-    document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = false; });
-    document.getElementById('select-all').checked = false;
-    updateBulkBar();
+  document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = false; });
+  document.getElementById('select-all').checked = false;
+  updateBulkBar();
 }
 function submitBulkAction() {
-    const action = document.getElementById('bulk-action-select').value;
-    if (!action) { alert('Veuillez choisir une action.'); return; }
-    const ids = getSelectedIds();
-    if (ids.length === 0) { alert('Veuillez sélectionner au moins un courrier.'); return; }
-    if (action === 'delete' && !confirm('Supprimer ' + ids.length + ' courrier(s) ? Cette action est irréversible.')) return;
-    const container = document.getElementById('bulk-ids-container');
-    container.innerHTML = '';
-    ids.forEach(id => {
-        const inp = document.createElement('input');
-        inp.type = 'hidden'; inp.name = 'ids'; inp.value = id;
-        container.appendChild(inp);
-    });
-    document.getElementById('bulk-form').submit();
+  const action = document.getElementById('bulk-action-select').value;
+  if (!action) { alert('Veuillez choisir une action.'); return; }
+  const ids = getSelectedIds();
+  if (ids.length === 0) { alert('Veuillez sélectionner au moins un courrier.'); return; }
+  if (action === 'delete' && !confirm('Supprimer ' + ids.length + ' courrier(s) ? Cette action est irréversible.')) return;
+  const container = document.getElementById('bulk-ids-container');
+  container.innerHTML = '';
+  ids.forEach(id => { const i = document.createElement('input'); i.type='hidden'; i.name='ids'; i.value=id; container.appendChild(i); });
+  document.getElementById('bulk-form').submit();
 }
+
+// Type filter conditionals
+document.getElementById('type_courrier').addEventListener('change', function() {
+  document.getElementById('type-courrier-sortant-filter').style.display = this.value === 'SORTANT' ? 'block' : 'none';
+  document.getElementById('sg-copie-filter').style.display = this.value === 'ENTRANT' ? 'block' : 'none';
+});
+
+// Sort order toggle
+document.getElementById('sort-order-btn')?.addEventListener('click', function() {
+  const inp = document.getElementById('sort_order');
+  inp.value = inp.value === 'desc' ? 'asc' : 'desc';
+  document.getElementById('filterForm').submit();
+});
+
+// Autocomplete
+document.getElementById('search').addEventListener('input', function() {
+  const query = this.value.trim();
+  const suggestionsDiv = document.getElementById('searchSuggestions');
+  if (query.length >= 2) {
+    fetch(`{{ url_for('search_suggestions') }}?q=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(suggestions => {
+        if (suggestions.length > 0) {
+          suggestionsDiv.innerHTML = suggestions.map(s =>
+            `<div style="padding:.625rem .875rem;cursor:pointer;font-size:.875rem;color:var(--t-primary);border-bottom:1px solid var(--border);transition:background .1s;"
+                  onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background='transparent'"
+                  onclick="document.getElementById('search').value='${s.replace(/'/g,"\\'")}';document.getElementById('searchSuggestions').style.display='none';">
+               <i class="fas fa-search" style="margin-right:.5rem;color:var(--t-muted);font-size:.75rem;"></i>${s}
+             </div>`
+          ).join('');
+          suggestionsDiv.style.display = 'block';
+        } else { suggestionsDiv.style.display = 'none'; }
+      }).catch(() => { suggestionsDiv.style.display = 'none'; });
+  } else { suggestionsDiv.style.display = 'none'; }
+});
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#search') && !e.target.closest('#searchSuggestions')) {
+    document.getElementById('searchSuggestions').style.display = 'none';
+  }
+});
 </script>
 {% endblock %}

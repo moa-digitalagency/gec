@@ -2,278 +2,250 @@
 {% block title %}Vue Kanban — GEC{% endblock %}
 
 {% block content %}
-<div class="max-w-full mx-auto px-4 py-6">
-
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <i class="fas fa-columns text-rdc-blue"></i>
-                Vue Kanban
-            </h1>
-            <p class="text-sm text-gray-500 mt-1">Glissez-déposez les courriers pour changer leur statut</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <!-- Filtre type -->
-            <form method="GET" class="flex items-center gap-2">
-                <select name="type_courrier" onchange="this.form.submit()"
-                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rdc-blue">
-                    <option value="">Tous les types</option>
-                    <option value="ENTRANT"  {% if type_courrier=='ENTRANT' %}selected{% endif %}>Entrant</option>
-                    <option value="SORTANT"  {% if type_courrier=='SORTANT' %}selected{% endif %}>Sortant</option>
-                    <option value="INTERNE"  {% if type_courrier=='INTERNE' %}selected{% endif %}>Interne</option>
-                </select>
-            </form>
-            <a href="{{ url_for('view_mail') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rdc-blue rounded-lg hover:bg-blue-800 transition-colors">
-                <i class="fas fa-list"></i>
-                Vue liste
-            </a>
-        </div>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('view_mail') }}">Courriers</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Kanban</span>
     </div>
-
-    <!-- Board -->
-    <div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
-        {% set col_meta = {
-            'RECU':     {'label': 'Reçu',     'icon': 'fa-inbox',         'bg': 'bg-blue-50',   'hdr': 'bg-blue-600',  'badge': 'bg-blue-100 text-blue-800'},
-            'EN_COURS': {'label': 'En cours',  'icon': 'fa-spinner',       'bg': 'bg-yellow-50', 'hdr': 'bg-yellow-500','badge': 'bg-yellow-100 text-yellow-800'},
-            'TRAITE':   {'label': 'Traité',    'icon': 'fa-check-circle',  'bg': 'bg-green-50',  'hdr': 'bg-green-600', 'badge': 'bg-green-100 text-green-800'},
-            'ARCHIVE':  {'label': 'Archivé',   'icon': 'fa-archive',       'bg': 'bg-gray-100',  'hdr': 'bg-gray-500',  'badge': 'bg-gray-200 text-gray-700'},
-            'REJETE':   {'label': 'Rejeté',    'icon': 'fa-times-circle',  'bg': 'bg-red-50',    'hdr': 'bg-red-600',   'badge': 'bg-red-100 text-red-800'},
-        } %}
-
-        {% for col_id in kanban_columns %}
-        {% set meta = col_meta[col_id] %}
-        {% set cards = columns[col_id] %}
-        <div class="kanban-column flex-shrink-0 w-72 flex flex-col rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-             data-statut="{{ col_id }}">
-
-            <!-- Column header -->
-            <div class="{{ meta.hdr }} px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-white font-semibold text-sm">
-                    <i class="fas {{ meta.icon }}"></i>
-                    {{ meta.label }}
-                </div>
-                <span class="bg-white bg-opacity-30 text-white text-xs font-bold px-2 py-0.5 rounded-full count-badge">
-                    {{ cards|length }}
-                </span>
-            </div>
-
-            <!-- Drop zone -->
-            <div class="kanban-cards {{ meta.bg }} flex-1 p-2 space-y-2 min-h-24 overflow-y-auto"
-                 style="max-height: calc(100vh - 230px);"
-                 data-statut="{{ col_id }}">
-
-                {% for c in cards %}
-                {% set is_retard = c.due_date and c.due_date < today and col_id not in ['TRAITE','ARCHIVE','REJETE'] %}
-                <div class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-                     data-id="{{ c.id }}"
-                     draggable="true">
-
-                    <!-- Top: N° accusé + badges -->
-                    <div class="flex items-start justify-between gap-1 mb-2">
-                        <a href="{{ url_for('mail_detail', id=c.id) }}"
-                           class="text-xs font-bold text-rdc-blue hover:underline leading-tight">
-                            {{ c.numero_accuse_reception or '#' ~ c.id }}
-                        </a>
-                        <div class="flex flex-wrap gap-1 justify-end">
-                            {% if c.type_courrier %}
-                            <span class="text-xs px-1.5 py-0.5 rounded font-medium
-                                {% if c.type_courrier == 'ENTRANT' %}bg-indigo-100 text-indigo-700
-                                {% elif c.type_courrier == 'SORTANT' %}bg-orange-100 text-orange-700
-                                {% else %}bg-purple-100 text-purple-700{% endif %}">
-                                {{ c.type_courrier|capitalize }}
-                            </span>
-                            {% endif %}
-                            {% if is_retard %}
-                            <span class="text-xs px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 animate-pulse">
-                                EN RETARD
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Objet -->
-                    <p class="text-xs text-gray-800 font-medium leading-snug line-clamp-2 mb-2">
-                        {{ c.objet or '(sans objet)' }}
-                    </p>
-
-                    <!-- Expéditeur / Destinataire -->
-                    <p class="text-xs text-gray-500 truncate mb-1">
-                        <i class="fas fa-user mr-1"></i>
-                        {{ c.expediteur or c.destinataire or '—' }}
-                    </p>
-
-                    <!-- Date -->
-                    <div class="flex items-center justify-between mt-2">
-                        <span class="text-xs text-gray-400">
-                            <i class="fas fa-calendar mr-1"></i>
-                            {{ c.date_enregistrement.strftime('%d/%m/%Y') if c.date_enregistrement else '—' }}
-                        </span>
-                        {% if c.due_date %}
-                        <span class="text-xs {% if is_retard %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
-                            <i class="fas fa-clock mr-1"></i>{{ c.due_date.strftime('%d/%m') }}
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <!-- Tags -->
-                    {% set tag_list = c.tags.all() %}
-                    {% if tag_list %}
-                    <div class="flex flex-wrap gap-1 mt-2">
-                        {% for ct in tag_list[:3] %}
-                        <span class="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                              style="background-color: {{ ct.tag.couleur }}22; color: {{ ct.tag.couleur }};">
-                            {{ ct.tag.nom }}
-                        </span>
-                        {% endfor %}
-                        {% if tag_list|length > 3 %}
-                        <span class="text-xs text-gray-400">+{{ tag_list|length - 3 }}</span>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-
-                <!-- Empty state -->
-                {% if not cards %}
-                <div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">
-                    <i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>
-                    Aucun courrier
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+    <h1 class="gec-page-title"><i class="fas fa-columns" style="color:var(--primary);margin-right:.5rem;"></i>Vue Kanban</h1>
+    <p class="gec-page-subtitle">Glissez-déposez les courriers pour changer leur statut</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <form method="GET" style="display:flex;align-items:center;gap:.5rem;">
+      <select name="type_courrier" onchange="this.form.submit()" class="gec-select" style="width:auto;">
+        <option value="">Tous les types</option>
+        <option value="ENTRANT" {% if type_courrier=='ENTRANT' %}selected{% endif %}>Entrant</option>
+        <option value="SORTANT" {% if type_courrier=='SORTANT' %}selected{% endif %}>Sortant</option>
+        <option value="INTERNE" {% if type_courrier=='INTERNE' %}selected{% endif %}>Interne</option>
+      </select>
+    </form>
+    <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-list"></i> Vue liste</a>
+    <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau</a>
+  </div>
 </div>
 
-<!-- Toast notification -->
-<div id="kanban-toast"
-     class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white transition-all duration-300 translate-y-8 opacity-0 pointer-events-none">
+{% set col_meta = {
+  'RECU':     {'label': 'Reçu',      'icon': 'fa-inbox',        'hdr_bg': '#2563EB', 'col_bg': '#EFF6FF', 'badge_bg': '#DBEAFE', 'badge_c': '#1e40af'},
+  'EN_COURS': {'label': 'En cours',  'icon': 'fa-spinner',      'hdr_bg': '#D97706', 'col_bg': '#FFFBEB', 'badge_bg': '#FEF3C7', 'badge_c': '#92400E'},
+  'TRAITE':   {'label': 'Traité',    'icon': 'fa-check-circle', 'hdr_bg': '#059669', 'col_bg': '#ECFDF5', 'badge_bg': '#D1FAE5', 'badge_c': '#065F46'},
+  'ARCHIVE':  {'label': 'Archivé',   'icon': 'fa-archive',      'hdr_bg': '#6B7280', 'col_bg': '#F9FAFB', 'badge_bg': '#F3F4F6', 'badge_c': '#374151'},
+  'REJETE':   {'label': 'Rejeté',    'icon': 'fa-times-circle', 'hdr_bg': '#DC2626', 'col_bg': '#FEF2F2', 'badge_bg': '#FEE2E2', 'badge_c': '#991B1B'},
+} %}
+
+<div style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem;" id="kanban-board">
+  {% for col_id in kanban_columns %}
+  {% set meta = col_meta[col_id] %}
+  {% set cards = columns[col_id] %}
+  <div class="kanban-column"
+       style="flex-shrink:0;width:272px;display:flex;flex-direction:column;border-radius:var(--card-radius);overflow:hidden;border:1px solid var(--border);background:var(--card-bg);"
+       data-statut="{{ col_id }}">
+
+    <!-- Column header -->
+    <div style="background:{{ meta.hdr_bg }};padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:.5rem;color:white;font-weight:600;font-size:.875rem;">
+        <i class="fas {{ meta.icon }}"></i>
+        {{ meta.label }}
+      </div>
+      <span class="count-badge" style="background:rgba(255,255,255,.25);color:white;font-size:.75rem;font-weight:700;padding:.125rem .5rem;border-radius:999px;">{{ cards|length }}</span>
+    </div>
+
+    <!-- Cards drop zone -->
+    <div class="kanban-cards"
+         style="flex:1;padding:.5rem;min-height:6rem;max-height:calc(100vh - 220px);overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;background:{{ meta.col_bg }};"
+         data-statut="{{ col_id }}">
+
+      {% for c in cards %}
+      {% set is_retard = c.due_date and c.due_date < today and col_id not in ['TRAITE','ARCHIVE','REJETE'] %}
+      <div class="kanban-card"
+           style="background:var(--card-bg);border-radius:var(--r-md);border:1px solid var(--border);padding:.75rem;cursor:grab;transition:box-shadow .15s,opacity .15s;"
+           data-id="{{ c.id }}"
+           draggable="true">
+
+        <!-- Top row: N° + badges -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.375rem;margin-bottom:.5rem;">
+          <a href="{{ url_for('mail_detail', id=c.id) }}"
+             style="font-size:.75rem;font-weight:700;color:var(--primary);text-decoration:none;line-height:1.3;"
+             onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            {{ c.numero_accuse_reception or '#' ~ c.id }}
+          </a>
+          <div style="display:flex;flex-wrap:wrap;gap:.25rem;justify-content:flex-end;">
+            {% if c.type_courrier %}
+            <span style="font-size:.6rem;padding:.1rem .4rem;border-radius:999px;font-weight:600;
+                         background:{% if c.type_courrier == 'ENTRANT' %}#DBEAFE{% elif c.type_courrier == 'SORTANT' %}#FEF3C7{% else %}#F3E8FF{% endif %};
+                         color:{% if c.type_courrier == 'ENTRANT' %}#1e40af{% elif c.type_courrier == 'SORTANT' %}#92400E{% else %}#6B21A8{% endif %};">
+              {{ c.type_courrier|capitalize }}
+            </span>
+            {% endif %}
+            {% if is_retard %}
+            <span style="font-size:.6rem;padding:.1rem .4rem;border-radius:999px;font-weight:700;background:#FEE2E2;color:#991B1B;animation:pulse 1s infinite;">EN RETARD</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Objet -->
+        <p style="font-size:.75rem;font-weight:500;color:var(--t-primary);line-height:1.4;margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+          {{ c.objet or '(sans objet)' }}
+        </p>
+
+        <!-- Contact -->
+        <p style="font-size:.7rem;color:var(--t-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.375rem;">
+          <i class="fas fa-user" style="margin-right:.25rem;"></i>{{ c.expediteur or c.destinataire or '—' }}
+        </p>
+
+        <!-- Footer: date + due date -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
+          <span style="font-size:.6875rem;color:var(--t-muted);">
+            <i class="fas fa-calendar" style="margin-right:.25rem;"></i>
+            {{ c.date_enregistrement.strftime('%d/%m/%Y') if c.date_enregistrement else '—' }}
+          </span>
+          {% if c.due_date %}
+          <span style="font-size:.6875rem;{% if is_retard %}color:#DC2626;font-weight:600;{% else %}color:var(--t-muted);{% endif %}">
+            <i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ c.due_date.strftime('%d/%m') }}
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Tags -->
+        {% set tag_list = c.tags.all() %}
+        {% if tag_list %}
+        <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.375rem;">
+          {% for ct in tag_list[:3] %}
+          <span style="font-size:.6rem;padding:.1rem .4rem;border-radius:999px;font-weight:500;background-color:{{ ct.tag.couleur }}22;color:{{ ct.tag.couleur }};">{{ ct.tag.nom }}</span>
+          {% endfor %}
+          {% if tag_list|length > 3 %}<span style="font-size:.6rem;color:var(--t-muted);">+{{ tag_list|length - 3 }}</span>{% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+
+      {% if not cards %}
+      <div class="empty-placeholder" style="text-align:center;padding:2rem .5rem;color:var(--t-muted);font-size:.8125rem;select:none;">
+        <i class="fas fa-inbox" style="font-size:1.5rem;opacity:.3;display:block;margin-bottom:.5rem;"></i>
+        Aucun courrier
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
 </div>
+
+<!-- Toast -->
+<div id="kanban-toast" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;padding:.75rem 1.25rem;border-radius:var(--r-md);font-size:.875rem;font-weight:600;color:white;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:all .3s;transform:translateY(2rem);opacity:0;pointer-events:none;"></div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-// ================================================================
-// Drag & Drop Kanban — native HTML5 API (no extra library needed)
-// ================================================================
 (function () {
-    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    let draggedCard = null;
-    let sourceColumn = null;
+  const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  let draggedCard = null;
+  let sourceColumn = null;
 
-    // ---- Drag events on cards ----
-    function attachCardEvents(card) {
-        card.addEventListener('dragstart', e => {
-            draggedCard = card;
-            sourceColumn = card.closest('.kanban-cards');
-            card.classList.add('opacity-50', 'ring-2', 'ring-rdc-blue');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-        card.addEventListener('dragend', () => {
-            card.classList.remove('opacity-50', 'ring-2', 'ring-rdc-blue');
-            document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue'));
-        });
-    }
-
-    // ---- Drop zones ----
-    document.querySelectorAll('.kanban-cards').forEach(zone => {
-        zone.addEventListener('dragover', e => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            zone.classList.add('bg-blue-100', 'ring-2', 'ring-rdc-blue');
-        });
-        zone.addEventListener('dragleave', e => {
-            if (!zone.contains(e.relatedTarget)) {
-                zone.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue');
-            }
-        });
-        zone.addEventListener('drop', async e => {
-            e.preventDefault();
-            zone.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue');
-
-            if (!draggedCard || zone === sourceColumn) return;
-
-            const newStatut = zone.dataset.statut;
-            const courrierId = draggedCard.dataset.id;
-
-            // Optimistic UI — move card immediately
-            const placeholder = zone.querySelector('.empty-placeholder');
-            if (placeholder) placeholder.remove();
-            zone.appendChild(draggedCard);
-
-            // Remove empty placeholder from source if now empty
-            if (sourceColumn && sourceColumn.querySelectorAll('.kanban-card').length === 0) {
-                sourceColumn.insertAdjacentHTML('beforeend',
-                    '<div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">' +
-                    '<i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>Aucun courrier</div>');
-            }
-
-            updateBadges();
-
-            // API call
-            try {
-                const res = await fetch(`/api/courrier/${courrierId}/move`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': CSRF
-                    },
-                    body: JSON.stringify({ statut: newStatut })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-                showToast(`Statut mis à jour : ${newStatut.replace('_', ' ')}`, 'green');
-            } catch (err) {
-                showToast('Erreur : ' + err.message, 'red');
-                // Rollback — move card back
-                if (sourceColumn) {
-                    const ep = zone.querySelector('.empty-placeholder');
-                    if (zone.querySelectorAll('.kanban-card').length <= 1 && ep) ep.remove();
-                    sourceColumn.appendChild(draggedCard);
-                    if (zone.querySelectorAll('.kanban-card').length === 0) {
-                        zone.insertAdjacentHTML('beforeend',
-                            '<div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">' +
-                            '<i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>Aucun courrier</div>');
-                    }
-                    updateBadges();
-                }
-            }
-
-            draggedCard = null;
-            sourceColumn = null;
-        });
+  function attachCardEvents(card) {
+    card.addEventListener('dragstart', e => {
+      draggedCard = card;
+      sourceColumn = card.closest('.kanban-cards');
+      card.style.opacity = '.4';
+      card.style.boxShadow = '0 0 0 2px var(--primary)';
+      e.dataTransfer.effectAllowed = 'move';
     });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '';
+      card.style.boxShadow = '';
+      document.querySelectorAll('.kanban-cards').forEach(z => {
+        z.style.background = z.dataset._origBg || '';
+        z.style.outline = '';
+      });
+    });
+  }
 
-    // ---- Init card events ----
-    document.querySelectorAll('.kanban-card').forEach(attachCardEvents);
+  document.querySelectorAll('.kanban-cards').forEach(zone => {
+    zone.dataset._origBg = zone.style.background;
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      zone.style.outline = '2px solid var(--primary)';
+    });
+    zone.addEventListener('dragleave', e => {
+      if (!zone.contains(e.relatedTarget)) zone.style.outline = '';
+    });
+    zone.addEventListener('drop', async e => {
+      e.preventDefault();
+      zone.style.outline = '';
+      if (!draggedCard || zone === sourceColumn) return;
 
-    // ---- Update column count badges ----
-    function updateBadges() {
-        document.querySelectorAll('.kanban-column').forEach(col => {
-            const count = col.querySelectorAll('.kanban-card').length;
-            const badge = col.querySelector('.count-badge');
-            if (badge) badge.textContent = count;
+      const newStatut = zone.dataset.statut;
+      const courrierId = draggedCard.dataset.id;
+
+      const placeholder = zone.querySelector('.empty-placeholder');
+      if (placeholder) placeholder.remove();
+      zone.appendChild(draggedCard);
+
+      if (sourceColumn && sourceColumn.querySelectorAll('.kanban-card').length === 0) {
+        sourceColumn.insertAdjacentHTML('beforeend',
+          '<div class="empty-placeholder" style="text-align:center;padding:2rem .5rem;color:var(--t-muted);font-size:.8125rem;">' +
+          '<i class="fas fa-inbox" style="font-size:1.5rem;opacity:.3;display:block;margin-bottom:.5rem;"></i>Aucun courrier</div>');
+      }
+      updateBadges();
+
+      try {
+        const res = await fetch(`/api/courrier/${courrierId}/move`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+          body: JSON.stringify({ statut: newStatut })
         });
-    }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+        showToast(`Statut mis à jour : ${newStatut.replace('_', ' ')}`, '#16a34a');
+      } catch (err) {
+        showToast('Erreur : ' + err.message, '#DC2626');
+        if (sourceColumn) {
+          const ep = zone.querySelector('.empty-placeholder');
+          if (zone.querySelectorAll('.kanban-card').length <= 1 && ep) ep.remove();
+          sourceColumn.appendChild(draggedCard);
+          if (zone.querySelectorAll('.kanban-card').length === 0) {
+            zone.insertAdjacentHTML('beforeend',
+              '<div class="empty-placeholder" style="text-align:center;padding:2rem .5rem;color:var(--t-muted);font-size:.8125rem;">' +
+              '<i class="fas fa-inbox" style="font-size:1.5rem;opacity:.3;display:block;margin-bottom:.5rem;"></i>Aucun courrier</div>');
+          }
+          updateBadges();
+        }
+      }
+      draggedCard = null;
+      sourceColumn = null;
+    });
+  });
 
-    // ---- Toast ----
-    function showToast(msg, color) {
-        const toast = document.getElementById('kanban-toast');
-        toast.textContent = msg;
-        toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white
-            transition-all duration-300 bg-${color}-600`;
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-y-8', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-        });
-        setTimeout(() => {
-            toast.classList.add('translate-y-8', 'opacity-0');
-            toast.classList.remove('translate-y-0', 'opacity-100');
-        }, 3000);
-    }
+  document.querySelectorAll('.kanban-card').forEach(attachCardEvents);
+
+  function updateBadges() {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+      const count = col.querySelectorAll('.kanban-card').length;
+      const badge = col.querySelector('.count-badge');
+      if (badge) badge.textContent = count;
+    });
+  }
+
+  function showToast(msg, bgColor) {
+    const toast = document.getElementById('kanban-toast');
+    toast.textContent = msg;
+    toast.style.background = bgColor;
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+    setTimeout(() => {
+      toast.style.transform = 'translateY(2rem)';
+      toast.style.opacity = '0';
+    }, 3000);
+  }
 })();
 </script>
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+</style>
 {% endblock %}

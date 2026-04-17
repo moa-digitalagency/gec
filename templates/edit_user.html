@@ -1,315 +1,150 @@
 {% extends "new_base.html" %}
-
-{% block title %}Modifier Utilisateur - GEC{% endblock %}
+{% block title %}Modifier {{ user.username }} — GEC{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="mb-6">
-    <nav class="flex" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-            <li>
-                <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
-                    <i class="fas fa-home"></i>
-                    <span class="sr-only">Accueil</span>
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <a href="{{ url_for('manage_users') }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                        Gestion des Utilisateurs
-                    </a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <span class="text-sm font-medium text-gray-900">Modifier {{ user.username }}</span>
-                </div>
-            </li>
-        </ol>
-    </nav>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('manage_users') }}">Utilisateurs</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Modifier {{ user.username }}</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-user-edit" style="color:var(--primary);margin-right:.5rem;"></i>Modifier l'utilisateur</h1>
+    <p class="gec-page-subtitle">{{ user.nom_complet }}</p>
+  </div>
+  <a href="{{ url_for('manage_users') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
 </div>
 
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-user-edit mr-3 text-rdc-blue"></i>
-        Modifier l'Utilisateur
-    </h1>
-    <p class="mt-2 text-gray-600">Modifier les informations de {{ user.nom_complet }}</p>
-</div>
+<div style="max-width:640px;">
+  <form method="POST" enctype="multipart/form-data">
 
-<!-- Form -->
-<div class="max-w-2xl">
-    <form method="POST" enctype="multipart/form-data" class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
-            <h2 class="text-xl font-semibold text-white flex items-center">
-                <i class="fas fa-user-cog mr-2"></i>
-                Informations de l'Utilisateur
-            </h2>
+    <!-- Identifiants -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-key"></i> Identifiants</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-group">
+          <label class="gec-label" for="username"><i class="fas fa-user" style="color:var(--primary);"></i> Nom d'utilisateur <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="username" name="username" required value="{{ user.username }}" class="gec-input">
         </div>
-        
-        <div class="p-6 space-y-6">
-            <!-- Username -->
-            <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-user mr-1 text-rdc-blue"></i>
-                    Nom d'utilisateur *
-                </label>
-                <input type="text" 
-                       name="username" 
-                       id="username"
-                       value="{{ user.username }}"
-                       required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-            </div>
-            
-            <!-- Email -->
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-envelope mr-1 text-rdc-blue"></i>
-                    Email *
-                </label>
-                <input type="email" 
-                       name="email" 
-                       id="email"
-                       value="{{ user.email }}"
-                       required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-            </div>
-            
-            <!-- Full Name -->
-            <div>
-                <label for="nom_complet" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-id-card mr-1 text-rdc-blue"></i>
-                    Nom complet *
-                </label>
-                <input type="text" 
-                       name="nom_complet" 
-                       id="nom_complet"
-                       value="{{ user.nom_complet }}"
-                       required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-            </div>
-            
-            <!-- Password -->
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-lock mr-1 text-rdc-blue"></i>
-                    Nouveau mot de passe
-                </label>
-                <input type="password" 
-                       name="password" 
-                       id="password"
-                       minlength="6"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Laisser vide pour conserver le mot de passe actuel">
-                <p class="text-xs text-gray-500 mt-1">Laisser vide si vous ne souhaitez pas changer le mot de passe</p>
-            </div>
-            
-            <!-- Role -->
-            <div>
-                <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-user-shield mr-1 text-rdc-blue"></i>
-                    Rôle *
-                </label>
-                <select name="role" 
-                        id="role"
-                        required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    {% for role in roles %}
-                    <option value="{{ role.nom }}" {% if user.role == role.nom %}selected{% endif %}>{{ role.nom_affichage }}</option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs text-gray-500 mt-1">
-                    <strong>Utilisateur:</strong> Accès de base | 
-                    <strong>Admin:</strong> Gestion des courriers | 
-                    <strong>Super Admin:</strong> Accès complet
-                </p>
-            </div>
-            
-            <!-- Language -->
-            <div>
-                <label for="langue" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-language mr-1 text-rdc-blue"></i>
-                    Langue *
-                </label>
-                <select name="langue" 
-                        id="langue"
-                        required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    {% for code, info in available_languages.items() %}
-                    <option value="{{ code }}" {% if user.langue == code %}selected{% endif %}>
-                        {{ info.flag }} {{ info.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Matricule -->
-            <div>
-                <label for="matricule" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-id-badge mr-1 text-rdc-blue"></i>
-                    Matricule
-                </label>
-                <input type="text" 
-                       name="matricule" 
-                       id="matricule"
-                       value="{{ user.matricule or '' }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Entrez le matricule (optionnel)">
-                <p class="text-xs text-gray-500 mt-1">Numéro d'identification unique de l'employé</p>
-            </div>
-            
-            <!-- Fonction -->
-            <div>
-                <label for="fonction" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-briefcase mr-1 text-rdc-blue"></i>
-                    Fonction / Poste
-                </label>
-                <input type="text" 
-                       name="fonction" 
-                       id="fonction"
-                       value="{{ user.fonction or '' }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                       placeholder="Ex: Secrétaire, Directeur, Agent">
-                <p class="text-xs text-gray-500 mt-1">Poste ou fonction exercé dans l'organisation</p>
-            </div>
-            
-            <!-- {{ get_appellation_entites()[:-1] }} -->
-            <div>
-                <label for="departement_id" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-building mr-1 text-rdc-blue"></i>
-                    {{ get_appellation_entites()[:-1] }}
-                </label>
-                <select name="departement_id" 
-                        id="departement_id"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                    <option value="">Aucun {{ get_appellation_entites()[:-1]|lower }}</option>
-                    {% for dept in departements %}
-                    <option value="{{ dept.id }}" {% if user.departement_id == dept.id %}selected{% endif %}>
-                        {{ dept.nom }} ({{ dept.code }})
-                    </option>
-                    {% endfor %}
-                </select>
-                <p class="text-xs text-gray-500 mt-1">{{ get_appellation_entites()[:-1] }} d'affectation de l'utilisateur</p>
-            </div>
-            
-            <!-- Photo de profil -->
-            <div>
-                <label for="photo_profile" class="block text-sm font-medium text-gray-700 mb-2">
-                    <i class="fas fa-camera mr-1 text-rdc-blue"></i>
-                    Photo de profil
-                </label>
-                
-                <!-- Photo actuelle -->
-                {% if user.photo_profile %}
-                <div class="mb-4">
-                    <div class="flex items-center space-x-4">
-                        <img src="{{ user.get_profile_photo_url() }}" 
-                             alt="Photo de {{ user.nom_complet }}" 
-                             class="w-20 h-20 rounded-full object-cover border-4 border-gray-200 shadow-lg">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Photo actuelle</p>
-                            <p class="text-xs text-gray-500">Choisissez une nouvelle photo pour la remplacer</p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Prévisualisation et crop -->
-                <div id="image-preview-container" class="mb-4 hidden">
-                    <div class="space-y-4">
-                        <!-- Zone de crop -->
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <canvas id="crop-canvas" class="border border-gray-300 rounded max-w-full"></canvas>
-                        </div>
-                        
-                        <!-- Contrôles de crop -->
-                        <div class="flex items-center space-x-4">
-                            <button type="button" 
-                                    id="btn-apply-crop"
-                                    class="px-4 py-2 bg-rdc-blue text-white rounded-md hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-crop mr-2"></i>Recadrer
-                            </button>
-                            <button type="button" 
-                                    id="btn-reset-crop"
-                                    class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
-                                <i class="fas fa-undo mr-2"></i>Réinitialiser
-                            </button>
-                            <button type="button" 
-                                    id="btn-remove-preview"
-                                    class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">
-                                <i class="fas fa-times mr-2"></i>Supprimer
-                            </button>
-                        </div>
-                        
-                        <!-- Prévisualisation finale -->
-                        <div class="text-center">
-                            <div class="inline-block">
-                                <img id="final-preview" class="w-32 h-32 object-cover rounded-full border-4 border-rdc-blue shadow-lg">
-                                <p class="text-sm text-gray-600 mt-2">Nouvelle photo (prévisualisation)</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Input file avec style personnalisé -->
-                <div class="relative">
-                    <input type="file" 
-                           name="photo_profile" 
-                           id="photo_profile"
-                           accept="image/*"
-                           class="sr-only">
-                    <label for="photo_profile" 
-                           class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                        <i class="fas fa-upload mr-2 text-rdc-blue"></i>
-                        {% if user.photo_profile %}Changer la photo{% else %}Ajouter une photo{% endif %}
-                    </label>
-                    <span id="file-name" class="ml-3 text-sm text-gray-500"></span>
-                </div>
-                
-                <p class="text-xs text-gray-500 mt-2">
-                    Formats acceptés: JPG, PNG, GIF (max 5 Mo)<br>
-                    Recommandé: Photo carrée, minimum 200x200 pixels<br>
-                    Laisser vide pour conserver la photo actuelle
-                </p>
-            </div>
-            
-            <!-- Active Status -->
-            <div>
-                <div class="flex items-center">
-                    <input type="checkbox" 
-                           name="actif" 
-                           id="actif"
-                           {% if user.actif %}checked{% endif %}
-                           class="h-4 w-4 text-rdc-blue focus:ring-rdc-blue border-gray-300 rounded">
-                    <label for="actif" class="ml-2 block text-sm text-gray-700">
-                        <i class="fas fa-check-circle mr-1 text-green-600"></i>
-                        Compte actif
-                    </label>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">Un compte inactif ne peut pas se connecter</p>
-            </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="password"><i class="fas fa-lock" style="color:var(--primary);"></i> Nouveau mot de passe</label>
+          <input type="password" id="password" name="password" minlength="6" class="gec-input" placeholder="Laisser vide pour ne pas changer">
         </div>
-        
-        <!-- Actions -->
-        <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between">
-            <a href="{{ url_for('manage_users') }}" 
-               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Retour
-            </a>
-            <button type="submit" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-                <i class="fas fa-save mr-2"></i>
-                Sauvegarder
-            </button>
-        </div>
-    </form>
-</div>
+      </div>
+    </div>
 
-<!-- Custom JS -->
-<script src="{{ url_for('static', filename='js/edit_user.js') }}"></script>
+    <!-- Informations personnelles -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-id-card"></i> Informations personnelles</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-group">
+          <label class="gec-label" for="nom_complet"><i class="fas fa-id-card" style="color:var(--primary);"></i> Nom complet <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="nom_complet" name="nom_complet" required value="{{ user.nom_complet }}" class="gec-input">
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="email"><i class="fas fa-envelope" style="color:var(--primary);"></i> Email <span style="color:var(--danger);">*</span></label>
+          <input type="email" id="email" name="email" required value="{{ user.email }}" class="gec-input">
+        </div>
+        {% if user.photo_profile %}
+        <div style="display:flex;align-items:center;gap:1rem;padding:.75rem;background:var(--body-bg);border-radius:var(--r-md);">
+          <div class="gec-avatar gec-avatar-lg"><img src="{{ user.get_profile_photo_url() }}" alt="{{ user.nom_complet }}"></div>
+          <div>
+            <div style="font-size:.875rem;font-weight:500;color:var(--t-primary);">Photo actuelle</div>
+            <label for="photo_profile" class="gec-btn gec-btn-secondary gec-btn-sm" style="margin-top:.375rem;cursor:pointer;">
+              <i class="fas fa-camera"></i> Changer
+              <input type="file" id="photo_profile" name="photo_profile" accept="image/*" style="display:none;">
+            </label>
+          </div>
+        </div>
+        {% else %}
+        <div class="gec-form-group">
+          <label class="gec-label"><i class="fas fa-camera" style="color:var(--primary);"></i> Photo de profil</label>
+          <div class="gec-upload-zone" onclick="document.getElementById('photo_profile').click()">
+            <div class="gec-upload-zone-icon"><i class="fas fa-camera"></i></div>
+            <p class="gec-upload-zone-text"><strong>Ajouter une photo</strong></p>
+            <p class="gec-upload-zone-hint">JPG · PNG — max 5 MB</p>
+            <input type="file" id="photo_profile" name="photo_profile" accept="image/*" style="display:none;">
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Informations professionnelles -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-briefcase"></i> Informations professionnelles</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-row gec-form-row-2">
+          <div class="gec-form-group">
+            <label class="gec-label" for="matricule"><i class="fas fa-id-badge" style="color:var(--primary);"></i> Matricule</label>
+            <input type="text" id="matricule" name="matricule" value="{{ user.matricule or '' }}" class="gec-input">
+          </div>
+          <div class="gec-form-group">
+            <label class="gec-label" for="fonction"><i class="fas fa-briefcase" style="color:var(--primary);"></i> Fonction</label>
+            <input type="text" id="fonction" name="fonction" value="{{ user.fonction or '' }}" class="gec-input" placeholder="Poste ou fonction">
+          </div>
+        </div>
+        <div class="gec-form-group">
+          <label class="gec-label" for="departement_id"><i class="fas fa-building" style="color:var(--primary);"></i> {{ get_appellation_entites()[:-1] }}</label>
+          <select id="departement_id" name="departement_id" class="gec-select">
+            <option value="">Aucun</option>
+            {% for dept in departements %}
+            <option value="{{ dept.id }}" {% if user.departement_id == dept.id %}selected{% endif %}>{{ dept.nom }} ({{ dept.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paramètres du compte -->
+    <div class="gec-card" style="margin-bottom:1.25rem;">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-sliders-h"></i> Paramètres du compte</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="gec-form-row gec-form-row-2">
+          <div class="gec-form-group">
+            <label class="gec-label" for="role"><i class="fas fa-user-shield" style="color:var(--primary);"></i> Rôle <span style="color:var(--danger);">*</span></label>
+            <select id="role" name="role" required class="gec-select">
+              {% for r in roles %}
+              <option value="{{ r.nom }}" {% if user.role == r.nom %}selected{% endif %}>{{ r.nom_affichage }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="gec-form-group">
+            <label class="gec-label" for="langue"><i class="fas fa-language" style="color:var(--primary);"></i> Langue</label>
+            <select id="langue" name="langue" class="gec-select">
+              {% for code, info in available_languages.items() %}
+              <option value="{{ code }}" {% if user.langue == code %}selected{% endif %}>{{ info.flag }} {{ info.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <label class="gec-toggle-wrap">
+          <span class="gec-toggle">
+            <input type="checkbox" name="actif" {% if user.actif %}checked{% endif %}>
+            <span class="gec-toggle-slider"></span>
+          </span>
+          <div>
+            <div class="gec-toggle-label">Compte actif</div>
+            <div class="gec-toggle-desc">Désactiver empêche l'accès sans supprimer le compte</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;">
+      <a href="{{ url_for('manage_users') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</a>
+      <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+  </form>
+</div>
 {% endblock %}

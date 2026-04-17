@@ -1,220 +1,124 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('trash') or 'Corbeille' }} - GEC{% endblock %}
+{% block title %}Corbeille — GEC{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-trash-alt mr-3 text-red-600"></i>
-        {{ t('trash') or 'Corbeille' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('deleted_mail_description') or 'Courriers supprimés (peuvent être restaurés)' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Corbeille</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-trash-alt" style="color:var(--danger);margin-right:.5rem;"></i>Corbeille</h1>
+    <p class="gec-page-subtitle">Courriers supprimés — peuvent être restaurés dans les 30 jours</p>
+  </div>
+  <div style="display:flex;gap:.75rem;">
+    <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour aux courriers</a>
+    {% if courriers and current_user.is_super_admin() %}
+    <button onclick="confirmEmptyTrash()" class="gec-btn gec-btn-danger"><i class="fas fa-trash"></i> Vider la corbeille</button>
+    {% endif %}
+  </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-    <!-- Main Content -->
-    <div class="lg:col-span-3">
-        <!-- Results -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-list mr-2 text-red-600"></i>
-                        {{ t('deleted_mail') or 'Courriers Supprimés' }}
-                    </h2>
-                    <div class="flex items-center space-x-3">
-                        {% if courriers %}
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-600 text-white">
-                            {{ courriers|length }} {{ t('mail_deleted_count') or 'courrier(s) supprimé(s)' }}
-                        </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <div class="p-6">
-                {% if courriers %}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('receipt_number') or 'N° Accusé' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('type') or 'Type' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('subject') or 'Objet' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('sender_recipient') or 'Expéditeur/Destinataire' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('deletion_date') or 'Date Suppression' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('deleted_by') or 'Supprimé par' }}
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ t('actions') or 'Actions' }}
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for courrier in courriers %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-600 text-white">
-                                        {{ courrier.numero_accuse_reception }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ courrier.get_type_color() }}">
-                                        <i class="fas {{ 'fa-inbox' if courrier.type_courrier == 'ENTRANT' else 'fa-paper-plane' }} mr-1"></i>
-                                        {{ courrier.type_courrier }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">
-                                    <div class="max-w-xs truncate" title="{{ courrier.objet }}">
-                                        {{ courrier.objet }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ courrier.get_contact_principal() }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ courrier.deleted_at.strftime('%d/%m/%Y %H:%M') if courrier.deleted_at else 'N/A' }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {% if courrier.deleted_by %}
-                                        {{ courrier.deleted_by.username }}
-                                    {% else %}
-                                        <span class="text-gray-400">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
-                                        {% if current_user.has_permission('restore_mail') %}
-                                                                <button onclick="confirmRestore({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" 
-                               class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-green-600 hover:bg-green-700 transition-colors">
-                            <i class="fas fa-undo mr-1"></i>
-                            {{ t('restore') or 'Restaurer' }}
-                        </button>
-                                        {% endif %}
-                                        <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
-                                           class="inline-flex items-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-gray-600 hover:bg-gray-700 transition-colors">
-                                            <i class="fas fa-eye mr-1"></i>
-                                            Voir
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-12">
-                    <i class="fas fa-trash-alt text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">{{ t('trash_empty') or 'La corbeille est vide' }}</h3>
-                    <p class="text-gray-500 mb-6">{{ t('no_mail_deleted') or 'Aucun courrier n\'a été supprimé.' }}</p>
-                    <a href="{{ url_for('view_mail') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        {{ t('back_to_mail') or 'Retour aux courriers' }}
-                    </a>
-                </div>
+<div class="gec-two-col" style="grid-template-columns:1fr 240px;">
+
+  <!-- Main table -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-list-alt"></i> Courriers supprimés</span>
+      {% if courriers %}<span class="gec-badge gec-badge-red">{{ courriers|length }}</span>{% endif %}
+    </div>
+    {% if courriers %}
+    <div class="gec-table-wrap">
+      <table class="gec-table">
+        <thead>
+          <tr>
+            <th>N° Accusé</th>
+            <th>Type</th>
+            <th>Objet</th>
+            <th>Expéditeur / Destinataire</th>
+            <th>Supprimé le</th>
+            <th>Par</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for courrier in courriers %}
+          <tr>
+            <td><span class="gec-badge gec-badge-gray" style="font-family:monospace;font-size:.7rem;">{{ courrier.numero_accuse_reception }}</span></td>
+            <td>
+              <span class="gec-badge {{ courrier.get_type_color() }}">
+                <i class="fas {{ 'fa-inbox' if courrier.type_courrier == 'ENTRANT' else 'fa-paper-plane' }}"></i>
+                {{ courrier.type_courrier }}
+              </span>
+            </td>
+            <td style="max-width:200px;font-size:.875rem;">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ courrier.objet }}">{{ courrier.objet }}</div>
+            </td>
+            <td style="font-size:.875rem;color:var(--t-secondary);">{{ courrier.get_contact_principal() }}</td>
+            <td style="font-size:.8125rem;white-space:nowrap;">{{ courrier.deleted_at.strftime('%d/%m/%Y %H:%M') if courrier.deleted_at else '—' }}</td>
+            <td style="font-size:.8125rem;color:var(--t-muted);">{{ courrier.deleted_by.username if courrier.deleted_by else '—' }}</td>
+            <td>
+              <div style="display:flex;gap:.375rem;">
+                {% if current_user.has_permission('restore_mail') %}
+                <button onclick="confirmRestore({{ courrier.id }}, '{{ courrier.numero_accuse_reception }}')" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-undo"></i> Restaurer</button>
                 {% endif %}
-            </div>
-        </div>
+                <a href="{{ url_for('mail_detail', id=courrier.id) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Voir le courrier"><i class="fas fa-eye"></i></a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-
-    <!-- Sidebar - Actions Rapides -->
-    <div class="lg:col-span-1 space-y-6">
-        <!-- Actions Rapides -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
-                    Actions Rapides
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <a href="{{ url_for('view_mail') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
-                        <i class="fas fa-list text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">Voir Courriers</p>
-                            <p class="text-sm text-gray-500">Retour à la liste</p>
-                        </div>
-                    </a>
-                    
-                    {% if courriers and current_user.is_super_admin() %}
-                    <button onclick="confirmEmptyTrash()" 
-                           class="flex items-center p-4 border-2 border-dashed border-red-600 rounded-lg hover:bg-red-50 transition-colors group w-full">
-                        <i class="fas fa-trash text-2xl text-red-600 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div class="text-left">
-                            <p class="font-medium text-gray-900">{{ t('empty_trash') or 'Vider la Corbeille' }}</p>
-                            <p class="text-sm text-gray-500">Suppression définitive</p>
-                        </div>
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Informations -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
-                    Informations
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="space-y-3 text-sm text-gray-600">
-                    <div class="flex items-start">
-                        <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
-                        <span>Les courriers supprimés restent dans la corbeille pendant 30 jours.</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-undo text-blue-500 mr-2 mt-0.5"></i>
-                        <span>Vous pouvez restaurer les courriers à tout moment.</span>
-                    </div>
-                    <div class="flex items-start">
-                        <i class="fas fa-exclamation-triangle text-yellow-500 mr-2 mt-0.5"></i>
-                        <span>La suppression définitive est irréversible.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {% else %}
+    <div class="gec-empty">
+      <div class="gec-empty-icon"><i class="fas fa-trash-alt"></i></div>
+      <div class="gec-empty-title">La corbeille est vide</div>
+      <div class="gec-empty-desc">Aucun courrier n'a été supprimé.</div>
+      <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-primary" style="margin-top:1rem;"><i class="fas fa-list"></i> Voir les courriers</a>
     </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+    <div class="gec-alert gec-alert-info" style="margin:0;">
+      <i class="fas fa-info-circle"></i>
+      <div style="font-size:.8125rem;">
+        <ul style="margin:0;padding-left:1rem;line-height:1.7;">
+          <li>Les courriers restent 30 jours avant suppression définitive.</li>
+          <li>Vous pouvez restaurer à tout moment.</li>
+          <li>La suppression définitive est irréversible.</li>
+        </ul>
+      </div>
+    </div>
+    {% if courriers %}
+    <div class="gec-card">
+      <div class="gec-card-body" style="text-align:center;">
+        <div style="font-size:2rem;font-weight:700;color:var(--danger);">{{ courriers|length }}</div>
+        <div style="font-size:.8125rem;color:var(--t-muted);">courrier(s) en corbeille</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function confirmRestore(id, numero) {
-    if (confirm(`Voulez-vous restaurer le courrier ${numero} ?`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/restore_courrier/${id}`;
-        document.body.appendChild(form);
-        form.submit();
-    }
+function confirmRestore(id, numero){
+  if(confirm(`Restaurer le courrier ${numero} ?`)){
+    const f=document.createElement('form');f.method='POST';f.action=`/restore_courrier/${id}`;document.body.appendChild(f);f.submit();
+  }
 }
-
-function confirmEmptyTrash() {
-    if (confirm('Êtes-vous sûr de vouloir vider définitivement la corbeille ?\n\nCette action est IRRÉVERSIBLE et supprimera définitivement tous les courriers de la corbeille.')) {
-        if (confirm('Confirmation finale : Tous les courriers de la corbeille seront définitivement supprimés. Continuer ?')) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/empty_trash';
-            document.body.appendChild(form);
-            form.submit();
-        }
+function confirmEmptyTrash(){
+  if(confirm('Vider définitivement la corbeille ?\n\nCette action est IRRÉVERSIBLE.')){
+    if(confirm('Confirmation finale : Tous les courriers de la corbeille seront supprimés définitivement. Continuer ?')){
+      const f=document.createElement('form');f.method='POST';f.action='/empty_trash';document.body.appendChild(f);f.submit();
     }
+  }
 }
 </script>
 {% endblock %}

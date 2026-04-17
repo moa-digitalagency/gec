@@ -1,61 +1,85 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" id="html-root">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limite de débit dépassée - {{ parametres.nom_logiciel if parametres else 'GEC' }}</title>
-    <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'rdc-blue': '#003087',
-                        'rdc-yellow': '#FFD700',
-                        'rdc-red': '#CE1126',
-                        'rdc-green': '#009639'
-                    }
-                }
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Limite dépassée — 429 — GEC</title>
+  <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/design-system.css') }}" rel="stylesheet">
+  <script>(function(){ if(localStorage.getItem('gec-dark')==='1') document.documentElement.classList.add('dark'); })();</script>
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: var(--body-bg);
+    }
+    .error-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      text-align: center;
+    }
+    .countdown {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--warning);
+      line-height: 1;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">
-    <div class="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
-        <div class="mb-6">
-            <div class="mx-auto w-16 h-16 bg-rdc-red rounded-full flex items-center justify-center mb-4">
-                <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">Limite de débit dépassée</h1>
-            <p class="text-gray-600">
-                Vous avez effectué trop de requêtes en peu de temps. 
-                Veuillez patienter quelques minutes avant de réessayer.
-            </p>
-        </div>
-        
-        <div class="bg-rdc-yellow bg-opacity-20 border border-rdc-yellow rounded-lg p-4 mb-6">
-            <p class="text-sm text-gray-700">
-                <strong>Mesure de sécurité :</strong> Cette limitation protège le système contre les utilisations abusives.
-            </p>
-        </div>
-        
-        <div class="space-y-3">
-            <a href="{{ url_for('dashboard') }}" 
-               class="block w-full bg-rdc-blue text-white py-2 px-4 rounded-lg hover:bg-blue-800 transition-colors">
-                Retour au tableau de bord
-            </a>
-            <p class="text-sm text-gray-500">
-                Code d'erreur: 429 - Too Many Requests
-            </p>
-        </div>
+<body>
+<div class="error-card">
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);padding:2rem 1.5rem 1.5rem;border-bottom:1px solid rgba(245,158,11,.2);">
+    <div style="width:56px;height:56px;border-radius:50%;background:var(--warning);display:flex;align-items:center;justify-content:center;margin:0 auto .875rem;">
+      <i class="fas fa-exclamation-triangle" style="color:white;font-size:1.25rem;"></i>
     </div>
-    
-    <script>
-        // Auto-redirect after 30 seconds
-        setTimeout(function() {
-            window.location.href = "{{ url_for('dashboard') }}";
-        }, 30000);
-    </script>
+    <div style="font-size:3rem;font-weight:900;color:#92400E;line-height:1;margin-bottom:.375rem;">429</div>
+    <h1 style="font-size:1.125rem;font-weight:700;color:#92400E;margin-bottom:.25rem;">Limite de débit dépassée</h1>
+    <p style="font-size:.8125rem;color:#B45309;">Trop de requêtes en peu de temps</p>
+  </div>
+
+  <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;">
+    <p style="font-size:.875rem;color:var(--t-secondary);">Vous avez effectué trop de requêtes en peu de temps. Veuillez patienter quelques secondes avant de réessayer.</p>
+
+    <div class="gec-alert gec-alert-warning" style="justify-content:center;text-align:center;flex-direction:column;gap:.375rem;">
+      <div style="font-size:.8125rem;font-weight:600;">Mesure de sécurité</div>
+      <div style="font-size:.8125rem;">Cette limitation protège le système contre les utilisations abusives.</div>
+    </div>
+
+    <!-- Countdown -->
+    <div style="background:var(--body-bg);border-radius:var(--r-md);padding:1rem;display:flex;flex-direction:column;align-items:center;gap:.375rem;">
+      <div style="font-size:.75rem;color:var(--t-muted);">Redirection automatique dans</div>
+      <div class="countdown" id="countdown">30</div>
+      <div style="font-size:.75rem;color:var(--t-muted);">secondes</div>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;">
+      <i class="fas fa-home"></i> Retour au tableau de bord
+    </a>
+
+    <div style="font-size:.75rem;color:var(--t-muted);">Code d'erreur : 429 — Too Many Requests</div>
+  </div>
+</div>
+
+<script>
+let seconds = 30;
+const el = document.getElementById('countdown');
+const iv = setInterval(() => {
+  seconds--;
+  el.textContent = seconds;
+  if (seconds <= 0) {
+    clearInterval(iv);
+    window.location.href = "{{ url_for('dashboard') }}";
+  }
+}, 1000);
+</script>
 </body>
 </html>

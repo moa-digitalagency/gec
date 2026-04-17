@@ -1,1261 +1,1027 @@
 {% extends "new_base.html" %}
-
-{% block title %}Détails Courrier {{ courrier.numero_accuse_reception }} - GEC{% endblock %}
+{% block title %}Détails — {{ courrier.numero_accuse_reception }} — GEC{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div class="mb-6">
-    <nav class="flex" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-            <li>
-                <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-gray-500">
-                    <i class="fas fa-home"></i>
-                    <span class="sr-only">Accueil</span>
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <a href="{{ url_for('view_mail') }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">
-                        Courriers
-                    </a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <span class="text-sm font-medium text-gray-900">{{ courrier.numero_accuse_reception }}</span>
-                </div>
-            </li>
-        </ol>
-    </nav>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('view_mail') }}">Courriers</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">{{ courrier.numero_accuse_reception }}</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-envelope-open-text" style="color:var(--primary);margin-right:.5rem;"></i>Détails du Courrier</h1>
+    <p class="gec-page-subtitle">{{ courrier.numero_accuse_reception }}</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+    <a href="{{ url_for('export_pdf', id=courrier.id) }}" class="gec-btn gec-btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+    {% if current_user.can_edit_courrier(courrier) %}
+    <a href="{{ url_for('edit_courrier', id=courrier.id) }}" class="gec-btn gec-btn-secondary"><i class="fas fa-edit"></i> Modifier</a>
+    {% endif %}
+    <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
+  </div>
 </div>
 
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-mail-bulk mr-3 text-rdc-blue"></i>
-        Détails du Courrier
-    </h1>
-    <p class="mt-2 text-gray-600">Informations complètes du courrier {{ courrier.numero_accuse_reception }}</p>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for category, message in messages %}
+<div class="gec-alert {% if category == 'error' %}gec-alert-danger{% elif category == 'success' %}gec-alert-success{% else %}gec-alert-info{% endif %}" style="margin-bottom:1rem;">
+  <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+  <span>{{ message }}</span>
 </div>
+{% endfor %}
+{% endwith %}
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Basic Information -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200 bg-rdc-blue">
-                <h2 class="text-xl font-semibold text-white flex items-center">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Informations Principales
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Receipt Number -->
-                    <div>
-                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-receipt mr-2 text-rdc-blue"></i>
-                            Numéro d'Accusé de Réception
-                        </div>
-                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rdc-blue text-white">
-                                {{ courrier.numero_accuse_reception }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- Reference Number -->
-                    <div>
-                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-hashtag mr-2 text-rdc-blue"></i>
-                            Numéro de Référence
-                        </div>
-                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            {% if courrier.numero_reference %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                                    {{ courrier.numero_reference }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-500 italic">Non référencé</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Contact (Expediteur/Destinataire) -->
-                <div class="mt-6">
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user mr-2 text-rdc-green"></i>
-                        {{ courrier.get_label_contact() }}
-                    </div>
-                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <p class="text-gray-900 font-medium">{{ courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié' }}</p>
-                    </div>
-                </div>
-                
-                <!-- Type de Courrier Sortant (pour courriers sortants) -->
-                {% if courrier.type_courrier == 'SORTANT' and courrier.type_courrier_sortant %}
-                <div class="mt-6">
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-tag mr-2 text-rdc-green"></i>
-                        Type de Courrier Sortant
-                    </div>
-                    <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-tag mr-2"></i>
-                            {{ courrier.type_courrier_sortant.nom }}
-                        </span>
-                        {% if courrier.type_courrier_sortant.description %}
-                        <p class="text-sm text-gray-600 mt-2">{{ courrier.type_courrier_sortant.description }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Responsable de structure en copie (pour courriers entrants) -->
-                {% if courrier.type_courrier == 'ENTRANT' %}
-                <div class="mt-6">
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user-tie mr-2 text-rdc-blue"></i>
-                        {{ get_titre_responsable() }} en copie
-                    </div>
-                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        {% if courrier.secretaire_general_copie is not none %}
-                            {% if courrier.secretaire_general_copie %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-check-circle mr-2"></i>Oui
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                                    <i class="fas fa-times-circle mr-2"></i>Non
-                                </span>
-                            {% endif %}
-                        {% else %}
-                            <span class="text-gray-500 italic">Information non disponible</span>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Subject -->
-                <div class="mt-6">
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-file-alt mr-2 text-rdc-yellow"></i>
-                        Objet de la Lettre
-                    </div>
-                    <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                        <p class="text-gray-900 leading-relaxed">{{ courrier.objet }}</p>
-                    </div>
-                </div>
-                
-                <!-- Autres Informations (pour courriers sortants) -->
-                {% if courrier.type_courrier == 'SORTANT' and courrier.autres_informations %}
-                <div class="mt-6">
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-info-circle mr-2 text-purple-500"></i>
-                        Autres Informations
-                    </div>
-                    <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                        <p class="text-gray-900 leading-relaxed">{{ courrier.autres_informations }}</p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+<div class="gec-two-col" style="--sidebar:288px;">
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN COLUMN
+  ═══════════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;min-width:0;">
+
+    <!-- ── Informations Principales ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-info-circle"></i> Informations Principales</span>
+        <div style="display:flex;gap:.5rem;">
+          {% if courrier.type_courrier %}
+          <span class="gec-badge {% if courrier.type_courrier == 'ENTRANT' %}gec-badge-blue{% elif courrier.type_courrier == 'SORTANT' %}gec-badge-yellow{% else %}gec-badge-purple{% endif %}" style="font-size:.75rem;">
+            {{ courrier.type_courrier|capitalize }}
+          </span>
+          {% endif %}
         </div>
-        
-        <!-- Metadata -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-clock mr-2 text-rdc-blue"></i>
-                    Informations de Traçabilité
-                </h2>
+      </div>
+      <div class="gec-card-body">
+
+        <div class="gec-form-row gec-form-row-2" style="margin-bottom:.75rem;">
+          <div>
+            <div class="gec-info-list">
+              <div class="gec-info-row">
+                <span class="gec-info-key"><i class="fas fa-receipt" style="color:var(--primary);"></i> N° Accusé de Réception</span>
+                <span class="gec-info-val">
+                  <span class="gec-badge gec-badge-blue" style="font-size:.8125rem;font-weight:700;">{{ courrier.numero_accuse_reception }}</span>
+                </span>
+              </div>
+              <div class="gec-info-row">
+                <span class="gec-info-key"><i class="fas fa-hashtag" style="color:var(--t-muted);"></i> N° Référence</span>
+                <span class="gec-info-val">
+                  {% if courrier.numero_reference %}
+                  <span class="gec-badge gec-badge-gray">{{ courrier.numero_reference }}</span>
+                  {% else %}
+                  <span style="color:var(--t-muted);font-style:italic;font-size:.8125rem;">Non référencé</span>
+                  {% endif %}
+                </span>
+              </div>
             </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Date de Rédaction/Émission -->
-                    <div>
-                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-calendar-edit mr-2 text-purple-500"></i>
-                            {% if courrier.type_courrier == 'SORTANT' %}Date d'Émission{% else %}Date de Rédaction{% endif %}
-                        </div>
-                        <div class="p-3 bg-purple-50 rounded-lg">
-                            {% if courrier.date_redaction %}
-                                <p class="text-gray-900 font-medium">
-                                    {{ format_date(courrier.date_redaction) }}
-                                </p>
-                                <p class="text-sm text-gray-500">
-                                    Date de la lettre
-                                </p>
-                            {% else %}
-                                <p class="text-gray-500 italic">
-                                    Non renseignée
-                                </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Registration Date -->
-                    <div>
-                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-calendar-plus mr-2 text-rdc-green"></i>
-                            Date d'Enregistrement
-                        </div>
-                        <div class="p-3 bg-gray-50 rounded-lg">
-                            <p class="text-gray-900 font-medium">
-                                {{ format_date(courrier.date_enregistrement, include_time=True) }}
-                            </p>
-                            <p class="text-sm text-gray-500">
-                                Heure d'enregistrement
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Registered By -->
-                    <div>
-                        <div class="flex items-center text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user-check mr-2 text-rdc-green"></i>
-                            Enregistré par
-                        </div>
-                        <div class="p-3 bg-gray-50 rounded-lg">
-                            <p class="text-gray-900 font-medium">
-                                {{ courrier.utilisateur_enregistrement.nom_complet }}
-                            </p>
-                            <p class="text-sm text-gray-500">
-                                ({{ courrier.utilisateur_enregistrement.username }})
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Status Section -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-flag mr-2 text-rdc-blue"></i>
-                    Statut du Courrier
-                </h2>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-sm font-medium text-gray-700">Statut actuel :</span>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ courrier.statut_color }}">
-                            {{ courrier.statut }}
-                        </span>
-                    </div>
-                    <button onclick="toggleStatusForm()" 
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-edit mr-2"></i>
-                        Modifier
-                    </button>
-                </div>
-                
-                <!-- Status Change Form -->
-                <div id="statusForm" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
-                    <form method="POST" action="{{ url_for('change_status', id=courrier.id) }}">
-                        <div class="flex items-center space-x-4">
-                            <select name="nouveau_statut" required
-                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                                {% for statut in statuts_disponibles %}
-                                <option value="{{ statut.nom }}" {% if statut.nom == courrier.statut %}selected{% endif %}>
-                                    {{ statut.nom }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" 
-                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                                <i class="fas fa-check mr-2"></i>
-                                Confirmer
-                            </button>
-                            <button type="button" onclick="toggleStatusForm()"
-                                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-times mr-2"></i>
-                                Annuler
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tags -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-tags mr-2 text-rdc-blue"></i>
-                    Étiquettes (Tags)
-                </h2>
-            </div>
-            <div class="p-4">
-                <!-- Tags actuels -->
-                <div id="tag-list" class="flex flex-wrap gap-2 mb-3">
-                    {% for ct in courrier.tags %}
-                    <span class="tag-badge inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white"
-                          data-id="{{ ct.tag.id }}"
-                          style="background-color: {{ ct.tag.couleur }};">
-                        {{ ct.tag.nom }}
-                        <button type="button" class="ml-1.5 hover:opacity-70 remove-tag-btn"
-                                data-tag-id="{{ ct.tag.id }}" onclick="removeTag({{ ct.tag.id }})">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
-                    </span>
+          </div>
+          <div>
+            <div class="gec-info-list">
+              <div class="gec-info-row">
+                <span class="gec-info-key"><i class="fas fa-user" style="color:var(--success);"></i> {{ courrier.get_label_contact() }}</span>
+                <span class="gec-info-val" style="font-weight:600;color:var(--t-primary);">{{ courrier.get_contact_principal() or '—' }}</span>
+              </div>
+              {% if courrier.type_courrier == 'ENTRANT' %}
+              <div class="gec-info-row">
+                <span class="gec-info-key"><i class="fas fa-user-tie" style="color:var(--primary);"></i> {{ get_titre_responsable() }} en copie</span>
+                <span class="gec-info-val">
+                  {% if courrier.secretaire_general_copie is not none %}
+                    {% if courrier.secretaire_general_copie %}
+                    <span class="gec-badge gec-badge-green"><i class="fas fa-check-circle"></i> Oui</span>
                     {% else %}
-                    <span class="text-xs text-gray-400" id="no-tags-msg">Aucun tag</span>
-                    {% endfor %}
-                </div>
-                <!-- Ajout de tag -->
-                <div class="flex gap-2">
-                    <div class="relative flex-1">
-                        <input type="text" id="tag-input" placeholder="Rechercher ou créer…"
-                               autocomplete="off"
-                               class="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <ul id="tag-suggestions"
-                            class="absolute z-20 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg mt-1 hidden max-h-40 overflow-y-auto text-sm"></ul>
-                    </div>
-                    <input type="color" id="tag-color" value="#6B7280" title="Couleur du nouveau tag"
-                           class="h-8 w-10 rounded cursor-pointer border border-gray-300 p-0.5">
-                    <button type="button" onclick="createAndAddTag()"
-                            class="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-plus mr-1"></i>Ajouter
-                    </button>
-                </div>
+                    <span class="gec-badge gec-badge-gray"><i class="fas fa-times-circle"></i> Non</span>
+                    {% endif %}
+                  {% else %}
+                  <span style="color:var(--t-muted);font-style:italic;font-size:.8125rem;">N/A</span>
+                  {% endif %}
+                </span>
+              </div>
+              {% endif %}
+              {% if courrier.type_courrier == 'SORTANT' and courrier.type_courrier_sortant %}
+              <div class="gec-info-row">
+                <span class="gec-info-key"><i class="fas fa-tag" style="color:var(--success);"></i> Type Sortant</span>
+                <span class="gec-info-val">
+                  <span class="gec-badge gec-badge-green">{{ courrier.type_courrier_sortant.nom }}</span>
+                  {% if courrier.type_courrier_sortant.description %}
+                  <span style="font-size:.75rem;color:var(--t-muted);margin-left:.25rem;">{{ courrier.type_courrier_sortant.description }}</span>
+                  {% endif %}
+                </span>
+              </div>
+              {% endif %}
             </div>
+          </div>
         </div>
 
-        <!-- Échéance / Due Date -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-calendar-alt mr-2 text-rdc-blue"></i>
-                    Échéance
-                    {% if courrier.due_date %}
-                        {% set today = now().date() if now is defined else none %}
-                        {% if courrier.due_date < today and courrier.statut not in ['TRAITE','ARCHIVE'] %}
-                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 animate-pulse">
-                            <i class="fas fa-exclamation-circle mr-1"></i>EN RETARD
-                        </span>
-                        {% endif %}
-                    {% endif %}
-                </h2>
-            </div>
-            <div class="p-4">
-                <p class="text-sm text-gray-600 mb-3">
-                    {% if courrier.due_date %}
-                        <span class="font-medium">{{ courrier.due_date.strftime('%d/%m/%Y') }}</span>
-                    {% else %}
-                        <span class="text-gray-400">Aucune échéance fixée</span>
-                    {% endif %}
-                </p>
-                <form method="POST" action="{{ url_for('set_due_date', id=courrier.id) }}" class="flex items-center gap-2">
-                    <input type="date" name="due_date"
-                           value="{{ courrier.due_date.strftime('%Y-%m-%d') if courrier.due_date else '' }}"
-                           class="flex-1 text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
-                    <button type="submit"
-                            class="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                        <i class="fas fa-save mr-1"></i>Enregistrer
-                    </button>
-                </form>
-            </div>
+        <!-- Objet -->
+        <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;margin-top:.25rem;">
+          <p style="font-size:.75rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">
+            <i class="fas fa-file-alt" style="margin-right:.375rem;color:var(--warning);"></i>Objet
+          </p>
+          <p style="font-size:.9375rem;color:var(--t-primary);line-height:1.6;">{{ courrier.objet }}</p>
         </div>
 
-        <!-- File Attachments -->
-        {% set extra_attachments = courrier.attachments.all() %}
-        {% if courrier.fichier_nom or extra_attachments %}
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-paperclip mr-2 text-rdc-blue"></i>
-                    Pièces Jointes
-                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {{ (1 if courrier.fichier_nom else 0) + extra_attachments|length }}
-                    </span>
-                </h2>
-            </div>
-            <div class="p-6 space-y-3">
-                {% if courrier.fichier_nom %}
-                <div class="bg-green-50 rounded-lg border border-green-200 p-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-shrink-0">
-                            {% if courrier.fichier_type in ['jpg','jpeg','png'] %}
-                                <i class="fas fa-image text-2xl text-green-600"></i>
-                            {% elif courrier.fichier_type == 'pdf' %}
-                                <i class="fas fa-file-pdf text-2xl text-red-600"></i>
-                            {% else %}
-                                <i class="fas fa-file text-2xl text-gray-600"></i>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 break-all">{{ courrier.fichier_nom }}</p>
-                            <p class="text-xs text-gray-500">.{{ courrier.fichier_type or '?' }} &mdash; Document principal</p>
-                        </div>
-                        <div class="flex gap-2 flex-shrink-0">
-                            <a href="{{ url_for('download_file', id=courrier.id) }}"
-                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-green hover:bg-opacity-90 transition-colors">
-                                <i class="fas fa-download mr-1"></i>Télécharger
-                            </a>
-                            <a href="{{ url_for('view_file', id=courrier.id) }}" target="_blank"
-                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                                <i class="fas fa-eye mr-1"></i>Voir
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% for att in extra_attachments %}
-                <div class="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-shrink-0">
-                            {% if att.fichier_type in ['jpg','jpeg','png'] %}
-                                <i class="fas fa-image text-2xl text-blue-500"></i>
-                            {% elif att.fichier_type == 'pdf' %}
-                                <i class="fas fa-file-pdf text-2xl text-red-500"></i>
-                            {% else %}
-                                <i class="fas fa-file-alt text-2xl text-gray-500"></i>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 break-all">{{ att.fichier_nom }}</p>
-                            <p class="text-xs text-gray-500">
-                                .{{ att.fichier_type or '?' }}
-                                {% if att.fichier_taille %}&mdash; {{ (att.fichier_taille / 1024)|round(1) }} Ko{% endif %}
-                                &mdash; {{ att.uploaded_at.strftime('%d/%m/%Y %H:%M') }}
-                            </p>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <a href="{{ url_for('download_attachment', attachment_id=att.id) }}"
-                               class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                                <i class="fas fa-download mr-1"></i>Télécharger
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+        {% if courrier.type_courrier == 'SORTANT' and courrier.autres_informations %}
+        <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;margin-top:.75rem;">
+          <p style="font-size:.75rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">
+            <i class="fas fa-info-circle" style="margin-right:.375rem;color:#a855f7;"></i>Autres Informations
+          </p>
+          <p style="font-size:.875rem;color:var(--t-secondary);line-height:1.6;">{{ courrier.autres_informations }}</p>
         </div>
         {% endif %}
-        
-        <!-- Circuit de Signature Section -->
-        <div class="bg-white shadow-rdc rounded-xl" id="circuit-signature-section">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer select-none"
-                 onclick="toggleCircuit()">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-pen-nib mr-2 text-rdc-blue"></i>
-                    Circuit de Signature
-                    {% set sigs = courrier.signatures.all() %}
-                    {% if sigs %}
-                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full font-medium
-                        {% set all_signed = sigs|selectattr('statut','eq','SIGNED')|list|length == sigs|length %}
-                        {% set any_rejected = sigs|selectattr('statut','eq','REJECTED')|list %}
-                        {% if any_rejected %}bg-red-100 text-red-700
-                        {% elif all_signed %}bg-green-100 text-green-700
-                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
-                        {% if any_rejected %}Rejeté
-                        {% elif all_signed %}Complété
-                        {% else %}En cours ({{ sigs|selectattr('statut','eq','SIGNED')|list|length }}/{{ sigs|length }}){% endif %}
-                    </span>
-                    {% endif %}
-                </h2>
-                <i class="fas fa-chevron-down text-gray-400 transition-transform" id="circuit-chevron"></i>
-            </div>
-            <div id="circuit-body" class="p-6 hidden">
 
-                {% set sigs = courrier.signatures.all() %}
+      </div>
+    </div>
 
-                <!-- Existing circuit -->
-                {% if sigs %}
-                <div class="mb-6">
-                    <ol class="relative border-l border-gray-300 ml-3 space-y-6">
-                    {% for s in sigs %}
-                    {% set is_pending = s.statut == 'PENDING' and (loop.first or (sigs[loop.index0-1].statut == 'SIGNED')) %}
-                    <li class="ml-6">
-                        <span class="absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-white
-                            {% if s.statut == 'SIGNED' %}bg-green-500
-                            {% elif s.statut == 'REJECTED' %}bg-red-500
-                            {% elif is_pending %}bg-yellow-400 animate-pulse
-                            {% else %}bg-gray-300{% endif %}">
-                            <i class="fas text-white text-xs
-                                {% if s.statut == 'SIGNED' %}fa-check
-                                {% elif s.statut == 'REJECTED' %}fa-times
-                                {% elif is_pending %}fa-pen
-                                {% else %}fa-clock{% endif %}"></i>
-                        </span>
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-900">
-                                    Étape {{ s.ordre }} — {{ s.signataire.nom_complet }}
-                                </p>
-                                {% if s.signed_at %}
-                                <p class="text-xs text-gray-500">
-                                    <i class="fas fa-clock mr-1"></i>{{ s.signed_at.strftime('%d/%m/%Y %H:%M') }}
-                                </p>
-                                {% endif %}
-                                {% if s.commentaire %}
-                                <p class="text-xs text-gray-600 mt-1 italic">"{{ s.commentaire }}"</p>
-                                {% endif %}
-                            </div>
-                            <span class="text-xs px-2 py-1 rounded-full font-medium
-                                {% if s.statut == 'SIGNED' %}bg-green-100 text-green-700
-                                {% elif s.statut == 'REJECTED' %}bg-red-100 text-red-700
-                                {% elif is_pending %}bg-yellow-100 text-yellow-700
-                                {% else %}bg-gray-100 text-gray-600{% endif %}">
-                                {{ s.statut }}
-                            </span>
-                        </div>
-                        <!-- Action buttons for current user if it's their turn -->
-                        {% if s.signataire_id == current_user.id and s.statut == 'PENDING' and (loop.first or sigs[loop.index0-1].statut == 'SIGNED') %}
-                        <div class="mt-3 flex items-center gap-3" id="sig-action-{{ s.id }}">
-                            <textarea id="sig-comment-{{ s.id }}" rows="2"
-                                      placeholder="Commentaire (optionnel)…"
-                                      class="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rdc-blue resize-none"></textarea>
-                            <div class="flex flex-col gap-2">
-                                <button onclick="signatureAction({{ s.id }}, 'SIGNED')"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
-                                    <i class="fas fa-check"></i> Signer
-                                </button>
-                                <button onclick="signatureAction({{ s.id }}, 'REJECTED')"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
-                                    <i class="fas fa-times"></i> Rejeter
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                    </ol>
-                </div>
-                {% else %}
-                <p class="text-sm text-gray-400 mb-4">Aucun circuit de signature initié pour ce courrier.</p>
-                {% endif %}
-
-                <!-- Init/reset circuit (admin only) -->
-                {% if current_user.role in ['admin', 'super_admin'] %}
-                <div class="border-t border-gray-200 pt-4 mt-2">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
-                        <i class="fas fa-plus-circle mr-1 text-rdc-blue"></i>
-                        {% if sigs %}Réinitialiser le circuit{% else %}Initier un circuit{% endif %}
-                    </h3>
-                    <div id="signataires-list" class="space-y-2 mb-3"></div>
-                    <button type="button" onclick="addSignataire()"
-                            class="text-xs text-rdc-blue hover:underline mb-3 inline-flex items-center gap-1">
-                        <i class="fas fa-user-plus"></i> Ajouter un signataire
-                    </button>
-                    <br>
-                    <button type="button" onclick="submitCircuit({{ courrier.id }})"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rdc-blue rounded-lg hover:bg-blue-800 transition-colors">
-                        <i class="fas fa-paper-plane"></i>
-                        Lancer le circuit
-                    </button>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Timeline Section -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer select-none"
-                 onclick="toggleTimeline()">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-history mr-2 text-rdc-blue"></i>
-                    Historique &amp; Timeline
-                </h2>
-                <i class="fas fa-chevron-down text-gray-400 transition-transform" id="timeline-chevron"></i>
-            </div>
-            <div id="timeline-body" class="p-6 hidden">
-                <div id="timeline-loading" class="text-center py-6 text-gray-400">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>Chargement…
-                </div>
-                <div id="timeline-list" class="relative hidden">
-                    <!-- Ligne verticale -->
-                    <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                    <div id="timeline-events" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comments and Annotations Section -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-comments mr-2 text-rdc-blue"></i>
-                    Commentaires et Annotations
-                </h2>
-            </div>
-            
-            <!-- Add Comment Form -->
-            {% if current_user.can_access_courrier(courrier) %}
-            <div class="p-6 border-b border-gray-200 bg-blue-50">
-                <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}">
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div class="md:col-span-3">
-                                <label for="commentaire" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-comment mr-1 text-rdc-blue"></i>
-                                    Votre commentaire *
-                                </label>
-                                <textarea name="commentaire" id="commentaire" rows="3" required 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue"
-                                          placeholder="Ajouter un commentaire ou une annotation..."></textarea>
-                            </div>
-                            <div>
-                                <label for="type_comment" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-tag mr-1 text-rdc-blue"></i>
-                                    Type
-                                </label>
-                                <select name="type_comment" id="type_comment" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-blue focus:border-rdc-blue">
-                                    <option value="comment">Commentaire</option>
-                                    <option value="annotation">Annotation</option>
-                                    <option value="instruction">Instruction</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <button type="submit" 
-                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                <i class="fas fa-plus mr-2"></i>
-                                Ajouter le Commentaire
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            {% endif %}
-
-            <!-- Comments List -->
-            {% if comments %}
-            <div class="divide-y divide-gray-200">
-                {% for comment in comments %}
-                <div class="p-6 hover:bg-gray-50">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="w-10 h-10 bg-rdc-blue rounded-full flex items-center justify-center">
-                                <span class="text-white font-semibold text-sm">{{ comment.user.nom_complet[:2].upper() }}</span>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-semibold text-gray-900">{{ comment.user.nom_complet }}</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                                        {% if comment.type_comment == 'comment' %}bg-blue-100 text-blue-800
-                                        {% elif comment.type_comment == 'annotation' %}bg-green-100 text-green-800
-                                        {% elif comment.type_comment == 'instruction' %}bg-red-100 text-red-800
-                                        {% endif %}">
-                                        {% if comment.type_comment == 'comment' %}
-                                            <i class="fas fa-comment mr-1"></i>Commentaire
-                                        {% elif comment.type_comment == 'annotation' %}
-                                            <i class="fas fa-sticky-note mr-1"></i>Annotation
-                                        {% elif comment.type_comment == 'instruction' %}
-                                            <i class="fas fa-exclamation-triangle mr-1"></i>Instruction
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <span class="text-sm text-gray-500">
-                                    <i class="fas fa-clock mr-1"></i>
-                                    {{ comment.date_creation.strftime('%d/%m/%Y à %H:%M') }}
-                                    {% if comment.date_modification %}
-                                        <span class="ml-2 text-xs text-gray-400">
-                                            (modifié le {{ comment.date_modification.strftime('%d/%m/%Y à %H:%M') }})
-                                        </span>
-                                    {% endif %}
-                                </span>
-                            </div>
-                            <div class="text-gray-700">{{ comment.commentaire }}</div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+    <!-- ── Traçabilité ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-clock"></i> Traçabilité</span>
+      </div>
+      <div class="gec-card-body">
+        <div class="gec-grid-3">
+          <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
+            <p style="font-size:.7rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.375rem;">
+              <i class="fas fa-calendar-edit" style="color:#a855f7;margin-right:.25rem;"></i>
+              {% if courrier.type_courrier == 'SORTANT' %}Date d'Émission{% else %}Date de Rédaction{% endif %}
+            </p>
+            {% if courrier.date_redaction %}
+            <p style="font-size:.9375rem;font-weight:600;color:var(--t-primary);">{{ format_date(courrier.date_redaction) }}</p>
+            <p style="font-size:.75rem;color:var(--t-muted);">Date de la lettre</p>
             {% else %}
-            <div class="p-6 text-center text-gray-500">
-                <i class="fas fa-comment-slash text-4xl mb-4"></i>
-                <p>Aucun commentaire pour ce courrier.</p>
-                {% if current_user.can_access_courrier(courrier) %}
-                <p class="text-sm">Soyez le premier à ajouter un commentaire !</p>
-                {% endif %}
-            </div>
+            <p style="font-size:.875rem;color:var(--t-muted);font-style:italic;">Non renseignée</p>
             {% endif %}
+          </div>
+          <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
+            <p style="font-size:.7rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.375rem;">
+              <i class="fas fa-calendar-plus" style="color:var(--success);margin-right:.25rem;"></i>Date d'Enregistrement
+            </p>
+            <p style="font-size:.9375rem;font-weight:600;color:var(--t-primary);">{{ format_date(courrier.date_enregistrement, include_time=True) }}</p>
+            <p style="font-size:.75rem;color:var(--t-muted);">Heure d'enregistrement</p>
+          </div>
+          <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
+            <p style="font-size:.7rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.375rem;">
+              <i class="fas fa-user-check" style="color:var(--success);margin-right:.25rem;"></i>Enregistré par
+            </p>
+            <p style="font-size:.9375rem;font-weight:600;color:var(--t-primary);">{{ courrier.utilisateur_enregistrement.nom_complet }}</p>
+            <p style="font-size:.75rem;color:var(--t-muted);">@{{ courrier.utilisateur_enregistrement.username }}</p>
+          </div>
         </div>
-        
-        <!-- Transmission History -->
-        {% if forwards %}
-        <div class="bg-white shadow-rdc rounded-xl mt-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-history mr-2 text-rdc-blue"></i>
-                    Historique des Transmissions
-                </h2>
-            </div>
-            <div class="divide-y divide-gray-200">
-                {% for forward in forwards %}
-                <div class="p-6 hover:bg-gray-50">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-share text-blue-500 mr-2"></i>
-                                <span class="font-medium text-gray-900">{{ forward.forwarded_by.nom_complet }}</span>
-                                <span class="mx-2 text-gray-400">→</span>
-                                <span class="font-medium text-gray-900">{{ forward.forwarded_to.nom_complet }}</span>
-                            </div>
-                            {% if forward.message %}
-                            <p class="text-gray-600 mb-2">{{ forward.message }}</p>
-                            {% endif %}
-                            
-                            <!-- File attachment for transmission -->
-                            {% if forward.attached_file %}
-                            <div class="mb-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <div class="flex items-center">
-                                    <i class="fas fa-paperclip text-blue-600 mr-2"></i>
-                                    <span class="text-sm font-medium text-blue-900">Fichier joint:</span>
-                                    <a href="{{ url_for('download_forward_attachment', forward_id=forward.id) }}" 
-                                       class="ml-2 text-blue-600 hover:text-blue-800 underline text-sm">
-                                        {{ forward.attached_file_original_name }}
-                                    </a>
-                                    {% if forward.attached_file_size %}
-                                    <span class="ml-2 text-xs text-gray-500">
-                                        ({{ "%.1f"|format(forward.attached_file_size / 1024 / 1024) }} MB)
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endif %}
-                            
-                            <div class="flex items-center text-sm text-gray-500">
-                                <i class="fas fa-clock mr-1"></i>
-                                <span>{{ forward.date_transmission.strftime('%d/%m/%Y à %H:%M') }}</span>
-                                {% if forward.lu %}
-                                    <span class="ml-4">
-                                        <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                                        Lu le {{ forward.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
-                                    </span>
-                                {% else %}
-                                    <span class="ml-4">
-                                        <i class="fas fa-circle text-orange-500 mr-1"></i>
-                                        Non lu
-                                    </span>
-                                {% endif %}
-                                {% if forward.email_sent %}
-                                    <span class="ml-4">
-                                        <i class="fas fa-envelope text-blue-500 mr-1"></i>
-                                        Email envoyé
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+      </div>
+    </div>
+
+    <!-- ── Statut ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-flag"></i> Statut du Courrier</span>
+        <button onclick="toggleStatusForm()" class="gec-btn gec-btn-secondary gec-btn-sm">
+          <i class="fas fa-edit"></i> Modifier
+        </button>
+      </div>
+      <div class="gec-card-body">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.25rem;">
+          <span style="font-size:.875rem;color:var(--t-secondary);">Statut actuel :</span>
+          <span class="gec-badge {{ courrier.statut_color }}" style="font-size:.8125rem;font-weight:700;">{{ courrier.statut.replace('_',' ')|title }}</span>
+        </div>
+        <div id="statusForm" style="display:none;margin-top:1rem;padding:1rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);">
+          <form method="POST" action="{{ url_for('change_status', id=courrier.id) }}" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <select name="nouveau_statut" required class="gec-select" style="flex:1;min-width:160px;">
+              {% for statut in statuts_disponibles %}
+              <option value="{{ statut.nom }}" {% if statut.nom == courrier.statut %}selected{% endif %}>{{ statut.nom.replace('_',' ')|title }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="gec-btn gec-btn-primary"><i class="fas fa-check"></i> Confirmer</button>
+            <button type="button" onclick="toggleStatusForm()" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tags ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-tags"></i> Étiquettes</span>
+      </div>
+      <div class="gec-card-body">
+        <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:.375rem;margin-bottom:.875rem;min-height:1.5rem;">
+          {% for ct in courrier.tags %}
+          <span class="tag-badge" data-id="{{ ct.tag.id }}"
+                style="display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .625rem;border-radius:999px;font-size:.75rem;font-weight:600;color:white;background-color:{{ ct.tag.couleur }};">
+            {{ ct.tag.nom }}
+            <button type="button" onclick="removeTag({{ ct.tag.id }})"
+                    style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;opacity:.8;"
+                    onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.8'">
+              <i class="fas fa-times" style="font-size:.625rem;"></i>
+            </button>
+          </span>
+          {% else %}
+          <span style="font-size:.8125rem;color:var(--t-muted);font-style:italic;" id="no-tags-msg">Aucun tag</span>
+          {% endfor %}
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <div style="position:relative;flex:1;">
+            <input type="text" id="tag-input" placeholder="Rechercher ou créer un tag…"
+                   autocomplete="off" class="gec-input" style="padding-right:2.5rem;font-size:.8125rem;">
+            <ul id="tag-suggestions"
+                style="position:absolute;z-index:20;left:0;right:0;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,.12);margin-top:.25rem;display:none;max-height:160px;overflow-y:auto;font-size:.8125rem;list-style:none;padding:0;"></ul>
+          </div>
+          <input type="color" id="tag-color" value="#6B7280" title="Couleur"
+                 style="height:2.125rem;width:2.5rem;border-radius:var(--r-sm);border:1px solid var(--border);padding:.125rem;cursor:pointer;background:none;">
+          <button type="button" onclick="createAndAddTag()" class="gec-btn gec-btn-primary gec-btn-sm">
+            <i class="fas fa-plus"></i> Ajouter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Échéance ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title">
+          <i class="fas fa-calendar-alt"></i> Échéance
+          {% if courrier.due_date %}
+            {% set today = now().date() if now is defined else none %}
+            {% if today and courrier.due_date < today and courrier.statut not in ['TRAITE','ARCHIVE'] %}
+            <span class="gec-badge gec-badge-red" style="margin-left:.5rem;animation:pulse 1s infinite;">
+              <i class="fas fa-exclamation-circle"></i> EN RETARD
+            </span>
+            {% endif %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="gec-card-body">
+        <p style="font-size:.875rem;color:var(--t-secondary);margin-bottom:.875rem;">
+          {% if courrier.due_date %}
+          <i class="fas fa-calendar-check" style="color:var(--primary);margin-right:.375rem;"></i>
+          <strong>{{ courrier.due_date.strftime('%d/%m/%Y') }}</strong>
+          {% else %}
+          <span style="color:var(--t-muted);font-style:italic;">Aucune échéance fixée</span>
+          {% endif %}
+        </p>
+        <form method="POST" action="{{ url_for('set_due_date', id=courrier.id) }}" style="display:flex;align-items:center;gap:.75rem;">
+          <input type="date" name="due_date"
+                 value="{{ courrier.due_date.strftime('%Y-%m-%d') if courrier.due_date else '' }}"
+                 class="gec-input" style="flex:1;font-size:.875rem;">
+          <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Enregistrer</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Pièces Jointes ── -->
+    {% set extra_attachments = courrier.attachments.all() %}
+    {% if courrier.fichier_nom or extra_attachments %}
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title">
+          <i class="fas fa-paperclip"></i> Pièces Jointes
+          <span class="gec-badge gec-badge-blue" style="margin-left:.375rem;">{{ (1 if courrier.fichier_nom else 0) + extra_attachments|length }}</span>
+        </span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.625rem;">
+
+        {% if courrier.fichier_nom %}
+        <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);">
+          <div style="flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;
+            {% if courrier.fichier_type in ['jpg','jpeg','png'] %}background:#dbeafe;{% elif courrier.fichier_type == 'pdf' %}background:#fee2e2;{% else %}background:#f3f4f6;{% endif %}">
+            {% if courrier.fichier_type in ['jpg','jpeg','png'] %}<i class="fas fa-image" style="color:#2563eb;font-size:1.25rem;"></i>
+            {% elif courrier.fichier_type == 'pdf' %}<i class="fas fa-file-pdf" style="color:#dc2626;font-size:1.25rem;"></i>
+            {% else %}<i class="fas fa-file" style="color:#6b7280;font-size:1.25rem;"></i>{% endif %}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ courrier.fichier_nom }}</p>
+            <p style="font-size:.75rem;color:var(--t-muted);">.{{ courrier.fichier_type or '?' }} — Document principal</p>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-shrink:0;">
+            <a href="{{ url_for('download_file', id=courrier.id) }}" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-download"></i> Télécharger</a>
+            <a href="{{ url_for('view_file', id=courrier.id) }}" target="_blank" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-eye"></i> Voir</a>
+          </div>
         </div>
         {% endif %}
 
-    </div>
-    
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Actions Rapides - Style Dashboard -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
-                    Actions Rapides
-                </h3>
-            </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <a href="{{ url_for('export_pdf', id=courrier.id) }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-rdc-red rounded-lg hover:bg-red-50 transition-colors group w-full">
-                        <i class="fas fa-file-pdf text-2xl text-rdc-red mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Exporter PDF</p>
-                            <p class="text-sm text-gray-500">Générer le PDF du courrier</p>
-                        </div>
-                    </a>
-                    
-                    {% if current_user.can_edit_courrier(courrier) %}
-                    <a href="{{ url_for('edit_courrier', id=courrier.id) }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-orange-500 rounded-lg hover:bg-orange-50 transition-colors group w-full">
-                        <i class="fas fa-edit text-2xl text-orange-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Modifier Courrier</p>
-                            <p class="text-sm text-gray-500">Éditer les informations</p>
-                        </div>
-                    </a>
-                    {% endif %}
-                    
-                    {% if current_user.has_permission('delete_mail') or current_user.is_super_admin() %}
-                    <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception|e }}')" 
-                            class="flex items-center p-4 border-2 border-dashed border-red-500 rounded-lg hover:bg-red-50 transition-colors group w-full text-left">
-                        <i class="fas fa-trash text-2xl text-red-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Supprimer Courrier</p>
-                            <p class="text-sm text-gray-500">Déplacer vers la corbeille</p>
-                        </div>
-                    </button>
-                    {% endif %}
-                    
-                    <!-- Forward Mail (Available to all users) -->
-                    {% if users %}
-                    <div class="border-2 border-dashed border-rdc-green rounded-lg p-4 hover:bg-green-50 transition-colors">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-share text-2xl text-rdc-green mr-3"></i>
-                            <div>
-                                <p class="font-medium text-gray-900">Transmettre le Courrier</p>
-                                <p class="text-sm text-gray-500">Envoyer à un utilisateur</p>
-                            </div>
-                        </div>
-                        <form method="POST" action="{{ url_for('forward_mail', courrier_id=courrier.id) }}" enctype="multipart/form-data" class="space-y-3">
-                            <div class="relative">
-                                <input type="text" 
-                                       id="userSearch" 
-                                       placeholder="Taper pour rechercher un utilisateur..."
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-green focus:border-rdc-green text-sm"
-                                       autocomplete="off">
-                                <div id="userDropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto hidden">
-                                    {% for user in users %}
-                                        {% if user.id != current_user.id %}
-                                        <div class="user-option px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" 
-                                             data-user-id="{{ user.id }}" 
-                                             data-user-name="{{ user.nom_complet }}">
-                                            <i class="fas fa-user mr-2 text-gray-400"></i>
-                                            {{ user.nom_complet }}
-                                        </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                                <input type="hidden" name="user_id" id="selectedUserId" required>
-                            </div>
-                            <textarea name="message" rows="2" 
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-rdc-green focus:border-rdc-green text-sm"
-                                      placeholder="Message d'accompagnement (optionnel)"></textarea>
-                            
-                            <!-- File attachment field -->
-                            <div class="relative">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-paperclip mr-1 text-gray-400"></i>
-                                    Pièce jointe (optionnel)
-                                </label>
-                                <div class="flex items-center space-x-2">
-                                    <input type="file" 
-                                           name="attachment" 
-                                           id="forwardAttachment"
-                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.tiff,.svg"
-                                           class="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-rdc-green file:text-white hover:file:bg-green-700 file:cursor-pointer">
-                                </div>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    Formats acceptés : PDF, Word (DOC/DOCX), Images (JPG, PNG, GIF, TIFF, SVG) - Max 16MB
-                                </p>
-                            </div>
-                            
-                            <button type="submit" 
-                                    class="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-green hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                                <i class="fas fa-paper-plane mr-2"></i>
-                                Transmettre
-                            </button>
-                        </form>
-                    </div>
-                    {% endif %}
-                    
-                    <a href="{{ url_for('register_mail') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group w-full">
-                        <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Nouveau Courrier</p>
-                            <p class="text-sm text-gray-500">Enregistrer un courrier</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ url_for('search') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group w-full">
-                        <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Recherche</p>
-                            <p class="text-sm text-gray-500">Recherche avancée</p>
-                        </div>
-                    </a>
-                    
-                    <a href="{{ url_for('view_mail') }}" 
-                       class="flex items-center p-4 border-2 border-dashed border-gray-400 rounded-lg hover:bg-gray-50 transition-colors group w-full">
-                        <i class="fas fa-list text-2xl text-gray-400 mr-3 group-hover:scale-110 transition-transform"></i>
-                        <div>
-                            <p class="font-medium text-gray-900">Retour à la Liste</p>
-                            <p class="text-sm text-gray-500">Voir tous les courriers</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-        
-        <!-- Statistics -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-chart-bar mr-2 text-rdc-blue"></i>
-                    Statistiques
-                </h3>
-            </div>
-            <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600">Jours depuis l'enregistrement</span>
-                    <span class="font-semibold text-rdc-blue">
-                        {{ (moment().date() - courrier.date_enregistrement.date()).days if moment else 'N/A' }}
-                    </span>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600">Pièce jointe</span>
-                    <span class="font-semibold {{ 'text-rdc-green' if courrier.fichier_nom else 'text-gray-400' }}">
-                        {{ 'Oui' if courrier.fichier_nom else 'Non' }}
-                    </span>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600">Référence externe</span>
-                    <span class="font-semibold {{ 'text-rdc-green' if courrier.numero_reference else 'text-gray-400' }}">
-                        {{ 'Oui' if courrier.numero_reference else 'Non' }}
-                    </span>
-                </div>
-            </div>
+        {% for att in extra_attachments %}
+        <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);">
+          <div style="flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;
+            {% if att.fichier_type in ['jpg','jpeg','png'] %}background:#eff6ff;{% elif att.fichier_type == 'pdf' %}background:#fee2e2;{% else %}background:#f3f4f6;{% endif %}">
+            {% if att.fichier_type in ['jpg','jpeg','png'] %}<i class="fas fa-image" style="color:#3b82f6;font-size:1.25rem;"></i>
+            {% elif att.fichier_type == 'pdf' %}<i class="fas fa-file-pdf" style="color:#ef4444;font-size:1.25rem;"></i>
+            {% else %}<i class="fas fa-file-alt" style="color:#6b7280;font-size:1.25rem;"></i>{% endif %}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ att.fichier_nom }}</p>
+            <p style="font-size:.75rem;color:var(--t-muted);">
+              .{{ att.fichier_type or '?' }}
+              {% if att.fichier_taille %}&nbsp;—&nbsp;{{ (att.fichier_taille / 1024)|round(1) }} Ko{% endif %}
+              &nbsp;—&nbsp;{{ att.uploaded_at.strftime('%d/%m/%Y %H:%M') }}
+            </p>
+          </div>
+          <a href="{{ url_for('download_attachment', attachment_id=att.id) }}" class="gec-btn gec-btn-primary gec-btn-sm" style="flex-shrink:0;"><i class="fas fa-download"></i> Télécharger</a>
         </div>
-    </div>
-</div>
+        {% endfor %}
 
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Circuit de Signature ── -->
+    <div class="gec-card" id="circuit-signature-section">
+      <div class="gec-card-header" style="cursor:pointer;user-select:none;" onclick="toggleCircuit()">
+        <span class="gec-card-title">
+          <i class="fas fa-pen-nib"></i> Circuit de Signature
+          {% set sigs = courrier.signatures.all() %}
+          {% if sigs %}
+          {% set all_signed = sigs|selectattr('statut','eq','SIGNED')|list|length == sigs|length %}
+          {% set any_rejected = sigs|selectattr('statut','eq','REJECTED')|list %}
+          <span class="gec-badge {% if any_rejected %}gec-badge-red{% elif all_signed %}gec-badge-green{% else %}gec-badge-yellow{% endif %}" style="margin-left:.5rem;">
+            {% if any_rejected %}Rejeté{% elif all_signed %}Complété{% else %}En cours ({{ sigs|selectattr('statut','eq','SIGNED')|list|length }}/{{ sigs|length }}){% endif %}
+          </span>
+          {% endif %}
+        </span>
+        <i class="fas fa-chevron-down" id="circuit-chevron" style="color:var(--t-muted);transition:transform .2s;"></i>
+      </div>
+      <div id="circuit-body" style="display:none;">
+        <div class="gec-card-body">
+
+          {% set sigs = courrier.signatures.all() %}
+          {% if sigs %}
+          <div style="position:relative;padding-left:2rem;margin-bottom:1.25rem;">
+            <!-- Vertical line -->
+            <div style="position:absolute;left:.625rem;top:.5rem;bottom:.5rem;width:2px;background:var(--border);border-radius:1px;"></div>
+            {% for s in sigs %}
+            {% set is_pending = s.statut == 'PENDING' and (loop.first or (sigs[loop.index0-1].statut == 'SIGNED')) %}
+            <div style="position:relative;margin-bottom:1.25rem;{% if loop.last %}margin-bottom:0;{% endif %}">
+              <!-- Dot -->
+              <div style="position:absolute;left:-1.625rem;top:.25rem;width:1.125rem;height:1.125rem;border-radius:50%;border:2px solid var(--card-bg);
+                {% if s.statut == 'SIGNED' %}background:#16a34a;
+                {% elif s.statut == 'REJECTED' %}background:#dc2626;
+                {% elif is_pending %}background:#d97706;
+                {% else %}background:var(--border);{% endif %}
+                display:flex;align-items:center;justify-content:center;">
+                <i class="fas {% if s.statut == 'SIGNED' %}fa-check{% elif s.statut == 'REJECTED' %}fa-times{% elif is_pending %}fa-pen{% else %}fa-clock{% endif %}"
+                   style="color:white;font-size:.4375rem;"></i>
+              </div>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+                <div>
+                  <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);">Étape {{ s.ordre }} — {{ s.signataire.nom_complet }}</p>
+                  {% if s.signed_at %}
+                  <p style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;"><i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ s.signed_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                  {% endif %}
+                  {% if s.commentaire %}
+                  <p style="font-size:.75rem;color:var(--t-secondary);margin-top:.25rem;font-style:italic;">"{{ s.commentaire }}"</p>
+                  {% endif %}
+                </div>
+                <span class="gec-badge {% if s.statut == 'SIGNED' %}gec-badge-green{% elif s.statut == 'REJECTED' %}gec-badge-red{% elif is_pending %}gec-badge-yellow{% else %}gec-badge-gray{% endif %}" style="flex-shrink:0;">
+                  {% if s.statut == 'SIGNED' %}Signé
+                  {% elif s.statut == 'REJECTED' %}Rejeté
+                  {% elif s.statut == 'PENDING' %}En attente
+                  {% else %}{{ s.statut }}{% endif %}
+                </span>
+              </div>
+              {% if s.signataire_id == current_user.id and s.statut == 'PENDING' and (loop.first or sigs[loop.index0-1].statut == 'SIGNED') %}
+              <div id="sig-action-{{ s.id }}" style="margin-top:.75rem;display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;">
+                <textarea id="sig-comment-{{ s.id }}" rows="2" placeholder="Commentaire (optionnel)…"
+                          class="gec-textarea" style="flex:1;min-width:200px;font-size:.8125rem;resize:none;"></textarea>
+                <div style="display:flex;flex-direction:column;gap:.375rem;">
+                  <button onclick="signatureAction({{ s.id }}, 'SIGNED')" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-check"></i> Signer</button>
+                  <button onclick="signatureAction({{ s.id }}, 'REJECTED')" class="gec-btn gec-btn-danger gec-btn-sm"><i class="fas fa-times"></i> Rejeter</button>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="gec-empty" style="padding:1.5rem;margin-bottom:1rem;">
+            <i class="fas fa-pen-nib" style="font-size:2rem;opacity:.3;display:block;margin-bottom:.5rem;"></i>
+            Aucun circuit de signature initié.
+          </div>
+          {% endif %}
+
+          {% if current_user.role in ['admin', 'super_admin'] %}
+          <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--t-secondary);margin-bottom:.75rem;">
+              <i class="fas fa-plus-circle" style="color:var(--primary);margin-right:.375rem;"></i>
+              {% if sigs %}Réinitialiser le circuit{% else %}Initier un circuit{% endif %}
+            </p>
+            <div id="signataires-list" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem;"></div>
+            <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+              <button type="button" onclick="addSignataire()" class="gec-btn gec-btn-secondary gec-btn-sm">
+                <i class="fas fa-user-plus"></i> Ajouter un signataire
+              </button>
+              <button type="button" onclick="submitCircuit({{ courrier.id }})" class="gec-btn gec-btn-primary gec-btn-sm">
+                <i class="fas fa-paper-plane"></i> Lancer le circuit
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Timeline ── -->
+    <div class="gec-card">
+      <div class="gec-card-header" style="cursor:pointer;user-select:none;" onclick="toggleTimeline()">
+        <span class="gec-card-title"><i class="fas fa-history"></i> Historique &amp; Timeline</span>
+        <i class="fas fa-chevron-down" id="timeline-chevron" style="color:var(--t-muted);transition:transform .2s;"></i>
+      </div>
+      <div id="timeline-body" style="display:none;">
+        <div class="gec-card-body">
+          <div id="timeline-loading" style="text-align:center;padding:2rem;color:var(--t-muted);font-size:.875rem;">
+            <i class="fas fa-spinner fa-spin" style="margin-right:.5rem;"></i>Chargement…
+          </div>
+          <div id="timeline-list" style="position:relative;display:none;">
+            <div style="position:absolute;left:1.25rem;top:.5rem;bottom:.5rem;width:2px;background:var(--border);border-radius:1px;"></div>
+            <div id="timeline-events" style="display:flex;flex-direction:column;gap:1rem;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Commentaires ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-comments"></i> Commentaires et Annotations</span>
+      </div>
+
+      {% if current_user.can_access_courrier(courrier) %}
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--body-bg);">
+        <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}">
+          <div class="gec-form-row gec-form-row-2" style="margin-bottom:.75rem;">
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label" for="commentaire"><i class="fas fa-comment" style="color:var(--primary);margin-right:.25rem;"></i> Votre commentaire <span style="color:var(--danger);">*</span></label>
+              <textarea name="commentaire" id="commentaire" rows="3" required class="gec-textarea"
+                        placeholder="Ajouter un commentaire ou une annotation…"></textarea>
+            </div>
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label" for="type_comment"><i class="fas fa-tag" style="color:var(--primary);margin-right:.25rem;"></i> Type</label>
+              <select name="type_comment" id="type_comment" class="gec-select">
+                <option value="comment">Commentaire</option>
+                <option value="annotation">Annotation</option>
+                <option value="instruction">Instruction</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-plus"></i> Ajouter le Commentaire</button>
+        </form>
+      </div>
+      {% endif %}
+
+      {% if comments %}
+      <div style="display:flex;flex-direction:column;divide-y:var(--border);">
+        {% for comment in comments %}
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:flex-start;gap:.875rem;">
+            <div style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;">
+              <span style="color:white;font-weight:700;font-size:.875rem;">{{ comment.user.nom_complet[:2].upper() }}</span>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem;">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <span style="font-weight:600;color:var(--t-primary);font-size:.9375rem;">{{ comment.user.nom_complet }}</span>
+                  <span class="gec-badge {% if comment.type_comment == 'comment' %}gec-badge-blue{% elif comment.type_comment == 'annotation' %}gec-badge-green{% elif comment.type_comment == 'instruction' %}gec-badge-red{% endif %}" style="font-size:.6875rem;">
+                    {% if comment.type_comment == 'comment' %}<i class="fas fa-comment"></i> Commentaire
+                    {% elif comment.type_comment == 'annotation' %}<i class="fas fa-sticky-note"></i> Annotation
+                    {% elif comment.type_comment == 'instruction' %}<i class="fas fa-exclamation-triangle"></i> Instruction{% endif %}
+                  </span>
+                </div>
+                <span style="font-size:.75rem;color:var(--t-muted);">
+                  <i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ comment.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                  {% if comment.date_modification %}
+                  <em style="font-size:.6875rem;margin-left:.375rem;">(modifié le {{ comment.date_modification.strftime('%d/%m/%Y') }})</em>
+                  {% endif %}
+                </span>
+              </div>
+              <p style="font-size:.875rem;color:var(--t-secondary);line-height:1.6;">{{ comment.commentaire }}</p>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="gec-empty" style="padding:2rem;">
+        <i class="fas fa-comment-slash" style="font-size:2.5rem;opacity:.25;display:block;margin-bottom:.75rem;"></i>
+        Aucun commentaire pour ce courrier.
+        {% if current_user.can_access_courrier(courrier) %}
+        <p style="font-size:.8125rem;margin-top:.375rem;">Soyez le premier à ajouter un commentaire.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- ── Historique des Transmissions ── -->
+    {% if forwards %}
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-share-alt"></i> Historique des Transmissions</span>
+        <span class="gec-badge gec-badge-blue">{{ forwards|length }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;">
+        {% for forward in forwards %}
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);{% if loop.last %}border-bottom:none;{% endif %}">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap;">
+            <i class="fas fa-share" style="color:var(--primary);"></i>
+            <span style="font-weight:600;color:var(--t-primary);font-size:.875rem;">{{ forward.forwarded_by.nom_complet }}</span>
+            <i class="fas fa-arrow-right" style="color:var(--t-muted);font-size:.75rem;"></i>
+            <span style="font-weight:600;color:var(--t-primary);font-size:.875rem;">{{ forward.forwarded_to.nom_complet }}</span>
+          </div>
+          {% if forward.message %}
+          <p style="font-size:.8125rem;color:var(--t-secondary);margin-bottom:.5rem;padding:.625rem;background:var(--body-bg);border-radius:var(--r-sm);border:1px solid var(--border);">{{ forward.message }}</p>
+          {% endif %}
+          {% if forward.attached_file %}
+          <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:.5rem;">
+            <i class="fas fa-paperclip" style="color:var(--primary);"></i>
+            <span style="font-size:.8125rem;font-weight:500;color:var(--t-secondary);">Fichier joint :</span>
+            <a href="{{ url_for('download_forward_attachment', forward_id=forward.id) }}"
+               style="font-size:.8125rem;color:var(--primary);text-decoration:underline;">{{ forward.attached_file_original_name }}</a>
+            {% if forward.attached_file_size %}
+            <span style="font-size:.75rem;color:var(--t-muted);">({{ "%.1f"|format(forward.attached_file_size / 1024 / 1024) }} MB)</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-size:.75rem;color:var(--t-muted);">
+            <span><i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ forward.date_transmission.strftime('%d/%m/%Y à %H:%M') }}</span>
+            {% if forward.lu %}
+            <span style="color:var(--success);"><i class="fas fa-check-circle" style="margin-right:.25rem;"></i>Lu le {{ forward.date_lecture.strftime('%d/%m/%Y') }}</span>
+            {% else %}
+            <span style="color:var(--warning);"><i class="fas fa-circle" style="margin-right:.25rem;"></i>Non lu</span>
+            {% endif %}
+            {% if forward.email_sent %}
+            <span style="color:var(--primary);"><i class="fas fa-envelope" style="margin-right:.25rem;"></i>Email envoyé</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /main column -->
+
+  <!-- ═══════════════════════════════════════════════
+       SIDEBAR
+  ═══════════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- ── Actions Rapides ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-bolt"></i> Actions Rapides</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.625rem;">
+
+        <a href="{{ url_for('export_pdf', id=courrier.id) }}"
+           style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed #dc2626;border-radius:var(--r-md);text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='rgba(220,38,38,.06)'" onmouseout="this.style.background=''">
+          <i class="fas fa-file-pdf" style="color:#dc2626;font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Exporter PDF</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Générer le PDF du courrier</p>
+          </div>
+        </a>
+
+        {% if current_user.can_edit_courrier(courrier) %}
+        <a href="{{ url_for('edit_courrier', id=courrier.id) }}"
+           style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed #f59e0b;border-radius:var(--r-md);text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='rgba(245,158,11,.06)'" onmouseout="this.style.background=''">
+          <i class="fas fa-edit" style="color:#f59e0b;font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Modifier Courrier</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Éditer les informations</p>
+          </div>
+        </a>
+        {% endif %}
+
+        {% if current_user.has_permission('delete_mail') or current_user.is_super_admin() %}
+        <button onclick="confirmDeleteMail({{ courrier.id }}, '{{ courrier.numero_accuse_reception|e }}')"
+                style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed #ef4444;border-radius:var(--r-md);background:none;cursor:pointer;width:100%;text-align:left;transition:background .15s;"
+                onmouseover="this.style.background='rgba(239,68,68,.06)'" onmouseout="this.style.background=''">
+          <i class="fas fa-trash" style="color:#ef4444;font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Supprimer</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Déplacer vers la corbeille</p>
+          </div>
+        </button>
+        {% endif %}
+
+        <a href="{{ url_for('register_mail') }}"
+           style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed var(--primary);border-radius:var(--r-md);text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='rgba(var(--primary-rgb),.06)'" onmouseout="this.style.background=''">
+          <i class="fas fa-plus-circle" style="color:var(--primary);font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Nouveau Courrier</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Enregistrer un courrier</p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('search') }}"
+           style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed #eab308;border-radius:var(--r-md);text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='rgba(234,179,8,.06)'" onmouseout="this.style.background=''">
+          <i class="fas fa-search" style="color:#eab308;font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Recherche</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Recherche avancée</p>
+          </div>
+        </a>
+
+        <a href="{{ url_for('view_mail') }}"
+           style="display:flex;align-items:center;gap:.875rem;padding:.875rem;border:1.5px dashed var(--border);border-radius:var(--r-md);text-decoration:none;transition:background .15s;"
+           onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background=''">
+          <i class="fas fa-list" style="color:var(--t-muted);font-size:1.375rem;flex-shrink:0;"></i>
+          <div>
+            <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Retour à la Liste</p>
+            <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Voir tous les courriers</p>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- ── Transmettre ── -->
+    {% if users %}
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-share"></i> Transmettre</span>
+      </div>
+      <div class="gec-card-body">
+        <form method="POST" action="{{ url_for('forward_mail', courrier_id=courrier.id) }}" enctype="multipart/form-data"
+              style="display:flex;flex-direction:column;gap:.75rem;">
+
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label">Destinataire</label>
+            <div style="position:relative;">
+              <input type="text" id="userSearch" placeholder="Rechercher un utilisateur…"
+                     class="gec-input" autocomplete="off" style="font-size:.8125rem;">
+              <div id="userDropdown"
+                   style="position:absolute;z-index:30;left:0;right:0;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,.12);margin-top:.25rem;max-height:12rem;overflow-y:auto;display:none;">
+                {% for user in users %}
+                  {% if user.id != current_user.id %}
+                  <div class="user-option"
+                       data-user-id="{{ user.id }}" data-user-name="{{ user.nom_complet }}"
+                       style="padding:.625rem .875rem;cursor:pointer;font-size:.8125rem;color:var(--t-secondary);"
+                       onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background=''">
+                    <i class="fas fa-user" style="color:var(--t-muted);margin-right:.375rem;"></i>{{ user.nom_complet }}
+                  </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <input type="hidden" name="user_id" id="selectedUserId" required>
+            </div>
+          </div>
+
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label">Message (optionnel)</label>
+            <textarea name="message" rows="2" class="gec-textarea"
+                      placeholder="Message d'accompagnement…" style="font-size:.8125rem;resize:none;"></textarea>
+          </div>
+
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label"><i class="fas fa-paperclip" style="color:var(--t-muted);margin-right:.25rem;"></i> Pièce jointe (optionnel)</label>
+            <input type="file" name="attachment" id="forwardAttachment"
+                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.tiff,.svg"
+                   class="gec-input" style="font-size:.75rem;padding:.5rem;">
+            <p class="gec-form-hint">PDF, Word, Images — Max 16 MB</p>
+          </div>
+
+          <button type="submit" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;">
+            <i class="fas fa-paper-plane"></i> Transmettre
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Statistiques ── -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-chart-bar"></i> Statistiques</span>
+      </div>
+      <div class="gec-card-body">
+        <div class="gec-info-list">
+          <div class="gec-info-row">
+            <span class="gec-info-key">Jours depuis l'enregistrement</span>
+            <span class="gec-info-val" id="days-since-reg" style="font-weight:700;color:var(--primary);">—</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key">Pièce jointe principale</span>
+            <span class="gec-info-val">
+              {% if courrier.fichier_nom %}
+              <span class="gec-badge gec-badge-green">Oui</span>
+              {% else %}
+              <span class="gec-badge gec-badge-gray">Non</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key">Référence externe</span>
+            <span class="gec-info-val">
+              {% if courrier.numero_reference %}
+              <span class="gec-badge gec-badge-green">Oui</span>
+              {% else %}
+              <span class="gec-badge gec-badge-gray">Non</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key">Commentaires</span>
+            <span class="gec-info-val" style="font-weight:600;color:var(--t-primary);">{{ comments|length if comments else 0 }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key">Transmissions</span>
+            <span class="gec-info-val" style="font-weight:600;color:var(--t-primary);">{{ forwards|length if forwards else 0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /gec-two-col -->
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Calculate days since registration
-document.addEventListener('DOMContentLoaded', function() {
-    const registrationDate = new Date('{{ courrier.date_enregistrement.isoformat() }}');
-    const today = new Date();
-    const diffTime = Math.abs(today - registrationDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Update the days display if element exists
-    const daysElement = document.querySelector('[data-days-since]');
-    if (daysElement) {
-        daysElement.textContent = diffDays;
-    }
-});
+// ── Days since registration ────────────────────────────────────────────────────
+(function () {
+  const reg = new Date('{{ courrier.date_enregistrement.isoformat() }}');
+  const diff = Math.ceil((Date.now() - reg) / 86400000);
+  const el = document.getElementById('days-since-reg');
+  if (el) el.textContent = diff + ' j';
+})();
 
-// Toggle status form
+// ── Status form toggle ─────────────────────────────────────────────────────────
 function toggleStatusForm() {
-    const form = document.getElementById('statusForm');
-    form.classList.toggle('hidden');
+  const form = document.getElementById('statusForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
 
-// Function to confirm deletion
+// ── Delete confirmation ────────────────────────────────────────────────────────
 function confirmDeleteMail(id, numero) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/delete_courrier/${id}`;
-        document.body.appendChild(form);
-        form.submit();
-    }
+  if (confirm(`Êtes-vous sûr de vouloir supprimer le courrier ${numero} ?\n\nCette action déplacera le courrier dans la corbeille.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/delete_courrier/${id}`;
+    document.body.appendChild(form);
+    form.submit();
+  }
 }
 
-// User search functionality for transmission
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('userSearch');
-    const dropdown = document.getElementById('userDropdown');
-    const hiddenInput = document.getElementById('selectedUserId');
-    const userOptions = document.querySelectorAll('.user-option');
+// ── User search for transmission ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  const searchInput = document.getElementById('userSearch');
+  const dropdown    = document.getElementById('userDropdown');
+  const hiddenInput = document.getElementById('selectedUserId');
+  const userOptions = document.querySelectorAll('.user-option');
 
-    if (!searchInput) return; // Exit if elements don't exist
+  if (!searchInput) return;
 
-    // Show dropdown when clicking on input
-    searchInput.addEventListener('focus', function() {
-        dropdown.classList.remove('hidden');
+  searchInput.addEventListener('focus', function () { dropdown.style.display = 'block'; });
+  document.addEventListener('click', function (e) {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  searchInput.addEventListener('input', function () {
+    const term = this.value.toLowerCase();
+    let hasVisible = false;
+    userOptions.forEach(function (opt) {
+      const match = opt.getAttribute('data-user-name').toLowerCase().includes(term);
+      opt.style.display = match ? 'block' : 'none';
+      if (match) hasVisible = true;
     });
+    dropdown.style.display = (hasVisible || term.length === 0) ? 'block' : 'none';
+    if (this.value === '') hiddenInput.value = '';
+  });
 
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
+  userOptions.forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      searchInput.value = this.getAttribute('data-user-name');
+      hiddenInput.value = this.getAttribute('data-user-id');
+      dropdown.style.display = 'none';
+      searchInput.style.borderColor = 'var(--success)';
+      setTimeout(() => { searchInput.style.borderColor = ''; }, 2000);
     });
-
-    // Filter users based on search input
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        let hasVisibleOptions = false;
-
-        userOptions.forEach(function(option) {
-            const userName = option.getAttribute('data-user-name').toLowerCase();
-            if (userName.includes(searchTerm)) {
-                option.style.display = 'block';
-                hasVisibleOptions = true;
-            } else {
-                option.style.display = 'none';
-            }
-        });
-
-        // Show dropdown if there are visible options and input is focused
-        if (hasVisibleOptions && searchTerm.length > 0) {
-            dropdown.classList.remove('hidden');
-        } else if (searchTerm.length === 0) {
-            dropdown.classList.remove('hidden');
-        } else {
-            dropdown.classList.add('hidden');
-        }
-    });
-
-    // Handle user selection
-    userOptions.forEach(function(option) {
-        option.addEventListener('click', function() {
-            const userId = this.getAttribute('data-user-id');
-            const userName = this.getAttribute('data-user-name');
-            
-            searchInput.value = userName;
-            hiddenInput.value = userId;
-            dropdown.classList.add('hidden');
-            
-            // Add visual feedback
-            searchInput.classList.add('bg-green-50', 'border-green-300');
-            setTimeout(() => {
-                searchInput.classList.remove('bg-green-50', 'border-green-300');
-            }, 2000);
-        });
-    });
-
-    // Clear selection when input is cleared
-    searchInput.addEventListener('input', function() {
-        if (this.value === '') {
-            hiddenInput.value = '';
-            searchInput.classList.remove('bg-green-50', 'border-green-300');
-        }
-    });
+  });
 });
-</script>
 
-<script>
-// ── Tags ─────────────────────────────────────────────────────────────────────
+// ── Tags ──────────────────────────────────────────────────────────────────────
 var _currentTagIds = [
-    {% for ct in courrier.tags %}{{ ct.tag.id }}{% if not loop.last %},{% endif %}{% endfor %}
+  {% for ct in courrier.tags %}{{ ct.tag.id }}{% if not loop.last %},{% endif %}{% endfor %}
 ];
 const _courrierTagsUrl = '{{ url_for("api_courrier_update_tags", id=courrier.id) }}';
-const _tagsApiUrl = '{{ url_for("api_tags_list") }}';
-const _tagsCreateUrl = '{{ url_for("api_tag_create") }}';
-const _csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const _tagsApiUrl     = '{{ url_for("api_tags_list") }}';
+const _tagsCreateUrl  = '{{ url_for("api_tag_create") }}';
+const _csrfToken      = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 function removeTag(tagId) {
-    _currentTagIds = _currentTagIds.filter(id => id !== tagId);
-    _syncTags();
-    document.querySelector(`[data-id="${tagId}"]`)?.remove();
+  _currentTagIds = _currentTagIds.filter(id => id !== tagId);
+  _syncTags();
+  document.querySelector(`[data-id="${tagId}"]`)?.remove();
+  if (!_currentTagIds.length) {
+    const list = document.getElementById('tag-list');
+    if (list && !list.querySelector('#no-tags-msg')) {
+      list.insertAdjacentHTML('beforeend', '<span style="font-size:.8125rem;color:var(--t-muted);font-style:italic;" id="no-tags-msg">Aucun tag</span>');
+    }
+  }
 }
 
 function _syncTags() {
-    fetch(_courrierTagsUrl, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRFToken': _csrfToken},
-        body: JSON.stringify({tag_ids: _currentTagIds})
-    });
-    const nm = document.getElementById('no-tags-msg');
-    if (nm) nm.style.display = _currentTagIds.length ? 'none' : '';
+  fetch(_courrierTagsUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+    body: JSON.stringify({ tag_ids: _currentTagIds })
+  });
 }
 
 function _renderTag(id, nom, couleur) {
-    if (_currentTagIds.includes(id)) return;
-    _currentTagIds.push(id);
-    const list = document.getElementById('tag-list');
-    const nm = document.getElementById('no-tags-msg');
-    if (nm) nm.style.display = 'none';
-    list.insertAdjacentHTML('beforeend', `
-        <span class="tag-badge inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white"
-              data-id="${id}" style="background-color:${couleur};">
-            ${nom}
-            <button type="button" class="ml-1.5 hover:opacity-70" onclick="removeTag(${id})">
-                <i class="fas fa-times text-xs"></i>
-            </button>
-        </span>`);
-    _syncTags();
+  if (_currentTagIds.includes(id)) return;
+  _currentTagIds.push(id);
+  const list = document.getElementById('tag-list');
+  const nm   = document.getElementById('no-tags-msg');
+  if (nm) nm.remove();
+  list.insertAdjacentHTML('beforeend', `
+    <span class="tag-badge" data-id="${id}"
+          style="display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .625rem;border-radius:999px;font-size:.75rem;font-weight:600;color:white;background-color:${couleur};">
+      ${nom}
+      <button type="button" onclick="removeTag(${id})"
+              style="background:none;border:none;color:inherit;cursor:pointer;padding:0;line-height:1;opacity:.8;"
+              onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.8'">
+        <i class="fas fa-times" style="font-size:.625rem;"></i>
+      </button>
+    </span>`);
+  _syncTags();
 }
 
 async function createAndAddTag() {
-    const inp = document.getElementById('tag-input');
-    const nom = inp.value.trim();
-    if (!nom) return;
-    const couleur = document.getElementById('tag-color').value;
-    const resp = await fetch(_tagsCreateUrl, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRFToken': _csrfToken},
-        body: JSON.stringify({nom, couleur})
-    });
-    if (resp.ok) {
-        const t = await resp.json();
-        _renderTag(t.id, t.nom, t.couleur);
-        inp.value = '';
-        document.getElementById('tag-suggestions').classList.add('hidden');
-    }
+  const inp  = document.getElementById('tag-input');
+  const nom  = inp.value.trim();
+  if (!nom) return;
+  const couleur = document.getElementById('tag-color').value;
+  const resp = await fetch(_tagsCreateUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+    body: JSON.stringify({ nom, couleur })
+  });
+  if (resp.ok) {
+    const t = await resp.json();
+    _renderTag(t.id, t.nom, t.couleur);
+    inp.value = '';
+    document.getElementById('tag-suggestions').style.display = 'none';
+  }
 }
 
-// Autocomplete
-document.getElementById('tag-input')?.addEventListener('input', async function() {
-    const q = this.value.trim();
-    const sug = document.getElementById('tag-suggestions');
-    if (q.length < 1) { sug.classList.add('hidden'); return; }
-    const data = await (await fetch(`${_tagsApiUrl}?q=${encodeURIComponent(q)}`)).json();
-    sug.innerHTML = '';
-    if (!data.length) { sug.classList.add('hidden'); return; }
-    data.forEach(t => {
-        const li = document.createElement('li');
-        li.className = 'px-3 py-2 cursor-pointer hover:bg-gray-50 flex items-center gap-2';
-        li.innerHTML = `<span class="inline-block w-3 h-3 rounded-full" style="background:${t.couleur}"></span>${t.nom}`;
-        li.onclick = () => { _renderTag(t.id, t.nom, t.couleur); document.getElementById('tag-input').value=''; sug.classList.add('hidden'); };
-        sug.appendChild(li);
-    });
-    sug.classList.remove('hidden');
+document.getElementById('tag-input')?.addEventListener('input', async function () {
+  const q   = this.value.trim();
+  const sug = document.getElementById('tag-suggestions');
+  if (q.length < 1) { sug.style.display = 'none'; return; }
+  const data = await (await fetch(`${_tagsApiUrl}?q=${encodeURIComponent(q)}`)).json();
+  sug.innerHTML = '';
+  if (!data.length) { sug.style.display = 'none'; return; }
+  data.forEach(t => {
+    const li = document.createElement('li');
+    li.style.cssText = 'padding:.5rem .875rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;font-size:.8125rem;color:var(--t-secondary);list-style:none;';
+    li.onmouseover = () => li.style.background = 'var(--body-bg)';
+    li.onmouseout  = () => li.style.background = '';
+    li.innerHTML   = `<span style="display:inline-block;width:.75rem;height:.75rem;border-radius:50%;background:${t.couleur};flex-shrink:0;"></span>${t.nom}`;
+    li.onclick     = () => { _renderTag(t.id, t.nom, t.couleur); document.getElementById('tag-input').value = ''; sug.style.display = 'none'; };
+    sug.appendChild(li);
+  });
+  sug.style.display = 'block';
 });
 document.addEventListener('click', e => {
-    if (!e.target.closest('#tag-input') && !e.target.closest('#tag-suggestions'))
-        document.getElementById('tag-suggestions')?.classList.add('hidden');
+  if (!e.target.closest('#tag-input') && !e.target.closest('#tag-suggestions'))
+    document.getElementById('tag-suggestions') && (document.getElementById('tag-suggestions').style.display = 'none');
 });
 
-// ── Timeline ─────────────────────────────────────────────────────────────────
+// ── Timeline ──────────────────────────────────────────────────────────────────
 var _timelineLoaded = false;
 const _colorMap = {
-    green:  'bg-green-100 text-green-700 border-green-200',
-    blue:   'bg-blue-100 text-blue-700 border-blue-200',
-    purple: 'bg-purple-100 text-purple-700 border-purple-200',
-    yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  green:  'background:#d1fae5;color:#065f46;border-color:#a7f3d0;',
+  blue:   'background:#dbeafe;color:#1e40af;border-color:#93c5fd;',
+  purple: 'background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;',
+  yellow: 'background:#fef3c7;color:#92400e;border-color:#fcd34d;',
 };
 const _dotMap = {
-    green: 'bg-green-500', blue: 'bg-blue-500',
-    purple: 'bg-purple-500', yellow: 'bg-yellow-400',
+  green: '#16a34a', blue: '#2563eb', purple: '#7c3aed', yellow: '#d97706',
 };
 
 function toggleTimeline() {
-    const body = document.getElementById('timeline-body');
-    const chevron = document.getElementById('timeline-chevron');
-    const hidden = body.classList.toggle('hidden');
-    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
-    if (!hidden && !_timelineLoaded) loadTimeline();
+  const body    = document.getElementById('timeline-body');
+  const chevron = document.getElementById('timeline-chevron');
+  const isHidden = body.style.display === 'none' || body.style.display === '';
+  body.style.display = isHidden ? 'block' : 'none';
+  chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+  if (isHidden && !_timelineLoaded) loadTimeline();
 }
 
 function loadTimeline() {
-    _timelineLoaded = true;
-    fetch('{{ url_for("courrier_timeline", id=courrier.id) }}')
-        .then(r => r.json())
-        .then(events => {
-            document.getElementById('timeline-loading').classList.add('hidden');
-            const list = document.getElementById('timeline-list');
-            const container = document.getElementById('timeline-events');
-            container.innerHTML = '';
-            if (!events.length) {
-                container.innerHTML = '<p class="pl-12 text-gray-400 text-sm">Aucun événement enregistré.</p>';
-            } else {
-                events.forEach(ev => {
-                    const colorCls = _colorMap[ev.color] || _colorMap.blue;
-                    const dotCls  = _dotMap[ev.color]  || _dotMap.blue;
-                    container.insertAdjacentHTML('beforeend', `
-                        <div class="flex items-start space-x-4 relative pl-12">
-                            <div class="absolute left-3.5 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white ${dotCls} shadow"></div>
-                            <div class="flex-1 rounded-lg border p-3 ${colorCls}">
-                                <div class="flex items-center justify-between flex-wrap gap-1">
-                                    <span class="font-medium text-sm flex items-center gap-1.5">
-                                        <i class="fas ${ev.icon}"></i>${ev.title}
-                                    </span>
-                                    <span class="text-xs opacity-75">${ev.date}</span>
-                                </div>
-                                ${ev.detail ? `<p class="text-xs mt-1 opacity-80">${ev.detail}</p>` : ''}
-                                <p class="text-xs mt-0.5 opacity-60"><i class="fas fa-user mr-1"></i>${ev.user}</p>
-                            </div>
-                        </div>`);
-                });
-            }
-            list.classList.remove('hidden');
-        })
-        .catch(() => {
-            document.getElementById('timeline-loading').innerHTML =
-                '<span class="text-red-400 text-sm"><i class="fas fa-exclamation-circle mr-1"></i>Erreur lors du chargement.</span>';
+  _timelineLoaded = true;
+  fetch('{{ url_for("courrier_timeline", id=courrier.id) }}')
+    .then(r => r.json())
+    .then(events => {
+      document.getElementById('timeline-loading').style.display = 'none';
+      const list      = document.getElementById('timeline-list');
+      const container = document.getElementById('timeline-events');
+      container.innerHTML = '';
+      if (!events.length) {
+        container.innerHTML = '<p style="padding-left:3rem;color:var(--t-muted);font-size:.875rem;">Aucun événement enregistré.</p>';
+      } else {
+        events.forEach(ev => {
+          const style = _colorMap[ev.color] || _colorMap.blue;
+          const dot   = _dotMap[ev.color]   || _dotMap.blue;
+          container.insertAdjacentHTML('beforeend', `
+            <div style="display:flex;align-items:flex-start;gap:1rem;position:relative;padding-left:3rem;">
+              <div style="position:absolute;left:.875rem;transform:translateX(-50%);width:1rem;height:1rem;border-radius:50%;background:${dot};border:2px solid var(--card-bg);box-shadow:0 0 0 2px ${dot};flex-shrink:0;margin-top:.25rem;"></div>
+              <div style="flex:1;border-radius:var(--r-md);border:1px solid;padding:.75rem;${style}">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.25rem;margin-bottom:.25rem;">
+                  <span style="font-weight:600;font-size:.875rem;display:flex;align-items:center;gap:.375rem;">
+                    <i class="fas ${ev.icon}"></i>${ev.title}
+                  </span>
+                  <span style="font-size:.75rem;opacity:.75;">${ev.date}</span>
+                </div>
+                ${ev.detail ? `<p style="font-size:.75rem;margin:.25rem 0 0;opacity:.8;">${ev.detail}</p>` : ''}
+                <p style="font-size:.75rem;margin:.25rem 0 0;opacity:.6;"><i class="fas fa-user" style="margin-right:.25rem;"></i>${ev.user}</p>
+              </div>
+            </div>`);
         });
+      }
+      list.style.display = 'flex';
+      list.style.flexDirection = 'column';
+      list.style.gap = '1rem';
+    })
+    .catch(() => {
+      document.getElementById('timeline-loading').innerHTML =
+        '<span style="color:var(--danger);font-size:.875rem;"><i class="fas fa-exclamation-circle" style="margin-right:.375rem;"></i>Erreur lors du chargement.</span>';
+    });
 }
 
 // ── Circuit de Signature ──────────────────────────────────────────────────────
-const _circuitUrl   = '{{ url_for("circuit_signature", id=courrier.id) }}';
+const _circuitUrl    = '{{ url_for("circuit_signature", id=courrier.id) }}';
 const _sigActionBase = '/api/signature/';
-let _signataires = [];
+let _signataires     = [];
 
 function toggleCircuit() {
-    const body    = document.getElementById('circuit-body');
-    const chevron = document.getElementById('circuit-chevron');
-    const hidden  = body.classList.toggle('hidden');
-    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+  const body    = document.getElementById('circuit-body');
+  const chevron = document.getElementById('circuit-chevron');
+  const isHidden = body.style.display === 'none' || body.style.display === '';
+  body.style.display = isHidden ? 'block' : 'none';
+  chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
 }
 
-// Ajouter un sélecteur de signataire
 async function addSignataire() {
-    const list = document.getElementById('signataires-list');
-    const idx  = list.children.length;
-
-    // Lazy-load des utilisateurs
-    if (!_signataires.length) {
-        const r = await fetch('/api/users_list');
-        if (r.ok) _signataires = await r.json();
-    }
-
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-2';
-    row.innerHTML = `
-        <span class="text-xs font-bold text-gray-500 w-6">${idx + 1}.</span>
-        <select class="sig-select flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2">
-            <option value="">— Choisir un signataire —</option>
-            ${_signataires.map(u => `<option value="${u.id}">${u.nom_complet}</option>`).join('')}
-        </select>
-        <button type="button" onclick="this.closest('div').remove(); reorderSigs()"
-                class="text-red-400 hover:text-red-600 text-sm"><i class="fas fa-trash"></i></button>
-    `;
-    list.appendChild(row);
+  const list = document.getElementById('signataires-list');
+  const idx  = list.children.length;
+  if (!_signataires.length) {
+    const r = await fetch('/api/users_list');
+    if (r.ok) _signataires = await r.json();
+  }
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:.5rem;';
+  row.innerHTML = `
+    <span style="font-size:.75rem;font-weight:700;color:var(--t-muted);width:1.5rem;flex-shrink:0;">${idx + 1}.</span>
+    <select class="sig-select gec-select" style="flex:1;font-size:.8125rem;">
+      <option value="">— Choisir un signataire —</option>
+      ${_signataires.map(u => `<option value="${u.id}">${u.nom_complet}</option>`).join('')}
+    </select>
+    <button type="button" onclick="this.closest('div').remove();reorderSigs()"
+            style="background:none;border:none;cursor:pointer;color:var(--danger);padding:.25rem;">
+      <i class="fas fa-trash"></i>
+    </button>`;
+  list.appendChild(row);
 }
 
 function reorderSigs() {
-    document.querySelectorAll('#signataires-list > div').forEach((row, i) => {
-        row.querySelector('span').textContent = `${i + 1}.`;
-    });
+  document.querySelectorAll('#signataires-list > div').forEach((row, i) => {
+    row.querySelector('span').textContent = `${i + 1}.`;
+  });
 }
 
 async function submitCircuit(courrierId) {
-    const selects = document.querySelectorAll('.sig-select');
-    const ids = [];
-    for (const s of selects) {
-        if (s.value) ids.push(parseInt(s.value));
-    }
-    if (!ids.length) { alert('Ajoutez au moins un signataire.'); return; }
-
-    const r = await fetch(_circuitUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-        body: JSON.stringify({ signataires: ids })
-    });
-    const data = await r.json();
-    if (r.ok) {
-        location.reload();
-    } else {
-        alert('Erreur : ' + (data.error || 'Inconnue'));
-    }
+  const ids = [...document.querySelectorAll('.sig-select')]
+    .map(s => parseInt(s.value)).filter(Boolean);
+  if (!ids.length) { alert('Ajoutez au moins un signataire.'); return; }
+  const r = await fetch(_circuitUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+    body: JSON.stringify({ signataires: ids })
+  });
+  const data = await r.json();
+  if (r.ok) { location.reload(); }
+  else { alert('Erreur : ' + (data.error || 'Inconnue')); }
 }
 
 async function signatureAction(sigId, action) {
-    const commentaire = document.getElementById(`sig-comment-${sigId}`)?.value || '';
-    const r = await fetch(`${_sigActionBase}${sigId}/action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
-        body: JSON.stringify({ action, commentaire })
-    });
-    const data = await r.json();
-    if (r.ok) {
-        location.reload();
-    } else {
-        alert('Erreur : ' + (data.error || 'Inconnue'));
-    }
+  const commentaire = document.getElementById(`sig-comment-${sigId}`)?.value || '';
+  const r = await fetch(`${_sigActionBase}${sigId}/action`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+    body: JSON.stringify({ action, commentaire })
+  });
+  const data = await r.json();
+  if (r.ok) { location.reload(); }
+  else { alert('Erreur : ' + (data.error || 'Inconnue')); }
 }
 </script>
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+</style>
 {% endblock %}

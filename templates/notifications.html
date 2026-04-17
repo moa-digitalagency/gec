@@ -1,190 +1,95 @@
 {% extends "new_base.html" %}
-
-{% block title %}Notifications - {{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}
+{% block title %}Notifications — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <div class="bg-white shadow-rdc rounded-xl border-l-4 border-rdc-blue">
-        <div class="p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-rdc-blue rounded-lg flex items-center justify-center">
-                        <i class="fas fa-bell text-white text-xl"></i>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <h1 class="text-2xl font-bold text-gray-900">Notifications</h1>
-                    <p class="text-gray-600">Gérez vos notifications et alertes</p>
-                </div>
-            </div>
-        </div>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Notifications</span>
     </div>
+    <h1 class="gec-page-title"><i class="fas fa-bell" style="color:var(--primary);margin-right:.5rem;"></i>Notifications</h1>
+    <p class="gec-page-subtitle">Vos alertes et messages système</p>
+  </div>
+  {% if notifications.items %}
+  <form method="POST" action="{{ url_for('mark_all_notifications_read') }}">
+    <button type="submit" class="gec-btn gec-btn-secondary"><i class="fas fa-check-double"></i> Tout marquer comme lu</button>
+  </form>
+  {% endif %}
 </div>
-<!-- Notifications Content -->
-<div class="bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-list mr-2 text-rdc-blue"></i>
-                Mes Notifications
-            </h2>
-            {% if notifications.items %}
-            <div class="flex space-x-2">
-                <form method="POST" action="{{ url_for('mark_all_notifications_read') }}" class="inline">
-                    <button type="submit" 
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <i class="fas fa-check-double mr-2"></i>
-                        Tout marquer comme lu
-                    </button>
-                </form>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-        
-    {% if notifications.items %}
-    <div class="divide-y divide-gray-200">
-            {% for notification in notifications.items %}
-            <div class="p-4 hover:bg-gray-50 {% if not notification.lu %}bg-blue-50 border-l-4 border-l-blue-500{% endif %}">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center mb-2">
-                            {% if notification.type_notification == 'new_mail' %}
-                                <i class="fas fa-envelope-open text-green-500 mr-2"></i>
-                            {% elif notification.type_notification == 'mail_forwarded' %}
-                                <i class="fas fa-share text-blue-500 mr-2"></i>
-                            {% elif notification.type_notification == 'comment_added' %}
-                                <i class="fas fa-comment text-orange-500 mr-2"></i>
-                            {% else %}
-                                <i class="fas fa-bell text-gray-500 mr-2"></i>
-                            {% endif %}
-                            
-                            <h3 class="font-semibold text-gray-900 {% if not notification.lu %}font-bold{% endif %}">
-                                {{ notification.titre }}
-                            </h3>
-                            
-                            {% if not notification.lu %}
-                                <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    <i class="fas fa-circle text-blue-500 mr-1" style="font-size: 6px;"></i>
-                                    Nouveau
-                                </span>
-                            {% endif %}
-                        </div>
-                        
-                        <p class="text-gray-600 mb-2">{{ notification.message }}</p>
-                        
-                        <div class="flex items-center text-sm text-gray-500">
-                            <i class="fas fa-clock mr-1"></i>
-                            <span>{{ notification.date_creation.strftime('%d/%m/%Y à %H:%M') }}</span>
-                            
-                            {% if notification.lu and notification.date_lecture %}
-                                <span class="ml-4">
-                                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
-                                    Lu le {{ notification.date_lecture.strftime('%d/%m/%Y à %H:%M') }}
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-2 ml-4">
-                        {% if notification.courrier_id %}
-                            <a href="{{ url_for('mail_detail', id=notification.courrier_id, from_notification=1) }}" 
-                               class="inline-flex items-center px-3 py-1 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                               onclick="markAsReadOnClick({{ notification.id }})">
-                                <i class="fas fa-eye mr-1"></i>
-                                Voir le courrier
-                            </a>
-                        {% endif %}
-                        
-                        {% if not notification.lu %}
-                            <form method="POST" action="{{ url_for('mark_notification_read', notification_id=notification.id) }}" class="inline">
-                                <button type="submit" 
-                                        class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                                    <i class="fas fa-check mr-1"></i>
-                                    Marquer comme lu
-                                </button>
-                            </form>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        
-        <!-- Pagination -->
-        {% if notifications.pages > 1 %}
-        <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
-            <div class="flex items-center justify-between">
-                <div class="text-sm text-gray-700">
-                    Page {{ notifications.page }} sur {{ notifications.pages }} 
-                    ({{ notifications.total }} notification{{ 's' if notifications.total > 1 else '' }})
-                </div>
-                
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    {% if notifications.has_prev %}
-                        <a href="{{ url_for('notifications', page=notifications.prev_num) }}" 
-                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    {% endif %}
-                    
-                    {% for page_num in notifications.iter_pages() %}
-                        {% if page_num %}
-                            {% if page_num != notifications.page %}
-                                <a href="{{ url_for('notifications', page=page_num) }}" 
-                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                    {{ page_num }}
-                                </a>
-                            {% else %}
-                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-rdc-blue text-sm font-medium text-white">
-                                    {{ page_num }}
-                                </span>
-                            {% endif %}
-                        {% else %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                ...
-                            </span>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if notifications.has_next %}
-                        <a href="{{ url_for('notifications', page=notifications.next_num) }}" 
-                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    {% endif %}
-                </nav>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% else %}
-        <!-- Aucune notification -->
-        <div class="text-center py-12">
-            <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <i class="fas fa-bell-slash text-gray-400 text-2xl"></i>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune notification</h3>
-            <p class="text-gray-500">Vous n'avez pas encore de notifications.</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-function markAsReadOnClick(notificationId) {
-    // Marquer automatiquement comme lu quand on clique sur "Voir le courrier"
-    fetch(`/mark_notification_read_ajax/${notificationId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    }).catch(error => {
-        console.error('Erreur lors du marquage de la notification:', error);
-    });
-}
-</script>
+<div class="gec-card">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-list"></i> Mes notifications</span>
+    {% if notifications.total %}<span class="gec-badge gec-badge-blue">{{ notifications.total }}</span>{% endif %}
+  </div>
+
+  {% if notifications.items %}
+  <div>
+    {% for n in notifications.items %}
+    <div style="display:flex;align-items:flex-start;gap:.875rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);{% if not n.lu %}background:var(--info-light);{% endif %}transition:background .15s;">
+      <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+        {% if n.type_notification == 'new_mail' %}background:#ECFDF5;color:var(--success);
+        {% elif n.type_notification == 'mail_forwarded' %}background:var(--info-light);color:var(--primary);
+        {% elif n.type_notification == 'comment_added' %}background:#FFF7ED;color:var(--warning);
+        {% else %}background:var(--body-bg);color:var(--t-muted);{% endif %}">
+        <i class="fas {% if n.type_notification == 'new_mail' %}fa-envelope-open{% elif n.type_notification == 'mail_forwarded' %}fa-share{% elif n.type_notification == 'comment_added' %}fa-comment{% else %}fa-bell{% endif %}"></i>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
+          <span style="font-size:.9375rem;font-weight:{% if not n.lu %}700{% else %}500{% endif %};color:var(--t-primary);">{{ n.titre }}</span>
+          {% if not n.lu %}<span class="gec-badge gec-badge-blue" style="font-size:.625rem;">Nouveau</span>{% endif %}
+        </div>
+        <p style="font-size:.875rem;color:var(--t-secondary);margin-bottom:.375rem;">{{ n.message }}</p>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.75rem;color:var(--t-muted);">
+          <span><i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ n.date_creation.strftime('%d/%m/%Y à %H:%M') }}</span>
+          {% if n.courrier_id %}
+          <a href="{{ url_for('view_mail_detail', mail_id=n.courrier_id) }}" style="color:var(--primary);font-weight:500;">
+            <i class="fas fa-external-link-alt" style="margin-right:.25rem;"></i>Voir le courrier
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div style="display:flex;gap:.375rem;flex-shrink:0;">
+        {% if not n.lu %}
+        <form method="POST" action="{{ url_for('mark_notification_read', notif_id=n.id) }}" class="inline">
+          <button type="submit" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Marquer comme lu"><i class="fas fa-check"></i></button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('delete_notification', notif_id=n.id) }}" class="inline">
+          <button type="submit" class="gec-btn gec-btn-icon gec-btn-sm" style="color:var(--danger);background:none;border:none;" title="Supprimer"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if notifications.pages > 1 %}
+  <div class="gec-card-footer">
+    <div class="gec-pagination">
+      <span class="gec-pagination-info">Page {{ notifications.page }} / {{ notifications.pages }}</span>
+      <div class="gec-pagination-pages">
+        {% if notifications.has_prev %}
+        <a href="{{ url_for('notifications', page=notifications.prev_num) }}" class="gec-page-btn"><i class="fas fa-chevron-left"></i></a>
+        {% endif %}
+        {% for p in range(1, notifications.pages + 1) %}
+        <a href="{{ url_for('notifications', page=p) }}" class="gec-page-btn {% if p == notifications.page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+        {% if notifications.has_next %}
+        <a href="{{ url_for('notifications', page=notifications.next_num) }}" class="gec-page-btn"><i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="gec-empty">
+    <div class="gec-empty-icon"><i class="fas fa-bell-slash"></i></div>
+    <div class="gec-empty-title">Aucune notification</div>
+    <div class="gec-empty-desc">Vous n'avez aucune notification pour le moment.</div>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

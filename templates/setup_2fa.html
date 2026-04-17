@@ -2,84 +2,111 @@
 {% block title %}Activer la 2FA — GEC{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto px-4 py-10">
-    <div class="bg-white rounded-2xl shadow-rdc p-8">
+<div style="max-width:480px;margin:0 auto;">
 
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <i class="fas fa-lock text-3xl text-blue-600"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900">Activer la Double Authentification</h1>
-            <p class="text-sm text-gray-500 mt-2">Scannez le QR code avec Google Authenticator, Authy ou toute app TOTP compatible</p>
-        </div>
-
-        <!-- Step 1: QR Code -->
-        <div class="mb-8 text-center">
-            <p class="text-sm font-semibold text-gray-700 mb-3">
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold mr-2">1</span>
-                Scannez ce QR code
-            </p>
-            <div class="inline-block p-3 bg-white border-2 border-gray-200 rounded-xl shadow-sm">
-                <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code 2FA" class="w-48 h-48">
-            </div>
-            <details class="mt-3 text-left">
-                <summary class="text-xs text-gray-500 cursor-pointer hover:text-blue-600 text-center">
-                    Impossible de scanner ? Entrer le code manuellement
-                </summary>
-                <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p class="text-xs text-gray-600 mb-1">Secret (base32) :</p>
-                    <code class="text-sm font-mono font-bold text-gray-900 break-all">{{ secret }}</code>
-                </div>
-            </details>
-        </div>
-
-        <!-- Step 2: Verify -->
-        <div>
-            <p class="text-sm font-semibold text-gray-700 mb-3">
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold mr-2">2</span>
-                Confirmez le code affiché dans l'application
-            </p>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% for cat, msg in messages %}
-            <div class="mb-4 p-3 rounded-lg text-sm flex items-center gap-2
-                {% if cat == 'error' %}bg-red-50 border border-red-200 text-red-700
-                {% else %}bg-green-50 border border-green-200 text-green-700{% endif %}">
-                <i class="fas {% if cat == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
-                {{ msg }}
-            </div>
-            {% endfor %}
-            {% endwith %}
-
-            <form method="POST" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-5">
-                    <input type="text" name="token" inputmode="numeric" pattern="[0-9 ]{6,7}"
-                           maxlength="7" autofocus autocomplete="one-time-code"
-                           placeholder="000 000"
-                           class="w-full text-center text-2xl font-bold tracking-widest border-2 border-gray-300 rounded-xl px-4 py-3
-                                  focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
-                </div>
-                <button type="submit"
-                        class="w-full py-3 px-6 text-white font-semibold bg-green-600 hover:bg-green-700 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-shield-alt"></i>
-                    Activer la 2FA
-                </button>
-            </form>
-        </div>
-
-        <div class="mt-6 text-center">
-            <a href="{{ url_for('profile') }}" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-                <i class="fas fa-arrow-left mr-1"></i>Annuler
-            </a>
-        </div>
+  <div class="gec-page-header" style="margin-bottom:1.5rem;">
+    <div>
+      <div class="gec-breadcrumb">
+        <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+        <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+        <a href="{{ url_for('profile') }}">Mon Profil</a>
+        <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+        <span class="gec-breadcrumb-current">Activer la 2FA</span>
+      </div>
     </div>
+  </div>
+
+  <div class="gec-card">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,var(--primary),#1e3a8a);padding:1.75rem;text-align:center;border-radius:var(--card-radius) var(--card-radius) 0 0;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+        <i class="fas fa-lock" style="color:white;font-size:1.5rem;"></i>
+      </div>
+      <h1 style="font-size:1.125rem;font-weight:700;color:white;margin-bottom:.375rem;">Activer la Double Authentification</h1>
+      <p style="font-size:.8125rem;color:rgba(255,255,255,.75);">Renforcez la sécurité de votre compte avec une application TOTP</p>
+    </div>
+
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.5rem;">
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="gec-alert {% if cat == 'error' %}gec-alert-danger{% else %}gec-alert-success{% endif %}">
+        <i class="fas {% if cat == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+        <span>{{ msg }}</span>
+      </div>
+      {% endfor %}
+      {% endwith %}
+
+      <!-- Step 1 -->
+      <div>
+        <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:1rem;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-size:.75rem;font-weight:700;">1</span>
+          </div>
+          <span style="font-weight:600;color:var(--t-primary);font-size:.9375rem;">Scannez ce QR code</span>
+        </div>
+        <p style="font-size:.8125rem;color:var(--t-muted);margin-bottom:1rem;">Avec Google Authenticator, Authy ou toute app TOTP compatible</p>
+        <div style="display:flex;justify-content:center;">
+          <div style="padding:.75rem;background:white;border:2px solid var(--border);border-radius:var(--r-md);display:inline-block;">
+            <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code 2FA" style="width:176px;height:176px;display:block;">
+          </div>
+        </div>
+        <details style="margin-top:.875rem;">
+          <summary style="font-size:.8125rem;color:var(--t-muted);cursor:pointer;text-align:center;padding:.375rem;border-radius:var(--r-sm);transition:color .15s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--t-muted)'">
+            <i class="fas fa-keyboard" style="margin-right:.375rem;"></i>Impossible de scanner ? Entrer le code manuellement
+          </summary>
+          <div style="margin-top:.625rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
+            <div style="font-size:.75rem;color:var(--t-muted);margin-bottom:.375rem;">Secret (base32) :</div>
+            <code style="font-size:.875rem;font-family:monospace;font-weight:700;color:var(--t-primary);word-break:break-all;">{{ secret }}</code>
+          </div>
+        </details>
+      </div>
+
+      <!-- Divider -->
+      <div style="height:1px;background:var(--border);"></div>
+
+      <!-- Step 2 -->
+      <div>
+        <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:1rem;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-size:.75rem;font-weight:700;">2</span>
+          </div>
+          <span style="font-weight:600;color:var(--t-primary);font-size:.9375rem;">Confirmez le code affiché</span>
+        </div>
+
+        <form method="POST" autocomplete="off" style="display:flex;flex-direction:column;gap:1rem;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label" for="token"><i class="fas fa-mobile-alt" style="color:var(--primary);font-size:.75rem;"></i> Code TOTP</label>
+            <input type="text" id="token" name="token" inputmode="numeric" pattern="[0-9 ]{6,7}"
+                   maxlength="7" autofocus autocomplete="one-time-code"
+                   placeholder="000 000"
+                   class="gec-input"
+                   style="text-align:center;font-size:1.75rem;font-weight:700;letter-spacing:.375rem;font-family:monospace;height:3.25rem;">
+            <p class="gec-form-hint" style="text-align:center;">Le code se renouvelle toutes les 30 secondes</p>
+          </div>
+          <button type="submit" class="gec-btn gec-btn-primary gec-btn-lg" style="width:100%;justify-content:center;">
+            <i class="fas fa-shield-alt"></i>
+            Activer la 2FA
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <a href="{{ url_for('profile') }}" class="gec-btn gec-btn-ghost">
+      <i class="fas fa-arrow-left"></i> Annuler
+    </a>
+  </div>
+
 </div>
 
 <script>
-document.querySelector('input[name="token"]')?.addEventListener('input', function() {
-    let v = this.value.replace(/\D/g, '').slice(0, 6);
-    this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
+document.getElementById('token')?.addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 6);
+  this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
 });
 </script>
 {% endblock %}

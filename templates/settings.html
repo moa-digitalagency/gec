@@ -1,895 +1,754 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('system_settings') or 'Paramètres Système' }} - GEC{% endblock %}
+{% block title %}Configuration — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-cogs mr-3 text-rdc-blue"></i>
-        {{ t('system_settings') or 'Paramètres du Système' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('configure_system_description') or 'Configurez l\'apparence et le comportement du système GEC' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Configuration</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-cogs" style="color:var(--primary);margin-right:.5rem;"></i>Configuration du Système</h1>
+    <p class="gec-page-subtitle">Personnalisez l'identité, le comportement et les intégrations de GEC</p>
+  </div>
+  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <button type="submit" form="settings-form" class="gec-btn gec-btn-primary">
+      <i class="fas fa-save"></i> Enregistrer
+    </button>
+    <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-secondary">
+      <i class="fas fa-times"></i> Annuler
+    </a>
+  </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Settings Form -->
-    <div class="lg:col-span-2">
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-sliders-h mr-2 text-rdc-blue"></i>
-                    {{ t('general_configuration') or 'Configuration Générale' }}
-                </h2>
-            </div>
-            <div class="p-6">
-                <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data" class="space-y-6" id="settings-form">
-                    <!-- Software Name -->
-                    <div>
-                        <label for="nom_logiciel" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-tag mr-1 text-rdc-blue"></i>
-                            {{ t('software_name') or 'Nom du Logiciel' }}
-                        </label>
-                        <input type="text" 
-                               id="nom_logiciel" 
-                               name="nom_logiciel" 
-                               value="{{ parametres.nom_logiciel }}"
-                               required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="{{ t('displayed_name_interface') or 'Nom affiché dans l\'interface' }}">
-                        <p class="mt-1 text-sm text-gray-500">{{ t('name_appears_help') or 'Ce nom apparaîtra dans la barre de navigation et les documents générés' }}</p>
-                    </div>
-                    
-                    <!-- Logo Upload -->
-                    <div>
-                        <label for="logo" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-image mr-1 text-rdc-blue"></i>
-                            {{ t('organization_logo') or 'Logo de l\'Organisation' }}
-                        </label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-rdc-blue transition-colors" id="logo-upload-area">
-                            <div class="space-y-1 text-center">
-                                {% if parametres.logo_url %}
-                                <div class="mb-4" id="current-logo">
-                                    <img src="{{ url_for('uploaded_file', filename=parametres.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" alt="Logo actuel" class="h-16 w-auto mx-auto">
-                                    <p class="text-sm text-gray-500 mt-2">{{ t('current_logo') or 'Logo actuel' }}</p>
-                                </div>
-                                {% else %}
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4" id="upload-icon"></i>
-                                {% endif %}
-                                
-                                <!-- Preview area for new file -->
-                                <div id="file-preview" class="mb-4 hidden">
-                                    <img id="preview-image" src="" alt="Aperçu" class="h-16 w-auto mx-auto">
-                                    <p class="text-sm text-green-600 mt-2" id="file-name">Fichier sélectionné</p>
-                                </div>
-                                
-                                <div class="text-sm text-gray-600">
-                                    <label for="logo" class="cursor-pointer bg-rdc-blue text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors inline-block">
-                                        <i class="fas fa-upload mr-2"></i>{{ 'Changer le logo' if parametres.logo_url else 'Sélectionner un fichier' }}
-                                        <input id="logo" 
-                                               name="logo" 
-                                               type="file" 
-                                               class="hidden" 
-                                               accept=".png,.jpg,.jpeg,.svg">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-2">
-                                    PNG, JPG, JPEG, SVG jusqu'à 2MB
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Receipt Number Mode -->
-                    <div>
-                        <label for="mode_numero_accuse" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-cog mr-1 text-rdc-blue"></i>
-                            Mode de Génération du Numéro d'Accusé
-                        </label>
-                        <select id="mode_numero_accuse" 
-                                name="mode_numero_accuse"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="automatique" {% if parametres.mode_numero_accuse == 'automatique' %}selected{% endif %}>
-                                Automatique (avec format défini)
-                            </option>
-                            <option value="manuel" {% if parametres.mode_numero_accuse == 'manuel' %}selected{% endif %}>
-                                Manuel (saisie libre avec vérification d'unicité)
-                            </option>
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">
-                            En mode manuel, l'utilisateur devra saisir un numéro unique lors de l'enregistrement
-                        </p>
-                    </div>
+<div class="gec-two-col" style="--sidebar:300px;">
 
-                    <!-- Receipt Number Format (for automatic mode) -->
-                    <div id="format-field" class="{% if parametres.mode_numero_accuse == 'manuel' %}hidden{% endif %}">
-                        <label for="format_numero_accuse" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-receipt mr-1 text-rdc-blue"></i>
-                            Format du Numéro d'Accusé (Mode Automatique)
-                        </label>
-                        <input type="text" 
-                               id="format_numero_accuse" 
-                               name="format_numero_accuse" 
-                               value="{{ parametres.format_numero_accuse }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue font-mono"
-                               placeholder="GEC-{year}-{counter:05d}">
-                        <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <p class="text-sm text-gray-700 mb-2"><strong>Variables disponibles :</strong></p>
-                            <ul class="text-xs text-gray-600 space-y-1">
-                                <li><code class="bg-white px-1 rounded">{year}</code> - Année courante (ex: 2025)</li>
-                                <li><code class="bg-white px-1 rounded">{month}</code> - Mois courant (ex: 01)</li>
-                                <li><code class="bg-white px-1 rounded">{day}</code> - Jour courant (ex: 15)</li>
-                                <li><code class="bg-white px-1 rounded">{counter:05d}</code> - Compteur avec zéros (ex: 00001)</li>
-                                <li><code class="bg-white px-1 rounded">{random:4}</code> - Nombre aléatoire à 4 chiffres</li>
-                            </ul>
-                        </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-600">
-                                <strong>Aperçu :</strong> 
-                                <span id="preview-format" class="font-mono bg-gray-100 px-2 py-1 rounded">{{ format_preview }}</span>
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Organization Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-phone mr-1 text-rdc-green"></i>
-                                Téléphone
-                            </label>
-                            <input type="tel" 
-                                   id="telephone" 
-                                   name="telephone" 
-                                   value="{{ parametres.telephone or '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="+243 XX XXX XXXX">
-                        </div>
+  <!-- ── MAIN COLUMN ─────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
-                        <!-- WhatsApp Number -->
-                        <div>
-                            <label for="whatsapp_number" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fab fa-whatsapp mr-1 text-green-500"></i>
-                                Numéro WhatsApp (Support)
-                            </label>
-                            <input type="text"
-                                   id="whatsapp_number"
-                                   name="whatsapp_number"
-                                   value="{{ parametres.whatsapp_number or '243860493345' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="243860493345">
-                            <p class="mt-1 text-xs text-gray-500">Numéro pour le support sur les pages d'erreur (format sans +)</p>
-                        </div>
-                        
-                        <div>
-                            <label for="email_contact" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-envelope mr-1 text-rdc-green"></i>
-                                Email de Contact
-                            </label>
-                            <input type="email" 
-                                   id="email_contact" 
-                                   name="email_contact" 
-                                   value="{{ parametres.email_contact or '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="contact@courrier.gouv.cd">
-                        </div>
-                    </div>
-                    
-                    <!-- Address -->
-                    <div>
-                        <label for="adresse_organisme" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-map-marker-alt mr-1 text-rdc-green"></i>
-                            Adresse de l'Organisme
-                        </label>
-                        <textarea id="adresse_organisme" 
-                                  name="adresse_organisme" 
-                                  rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                  placeholder="Adresse complète de l'organisme">{{ parametres.adresse_organisme or '' }}</textarea>
-                    </div>
-                    
-                    <!-- Texte Footer -->
-                    <div>
-                        <label for="texte_footer" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-quote-left mr-1 text-rdc-green"></i>
-                            Texte du Footer
-                        </label>
-                        <textarea id="texte_footer" 
-                                  name="texte_footer" 
-                                  rows="2"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                  placeholder="Texte personnalisé pour le footer">{{ parametres.texte_footer or 'Système de Gestion Électronique du Courrier' }}</textarea>
-                        <p class="text-sm text-gray-500 mt-1">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Le copyright est fixe et protégé par cryptage.
-                        </p>
-                    </div>
-                    
-                    <!-- Appellation {{ get_appellation_entites() }} -->
-                    <div>
-                        <label for="appellation_departement" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-building mr-1 text-rdc-blue"></i>
-                            Appellation des Entités Organisationnelles
-                        </label>
-                        <select id="appellation_departement" 
-                                name="appellation_departement" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="Départements" {% if parametres.appellation_departement == 'Départements' %}selected{% endif %}>Départements</option>
-                            <option value="Divisions" {% if parametres.appellation_departement == 'Divisions' %}selected{% endif %}>Divisions</option>
-                            <option value="Services" {% if parametres.appellation_departement == 'Services' %}selected{% endif %}>Services</option>
-                            <option value="Directions" {% if parametres.appellation_departement == 'Directions' %}selected{% endif %}>Directions</option>
-                            <option value="Bureaux" {% if parametres.appellation_departement == 'Bureaux' %}selected{% endif %}>Bureaux</option>
-                            <option value="Unités" {% if parametres.appellation_departement == 'Unités' %}selected{% endif %}>Unités</option>
-                        </select>
-                        <p class="text-sm text-gray-500 mt-1">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Choisissez le terme utilisé dans votre organisation pour désigner les entités organisationnelles.
-                        </p>
-                    </div>
-                    
-                    <!-- Titre du responsable de structure -->
-                    <div>
-                        <label for="titre_responsable_structure" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user-tie mr-1 text-rdc-blue"></i>
-                            Titre du Responsable de Structure
-                        </label>
-                        <select id="titre_responsable_structure" 
-                                name="titre_responsable_structure" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="Secrétaire Général" {% if parametres.titre_responsable_structure == 'Secrétaire Général' %}selected{% endif %}>Secrétaire Général</option>
-                            <option value="Directeur Général" {% if parametres.titre_responsable_structure == 'Directeur Général' %}selected{% endif %}>Directeur Général</option>
-                            <option value="Directeur" {% if parametres.titre_responsable_structure == 'Directeur' %}selected{% endif %}>Directeur</option>
-                            <option value="Chef de Cabinet" {% if parametres.titre_responsable_structure == 'Chef de Cabinet' %}selected{% endif %}>Chef de Cabinet</option>
-                            <option value="Président" {% if parametres.titre_responsable_structure == 'Président' %}selected{% endif %}>Président</option>
-                            <option value="Recteur" {% if parametres.titre_responsable_structure == 'Recteur' %}selected{% endif %}>Recteur</option>
-                            <option value="Gouverneur" {% if parametres.titre_responsable_structure == 'Gouverneur' %}selected{% endif %}>Gouverneur</option>
-                            <option value="Ministre" {% if parametres.titre_responsable_structure == 'Ministre' %}selected{% endif %}>Ministre</option>
-                        </select>
-                        <p class="text-sm text-gray-500 mt-1">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            Titre affiché pour le responsable dans la fonctionnalité "en copie" et les documents PDF.
-                        </p>
-                    </div>
-                    
-                    <!-- Paramètres PDF -->
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">
-                            <i class="fas fa-file-pdf mr-2 text-red-500"></i>
-                            Paramètres PDF
-                        </h3>
-                        
-                        <!-- Logo PDF -->
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-image mr-1 text-rdc-blue"></i>
-                                Logo pour PDF
-                            </label>
-                            <div class="border-2 border-gray-300 border-dashed rounded-lg p-6 text-center hover:border-rdc-blue transition-colors">
-                                {% if parametres.logo_pdf %}
-                                <div class="mb-4">
-                                    <img src="{{ parametres.logo_pdf }}" alt="Logo PDF" class="mx-auto h-16 object-contain">
-                                </div>
-                                {% else %}
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                                {% endif %}
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="logo_pdf" class="relative cursor-pointer bg-white rounded-md font-medium text-rdc-blue hover:text-rdc-green focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-rdc-blue">
-                                        <span>{{ 'Changer le logo PDF' if parametres.logo_pdf else 'Télécharger un logo PDF' }}</span>
-                                        <input id="logo_pdf" 
-                                               name="logo_pdf" 
-                                               type="file" 
-                                               class="sr-only" 
-                                               accept=".png,.jpg,.jpeg,.svg">
-                                    </label>
-                                    <p class="pl-1">ou glisser-déposer</p>
-                                </div>
-                                <p class="text-xs text-gray-500">
-                                    PNG, JPG, JPEG, SVG jusqu'à 2MB
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Titre et sous-titre PDF -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="titre_pdf" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-heading mr-1 text-rdc-green"></i>
-                                    Titre PDF
-                                </label>
-                                <input type="text" 
-                                       id="titre_pdf" 
-                                       name="titre_pdf" 
-                                       value="{{ parametres.titre_pdf or 'Ministère des Courrier' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                       placeholder="Titre principal pour PDF">
-                            </div>
-                            
-                            <div>
-                                <label for="sous_titre_pdf" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-text-height mr-1 text-rdc-green"></i>
-                                    Sous-titre PDF
-                                </label>
-                                <input type="text" 
-                                       id="sous_titre_pdf" 
-                                       name="sous_titre_pdf" 
-                                       value="{{ parametres.sous_titre_pdf or '' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                       placeholder="Sous-titre pour PDF">
-                            </div>
-                        </div>
-                        
-                        <!-- Pays et Copyright -->
-                        <div class="grid grid-cols-1 gap-6 mt-6">
-                            <div>
-                                <label for="pays_pdf" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-flag mr-1 text-rdc-red"></i>
-                                    Nom du Pays (apparaît en haut des PDF)
-                                </label>
-                                <input type="text" 
-                                       id="pays_pdf" 
-                                       name="pays_pdf" 
-                                       value="{{ parametres.pays_pdf or '' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                       placeholder="Nom du pays à afficher en en-tête">
-                            </div>
-                            
-                            <div>
-                                <label for="copyright_text" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-copyright mr-1 text-rdc-yellow"></i>
-                                    Texte de Copyright (apparaît en bas des PDF)
-                                </label>
-                                <textarea id="copyright_text" 
-                                          name="copyright_text" 
-                                          rows="2"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                          placeholder="© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC">{{ parametres.copyright_text or '© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC' }}</textarea>
-                                <p class="mt-1 text-sm text-gray-500">Ce texte apparaîtra en bas de tous les documents PDF générés.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Paramètres Email pour les notifications -->
-                    {% if current_user.has_permission('manage_system_settings') %}
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">
-                            <i class="fas fa-envelope mr-2 text-blue-500"></i>
-                            Configuration Email (Notifications)
-                        </h3>
-                        
-                        <!-- Choix du fournisseur email -->
-                        <div class="mb-6">
-                            <label for="email_provider" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-cloud mr-1 text-blue-500"></i>
-                                Fournisseur de service Email
-                            </label>
-                            <select id="email_provider" 
-                                    name="email_provider" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="resend" {% if parametres.email_provider in ('resend', '') or not parametres.email_provider %}selected{% endif %}>
-                                    Resend (Recommandé — API moderne)
-                                </option>
-                                <option value="smtp" {% if parametres.email_provider == 'smtp' %}selected{% endif %}>
-                                    SMTP Traditionnel
-                                </option>
-                            </select>
-                            <p class="mt-1 text-sm text-gray-500">
-                                Resend offre une livraison fiable via API. SMTP traditionnel nécessite un serveur de messagerie.
-                            </p>
-                        </div>
-                        
-                        <!-- Section Resend (affichée conditionnellement) -->
-                        <div id="resend-section" class="{% if parametres.email_provider == 'smtp' %}hidden{% endif %}">
-                            <h4 class="text-md font-medium text-gray-800 mb-3">
-                                <i class="fas fa-paper-plane mr-2 text-blue-500"></i>
-                                Configuration Resend
-                            </h4>
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                                <div class="flex">
-                                    <i class="fas fa-info-circle text-blue-400 mr-2 mt-0.5"></i>
-                                    <div class="text-sm text-blue-700">
-                                        <p class="font-medium">Service Email Professionnel</p>
-                                        <p>Resend est une API email moderne et fiable. Créez votre compte et obtenez votre clé API sur <a href="https://resend.com" target="_blank" class="underline">resend.com</a></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-6">
-                                <label for="resend_api_key" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-key mr-1 text-blue-500"></i>
-                                    Clé API Resend
-                                </label>
-                                <input type="password"
-                                       id="resend_api_key"
-                                       name="resend_api_key"
-                                       value="{{ '●●●●●●●●●●●●●●●●●●●●' if parametres.resend_api_key else '' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="re_xxxxxxxxxxxxxxxxxxxx"
-                                       autocomplete="off">
-                                <p class="mt-1 text-xs text-gray-500">
-                                    Format : <code>re_XXXXXXXXXXXXXXXXXXXXXXXX</code>
-                                    {% if parametres.resend_api_key %}
-                                    <br><span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>Clé API configurée</span>
-                                    {% endif %}
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Section SMTP (affichée conditionnellement) -->
-                        <div id="smtp-section" class="{% if parametres.email_provider != 'smtp' %}hidden{% endif %}">
-                            <h4 class="text-md font-medium text-gray-800 mb-3">Paramètres SMTP</h4>
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                            <div class="flex">
-                                <i class="fas fa-info-circle text-blue-400 mr-2 mt-0.5"></i>
-                                <div class="text-sm text-blue-700">
-                                    <p class="font-medium">Configuration des emails automatiques</p>
-                                    <p>Ces paramètres permettent l'envoi automatique d'emails pour les notifications de nouveaux courriers et transmissions.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="smtp_server" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-server mr-1 text-blue-500"></i>
-                                    Serveur SMTP
-                                </label>
-                                <input type="text" 
-                                       id="smtp_server" 
-                                       name="smtp_server" 
-                                       value="{{ parametres.smtp_server or '' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="smtp.gmail.com ou smtp.office365.com">
-                                <p class="mt-1 text-xs text-gray-500">Exemple: smtp.gmail.com, smtp.office365.com</p>
-                            </div>
-                            
-                            <div>
-                                <label for="smtp_port" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-plug mr-1 text-blue-500"></i>
-                                    Port SMTP
-                                </label>
-                                <input type="number" 
-                                       id="smtp_port" 
-                                       name="smtp_port" 
-                                       value="{{ parametres.smtp_port or 587 }}"
-                                       min="1" max="65535"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="587">
-                                <p class="mt-1 text-xs text-gray-500">587 (TLS) ou 465 (SSL) ou 25 (non sécurisé)</p>
-                            </div>
-                            
-                            <div>
-                                <label for="smtp_username" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-user mr-1 text-blue-500"></i>
-                                    Nom d'utilisateur SMTP
-                                </label>
-                                <input type="email" 
-                                       id="smtp_username" 
-                                       name="smtp_username" 
-                                       value="{{ parametres.smtp_username or '' }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="votre-email@exemple.com">
-                                <p class="mt-1 text-xs text-gray-500">Souvent identique à votre adresse email</p>
-                            </div>
-                            
-                            <div>
-                                <label for="smtp_password" class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-lock mr-1 text-blue-500"></i>
-                                    Mot de passe SMTP
-                                </label>
-                                <input type="password" 
-                                       id="smtp_password" 
-                                       name="smtp_password" 
-                                       value=""
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                       placeholder="Laissez vide pour conserver le mot de passe actuel">
-                                <p class="mt-1 text-xs text-gray-500">
-                                    {% if parametres.smtp_password %}
-                                        <i class="fas fa-check-circle text-green-500 mr-1"></i>Mot de passe configuré
-                                    {% else %}
-                                        <i class="fas fa-exclamation-triangle text-orange-500 mr-1"></i>Aucun mot de passe configuré
-                                    {% endif %}
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <label class="flex items-center">
-                                <input type="checkbox" 
-                                       id="smtp_use_tls" 
-                                       name="smtp_use_tls" 
-                                       {% if parametres.smtp_use_tls %}checked{% endif %}
-                                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <span class="ml-2 text-sm text-gray-700">
-                                    <i class="fas fa-shield-alt mr-1 text-green-500"></i>
-                                    Utiliser TLS/STARTTLS (recommandé)
-                                </span>
-                            </label>
-                            <p class="ml-6 text-xs text-gray-500">Assure un chiffrement sécurisé des communications</p>
-                        </div>
-                        
-                        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div class="flex">
-                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-2 mt-0.5"></i>
-                                <div class="text-sm text-yellow-700">
-                                    <p class="font-medium">Note importante :</p>
-                                    <ul class="mt-1 list-disc list-inside space-y-1 text-xs">
-                                        <li>Pour Gmail, utilisez un <strong>mot de passe d'application</strong> au lieu de votre mot de passe habituel</li>
-                                        <li>Pour Office 365, activez l'authentification SMTP moderne si nécessaire</li>
-                                        <li>Le mot de passe est crypté et stocké de manière sécurisée</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Test SMTP Configuration -->
-                        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div class="flex items-start">
-                                <i class="fas fa-paper-plane text-blue-500 mr-3 mt-0.5"></i>
-                                <div class="flex-1">
-                                    <h4 class="text-sm font-medium text-blue-900 mb-2">
-                                        Tester la configuration SMTP
-                                    </h4>
-                                    <p class="text-xs text-blue-700 mb-3">
-                                        Envoyez un email de test pour vérifier que votre configuration SMTP fonctionne correctement.
-                                    </p>
-                                    <form action="{{ url_for('test_smtp_config') }}" method="POST" class="flex gap-2">
-                                        <input type="email" 
-                                               name="test_email" 
-                                               placeholder="Votre email de test"
-                                               required
-                                               class="flex-1 px-3 py-2 text-xs border border-blue-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                        <button type="submit" 
-                                                class="px-4 py-2 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                            <i class="fas fa-paper-plane mr-1"></i>
-                                            Tester
-                                        </button>
-                                    </form>
-                                    <p class="text-xs text-blue-600 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Assurez-vous d'avoir sauvegardé vos paramètres SMTP avant de faire le test.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        </div> <!-- Fermeture de smtp-section -->
-                        
-                        <!-- Paramètres de notification pour Super Admin -->
-                        {% if current_user.is_super_admin() %}
-                        <div class="border-t border-gray-200 pt-6 mt-6">
-                            <h4 class="text-md font-medium text-gray-800 mb-3">
-                                <i class="fas fa-user-shield mr-2 text-purple-500"></i>
-                                Notifications Super Administrateur
-                            </h4>
-                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                <div class="flex items-center">
-                                    <input type="checkbox" 
-                                           id="notify_superadmin_new_mail" 
-                                           name="notify_superadmin_new_mail" 
-                                           {% if parametres.notify_superadmin_new_mail %}checked{% endif %}
-                                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                                    <label for="notify_superadmin_new_mail" class="ml-3 block text-sm text-gray-700">
-                                        <span class="font-medium">Recevoir les notifications de nouveaux courriers</span>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Les super administrateurs recevront une notification pour chaque nouveau courrier enregistré
-                                        </p>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Submit Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-3 pt-6">
-                        <button type="submit" 
-                                form="settings-form"
-                                class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-save mr-2"></i>
-                            Enregistrer les Paramètres
-                        </button>
-                        <a href="{{ url_for('dashboard') }}" 
-                           class="flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-times mr-2"></i>
-                            Annuler
-                        </a>
-                    </div>
-                </form>
-                
-                <!-- Debug Information -->
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <p class="text-xs text-gray-600">
-                        <strong>État du Logo:</strong><br>
-                        URL: {{ parametres.logo_url or 'Aucun logo configuré' }}<br>
-                        <strong>Instructions:</strong> Sélectionnez un fichier PNG, JPG, JPEG ou SVG, puis cliquez "Enregistrer les Paramètres"
-                    </p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Section Types de Courrier Sortant supprimée - maintenant gérée dans une page dédiée -->
+    <!-- Tab navigation -->
+    <div class="gec-card" style="padding:0;overflow:hidden;">
+      <div id="settings-tabs" style="display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
+        {% set tabs = [
+          ('identite',   'fa-building',       'Identité'),
+          ('terminologie','fa-language',       'Terminologie'),
+          ('numerotation','fa-hashtag',        'Numérotation'),
+          ('pdf',        'fa-file-pdf',        'PDF'),
+          ('email',      'fa-envelope',        'Email'),
+        ] %}
+        {% for tab_id, tab_icon, tab_label in tabs %}
+        {% if tab_id != 'email' or current_user.has_permission('manage_system_settings') %}
+        <button type="button"
+                class="settings-tab-btn {% if loop.first %}active{% endif %}"
+                data-tab="{{ tab_id }}"
+                onclick="switchTab('{{ tab_id }}')"
+                style="display:flex;align-items:center;gap:.5rem;padding:.875rem 1.25rem;border:none;background:none;cursor:pointer;
+                       font-size:.8125rem;font-weight:600;color:var(--t-muted);white-space:nowrap;border-bottom:2px solid transparent;
+                       transition:all .15s;flex-shrink:0;margin-bottom:-1px;">
+          <i class="fas {{ tab_icon }}" style="font-size:.8125rem;"></i>
+          {{ tab_label }}
+        </button>
+        {% endif %}
+        {% endfor %}
+      </div>
     </div>
-    
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Current Settings -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
-                    Configuration Actuelle
-                </h3>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-tag mr-2 text-rdc-green"></i>
-                        Nom actuel
-                    </div>
-                    <div class="text-sm text-gray-600">{{ parametres.nom_logiciel }}</div>
-                </div>
-                
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-calendar mr-2 text-rdc-green"></i>
-                        Dernière modification
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        {% if parametres.date_modification %}
-                            {{ parametres.date_modification.strftime('%d/%m/%Y à %H:%M') }}
-                        {% else %}
-                            Jamais modifié
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-user mr-2 text-rdc-green"></i>
-                        Modifié par
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        {% if parametres.modifie_par %}
-                            {{ parametres.modifie_par.nom_complet }}
-                        {% else %}
-                            Système
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+
+    <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data" id="settings-form"
+          style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <!-- ── TAB: Identité ──────────────────────────────────── -->
+      <div class="settings-tab-panel gec-card" id="tab-identite">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-building"></i> Identité de l'organisation</span>
+          <span class="gec-badge gec-badge-blue" style="font-size:.6875rem;">Général</span>
         </div>
-        
-        <!-- Test Email -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-envelope mr-2 text-rdc-blue"></i>
-                    Test de configuration email
-                </h3>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.125rem;">
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="nom_logiciel">
+              <i class="fas fa-tag" style="color:var(--primary);"></i> Nom du logiciel <span style="color:var(--danger);">*</span>
+            </label>
+            <input type="text" id="nom_logiciel" name="nom_logiciel"
+                   value="{{ parametres.nom_logiciel }}" required
+                   class="gec-input" placeholder="Ex: GEC — Mairie de …">
+            <p class="gec-form-hint">Apparaît dans la barre de navigation et tous les documents générés.</p>
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label">
+              <i class="fas fa-image" style="color:var(--primary);"></i> Logo de l'organisation
+            </label>
+            <div class="gec-upload-zone" id="logo-upload-area" onclick="document.getElementById('logo').click()">
+              {% if parametres.logo_url %}
+                <img src="{{ url_for('uploaded_file', filename=parametres.logo_url.split('/')[-1]) }}"
+                     alt="Logo" style="height:52px;width:auto;margin:0 auto .5rem;display:block;">
+                <p class="gec-upload-zone-text"><strong>Changer le logo</strong></p>
+              {% else %}
+                <div class="gec-upload-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <p class="gec-upload-zone-text"><strong>Sélectionner un fichier</strong> ou glisser-déposer</p>
+              {% endif %}
+              <div id="logo-file-preview" style="display:none;margin-top:.5rem;">
+                <img id="logo-preview-image" src="" alt="Aperçu" style="height:52px;margin:0 auto;display:block;">
+                <p id="logo-file-name" style="font-size:.75rem;color:var(--success);margin-top:.25rem;text-align:center;"></p>
+              </div>
+              <p class="gec-upload-zone-hint">PNG · JPG · SVG — max 2 MB</p>
+              <input id="logo" name="logo" type="file" class="hidden" accept=".png,.jpg,.jpeg,.svg"
+                     style="display:none;" onchange="previewLogo(this)">
             </div>
-            <div class="p-6">
-                <p class="text-sm text-gray-600 mb-4">
-                    Envoyez un email de test pour vérifier votre configuration (Resend ou SMTP).
+          </div>
+
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="telephone"><i class="fas fa-phone" style="color:var(--success);"></i> Téléphone</label>
+              <input type="tel" id="telephone" name="telephone"
+                     value="{{ parametres.telephone or '' }}" class="gec-input" placeholder="+XX XXX XXX XXXX">
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="whatsapp_number"><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp (support)</label>
+              <input type="text" id="whatsapp_number" name="whatsapp_number"
+                     value="{{ parametres.whatsapp_number or '' }}" class="gec-input" placeholder="Numéro sans +">
+              <p class="gec-form-hint">Affiché sur les pages d'erreur pour le support.</p>
+            </div>
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="email_contact"><i class="fas fa-envelope" style="color:var(--success);"></i> Email de contact</label>
+            <input type="email" id="email_contact" name="email_contact"
+                   value="{{ parametres.email_contact or '' }}" class="gec-input" placeholder="contact@exemple.com">
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="adresse_organisme"><i class="fas fa-map-marker-alt" style="color:var(--success);"></i> Adresse de l'organisme</label>
+            <textarea id="adresse_organisme" name="adresse_organisme" rows="2"
+                      class="gec-textarea" placeholder="Adresse complète">{{ parametres.adresse_organisme or '' }}</textarea>
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="texte_footer"><i class="fas fa-quote-left" style="color:var(--success);"></i> Texte du pied de page</label>
+            <textarea id="texte_footer" name="texte_footer" rows="2"
+                      class="gec-textarea">{{ parametres.texte_footer or 'Système de Gestion Électronique du Courrier' }}</textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TAB: Terminologie ──────────────────────────────── -->
+      <div class="settings-tab-panel gec-card" id="tab-terminologie" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-language"></i> Terminologie organisationnelle</span>
+          <span class="gec-badge gec-badge-green" style="font-size:.6875rem;">Personnalisation</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.25rem;">
+
+          <div class="gec-alert gec-alert-info">
+            <i class="fas fa-info-circle"></i>
+            <span>Ces réglages adaptent le vocabulaire de l'interface à votre organisation.</span>
+          </div>
+
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="appellation_departement">
+                <i class="fas fa-building" style="color:var(--primary);"></i> Appellation des entités
+              </label>
+              <select id="appellation_departement" name="appellation_departement" class="gec-select">
+                {% for opt in ['Départements','Divisions','Services','Directions','Bureaux','Unités'] %}
+                <option value="{{ opt }}" {% if parametres.appellation_departement == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+              <p class="gec-form-hint">Terme utilisé pour les unités organisationnelles dans l'interface.</p>
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="titre_responsable_structure">
+                <i class="fas fa-user-tie" style="color:var(--primary);"></i> Titre du responsable
+              </label>
+              <select id="titre_responsable_structure" name="titre_responsable_structure" class="gec-select">
+                {% for opt in ['Secrétaire Général','Directeur Général','Directeur','Chef de Cabinet','Président','Recteur','Gouverneur','Ministre'] %}
+                <option value="{{ opt }}" {% if parametres.titre_responsable_structure == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+              <p class="gec-form-hint">Affiché dans le champ "en copie" et les exports PDF.</p>
+            </div>
+          </div>
+
+          <!-- Aperçu -->
+          <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem;">
+            <p style="font-size:.75rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;margin-bottom:.75rem;">Aperçu dans l'interface</p>
+            <div class="gec-info-list">
+              <div class="gec-info-row">
+                <span class="gec-info-key">Menu de navigation</span>
+                <span class="gec-info-val" style="color:var(--primary);font-weight:600;" id="preview-appellation">{{ parametres.appellation_departement or 'Départements' }}</span>
+              </div>
+              <div class="gec-info-row">
+                <span class="gec-info-key">Champ "en copie"</span>
+                <span class="gec-info-val" style="color:var(--primary);font-weight:600;" id="preview-titre">Le {{ parametres.titre_responsable_structure or 'Secrétaire Général' }} est en copie</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TAB: Numérotation ──────────────────────────────── -->
+      <div class="settings-tab-panel gec-card" id="tab-numerotation" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-hashtag"></i> Numérotation des accusés</span>
+          <span class="gec-badge gec-badge-yellow" style="font-size:.6875rem;">Génération auto</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.125rem;">
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="mode_numero_accuse"><i class="fas fa-cog" style="color:var(--primary);"></i> Mode de génération</label>
+            <div class="gec-form-row gec-form-row-2" style="gap:.75rem;margin-top:.5rem;">
+              <label id="mode-auto-label" style="display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;">
+                <input type="radio" name="mode_numero_accuse" value="automatique"
+                       {% if parametres.mode_numero_accuse != 'manuel' %}checked{% endif %}
+                       onchange="onModeChange(this)" style="margin-top:.125rem;">
+                <div>
+                  <div style="font-weight:600;font-size:.875rem;color:var(--t-primary);">Automatique</div>
+                  <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">Format défini, incrémentation auto</div>
+                </div>
+              </label>
+              <label id="mode-manuel-label" style="display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;">
+                <input type="radio" name="mode_numero_accuse" value="manuel"
+                       {% if parametres.mode_numero_accuse == 'manuel' %}checked{% endif %}
+                       onchange="onModeChange(this)" style="margin-top:.125rem;">
+                <div>
+                  <div style="font-weight:600;font-size:.875rem;color:var(--t-primary);">Manuel</div>
+                  <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">Saisie libre avec vérification d'unicité</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div id="format-field" {% if parametres.mode_numero_accuse == 'manuel' %}style="display:none"{% endif %}>
+            <div class="gec-form-group">
+              <label class="gec-label" for="format_numero_accuse"><i class="fas fa-receipt" style="color:var(--primary);"></i> Format du numéro</label>
+              <input type="text" id="format_numero_accuse" name="format_numero_accuse"
+                     value="{{ parametres.format_numero_accuse }}"
+                     class="gec-input" style="font-family:monospace;letter-spacing:.05em;"
+                     placeholder="GEC-{year}-{counter:05d}"
+                     oninput="updateFormatPreview(this.value)">
+            </div>
+            <div class="gec-alert gec-alert-info" style="margin-top:.75rem;">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>Variables disponibles :</strong>
+                <div style="display:flex;flex-wrap:wrap;gap:.375rem;margin-top:.5rem;">
+                  {% for v in ['{year}','{month}','{day}','{counter:05d}','{random:4}'] %}
+                  <span class="gec-code" style="cursor:pointer;" onclick="insertVar('{{ v }}')" title="Cliquer pour insérer">{{ v }}</span>
+                  {% endfor %}
+                </div>
+                <p style="margin-top:.625rem;font-size:.8125rem;">
+                  Aperçu : <span id="preview-format" style="font-family:monospace;background:rgba(255,255,255,.6);padding:2px 8px;border-radius:4px;font-weight:600;">{{ format_preview }}</span>
                 </p>
+              </div>
+            </div>
+          </div>
 
-                <form method="POST" action="{{ url_for('settings') }}" class="space-y-4">
-                    <div>
-                        <label for="test_email" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-at mr-1 text-rdc-blue"></i>
-                            Email de test
-                        </label>
-                        <input type="email"
-                               id="test_email"
-                               name="test_email"
-                               required
-                               placeholder="votre@email.com"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                    </div>
+        </div>
+      </div>
 
-                    <button type="submit"
-                            class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                        <i class="fas fa-paper-plane mr-2"></i>
-                        Envoyer un test
-                    </button>
-                </form>
+      <!-- ── TAB: PDF ───────────────────────────────────────── -->
+      <div class="settings-tab-panel gec-card" id="tab-pdf" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-file-pdf" style="color:#EF4444;"></i> Paramètres PDF</span>
+          <span class="gec-badge gec-badge-red" style="font-size:.6875rem;">Documents</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.125rem;">
 
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <div class="flex">
-                        <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
-                        <div class="text-xs text-blue-700">
-                            <p class="font-medium">Configuration requise (Resend) :</p>
-                            <ul class="mt-1 space-y-1">
-                                <li>• Clé API Resend configurée (<code>re_...</code>)</li>
-                                <li>• Domaine vérifié sur <a href="https://resend.com" target="_blank" class="underline">resend.com</a></li>
-                                <li>• Email expéditeur configuré dans les paramètres SMTP</li>
-                            </ul>
-                        </div>
-                    </div>
+          <div class="gec-form-group">
+            <label class="gec-label"><i class="fas fa-file-image" style="color:var(--primary);"></i> Logo pour PDF</label>
+            <div class="gec-upload-zone" onclick="document.getElementById('logo_pdf').click()">
+              {% if parametres.logo_pdf %}
+                <img src="{{ parametres.logo_pdf }}" alt="Logo PDF" style="height:44px;margin:0 auto .5rem;display:block;">
+                <p class="gec-upload-zone-text"><strong>Changer le logo PDF</strong></p>
+              {% else %}
+                <div class="gec-upload-zone-icon"><i class="fas fa-file-image"></i></div>
+                <p class="gec-upload-zone-text"><strong>Logo pour les exports PDF</strong></p>
+              {% endif %}
+              <p class="gec-upload-zone-hint">PNG · JPG · SVG — max 2 MB</p>
+              <input id="logo_pdf" name="logo_pdf" type="file" style="display:none;" accept=".png,.jpg,.jpeg,.svg">
+            </div>
+          </div>
+
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="titre_pdf"><i class="fas fa-heading" style="color:var(--success);"></i> Titre PDF</label>
+              <input type="text" id="titre_pdf" name="titre_pdf"
+                     value="{{ parametres.titre_pdf or '' }}" class="gec-input" placeholder="Titre principal">
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="sous_titre_pdf"><i class="fas fa-text-height" style="color:var(--success);"></i> Sous-titre PDF</label>
+              <input type="text" id="sous_titre_pdf" name="sous_titre_pdf"
+                     value="{{ parametres.sous_titre_pdf or '' }}" class="gec-input" placeholder="Sous-titre">
+            </div>
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="pays_pdf"><i class="fas fa-flag" style="color:var(--warning);"></i> Pays / région (en-tête PDF)</label>
+            <input type="text" id="pays_pdf" name="pays_pdf"
+                   value="{{ parametres.pays_pdf or '' }}" class="gec-input" placeholder="Nom du pays ou de la région">
+          </div>
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="copyright_text"><i class="fas fa-copyright" style="color:var(--t-muted);"></i> Texte de copyright (bas de PDF)</label>
+            <textarea id="copyright_text" name="copyright_text" rows="2"
+                      class="gec-textarea"
+                      placeholder="© 2025 GEC.">{{ parametres.copyright_text or '© 2025 GEC. Made with 💖 and ☕ By MOA-Digital Agency LLC' }}</textarea>
+            <p class="gec-form-hint">Apparaît en bas de tous les documents PDF générés.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TAB: Email ─────────────────────────────────────── -->
+      {% if current_user.has_permission('manage_system_settings') %}
+      <div class="settings-tab-panel gec-card" id="tab-email" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-envelope"></i> Configuration Email</span>
+          <span class="gec-badge gec-badge-purple" style="font-size:.6875rem;">Intégration</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.125rem;">
+
+          <div class="gec-form-group">
+            <label class="gec-label" for="email_provider"><i class="fas fa-cloud" style="color:var(--primary);"></i> Fournisseur email</label>
+            <div class="gec-form-row gec-form-row-2" style="gap:.75rem;margin-top:.5rem;">
+              <label style="display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;"
+                     id="provider-resend-label">
+                <input type="radio" name="email_provider" value="resend"
+                       {% if parametres.email_provider in ('resend','') or not parametres.email_provider %}checked{% endif %}
+                       onchange="toggleEmailProvider('resend')" style="margin-top:.125rem;">
+                <div>
+                  <div style="font-weight:600;font-size:.875rem;color:var(--t-primary);">Resend <span style="font-size:.6875rem;background:#d1fae5;color:#065f46;padding:.1rem .35rem;border-radius:4px;">Recommandé</span></div>
+                  <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">API moderne, livraison fiable</div>
                 </div>
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:.75rem;padding:.875rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;"
+                     id="provider-smtp-label">
+                <input type="radio" name="email_provider" value="smtp"
+                       {% if parametres.email_provider == 'smtp' %}checked{% endif %}
+                       onchange="toggleEmailProvider('smtp')" style="margin-top:.125rem;">
+                <div>
+                  <div style="font-weight:600;font-size:.875rem;color:var(--t-primary);">SMTP</div>
+                  <div style="font-size:.75rem;color:var(--t-muted);margin-top:.125rem;">Serveur de messagerie traditionnel</div>
+                </div>
+              </label>
             </div>
+          </div>
+
+          <!-- Resend config -->
+          <div id="resend-section" {% if parametres.email_provider == 'smtp' %}style="display:none"{% endif %}>
+            <div class="gec-alert gec-alert-info" style="margin-bottom:.875rem;">
+              <i class="fas fa-info-circle"></i>
+              <div><strong>Resend — Service Email Professionnel</strong><br>Créez un compte et obtenez votre clé API sur <strong>resend.com</strong></div>
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="resend_api_key"><i class="fas fa-key" style="color:var(--primary);"></i> Clé API Resend</label>
+              <input type="password" id="resend_api_key" name="resend_api_key"
+                     value="{{ '●●●●●●●●●●●●●●●●●●●●' if parametres.resend_api_key else '' }}"
+                     class="gec-input" placeholder="re_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+              <p class="gec-form-hint">
+                Format : <span class="gec-code">re_XXXXXXXXX</span>
+                {% if parametres.resend_api_key %}&nbsp;<span style="color:var(--success);"><i class="fas fa-check-circle"></i> Clé configurée</span>{% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- SMTP config -->
+          <div id="smtp-section" {% if parametres.email_provider != 'smtp' %}style="display:none;"{% endif %}
+               style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="gec-alert gec-alert-info">
+              <i class="fas fa-info-circle"></i>
+              <p>Configurez votre serveur SMTP pour l'envoi des emails de notification.</p>
+            </div>
+            <div class="gec-form-row gec-form-row-2">
+              <div class="gec-form-group">
+                <label class="gec-label" for="smtp_server"><i class="fas fa-server" style="color:var(--primary);"></i> Serveur SMTP</label>
+                <input type="text" id="smtp_server" name="smtp_server"
+                       value="{{ parametres.smtp_server or '' }}" class="gec-input" placeholder="smtp.gmail.com">
+                <p class="gec-form-hint">Exemples : smtp.gmail.com, smtp.office365.com</p>
+              </div>
+              <div class="gec-form-group">
+                <label class="gec-label" for="smtp_port"><i class="fas fa-plug" style="color:var(--primary);"></i> Port SMTP</label>
+                <input type="number" id="smtp_port" name="smtp_port"
+                       value="{{ parametres.smtp_port or 587 }}" min="1" max="65535"
+                       class="gec-input" placeholder="587">
+                <p class="gec-form-hint">587 (TLS) · 465 (SSL) · 25 (non sécurisé)</p>
+              </div>
+            </div>
+            <div class="gec-form-row gec-form-row-2">
+              <div class="gec-form-group">
+                <label class="gec-label" for="smtp_username"><i class="fas fa-user" style="color:var(--primary);"></i> Identifiant SMTP</label>
+                <input type="email" id="smtp_username" name="smtp_username"
+                       value="{{ parametres.smtp_username or '' }}" class="gec-input" placeholder="votre@email.com">
+              </div>
+              <div class="gec-form-group">
+                <label class="gec-label" for="smtp_password"><i class="fas fa-lock" style="color:var(--primary);"></i> Mot de passe SMTP</label>
+                <input type="password" id="smtp_password" name="smtp_password"
+                       value="" class="gec-input" placeholder="Laisser vide pour conserver">
+                <p class="gec-form-hint">
+                  {% if parametres.smtp_password %}<span style="color:var(--success);"><i class="fas fa-check-circle"></i> Configuré</span>
+                  {% else %}<span style="color:var(--warning);"><i class="fas fa-exclamation-triangle"></i> Non configuré</span>{% endif %}
+                </p>
+              </div>
+            </div>
+            <label class="gec-toggle-wrap">
+              <span class="gec-toggle">
+                <input type="checkbox" id="smtp_use_tls" name="smtp_use_tls" {% if parametres.smtp_use_tls %}checked{% endif %}>
+                <span class="gec-toggle-slider"></span>
+              </span>
+              <div>
+                <div class="gec-toggle-label"><i class="fas fa-shield-alt" style="color:var(--success);margin-right:.375rem;"></i> Utiliser TLS/STARTTLS</div>
+                <div class="gec-toggle-desc">Chiffrement sécurisé des communications (recommandé)</div>
+              </div>
+            </label>
+            <div class="gec-alert gec-alert-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <ul style="margin:0;padding-left:1rem;font-size:.75rem;">
+                <li>Pour Gmail, utilisez un <strong>mot de passe d'application</strong></li>
+                <li>Pour Office 365, activez l'authentification SMTP moderne</li>
+              </ul>
+            </div>
+            <!-- Test SMTP inline -->
+            <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
+              <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin-bottom:.625rem;"><i class="fas fa-paper-plane" style="color:var(--primary);margin-right:.375rem;"></i>Tester la configuration SMTP</p>
+              <form action="{{ url_for('test_smtp_config') }}" method="POST" style="display:flex;gap:.5rem;">
+                <input type="email" name="test_email" placeholder="email@test.com" required class="gec-input" style="flex:1;">
+                <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-paper-plane"></i> Tester</button>
+              </form>
+            </div>
+          </div>
+
+          {% if current_user.is_super_admin() %}
+          <label class="gec-toggle-wrap" style="padding-top:.5rem;border-top:1px solid var(--border);">
+            <span class="gec-toggle">
+              <input type="checkbox" id="notify_superadmin_new_mail" name="notify_superadmin_new_mail"
+                     {% if parametres.notify_superadmin_new_mail %}checked{% endif %}>
+              <span class="gec-toggle-slider"></span>
+            </span>
+            <div>
+              <div class="gec-toggle-label"><i class="fas fa-user-shield" style="color:#a855f7;margin-right:.375rem;"></i> Notifier le super-admin</div>
+              <div class="gec-toggle-desc">Recevoir une notification pour chaque nouveau courrier enregistré</div>
+            </div>
+          </label>
+          {% endif %}
+
         </div>
-        
-        <!-- Help -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-question-circle mr-2 text-rdc-blue"></i>
-                    Aide
-                </h3>
-            </div>
-            <div class="p-6">
-                <ul class="space-y-3 text-sm text-gray-600">
-                    <li class="flex items-start">
-                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
-                        Le nom du logiciel apparaît dans la navigation et les documents
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
-                        Le logo recommandé est de 64x64 pixels pour un affichage optimal
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
-                        Le format du numéro d'accusé affecte tous les nouveaux courriers
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-lightbulb text-rdc-yellow mr-2 mt-0.5 flex-shrink-0"></i>
-                        Les informations de contact apparaissent dans les PDF exportés
-                    </li>
-                </ul>
-            </div>
+      </div>
+      {% endif %}
+
+    </form><!-- end settings form -->
+
+    <!-- ── ACCÈS RAPIDE ───────────────────────────────────────── -->
+    {% if current_user.is_super_admin() or current_user.has_permission('manage_system_settings') %}
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-th"></i> Accès rapide aux modules</span>
+      </div>
+      <div class="gec-card-body">
+        <div class="gec-grid-3">
+          <a href="{{ url_for('manage_statuses') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-tags"></i></div>
+            <div><div class="gec-shortcut-title">Statuts</div><div class="gec-shortcut-desc">Statuts de courriers</div></div>
+          </a>
+          <a href="{{ url_for('manage_outgoing_types') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-mail-bulk"></i></div>
+            <div><div class="gec-shortcut-title">Types sortants</div><div class="gec-shortcut-desc">Types de courriers sortants</div></div>
+          </a>
+          <a href="{{ url_for('manage_email_templates') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#4F46E5;"><i class="fas fa-envelope"></i></div>
+            <div><div class="gec-shortcut-title">Modèles Email</div><div class="gec-shortcut-desc">Templates d'emails</div></div>
+          </a>
+          {% if current_user.is_super_admin() %}
+          <a href="{{ url_for('manage_departments') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#ECFDF5;color:#059669;"><i class="fas fa-building"></i></div>
+            <div><div class="gec-shortcut-title">{{ get_appellation_entites() }}</div><div class="gec-shortcut-desc">Structure organisationnelle</div></div>
+          </a>
+          <a href="{{ url_for('manage_roles') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#FDF4FF;color:#C026D3;"><i class="fas fa-user-shield"></i></div>
+            <div><div class="gec-shortcut-title">Rôles</div><div class="gec-shortcut-desc">Rôles et permissions</div></div>
+          </a>
+          <a href="{{ url_for('manage_users') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-users"></i></div>
+            <div><div class="gec-shortcut-title">Utilisateurs</div><div class="gec-shortcut-desc">Comptes et accès</div></div>
+          </a>
+          <a href="{{ url_for('security_settings') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></div>
+            <div><div class="gec-shortcut-title">Sécurité</div><div class="gec-shortcut-desc">Paramètres de sécurité</div></div>
+          </a>
+          <a href="{{ url_for('manage_backups') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#FFF7ED;color:#D97706;"><i class="fas fa-database"></i></div>
+            <div><div class="gec-shortcut-title">Sauvegardes</div><div class="gec-shortcut-desc">Gérer les sauvegardes</div></div>
+          </a>
+          <a href="{{ url_for('manage_languages') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#F0FDFA;color:#0D9488;"><i class="fas fa-language"></i></div>
+            <div><div class="gec-shortcut-title">Langues</div><div class="gec-shortcut-desc">Traductions disponibles</div></div>
+          </a>
+          <a href="{{ url_for('view_logs') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-list-alt"></i></div>
+            <div><div class="gec-shortcut-title">Logs activité</div><div class="gec-shortcut-desc">Historique des actions</div></div>
+          </a>
+          <a href="{{ url_for('security_logs') }}" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></div>
+            <div><div class="gec-shortcut-title">Logs sécurité</div><div class="gec-shortcut-desc">Événements de sécurité</div></div>
+          </a>
+          <a href="#" id="clear-cache-btn" class="gec-shortcut-card">
+            <div class="gec-shortcut-icon" style="background:#FFFBEB;color:#D97706;"><i class="fas fa-broom"></i></div>
+            <div><div class="gec-shortcut-title">Vider les caches</div><div class="gec-shortcut-desc">Améliorer les performances</div></div>
+          </a>
+          {% endif %}
         </div>
+      </div>
     </div>
-</div>
+    {% endif %}
 
-<!-- Section Raccourcis vers les Pages de Gestion -->
-{% if current_user.is_super_admin() or current_user.has_permission('manage_system_settings') %}
-<div class="bg-white shadow-lg rounded-xl p-8 mb-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-        <i class="fas fa-external-link-alt mr-3 text-[#003087]"></i>
-        Accès Rapide aux Pages de Gestion
-    </h2>
-    
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Gestion des Statuts -->
-        <a href="{{ url_for('manage_statuses') }}" class="group block bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg p-6 transition-all duration-200 border border-blue-200 hover:border-blue-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-tags text-blue-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-800">Gestion des Statuts</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-blue-700">Configurer les statuts des courriers</p>
-        </a>
+  </div><!-- end main col -->
 
-        <!-- Paramètres de Sécurité -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('security_settings') }}" class="group block bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-lg p-6 transition-all duration-200 border border-red-200 hover:border-red-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-shield-alt text-red-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-red-800">Sécurité</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-red-700">Paramètres de sécurité et accès</p>
-        </a>
-        {% endif %}
+  <!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
-        <!-- Gestion des Départements -->
-        <a href="{{ url_for('manage_departments') }}" class="group block bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg p-6 transition-all duration-200 border border-green-200 hover:border-green-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-building text-green-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-green-800">{{ get_appellation_entites() }}</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-green-700">Gérer la structure organisationnelle</p>
-        </a>
-
-        <!-- Types de Courriers Sortants -->
-        <a href="{{ url_for('manage_outgoing_types') }}" class="group block bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg p-6 transition-all duration-200 border border-purple-200 hover:border-purple-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-mail-bulk text-purple-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-purple-800">Types Sortants</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-purple-700">Configurer les types de courriers sortants</p>
-        </a>
-
-        <!-- Gestion des Templates Email -->
-        <a href="{{ url_for('manage_email_templates') }}" class="group block bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-lg p-6 transition-all duration-200 border border-indigo-200 hover:border-indigo-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-envelope text-indigo-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-indigo-800">Templates Email</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-indigo-700">Configurer les modèles d'emails</p>
-        </a>
-
-        <!-- Gestion des Sauvegardes -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('manage_backups') }}" class="group block bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-lg p-6 transition-all duration-200 border border-orange-200 hover:border-orange-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-database text-orange-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-orange-800">Sauvegardes</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-orange-700">Gérer les sauvegardes et restaurations</p>
-        </a>
-        {% endif %}
-
-        <!-- Gestion des Rôles -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('manage_roles') }}" class="group block bg-gradient-to-br from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 rounded-lg p-6 transition-all duration-200 border border-pink-200 hover:border-pink-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-user-shield text-pink-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-pink-800">Gestion des Rôles</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-pink-700">Configurer les rôles utilisateur et leurs permissions</p>
-        </a>
-        {% endif %}
-
-        <!-- Gestion des Langues -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('manage_languages') }}" class="group block bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg p-6 transition-all duration-200 border border-teal-200 hover:border-teal-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-language text-teal-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-teal-800">Gestion des Langues</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-teal-700">Configurer les langues disponibles et les traductions</p>
-        </a>
-        {% endif %}
-
-        <!-- Logs d'Activités -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('view_logs') }}" class="group block bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg p-6 transition-all duration-200 border border-blue-200 hover:border-blue-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-list-alt text-blue-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-800">Logs d'Activités</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-blue-700">Consulter l'historique des actions utilisateurs</p>
-        </a>
-        {% endif %}
-
-        <!-- Logs de Sécurité -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('security_logs') }}" class="group block bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 rounded-lg p-6 transition-all duration-200 border border-red-200 hover:border-red-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-shield-alt text-red-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-red-800">Logs de Sécurité</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-red-700">Consulter les événements de sécurité et alertes</p>
-        </a>
-        {% endif %}
-
-        <!-- Gestion des Utilisateurs -->
-        {% if current_user.is_super_admin() %}
-        <a href="{{ url_for('manage_users') }}" class="group block bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg p-6 transition-all duration-200 border border-purple-200 hover:border-purple-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-users text-purple-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-purple-800">Gestion des Utilisateurs</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-purple-700">Administrer les comptes utilisateurs et leurs accès</p>
-        </a>
-        {% endif %}
-
-        <!-- Vider les Caches -->
-        {% if current_user.is_super_admin() %}
-        <a href="#" id="clear-cache-btn" class="group block bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 rounded-lg p-6 transition-all duration-200 border border-yellow-200 hover:border-yellow-300">
-            <div class="flex items-center mb-3">
-                <i class="fas fa-broom text-yellow-600 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-yellow-800">Vider les Caches</h3>
-            </div>
-            <p class="text-sm text-gray-600 group-hover:text-yellow-700">Nettoyer le cache système pour améliorer les performances</p>
-        </a>
-        {% endif %}
-    </div>
-    
-    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-        <div class="flex items-start">
-            <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
-            <p class="text-sm text-gray-600">
-                Ces raccourcis vous donnent un accès rapide aux pages de gestion spécialisées. 
-                Chaque page offre des fonctionnalités avancées pour configurer votre système GEC.
-            </p>
+    <!-- Config actuelle -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-info-circle"></i> État actuel</span>
+        <span class="gec-badge gec-badge-green" style="font-size:.6875rem;">Actif</span>
+      </div>
+      <div class="gec-card-body">
+        <div class="gec-info-list">
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-tag"></i> Nom</span>
+            <span class="gec-info-val" style="font-weight:600;">{{ parametres.nom_logiciel }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-building"></i> Entités</span>
+            <span class="gec-info-val">{{ parametres.appellation_departement or 'Départements' }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-hashtag"></i> Numérotation</span>
+            <span class="gec-info-val">
+              {% if parametres.mode_numero_accuse == 'manuel' %}
+              <span class="gec-badge gec-badge-yellow" style="font-size:.6875rem;">Manuel</span>
+              {% else %}
+              <span class="gec-badge gec-badge-green" style="font-size:.6875rem;">Auto</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-envelope"></i> Email</span>
+            <span class="gec-info-val">
+              {% if parametres.email_provider == 'smtp' %}
+              <span class="gec-badge gec-badge-gray" style="font-size:.6875rem;">SMTP</span>
+              {% else %}
+              <span class="gec-badge gec-badge-green" style="font-size:.6875rem;">Resend</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-calendar"></i> Modifié</span>
+            <span class="gec-info-val" style="font-size:.75rem;">
+              {% if parametres.date_modification %}{{ parametres.date_modification.strftime('%d/%m/%Y') }}{% else %}—{% endif %}
+            </span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-user"></i> Par</span>
+            <span class="gec-info-val" style="font-size:.75rem;">{% if parametres.modifie_par %}{{ parametres.modifie_par.nom_complet }}{% else %}Système{% endif %}</span>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-{% endif %}
+
+    <!-- Test email -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-paper-plane"></i> Test Email</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+        <p style="font-size:.8125rem;color:var(--t-muted);">Vérifiez la configuration en envoyant un email de test.</p>
+        <form method="POST" action="{{ url_for('settings') }}" style="display:flex;flex-direction:column;gap:.75rem;">
+          <div class="gec-form-group">
+            <label class="gec-label" for="test_email"><i class="fas fa-at" style="color:var(--primary);"></i> Email de test</label>
+            <input type="email" id="test_email" name="test_email" required
+                   placeholder="votre@email.com" class="gec-input">
+          </div>
+          <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;">
+            <i class="fas fa-paper-plane"></i> Envoyer le test
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Navigation rapide entre onglets -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-compass"></i> Navigation</span>
+      </div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.375rem;">
+        {% for tab_id, tab_icon, tab_label, tab_desc in [
+          ('identite','fa-building','Identité','Nom, logo, contact'),
+          ('terminologie','fa-language','Terminologie','Entités, responsable'),
+          ('numerotation','fa-hashtag','Numérotation','Format des accusés'),
+          ('pdf','fa-file-pdf','PDF','En-têtes, logos PDF'),
+          ('email','fa-envelope','Email','SMTP / Resend'),
+        ] %}
+        {% if tab_id != 'email' or current_user.has_permission('manage_system_settings') %}
+        <button type="button" onclick="switchTab('{{ tab_id }}')"
+                style="display:flex;align-items:center;gap:.625rem;padding:.625rem .75rem;border-radius:var(--r-sm);border:none;background:none;cursor:pointer;text-align:left;width:100%;transition:background .15s;"
+                onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background=''">
+          <i class="fas {{ tab_icon }}" style="color:var(--primary);width:1rem;text-align:center;flex-shrink:0;"></i>
+          <div>
+            <div style="font-size:.875rem;font-weight:600;color:var(--t-primary);">{{ tab_label }}</div>
+            <div style="font-size:.75rem;color:var(--t-muted);">{{ tab_desc }}</div>
+          </div>
+        </button>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Conseils -->
+    <div class="gec-card">
+      <div class="gec-card-header">
+        <span class="gec-card-title"><i class="fas fa-lightbulb"></i> Conseils</span>
+      </div>
+      <div class="gec-card-body">
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.625rem;">
+          {% for tip in [
+            'Le nom s\'affiche dans la navigation et les documents.',
+            'Logo recommandé : 64×64 px pour un affichage optimal.',
+            'Le format du numéro s\'applique aux nouveaux courriers uniquement.',
+            'Les infos de contact apparaissent dans les exports PDF.'
+          ] %}
+          <li style="display:flex;align-items:flex-start;gap:.5rem;font-size:.8125rem;color:var(--t-muted);">
+            <i class="fas fa-check-circle" style="color:var(--success);margin-top:2px;flex-shrink:0;font-size:.75rem;"></i>
+            {{ tip }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- end sidebar -->
+</div><!-- end two-col -->
+
+<style>
+.settings-tab-btn { color: var(--t-muted); border-bottom: 2px solid transparent !important; }
+.settings-tab-btn.active { color: var(--primary) !important; border-bottom-color: var(--primary) !important; background: rgba(37,99,235,.05); }
+.settings-tab-btn:hover:not(.active) { color: var(--t-secondary); background: var(--body-bg); }
+</style>
 
 {% endblock %}
 
 {% block scripts %}
-<!-- Custom JS -->
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script>
+// ── Tab switching ─────────────────────────────────────────────────
+function switchTab(tabId) {
+  // Hide all panels
+  document.querySelectorAll('.settings-tab-panel').forEach(function(p) {
+    p.style.display = 'none';
+  });
+  // Deactivate all tab buttons
+  document.querySelectorAll('.settings-tab-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  // Show target panel
+  var panel = document.getElementById('tab-' + tabId);
+  if (panel) panel.style.display = '';
+  // Activate button
+  var btn = document.querySelector('[data-tab="' + tabId + '"]');
+  if (btn) btn.classList.add('active');
+  // Save in localStorage
+  localStorage.setItem('gec-settings-tab', tabId);
+}
+
+// Restore last tab on page load
+(function() {
+  var last = localStorage.getItem('gec-settings-tab') || 'identite';
+  switchTab(last);
+})();
+
+// ── Logo preview ─────────────────────────────────────────────────
+function previewLogo(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('logo-preview-image').src = e.target.result;
+      document.getElementById('logo-file-name').textContent = input.files[0].name;
+      document.getElementById('logo-file-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// ── Email provider toggle ─────────────────────────────────────────
+function toggleEmailProvider(val) {
+  document.getElementById('resend-section').style.display = val === 'resend' ? '' : 'none';
+  document.getElementById('smtp-section').style.display = val === 'smtp' ? '' : 'none';
+}
+
+// ── Numbering mode toggle ─────────────────────────────────────────
+function onModeChange(radio) {
+  var autoLabel = document.getElementById('mode-auto-label');
+  var manualLabel = document.getElementById('mode-manuel-label');
+  var formatField = document.getElementById('format-field');
+  if (!autoLabel || !manualLabel) return;
+  if (radio.value === 'manuel') {
+    if (formatField) formatField.style.display = 'none';
+    manualLabel.style.borderColor = 'var(--primary)';
+    autoLabel.style.borderColor = 'var(--border)';
+  } else {
+    if (formatField) formatField.style.display = '';
+    autoLabel.style.borderColor = 'var(--primary)';
+    manualLabel.style.borderColor = 'var(--border)';
+  }
+}
+
+// ── Format preview ────────────────────────────────────────────────
+function updateFormatPreview(val) {
+  var d = new Date();
+  var preview = val
+    .replace('{year}', d.getFullYear())
+    .replace('{month}', String(d.getMonth()+1).padStart(2,'0'))
+    .replace('{day}', String(d.getDate()).padStart(2,'0'))
+    .replace(/\{counter:\d+d\}/g, '00001')
+    .replace(/\{random:\d+\}/g, Math.random().toString(36).substr(2,4).toUpperCase());
+  var el = document.getElementById('preview-format');
+  if (el) el.textContent = preview;
+}
+
+function insertVar(v) {
+  var inp = document.getElementById('format_numero_accuse');
+  if (!inp) return;
+  var pos = inp.selectionStart;
+  inp.value = inp.value.slice(0,pos) + v + inp.value.slice(inp.selectionEnd);
+  inp.focus();
+  inp.selectionStart = inp.selectionEnd = pos + v.length;
+  updateFormatPreview(inp.value);
+}
+
+// ── Terminologie live preview ─────────────────────────────────────
+var appellationEl = document.getElementById('appellation_departement');
+var titreEl = document.getElementById('titre_responsable_structure');
+if (appellationEl) {
+  appellationEl.addEventListener('change', function() {
+    var el = document.getElementById('preview-appellation');
+    if (el) el.textContent = this.value;
+  });
+}
+if (titreEl) {
+  titreEl.addEventListener('change', function() {
+    var el = document.getElementById('preview-titre');
+    if (el) el.textContent = 'Le ' + this.value + ' est en copie';
+  });
+}
+
+// ── Active mode label styling on load ────────────────────────────
+(function() {
+  var checked = document.querySelector('input[name="mode_numero_accuse"]:checked');
+  if (checked) onModeChange(checked);
+  var providerChecked = document.querySelector('input[name="email_provider"]:checked');
+  if (providerChecked) toggleEmailProvider(providerChecked.value);
+})();
+</script>
 {% endblock %}

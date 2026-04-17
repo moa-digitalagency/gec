@@ -1,53 +1,57 @@
 {% extends "new_base.html" %}
-
-{% block title %}Accès Interdit - 403 - GEC{% endblock %}
+{% block title %}Accès Interdit — 403 — GEC{% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex flex-col items-center justify-center p-4">
-    <!-- Lottie Animation -->
-    <div class="w-full max-w-sm mx-auto mb-6">
-        <lottie-player src="https://assets3.lottiefiles.com/packages/lf20_tmsiddoc.json" background="transparent" speed="1" style="width: 250px; height: 250px; margin: 0 auto;" loop autoplay></lottie-player>
+<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+  <div style="max-width:560px;width:100%;text-align:center;display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- Code -->
+    <div style="font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--danger),#b91c1c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">403</div>
+
+    <div class="gec-card">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2);padding:1.25rem 1.5rem;border-bottom:1px solid rgba(239,68,68,.2);border-radius:var(--card-radius) var(--card-radius) 0 0;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--danger);display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;">
+          <i class="fas fa-ban" style="color:white;font-size:1.25rem;"></i>
+        </div>
+        <h1 style="font-size:1.25rem;font-weight:700;color:#991B1B;margin-bottom:.25rem;">Zone Restreinte</h1>
+        <p style="font-size:.875rem;color:#B91C1C;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">Accès Interdit</p>
+      </div>
+
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+        <p style="font-size:.875rem;color:var(--t-secondary);">Vous n'avez pas les accréditations nécessaires pour accéder à cette ressource sécurisée.</p>
+
+        <!-- Identity card -->
+        <div style="background:var(--body-bg);border-radius:var(--r-md);padding:.875rem 1rem;">
+          <div style="font-size:.75rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem;">
+            <i class="fas fa-id-badge" style="margin-right:.375rem;color:var(--primary);"></i>Contrôle d'identité
+          </div>
+          <div class="gec-info-list">
+            <div class="gec-info-row">
+              <span class="gec-info-key"><i class="fas fa-user" style="margin-right:.375rem;color:var(--t-muted);"></i>Identité</span>
+              <span class="gec-info-val">{{ current_user.nom_complet }} ({{ current_user.username }})</span>
+            </div>
+            <div class="gec-info-row">
+              <span class="gec-info-key"><i class="fas fa-user-tag" style="margin-right:.375rem;color:var(--t-muted);"></i>Rôle actuel</span>
+              <span class="gec-info-val"><span class="gec-badge gec-badge-gray" style="font-family:monospace;text-transform:uppercase;font-size:.65rem;">{{ current_user.role }}</span></span>
+            </div>
+            <div class="gec-info-row">
+              <span class="gec-info-key"><i class="fas fa-times-circle" style="margin-right:.375rem;color:var(--danger);"></i>Verdict</span>
+              <span class="gec-info-val" style="color:var(--danger);font-weight:600;">Accès refusé</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="text-center max-w-2xl mx-auto space-y-6">
-        <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Zone Restreinte</h1>
-            <h2 class="text-xl text-red-600 font-semibold mb-4 uppercase tracking-wider"><i class="fas fa-ban mr-2"></i>Accès Interdit (403)</h2>
-            <p class="text-gray-600">
-                Halte là ! Vous n'avez pas les accréditations nécessaires pour accéder à cette ressource sécurisée.
-            </p>
-        </div>
-
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 inline-block text-left w-full max-w-md shadow-inner">
-            <h3 class="font-bold text-gray-800 mb-3 border-b pb-2"><i class="fas fa-id-badge mr-2 text-rdc-blue"></i>Contrôle d'identité</h3>
-            <ul class="text-sm text-gray-600 space-y-3">
-                <li class="flex items-center">
-                    <span class="w-8 text-center"><i class="fas fa-user-circle text-gray-400 text-lg"></i></span>
-                    <span class="font-medium">Identité :</span>
-                    <span class="ml-2 text-gray-900">{{ current_user.nom_complet }} ({{ current_user.username }})</span>
-                </li>
-                <li class="flex items-center">
-                    <span class="w-8 text-center"><i class="fas fa-user-tag text-gray-400 text-lg"></i></span>
-                    <span class="font-medium">Rôle actuel :</span>
-                    <span class="ml-2 px-2 py-0.5 bg-gray-200 rounded text-xs font-bold uppercase">{{ current_user.role }}</span>
-                </li>
-                <li class="flex items-center text-red-600">
-                    <span class="w-8 text-center"><i class="fas fa-times-circle text-lg"></i></span>
-                    <span class="font-bold">Accès refusé par le protocole de sécurité</span>
-                </li>
-            </ul>
-        </div>
-
-        <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-            <a href="{{ url_for('dashboard') }}" class="px-6 py-3 bg-rdc-blue text-white rounded-lg hover:bg-opacity-90 transition-all font-medium shadow-md flex items-center justify-center">
-                <i class="fas fa-undo mr-2"></i>Retour en lieu sûr
-            </a>
-            <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium flex items-center justify-center">
-                <i class="fas fa-key mr-2 text-yellow-500"></i>Demander une élévation de privilèges
-            </a>
-        </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-primary">
+        <i class="fas fa-undo"></i> Retour en lieu sûr
+      </a>
+      <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="gec-btn gec-btn-secondary">
+        <i class="fas fa-key" style="color:var(--warning);"></i> Demander une élévation
+      </a>
     </div>
+  </div>
 </div>
-
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 {% endblock %}

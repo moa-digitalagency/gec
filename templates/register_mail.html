@@ -1,429 +1,404 @@
 {% extends "new_base.html" %}
-
-{% block title %}{{ t('register_mail') or 'Enregistrer Courrier' }} - GEC{% endblock %}
+{% block title %}{{ t('register_mail') or 'Enregistrer Courrier' }} — GEC{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-plus-circle mr-3 text-rdc-blue"></i>
-        {{ t('register_new_mail') or 'Enregistrer un Nouveau Courrier' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('enter_mail_info') or 'Saisissez les informations du courrier (entrant ou sortant)' }}</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('view_mail') }}">Courriers</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Nouveau</span>
+    </div>
+    <h1 class="gec-page-title"><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:.5rem;"></i>{{ t('register_new_mail') or 'Enregistrer un Nouveau Courrier' }}</h1>
+    <p class="gec-page-subtitle">{{ t('enter_mail_info') or 'Saisissez les informations du courrier (entrant ou sortant)' }}</p>
+  </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Main Form -->
-    <div class="lg:col-span-2">
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-edit mr-2 text-rdc-blue"></i>
-                    {{ t('mail_information') or 'Informations du Courrier' }}
-                </h2>
-            </div>
-            <div class="p-6">
-                <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                    <!-- Type de Courrier -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-exchange-alt mr-1 text-rdc-blue"></i>
-                            {{ t('mail_type') or 'Type de Courrier' }} <span class="text-red-500">*</span>
-                        </label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="relative flex items-center p-3 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rdc-blue mail-type-option">
-                                <input type="radio" 
-                                       name="type_courrier" 
-                                       value="ENTRANT" 
-                                       checked
-                                       class="sr-only">
-                                <div class="radio-visual w-4 h-4 rounded-full border-2 border-gray-300 mr-3 flex items-center justify-center">
-                                    <div class="w-2 h-2 rounded-full bg-rdc-blue hidden"></div>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-inbox mr-2 text-blue-500"></i>
-                                    <span class="text-sm font-medium">{{ t('incoming') or 'Entrant' }}</span>
-                                </div>
-                            </label>
-                            
-                            <label class="relative flex items-center p-3 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rdc-blue mail-type-option">
-                                <input type="radio" 
-                                       name="type_courrier" 
-                                       value="SORTANT"
-                                       class="sr-only">
-                                <div class="radio-visual w-4 h-4 rounded-full border-2 border-gray-300 mr-3 flex items-center justify-center">
-                                    <div class="w-2 h-2 rounded-full bg-rdc-blue hidden"></div>
-                                </div>
-                                <div class="flex items-center">
-                                    <i class="fas fa-paper-plane mr-2 text-green-500"></i>
-                                    <span class="text-sm font-medium">{{ t('outgoing') or 'Sortant' }}</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Type de Courrier Sortant (si courrier sortant sélectionné) -->
-                    <div id="type-courrier-sortant-section" style="display: none;">
-                        <label for="type_courrier_sortant_id" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-tags mr-1 text-rdc-blue"></i>
-                            {{ t('outgoing_mail_type') or 'Type de Courrier Sortant' }} <span class="text-red-500">*</span>
-                        </label>
-                        <select id="type_courrier_sortant_id" 
-                                name="type_courrier_sortant_id"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="">{{ t('select_type') or '-- Sélectionner un type --' }}</option>
-                            {% for type in types_courrier_sortant %}
-                                <option value="{{ type.id }}">{{ type.nom }}</option>
-                            {% endfor %}
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">{{ t('select_specific_outgoing_type') or 'Sélectionnez le type spécifique de courrier sortant' }}</p>
-                    </div>
-                    
-                    <!-- Numéro d'accusé de réception manuel (si configuré) -->
-                    {% if parametres and parametres.mode_numero_accuse == 'manuel' %}
-                    <div>
-                        <label for="numero_accuse_manuel" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-receipt mr-1 text-rdc-blue"></i>
-                            {{ t('receipt_number') or "Numéro d'Accusé de Réception" }} <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" 
-                               id="numero_accuse_manuel" 
-                               name="numero_accuse_manuel" 
-                               required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                               placeholder="{{ t('enter_unique_number') or 'Entrez un numéro unique' }}">
-                        <p class="mt-1 text-xs text-gray-500">{{ t('number_must_be_unique') or 'Ce numéro doit être unique dans le système' }}</p>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Reference and Contact -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="numero_reference" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-hashtag mr-1 text-rdc-blue"></i>
-                                {{ t('reference_number') or 'Numéro de Référence' }}
-                            </label>
-                            <input type="text" 
-                                   id="numero_reference" 
-                                   name="numero_reference" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="{{ t('optional_if_empty_unreferenced') or 'Optionnel - Si non renseigné: Non référencé' }}">
-                            <p class="mt-1 text-xs text-gray-500">{{ t('leave_empty_if_no_reference') or 'Laissez vide si aucun numéro de référence' }}</p>
-                        </div>
-                        
-                        <div id="contact-field">
-                            <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-user mr-1 text-rdc-blue"></i>
-                                <span id="contact-label">{{ t('sender') or 'Expéditeur' }}</span> <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" 
-                                   id="contact" 
-                                   name="expediteur" 
-                                   required 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                   placeholder="Nom de l'expéditeur">
-                            <!-- Hidden field for destinataire -->
-                            <input type="hidden" 
-                                   id="destinataire" 
-                                   name="destinataire" 
-                                   value="">
-                        </div>
-                    </div>
-                    
-                    <!-- Object -->
-                    <div>
-                        <label for="objet" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-file-alt mr-1 text-rdc-blue"></i>
-                            {{ t('subject_letter') or 'Objet de la Lettre' }} <span class="text-red-500">*</span>
-                        </label>
-                        <textarea id="objet" 
-                                  name="objet" 
-                                  rows="4" 
-                                  required 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                  placeholder="Décrivez l'objet de la lettre"></textarea>
-                    </div>
-                    
-                    <!-- Date de rédaction/émission -->
-                    <div>
-                        <label for="date_redaction" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-calendar-edit mr-1 text-rdc-blue"></i>
-                            <span id="date-redaction-label">{{ t('letter_drafting_date') or 'Date de Rédaction de la Lettre' }}</span>
-                            <span id="date-emission-label" style="display: none;">{{ t('letter_emission_date') or "Date d'Émission de la Lettre" }} <span class="text-red-500">*</span></span>
-                        </label>
-                        <input type="date" 
-                               id="date_redaction" 
-                               name="date_redaction" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                        <p class="mt-1 text-sm text-gray-500">
-                            <span id="date-redaction-hint">Date à laquelle la lettre a été rédigée (optionnel)</span>
-                            <span id="date-emission-hint" style="display: none;">Date à laquelle la lettre a été émise (obligatoire)</span>
-                        </p>
-                    </div>
-                    
-                    <!-- Autres Informations (pour courrier sortant seulement) -->
-                    <div id="autres-informations-section" style="display: none;">
-                        <label for="autres_informations" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-info-circle mr-1 text-rdc-blue"></i>
-                            Autres Informations
-                        </label>
-                        <textarea id="autres_informations" 
-                                  name="autres_informations" 
-                                  rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                                  placeholder="Informations supplémentaires concernant ce courrier sortant..."></textarea>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Informations complémentaires sur ce courrier sortant (optionnel)
-                        </p>
-                    </div>
-                    
-                    <!-- Responsable de structure en copie (pour courrier entrant seulement) -->
-                    <div id="sg-copie-section" style="display: none;">
-                        <label for="secretaire_general_copie" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-user-tie mr-1 text-rdc-blue"></i>
-                            Le {{ get_titre_responsable() }} est en copie sur le courrier <span class="text-red-500">*</span>
-                        </label>
-                        <select id="secretaire_general_copie" 
-                                name="secretaire_general_copie"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            <option value="">-- Sélectionner --</option>
-                            <option value="oui">Oui</option>
-                            <option value="non">Non</option>
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Indiquez si le {{ get_titre_responsable() }} est mentionné en copie sur ce courrier
-                        </p>
-                    </div>
-                    
-                    <!-- Status -->
-                    <div>
-                        <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-flag mr-1 text-rdc-blue"></i>
-                            Statut Initial <span class="text-red-500">*</span>
-                        </label>
-                        <select id="statut" 
-                                name="statut" 
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                            {% if statuts_disponibles %}
-                                {% for statut_obj in statuts_disponibles %}
-                                    <option value="{{ statut_obj.nom }}" {% if statut_obj.nom == 'RECU' %}selected{% endif %}>
-                                        {{ statut_obj.nom.replace('_', ' ').title() }}
-                                        {% if statut_obj.description %}
-                                            - {{ statut_obj.description }}
-                                        {% endif %}
-                                    </option>
-                                {% endfor %}
-                            {% else %}
-                                <option value="RECU" selected>Reçu</option>
-                                <option value="EN_COURS">En cours</option>
-                                <option value="TRAITE">Traité</option>
-                                <option value="URGENT">Urgent</option>
-                                <option value="ARCHIVE">Archivé</option>
-                            {% endif %}
-                        </select>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Choisissez le statut initial pour ce courrier
-                        </p>
-                    </div>
-                    
-                    <!-- File Upload Avancé -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-paperclip mr-1 text-rdc-blue"></i>
-                            Pièce Jointe <span class="text-red-500">*</span>
-                        </label>
-                        
-                        <!-- Zone de téléchargement -->
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-rdc-blue transition-colors cursor-pointer" id="file-upload-zone">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
-                            <p class="text-sm font-medium text-gray-700">Télécharger un fichier <span class="text-red-500">*</span></p>
-                            <p class="text-xs text-gray-500">PDF, JPG, PNG, TIFF</p>
-                            <p class="text-xs text-gray-400 mt-2">Cliquez ou glissez-déposez</p>
-                            <input id="fichier" 
-                                   name="fichier" 
-                                   type="file" 
-                                   class="hidden" 
-                                   required
-                                   accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
-                        </div>
-                        
-                        <!-- Zone de prévisualisation -->
-                        <div id="file-preview" class="mt-4 hidden">
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h4 class="text-sm font-medium text-gray-900">Fichier sélectionné</h4>
-                                    <div class="flex items-center space-x-2">
-                                        <button type="button" id="crop-image-btn" class="px-3 py-1 text-xs bg-rdc-yellow text-white rounded-md hover:bg-opacity-90 hidden">
-                                            <i class="fas fa-crop-alt mr-1"></i>Rogner
-                                        </button>
-                                        <button type="button" id="remove-file" class="text-red-600 hover:text-red-800">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="preview-content" class="mb-3">
-                                    <!-- Le contenu de prévisualisation sera inséré ici -->
-                                </div>
-                                <div class="flex items-center text-xs text-gray-500">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    <span id="file-info"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Pièces jointes supplémentaires -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-paperclip mr-1 text-gray-500"></i>
-                            Pièces jointes supplémentaires
-                            <span class="text-xs text-gray-400 ml-1">(optionnel — plusieurs fichiers possibles)</span>
-                        </label>
-                        <input type="file"
-                               name="fichiers_supplementaires"
-                               multiple
-                               accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif"
-                               class="block w-full text-sm text-gray-500
-                                      file:mr-4 file:py-2 file:px-4
-                                      file:rounded-md file:border-0
-                                      file:text-sm file:font-medium
-                                      file:bg-gray-100 file:text-gray-700
-                                      hover:file:bg-gray-200 cursor-pointer">
-                        <p class="mt-1 text-xs text-gray-400">PDF, JPG, PNG, TIFF — 16 MB max par fichier</p>
-                    </div>
+<div class="gec-two-col" style="--sidebar:280px;">
 
-                    <!-- Submit Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-3 pt-6">
-                        <button type="submit" 
-                                class="flex-1 flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-save mr-2"></i>
-                            {{ t('register_mail_action') or 'Enregistrer le Courrier' }}
-                        </button>
-                        <a href="{{ url_for('dashboard') }}" 
-                           class="flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                            <i class="fas fa-times mr-2"></i>
-                            Annuler
-                        </a>
-                    </div>
-                </form>
+  <!-- Main form -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+    <form method="POST" enctype="multipart/form-data" id="registerForm" style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <div class="gec-card">
+        <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-edit"></i> {{ t('mail_information') or 'Informations du Courrier' }}</span></div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
+
+          <!-- Type selector -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label"><i class="fas fa-exchange-alt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('mail_type') or 'Type de Courrier' }} <span style="color:var(--danger);">*</span></label>
+            <div class="gec-form-row gec-form-row-2" style="gap:.75rem;">
+              <label id="label-entrant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid var(--primary);border-radius:var(--r-md);cursor:pointer;background:var(--primary)10;transition:all .15s;">
+                <input type="radio" name="type_courrier" value="ENTRANT" checked class="sr-only">
+                <i class="fas fa-inbox" style="color:var(--primary);"></i>
+                <span style="font-weight:500;font-size:.875rem;color:var(--t-primary);">{{ t('incoming') or 'Entrant' }}</span>
+              </label>
+              <label id="label-sortant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;">
+                <input type="radio" name="type_courrier" value="SORTANT" class="sr-only">
+                <i class="fas fa-paper-plane" style="color:var(--success);"></i>
+                <span style="font-weight:500;font-size:.875rem;color:var(--t-primary);">{{ t('outgoing') or 'Sortant' }}</span>
+              </label>
             </div>
+          </div>
+
+          <!-- Type sortant (conditional) -->
+          <div id="type-courrier-sortant-section" class="gec-form-group" style="display:none;margin:0;">
+            <label class="gec-label" for="type_courrier_sortant_id"><i class="fas fa-tags" style="color:var(--primary);font-size:.75rem;"></i> {{ t('outgoing_mail_type') or 'Type de Courrier Sortant' }} <span style="color:var(--danger);">*</span></label>
+            <select id="type_courrier_sortant_id" name="type_courrier_sortant_id" class="gec-select">
+              <option value="">{{ t('select_type') or '-- Sélectionner un type --' }}</option>
+              {% for type in types_courrier_sortant %}
+              <option value="{{ type.id }}">{{ type.nom }}</option>
+              {% endfor %}
+            </select>
+            <p class="gec-form-hint">{{ t('select_specific_outgoing_type') or 'Sélectionnez le type spécifique de courrier sortant' }}</p>
+          </div>
+
+          <!-- Numéro accusé manuel -->
+          {% if parametres and parametres.mode_numero_accuse == 'manuel' %}
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label" for="numero_accuse_manuel"><i class="fas fa-receipt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('receipt_number') or "N° d'Accusé de Réception" }} <span style="color:var(--danger);">*</span></label>
+            <input type="text" id="numero_accuse_manuel" name="numero_accuse_manuel" required class="gec-input" placeholder="{{ t('enter_unique_number') or 'Entrez un numéro unique' }}">
+            <p class="gec-form-hint">{{ t('number_must_be_unique') or 'Ce numéro doit être unique dans le système' }}</p>
+          </div>
+          {% endif %}
+
+          <!-- N° référence + Contact -->
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group" style="margin:0;">
+              <label class="gec-label" for="numero_reference"><i class="fas fa-hashtag" style="color:var(--primary);font-size:.75rem;"></i> {{ t('reference_number') or 'N° de Référence' }}</label>
+              <input type="text" id="numero_reference" name="numero_reference" class="gec-input" placeholder="{{ t('optional_if_empty_unreferenced') or 'Optionnel' }}">
+              <p class="gec-form-hint">{{ t('leave_empty_if_no_reference') or 'Laissez vide si aucun numéro de référence' }}</p>
+            </div>
+            <div class="gec-form-group" id="contact-field" style="margin:0;">
+              <label class="gec-label" for="contact"><i class="fas fa-user" style="color:var(--primary);font-size:.75rem;"></i> <span id="contact-label">{{ t('sender') or 'Expéditeur' }}</span> <span style="color:var(--danger);">*</span></label>
+              <input type="text" id="contact" name="expediteur" required class="gec-input" placeholder="Nom de l'expéditeur">
+              <input type="hidden" id="destinataire" name="destinataire" value="">
+            </div>
+          </div>
+
+          <!-- Objet -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label" for="objet"><i class="fas fa-file-alt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('subject_letter') or 'Objet de la Lettre' }} <span style="color:var(--danger);">*</span></label>
+            <textarea id="objet" name="objet" rows="4" required class="gec-textarea" placeholder="Décrivez l'objet de la lettre"></textarea>
+          </div>
+
+          <!-- Date rédaction/émission -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label" for="date_redaction">
+              <i class="fas fa-calendar" style="color:var(--success);font-size:.75rem;"></i>
+              <span id="date-redaction-label">{{ t('letter_drafting_date') or 'Date de Rédaction' }}</span>
+              <span id="date-emission-label" style="display:none;">{{ t('letter_emission_date') or "Date d'Émission" }} <span style="color:var(--danger);">*</span></span>
+            </label>
+            <input type="date" id="date_redaction" name="date_redaction" class="gec-input">
+            <p class="gec-form-hint">
+              <span id="date-redaction-hint">Date à laquelle la lettre a été rédigée (optionnel)</span>
+              <span id="date-emission-hint" style="display:none;">Date à laquelle la lettre a été émise (obligatoire)</span>
+            </p>
+          </div>
+
+          <!-- Autres informations (sortant uniquement) -->
+          <div id="autres-informations-section" class="gec-form-group" style="display:none;margin:0;">
+            <label class="gec-label" for="autres_informations"><i class="fas fa-info-circle" style="color:var(--primary);font-size:.75rem;"></i> Autres Informations</label>
+            <textarea id="autres_informations" name="autres_informations" rows="3" class="gec-textarea" placeholder="Informations supplémentaires concernant ce courrier sortant..."></textarea>
+            <p class="gec-form-hint">Informations complémentaires sur ce courrier sortant (optionnel)</p>
+          </div>
+
+          <!-- Responsable en copie (entrant uniquement) -->
+          <div id="sg-copie-section" class="gec-form-group" style="display:none;margin:0;">
+            <label class="gec-label" for="secretaire_general_copie"><i class="fas fa-user-tie" style="color:var(--primary);font-size:.75rem;"></i> Le {{ get_titre_responsable() }} est en copie <span style="color:var(--danger);">*</span></label>
+            <select id="secretaire_general_copie" name="secretaire_general_copie" class="gec-select">
+              <option value="">-- Sélectionner --</option>
+              <option value="oui">Oui</option>
+              <option value="non">Non</option>
+            </select>
+            <p class="gec-form-hint">Indiquez si le {{ get_titre_responsable() }} est mentionné en copie sur ce courrier</p>
+          </div>
+
+          <!-- Statut -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label" for="statut"><i class="fas fa-flag" style="color:var(--primary);font-size:.75rem;"></i> Statut Initial <span style="color:var(--danger);">*</span></label>
+            <select id="statut" name="statut" required class="gec-select">
+              {% if statuts_disponibles %}
+              {% for statut_obj in statuts_disponibles %}
+              <option value="{{ statut_obj.nom }}" {% if statut_obj.nom == 'RECU' %}selected{% endif %}>
+                {{ statut_obj.nom.replace('_', ' ').title() }}{% if statut_obj.description %} — {{ statut_obj.description }}{% endif %}
+              </option>
+              {% endfor %}
+              {% else %}
+              <option value="RECU" selected>Reçu</option>
+              <option value="EN_COURS">En cours</option>
+              <option value="TRAITE">Traité</option>
+              <option value="URGENT">Urgent</option>
+              <option value="ARCHIVE">Archivé</option>
+              {% endif %}
+            </select>
+            <p class="gec-form-hint">Choisissez le statut initial pour ce courrier</p>
+          </div>
+
         </div>
-    </div>
-    
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Auto Info -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
-                    Informations Automatiques
-                </h3>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-calendar mr-2 text-rdc-green"></i>
-                        Date d'enregistrement
-                    </div>
-                    <div class="text-sm text-gray-600 current-time"></div>
-                </div>
-                
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-user mr-2 text-rdc-green"></i>
-                        Enregistré par
-                    </div>
-                    <div class="text-sm text-gray-600">{{ current_user.nom_complet }}</div>
-                </div>
-                
-                <div>
-                    <div class="flex items-center text-sm font-medium text-gray-700 mb-1">
-                        <i class="fas fa-receipt mr-2 text-rdc-green"></i>
-                        N° d'accusé
-                    </div>
-                    <div class="text-sm text-gray-600">Généré automatiquement</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Help -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                    <i class="fas fa-question-circle mr-2 text-rdc-blue"></i>
-                    Guide d'Utilisation
-                </h3>
-            </div>
-            <div class="p-6">
-                <ul class="space-y-3 text-sm text-gray-600">
-                    <li class="flex items-start">
-                        <i class="fas fa-check-circle text-rdc-green mr-2 mt-0.5 flex-shrink-0"></i>
-                        Les champs marqués d'un * sont obligatoires
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-check-circle text-rdc-green mr-2 mt-0.5 flex-shrink-0"></i>
-                        Le numéro d'accusé sera généré automatiquement
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-check-circle text-rdc-green mr-2 mt-0.5 flex-shrink-0"></i>
-                        Vous pouvez enregistrer sans pièce jointe
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-check-circle text-rdc-green mr-2 mt-0.5 flex-shrink-0"></i>
-                        Taille maximum: 16MB par fichier
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+      </div>
 
+      <!-- File upload card -->
+      <div class="gec-card">
+        <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-paperclip"></i> Pièces Jointes</span></div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1rem;">
 
-
-<!-- Modal de Rognage -->
-<div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-xl max-w-4xl w-full">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">
-                        <i class="fas fa-crop-alt mr-2 text-rdc-yellow"></i>
-                        Rogner l'image
-                    </h3>
-                    <button type="button" id="close-crop" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
+          <!-- Main file -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label"><i class="fas fa-file-upload" style="color:var(--primary);font-size:.75rem;"></i> Pièce Jointe Principale <span style="color:var(--danger);">*</span></label>
+            <div class="gec-upload-zone" id="file-upload-zone">
+              <div class="gec-upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+              <div class="gec-upload-text">Télécharger un fichier <span style="color:var(--danger);">*</span></div>
+              <div class="gec-upload-hint">PDF, JPG, PNG, TIFF — Cliquez ou glissez-déposez</div>
+              <input id="fichier" name="fichier" type="file" style="display:none;" required accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif">
+            </div>
+            <!-- Preview -->
+            <div id="file-preview" style="display:none;margin-top:.75rem;">
+              <div style="background:var(--body-bg);border-radius:var(--r-md);padding:.875rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
+                  <span style="font-size:.8125rem;font-weight:500;color:var(--t-primary);">Fichier sélectionné</span>
+                  <div style="display:flex;gap:.5rem;">
+                    <button type="button" id="crop-image-btn" class="gec-btn gec-btn-secondary gec-btn-sm" style="display:none;">
+                      <i class="fas fa-crop-alt"></i> Rogner
                     </button>
+                    <button type="button" id="remove-file" class="gec-btn gec-btn-ghost gec-btn-sm" style="color:var(--danger);">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
                 </div>
-            </div>
-            <div class="p-6">
-                <div class="text-center">
-                    <div id="crop-container" class="max-w-2xl mx-auto mb-4">
-                        <img id="crop-image" class="max-w-full" style="display: none;">
-                    </div>
-                    <div class="space-x-4">
-                        <button type="button" id="apply-crop" class="px-4 py-2 bg-rdc-green text-white rounded-md hover:bg-opacity-90">
-                            <i class="fas fa-crop mr-2"></i>Appliquer
-                        </button>
-                        <button type="button" id="cancel-crop" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90">
-                            <i class="fas fa-times mr-2"></i>Annuler
-                        </button>
-                    </div>
+                <div id="preview-content" style="margin-bottom:.5rem;"></div>
+                <div style="font-size:.75rem;color:var(--t-muted);display:flex;align-items:center;gap:.375rem;">
+                  <i class="fas fa-info-circle"></i>
+                  <span id="file-info"></span>
                 </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Additional files — same visual style as main upload zone -->
+          <div class="gec-form-group" style="margin:0;">
+            <label class="gec-label">
+              <i class="fas fa-paperclip" style="color:var(--t-muted);font-size:.75rem;"></i>
+              Pièces jointes supplémentaires
+              <span style="font-weight:400;color:var(--t-muted);font-size:.75rem;"> — optionnel</span>
+            </label>
+
+            <!-- Drop zone for additional files -->
+            <div class="gec-upload-zone" id="extra-upload-zone"
+                 onclick="document.getElementById('fichiers_supplementaires').click()"
+                 ondragover="extraDragOver(event)" ondragleave="extraDragLeave(event)" ondrop="extraDrop(event)"
+                 style="cursor:pointer;">
+              <div class="gec-upload-zone-icon" style="font-size:1.5rem;"><i class="fas fa-paperclip"></i></div>
+              <p class="gec-upload-zone-text"><strong>Ajouter des fichiers</strong> ou glisser-déposer</p>
+              <p class="gec-upload-zone-hint">PDF, JPG, PNG, TIFF — 16 MB max par fichier — plusieurs fichiers</p>
+              <input type="file" name="fichiers_supplementaires" id="fichiers_supplementaires"
+                     multiple accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif" style="display:none;"
+                     onchange="onExtraFilesChange(this)">
+            </div>
+
+            <!-- File list (populated by JS) -->
+            <div id="extra-files-list" style="display:none;margin-top:.75rem;display:flex;flex-direction:column;gap:.375rem;"></div>
+          </div>
+
         </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+        <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</a>
+        <button type="submit" class="gec-btn gec-btn-primary gec-btn-lg">
+          <i class="fas fa-save"></i> {{ t('register_mail_action') or 'Enregistrer le Courrier' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+    <!-- Auto info -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-info-circle"></i> Informations Automatiques</span></div>
+      <div class="gec-card-body">
+        <div class="gec-info-list">
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-calendar" style="margin-right:.375rem;color:var(--success);font-size:.75rem;"></i>Date d'enreg.</span>
+            <span class="gec-info-val current-time" style="font-size:.8125rem;"></span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-user" style="margin-right:.375rem;color:var(--success);font-size:.75rem;"></i>Enregistré par</span>
+            <span class="gec-info-val" style="font-size:.8125rem;">{{ current_user.nom_complet }}</span>
+          </div>
+          <div class="gec-info-row">
+            <span class="gec-info-key"><i class="fas fa-receipt" style="margin-right:.375rem;color:var(--success);font-size:.75rem;"></i>N° accusé</span>
+            <span class="gec-info-val" style="font-size:.8125rem;color:var(--t-muted);">Généré automatiquement</span>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Help -->
+    <div class="gec-card">
+      <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-lightbulb"></i> Guide d'Utilisation</span></div>
+      <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.5rem;">
+        {% for tip in [
+          'Les champs marqués d\'un * sont obligatoires',
+          'Le numéro d\'accusé sera généré automatiquement',
+          'Vous pouvez enregistrer sans pièce jointe',
+          'Taille maximum: 16 MB par fichier'
+        ] %}
+        <div style="display:flex;align-items:flex-start;gap:.5rem;font-size:.8125rem;color:var(--t-secondary);">
+          <i class="fas fa-check-circle" style="color:var(--success);margin-top:2px;flex-shrink:0;"></i>
+          <span>{{ tip }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Crop modal -->
+<div id="crop-modal" class="gec-modal-overlay" style="display:none;">
+  <div class="gec-modal" style="max-width:720px;">
+    <div class="gec-modal-header">
+      <h3 class="gec-modal-title"><i class="fas fa-crop-alt" style="color:var(--warning);"></i> Rogner l'image</h3>
+      <button type="button" id="close-crop" class="gec-btn gec-btn-ghost gec-btn-icon"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="gec-modal-body">
+      <div id="crop-container" style="text-align:center;max-width:640px;margin:0 auto;">
+        <img id="crop-image" style="max-width:100%;display:none;">
+      </div>
+    </div>
+    <div class="gec-modal-footer">
+      <button type="button" id="cancel-crop" class="gec-btn gec-btn-secondary"><i class="fas fa-times"></i> Annuler</button>
+      <button type="button" id="apply-crop" class="gec-btn gec-btn-primary"><i class="fas fa-crop"></i> Appliquer</button>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<!-- Cropperjs CSS (local) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/cropperjs/cropper.min.css') }}">
-<!-- Cropperjs JS (local) -->
 <script src="{{ url_for('static', filename='vendor/cropperjs/cropper.min.js') }}"></script>
-
-<!-- Custom JS -->
 <script src="{{ url_for('static', filename='js/register_mail.js') }}"></script>
+<script>
+// ── Additional files upload zone ──────────────────────────────────
+var _extraFiles = [];
+
+function onExtraFilesChange(input) {
+  var newFiles = Array.from(input.files);
+  newFiles.forEach(function(f) {
+    if (f.size > 16 * 1024 * 1024) {
+      alert(f.name + ' dépasse la limite de 16 MB et a été ignoré.');
+      return;
+    }
+    // Avoid duplicates by name+size
+    var exists = _extraFiles.some(function(e) { return e.name === f.name && e.size === f.size; });
+    if (!exists) _extraFiles.push(f);
+  });
+  renderExtraFileList();
+}
+
+function extraDragOver(e) {
+  e.preventDefault();
+  document.getElementById('extra-upload-zone').style.borderColor = 'var(--primary)';
+  document.getElementById('extra-upload-zone').style.background = 'rgba(37,99,235,.04)';
+}
+function extraDragLeave(e) {
+  document.getElementById('extra-upload-zone').style.borderColor = '';
+  document.getElementById('extra-upload-zone').style.background = '';
+}
+function extraDrop(e) {
+  e.preventDefault();
+  extraDragLeave(e);
+  var dt = e.dataTransfer;
+  if (dt && dt.files) {
+    var fakeInput = { files: dt.files };
+    onExtraFilesChange(fakeInput);
+    // Update the actual input using DataTransfer trick
+    try {
+      var transfer = new DataTransfer();
+      _extraFiles.forEach(function(f) { transfer.items.add(f); });
+      document.getElementById('fichiers_supplementaires').files = transfer.files;
+    } catch(err) {}
+  }
+}
+
+function removeExtraFile(idx) {
+  _extraFiles.splice(idx, 1);
+  // Rebuild the file input
+  try {
+    var transfer = new DataTransfer();
+    _extraFiles.forEach(function(f) { transfer.items.add(f); });
+    document.getElementById('fichiers_supplementaires').files = transfer.files;
+  } catch(err) {}
+  renderExtraFileList();
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' Ko';
+  return (bytes/1024/1024).toFixed(1) + ' Mo';
+}
+
+function getFileIcon(name) {
+  var ext = name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') return 'fa-file-pdf';
+  if (['jpg','jpeg','png','tiff','tif'].includes(ext)) return 'fa-file-image';
+  return 'fa-file-alt';
+}
+function getFileIconColor(name) {
+  var ext = name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') return '#dc2626';
+  if (['jpg','jpeg','png','tiff','tif'].includes(ext)) return '#2563eb';
+  return '#6b7280';
+}
+
+function renderExtraFileList() {
+  var list = document.getElementById('extra-files-list');
+  var zone = document.getElementById('extra-upload-zone');
+  if (!list) return;
+  list.innerHTML = '';
+  if (_extraFiles.length === 0) {
+    list.style.display = 'none';
+    zone.style.display = '';
+    return;
+  }
+  list.style.display = 'flex';
+  // Keep zone visible but compact
+  _extraFiles.forEach(function(f, i) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:.75rem;padding:.625rem .875rem;background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);';
+    row.innerHTML =
+      '<i class="fas ' + getFileIcon(f.name) + '" style="color:' + getFileIconColor(f.name) + ';font-size:1.125rem;flex-shrink:0;"></i>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<p style="font-size:.8125rem;font-weight:600;color:var(--t-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;">' + f.name + '</p>' +
+        '<p style="font-size:.75rem;color:var(--t-muted);margin:0;">' + fmtSize(f.size) + '</p>' +
+      '</div>' +
+      '<button type="button" onclick="removeExtraFile(' + i + ')" ' +
+        'style="background:none;border:none;cursor:pointer;color:var(--danger);padding:.25rem;" ' +
+        'title="Retirer">' +
+        '<i class="fas fa-times"></i>' +
+      '</button>';
+    list.appendChild(row);
+  });
+  // Badge on the zone showing count
+  var hint = zone.querySelector('.gec-upload-zone-text');
+  if (hint) hint.innerHTML = '<strong>' + _extraFiles.length + ' fichier(s) sélectionné(s)</strong> — Ajouter d\'autres';
+}
+
+// Re-sync DataTransfer when form is submitted
+document.getElementById('registerForm')?.addEventListener('submit', function() {
+  try {
+    var transfer = new DataTransfer();
+    _extraFiles.forEach(function(f) { transfer.items.add(f); });
+    document.getElementById('fichiers_supplementaires').files = transfer.files;
+  } catch(err) {}
+});
+</script>
 {% endblock %}

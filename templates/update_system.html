@@ -1,185 +1,107 @@
 {% extends "new_base.html" %}
-
-{% block title %}Mise à Jour du Système - GEC{% endblock %}
+{% block title %}Mise à Jour Système — GEC{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-sync-alt mr-3 text-rdc-blue"></i>
-            Mise à Jour du Système
-        </h1>
-        <p class="mt-2 text-gray-600">Mettez à jour le système en ligne ou hors ligne</p>
+<div class="gec-page-header">
+  <div>
+    <div class="gec-breadcrumb">
+      <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i></a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <a href="{{ url_for('settings') }}">Paramètres</a>
+      <span class="gec-breadcrumb-sep"><i class="fas fa-chevron-right"></i></span>
+      <span class="gec-breadcrumb-current">Mise à jour</span>
     </div>
+    <h1 class="gec-page-title"><i class="fas fa-sync-alt" style="color:var(--primary);margin-right:.5rem;"></i>Mise à Jour Système</h1>
+    <p class="gec-page-subtitle">Mettez à jour le système en ligne ou hors ligne</p>
+  </div>
+  <a href="{{ url_for('settings') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Paramètres</a>
+</div>
 
-    <!-- Version Information -->
-    <div class="bg-white shadow-rdc rounded-xl mb-8">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                <i class="fas fa-info-circle mr-2 text-rdc-blue"></i>
-                Informations sur la Version
-            </h2>
-        </div>
-        <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Version Actuelle
-                    </label>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-lg font-semibold text-gray-900">{{ current_version }}</p>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        État du Système
-                    </label>
-                    <div class="bg-green-50 p-4 rounded-lg">
-                        <p class="text-lg font-semibold text-green-800">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            Opérationnel
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Version info -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-info-circle"></i> Informations système</span></div>
+  <div class="gec-card-body">
+    <div class="gec-grid-2">
+      <div>
+        <div style="font-size:.75rem;color:var(--t-muted);margin-bottom:.375rem;">Version actuelle</div>
+        <div style="font-size:1.125rem;font-weight:700;color:var(--t-primary);font-family:monospace;">{{ current_version }}</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--t-muted);margin-bottom:.375rem;">État du système</div>
+        <span class="gec-badge gec-badge-green"><i class="fas fa-check-circle"></i> Opérationnel</span>
+      </div>
     </div>
+  </div>
+</div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Online Update -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-cloud-download-alt mr-2 text-rdc-green"></i>
-                    Mise à Jour en Ligne
-                </h2>
-            </div>
-            <div class="p-6">
-                <p class="text-gray-600 mb-6">
-                    Téléchargez automatiquement les dernières mises à jour depuis le dépôt Git.
-                </p>
-                
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
-                                <strong>Attention:</strong> Cette action créera une sauvegarde automatique avant la mise à jour.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <form method="POST" action="{{ url_for('update_online') }}" onsubmit="return confirm('Êtes-vous sûr de vouloir mettre à jour le système en ligne ? Une sauvegarde sera créée automatiquement.');">
-                    <button type="submit" class="w-full bg-rdc-green hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                        <i class="fas fa-download mr-2"></i>
-                        Lancer la Mise à Jour en Ligne
-                    </button>
-                </form>
-
-                <div class="mt-4 text-sm text-gray-500">
-                    <ul class="list-disc list-inside space-y-1">
-                        <li>Connexion Internet requise</li>
-                        <li>Sauvegarde automatique créée</li>
-                        <li>Configuration préservée</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Offline Update -->
-        <div class="bg-white shadow-rdc rounded-xl">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-file-archive mr-2 text-rdc-blue"></i>
-                    Mise à Jour Hors Ligne
-                </h2>
-            </div>
-            <div class="p-6">
-                <p class="text-gray-600 mb-6">
-                    Importez manuellement un fichier ZIP contenant les mises à jour.
-                </p>
-
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-info-circle text-blue-400"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-blue-700">
-                                <strong>Note:</strong> Le fichier ZIP doit contenir la structure complète du projet.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <form method="POST" action="{{ url_for('update_offline') }}" enctype="multipart/form-data" onsubmit="return confirm('Êtes-vous sûr de vouloir mettre à jour le système depuis ce fichier ? Une sauvegarde sera créée automatiquement.');">
-                    <div class="mb-4">
-                        <label for="update_file" class="block text-sm font-medium text-gray-700 mb-2">
-                            Fichier de Mise à Jour (ZIP)
-                        </label>
-                        <input type="file" 
-                               id="update_file" 
-                               name="update_file" 
-                               accept=".zip"
-                               required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue">
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-rdc-blue hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
-                        <i class="fas fa-upload mr-2"></i>
-                        Lancer la Mise à Jour Hors Ligne
-                    </button>
-                </form>
-
-                <div class="mt-4 text-sm text-gray-500">
-                    <ul class="list-disc list-inside space-y-1">
-                        <li>Aucune connexion requise</li>
-                        <li>Fichier ZIP requis</li>
-                        <li>Base de données préservée</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+<div class="gec-grid-2" style="margin-bottom:1.5rem;">
+  <!-- Online update -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-cloud-download-alt" style="color:var(--success);"></i> Mise à jour en ligne</span>
     </div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <p style="font-size:.875rem;color:var(--t-secondary);">Téléchargez automatiquement les dernières mises à jour depuis le dépôt Git.</p>
+      <div class="gec-alert gec-alert-warning" style="margin:0;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div style="font-size:.8125rem;"><strong>Attention :</strong> Une sauvegarde complète sera créée automatiquement avant la mise à jour.</div>
+      </div>
+      <form method="POST" action="{{ url_for('update_online') }}" onsubmit="return confirm('Lancer la mise à jour depuis Git ? Une sauvegarde sera créée automatiquement.')">
+        <button type="submit" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-download"></i> Lancer la Mise à Jour en Ligne</button>
+      </form>
+      <div style="font-size:.75rem;color:var(--t-muted);display:flex;flex-direction:column;gap:.25rem;">
+        <span><i class="fas fa-wifi" style="margin-right:.375rem;"></i>Connexion Internet requise</span>
+        <span><i class="fas fa-shield-alt" style="color:var(--success);margin-right:.375rem;"></i>Sauvegarde automatique créée</span>
+        <span><i class="fas fa-cog" style="margin-right:.375rem;"></i>Configuration préservée</span>
+      </div>
+    </div>
+  </div>
 
-    <!-- Important Notes -->
-    <div class="mt-8 bg-gray-50 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-shield-alt mr-2 text-rdc-yellow"></i>
-            Informations Importantes
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-            <div class="flex items-start">
-                <i class="fas fa-database mr-2 mt-1 text-rdc-green"></i>
-                <div>
-                    <strong>Base de données:</strong> Toujours préservée lors des mises à jour
-                </div>
-            </div>
-            <div class="flex items-start">
-                <i class="fas fa-folder mr-2 mt-1 text-rdc-blue"></i>
-                <div>
-                    <strong>Fichiers uploadés:</strong> Conservés dans le dossier uploads
-                </div>
-            </div>
-            <div class="flex items-start">
-                <i class="fas fa-cog mr-2 mt-1 text-rdc-yellow"></i>
-                <div>
-                    <strong>Configuration:</strong> Paramètres système préservés
-                </div>
-            </div>
+  <!-- Offline update -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <span class="gec-card-title"><i class="fas fa-file-archive" style="color:var(--primary);"></i> Mise à jour hors ligne</span>
+    </div>
+    <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
+      <p style="font-size:.875rem;color:var(--t-secondary);">Importez manuellement un fichier ZIP contenant les mises à jour.</p>
+      <div class="gec-alert gec-alert-info" style="margin:0;">
+        <i class="fas fa-info-circle"></i>
+        <div style="font-size:.8125rem;">Le fichier ZIP doit contenir la structure complète du projet.</div>
+      </div>
+      <form method="POST" action="{{ url_for('update_offline') }}" enctype="multipart/form-data" onsubmit="return confirm('Mettre à jour le système depuis ce fichier ? Une sauvegarde sera créée automatiquement.')" style="display:flex;flex-direction:column;gap:.75rem;">
+        <div class="gec-form-group">
+          <label class="gec-label">Fichier de mise à jour (.zip)</label>
+          <input type="file" name="update_file" accept=".zip" required class="gec-input" style="padding:.4rem .75rem;">
         </div>
+        <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;"><i class="fas fa-upload"></i> Lancer la Mise à Jour Hors Ligne</button>
+      </form>
+      <div style="font-size:.75rem;color:var(--t-muted);display:flex;flex-direction:column;gap:.25rem;">
+        <span><i class="fas fa-ban" style="margin-right:.375rem;"></i>Aucune connexion requise</span>
+        <span><i class="fas fa-file-archive" style="margin-right:.375rem;"></i>Fichier ZIP requis</span>
+        <span><i class="fas fa-database" style="color:var(--success);margin-right:.375rem;"></i>Base de données préservée</span>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Back Button -->
-    <div class="mt-8">
-        <a href="{{ url_for('settings') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue">
-            <i class="fas fa-arrow-left mr-2"></i>
-            Retour aux Paramètres
-        </a>
+<!-- Notes -->
+<div class="gec-card">
+  <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-shield-alt" style="color:var(--warning);"></i> Informations importantes</span></div>
+  <div class="gec-card-body">
+    <div class="gec-grid-3">
+      <div style="display:flex;align-items:flex-start;gap:.625rem;">
+        <i class="fas fa-database" style="color:var(--success);margin-top:2px;"></i>
+        <div style="font-size:.875rem;"><strong style="display:block;margin-bottom:.25rem;">Base de données</strong><span style="color:var(--t-muted);">Toujours préservée lors des mises à jour</span></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:.625rem;">
+        <i class="fas fa-folder" style="color:var(--primary);margin-top:2px;"></i>
+        <div style="font-size:.875rem;"><strong style="display:block;margin-bottom:.25rem;">Fichiers uploadés</strong><span style="color:var(--t-muted);">Conservés dans le dossier uploads</span></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:.625rem;">
+        <i class="fas fa-cog" style="color:var(--warning);margin-top:2px;"></i>
+        <div style="font-size:.875rem;"><strong style="display:block;margin-bottom:.25rem;">Configuration</strong><span style="color:var(--t-muted);">Paramètres système préservés</span></div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

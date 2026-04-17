@@ -1,68 +1,72 @@
 {% extends "new_base.html" %}
-
-{% block title %}Page non trouvée - GEC{% endblock %}
+{% block title %}Page non trouvée — 404 — GEC{% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex flex-col items-center justify-center p-4">
-    <!-- Lottie Animation Placeholder -->
-    <div class="w-full max-w-md mx-auto mb-8">
-        <lottie-player src="https://assets8.lottiefiles.com/packages/lf20_kcsr6fcp.json" background="transparent" speed="1" class="lottie-container" loop autoplay></lottie-player>
+<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+  <div style="max-width:600px;width:100%;display:flex;flex-direction:column;gap:1.5rem;align-items:center;">
+
+    <!-- Code -->
+    <div style="font-size:6rem;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--primary),#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">404</div>
+
+    <div style="text-align:center;">
+      <h1 style="font-size:1.5rem;font-weight:700;color:var(--t-primary);margin-bottom:.5rem;">Oups ! Vous semblez perdu…</h1>
+      <p style="color:var(--t-muted);font-size:.9375rem;">La page que vous recherchez n'existe pas ou a été déplacée.</p>
     </div>
 
-    <div class="text-center max-w-2xl mx-auto space-y-8">
-        <!-- Message Principal -->
-        <div>
-            <h1 class="text-4xl font-bold text-rdc-blue mb-4">Oups ! Vous semblez perdu...</h1>
-            <p class="text-gray-600 text-lg">La page que vous recherchez n'existe pas ou a été déplacée.</p>
+    <!-- Search card -->
+    <div class="gec-card" style="width:100%;">
+      <div class="gec-card-body">
+        <div style="font-weight:600;color:var(--t-primary);margin-bottom:.875rem;font-size:.9375rem;">Retrouvez votre chemin</div>
+        <form action="{{ url_for('view_mail') }}" method="GET" style="position:relative;">
+          <input type="text" name="search"
+                 placeholder="Rechercher un courrier, une référence..."
+                 class="gec-input"
+                 style="padding-right:3rem;">
+          <button type="submit"
+                  style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--primary);cursor:pointer;font-size:1rem;">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+        <div style="display:flex;gap:1rem;justify-content:center;margin-top:.875rem;flex-wrap:wrap;">
+          <a href="{{ url_for('dashboard') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
+            <i class="fas fa-home"></i> Tableau de bord
+          </a>
+          <a href="{{ url_for('register_mail') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
+            <i class="fas fa-plus-circle"></i> Nouveau courrier
+          </a>
         </div>
-
-        <!-- Pilier 1: Le Guide (Barre de recherche) -->
-        <div class="bg-white p-6 rounded-xl shadow-rdc max-w-lg mx-auto">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Retrouvez votre chemin</h2>
-            <form action="{{ url_for('view_mail') }}" method="GET" class="relative">
-                <input type="text" name="search" placeholder="Rechercher un courrier, une référence..."
-                       class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-rdc-blue focus:ring-0 outline-none transition-all pr-12">
-                <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-rdc-blue">
-                    <i class="fas fa-search text-xl"></i>
-                </button>
-            </form>
-            <div class="mt-4 flex justify-center space-x-4 text-sm text-rdc-blue">
-                <a href="{{ url_for('dashboard') }}" class="hover:underline flex items-center">
-                    <i class="fas fa-home mr-2"></i>Tableau de bord
-                </a>
-                <a href="{{ url_for('register_mail') }}" class="hover:underline flex items-center">
-                    <i class="fas fa-plus-circle mr-2"></i>Nouveau courrier
-                </a>
-            </div>
-        </div>
-
-        <!-- Piliers 2 & 3: Conciergerie & Lead Magnet -->
-        <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto w-full">
-            <!-- La Conciergerie (Support) -->
-            <div class="bg-green-50 p-6 rounded-xl border border-green-100 hover:shadow-lg transition-all">
-                <div class="text-green-600 text-3xl mb-3"><i class="fab fa-whatsapp"></i></div>
-                <h3 class="font-bold text-gray-800 mb-2">Besoin d'aide immédiate ?</h3>
-                <p class="text-sm text-gray-600 mb-4">Notre équipe support est disponible pour vous guider.</p>
-                {% set whatsapp_num = get_system_params().whatsapp_number or '243860493345' %}
-                <a href="https://wa.me/{{ whatsapp_num }}" target="_blank"
-                   class="inline-block bg-green-500 text-white px-6 py-2 rounded-full font-medium hover:bg-green-600 transition-colors">
-                    Contacter le support
-                </a>
-            </div>
-
-            <!-- Le Lead Magnet (Cadeau) -->
-            <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 hover:shadow-lg transition-all">
-                <div class="text-rdc-blue text-3xl mb-3"><i class="fas fa-gift"></i></div>
-                <h3 class="font-bold text-gray-800 mb-2">Pour nous faire pardonner</h3>
-                <p class="text-sm text-gray-600 mb-4">Profitez d'une consultation de 30 minutes offerte.</p>
-                <a href="https://tidycal.com/moamyoneart/consultation-gratuite-15-min" target="_blank"
-                   class="inline-block bg-rdc-blue text-white px-6 py-2 rounded-full font-medium hover:bg-opacity-90 transition-colors">
-                    Réserver ma consultation
-                </a>
-            </div>
-        </div>
+      </div>
     </div>
+
+    <!-- Help cards -->
+    <div class="gec-grid-2" style="width:100%;">
+      <div class="gec-card" style="transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 8px 24px rgba(0,0,0,.12)'" onmouseout="this.style.boxShadow=''">
+        <div class="gec-card-body" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem;">
+          <i class="fab fa-whatsapp" style="font-size:2rem;color:#16a34a;"></i>
+          <div>
+            <div style="font-weight:600;color:var(--t-primary);margin-bottom:.375rem;">Besoin d'aide immédiate ?</div>
+            <p style="font-size:.8125rem;color:var(--t-muted);">Notre équipe support est disponible pour vous guider.</p>
+          </div>
+          {% set whatsapp_num = get_system_params().whatsapp_number or '243860493345' %}
+          <a href="https://wa.me/{{ whatsapp_num }}" target="_blank" class="gec-btn gec-btn-secondary gec-btn-sm">
+            Contacter le support
+          </a>
+        </div>
+      </div>
+      <div class="gec-card" style="transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 8px 24px rgba(0,0,0,.12)'" onmouseout="this.style.boxShadow=''">
+        <div class="gec-card-body" style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:.75rem;">
+          <i class="fas fa-gift" style="font-size:2rem;color:var(--primary);"></i>
+          <div>
+            <div style="font-weight:600;color:var(--t-primary);margin-bottom:.375rem;">Pour nous faire pardonner</div>
+            <p style="font-size:.8125rem;color:var(--t-muted);">Profitez d'une consultation de 30 minutes offerte.</p>
+          </div>
+          <a href="https://tidycal.com/moamyoneart/consultation-gratuite-15-min" target="_blank" class="gec-btn gec-btn-primary gec-btn-sm">
+            Réserver ma consultation
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
-
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 {% endblock %}
