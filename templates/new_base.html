@@ -133,6 +133,33 @@
       <span class="gec-nav-label">Analytique</span>
     </a>
 
+    <a href="{{ url_for('senders_list') }}"
+       class="gec-nav-item {% if cur == 'senders_list' %}active{% endif %}">
+      <i class="fas fa-address-book gec-nav-icon"></i>
+      <span class="gec-nav-label">Contacts</span>
+    </a>
+
+    <!-- Export rapide -->
+    <div class="gec-nav-group-toggle {% if cur in ['export_mail_list'] %}open group-active{% endif %}"
+         onclick="toggleNavGroup('export-group', this)" id="export-group-toggle">
+      <i class="fas fa-file-export gec-nav-icon"></i>
+      <span class="gec-group-label">Exports</span>
+      <i class="fas fa-chevron-down gec-group-chevron"></i>
+    </div>
+    <div class="gec-nav-group-body {% if cur not in ['export_mail_list'] %}collapsed{% endif %}"
+         id="export-group" style="max-height:200px;">
+      <a href="{{ url_for('export_mail_list') }}"
+         class="gec-nav-item {% if cur == 'export_mail_list' %}active{% endif %}">
+        <i class="fas fa-file-pdf gec-nav-icon"></i>
+        <span class="gec-nav-label">Export PDF</span>
+      </a>
+      <a href="{{ url_for('export_mail_list_excel') }}"
+         class="gec-nav-item {% if cur == 'export_mail_list_excel' %}active{% endif %}">
+        <i class="fas fa-file-excel gec-nav-icon"></i>
+        <span class="gec-nav-label">Export Excel</span>
+      </a>
+    </div>
+
     {% if current_user.has_permission('view_trash') %}
     <a href="{{ url_for('trash') }}"
        class="gec-nav-item {% if cur == 'trash' %}active{% endif %}">
@@ -274,13 +301,11 @@
         <i class="fas fa-language gec-nav-icon"></i>
         <span class="gec-nav-label">Langues</span>
       </a>
-      {% if url_for('update_system', _external=False) is defined or true %}
-      <a href="{{ url_for('update_system') if 'update_system' in url_map_endpoints else '#' }}"
+      <a href="{{ url_for('update_system') }}"
          class="gec-nav-item {% if cur == 'update_system' %}active{% endif %}">
         <i class="fas fa-sync-alt gec-nav-icon"></i>
         <span class="gec-nav-label">Mise à jour</span>
       </a>
-      {% endif %}
     </div>
     {% endif %}
     {% endif %}

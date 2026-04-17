@@ -13,7 +13,7 @@
     <p class="gec-page-subtitle">{{ t('browse_filter_all_mail') or 'Parcourez et filtrez tous les courriers enregistrés' }}</p>
   </div>
   <div style="display:flex;gap:.75rem;">
-    <a href="{{ url_for('kanban') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-columns"></i> Vue Kanban</a>
+    <a href="{{ url_for('kanban_view') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-columns"></i> Vue Kanban</a>
     <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau Courrier</a>
   </div>
 </div>
@@ -291,7 +291,7 @@
         {% set actions = [
           (url_for('register_mail'), 'fa-plus-circle', 'var(--primary)', 'Nouveau Courrier', 'Enregistrer un courrier'),
           (url_for('search'), 'fa-search', 'var(--warning)', 'Recherche Avancée', 'Critères spécifiques'),
-          (url_for('kanban'), 'fa-columns', '#8B5CF6', 'Vue Kanban', 'Gérer par statut'),
+          (url_for('kanban_view'), 'fa-columns', '#8B5CF6', 'Vue Kanban', 'Gérer par statut'),
           (url_for('dashboard'), 'fa-home', 'var(--success)', 'Dashboard', "Retour à l'accueil"),
         ] %}
         {% for href, icon, color, label, desc in actions %}
