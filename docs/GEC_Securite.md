@@ -1,390 +1,148 @@
-# Sécurité - GEC
+# GEC — Sécurité & Contrôle d'Accès
 
-## Introduction
-
-Ce document décrit les mesures de sécurité implémentées dans le système GEC. La sécurité est une priorité absolue compte tenu de la nature sensible des courriers administratifs gérés par l'application.
-
-> **Note importante :** Le GEC est une application strictement interne (B2B). Aucune partie de l'application n'est accessible publiquement sans authentification préalable. L'entrée unique est la page de connexion (`/login`).
+*Mise à jour : Avril 2026 — post-audit complet*
 
 ---
 
-## Chiffrement des Données
+## 1. Règles inviolables (hardcodées)
 
-### Chiffrement au Repos
+### Super Admin — AUCUN accès aux courriers
+Le rôle `super_admin` est un **administrateur système** : gestion des utilisateurs, configuration, sécurité, sauvegardes.
+Il **ne peut pas** :
+- Consulter/lire un courrier
+- Créer un courrier
+- Modifier un courrier
+- Effectuer des actions bulk sur les courriers
+- Voir la liste des courriers
 
-#### Données Sensibles
+Cette règle est codée directement dans `models/user.py` via la constante `_SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS` et **ne peut pas être contournée** via l'interface ou les rôles RBAC.
 
-Les données suivantes sont chiffrées en base de données avec AES-256-CBC :
-
-**Utilisateurs** :
-- Adresse email
-- Nom complet
-- Matricule
-- Fonction
-- Hash du mot de passe
-
-**Courriers** :
-- Objet
-- Expéditeur
-- Destinataire
-- Numéro de référence
-
-**Système** :
-- Clé API Resend
-- Mot de passe SMTP
-
-#### Fichiers Attachés
-
-Les pièces jointes peuvent être chiffrées avec AES-256-CBC :
-- Chiffrement automatique à l'upload
-- Déchiffrement à la volée pour le téléchargement
-- Checksum SHA-256 pour l'intégrité
-
-### Clés de Chiffrement
-
-#### GEC_MASTER_KEY
-
-Clé maître de 256 bits utilisée pour tout le chiffrement applicatif.
-
-**Génération** :
-```bash
-python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+```python
+# models/user.py — INVIOLABLE
+_SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS = frozenset({
+    'read_all_mail', 'read_department_mail', 'read_own_mail',
+    'edit_all_mail', 'edit_department_mail', 'edit_own_mail',
+    'create_mail', 'delete_mail', 'restore_mail', 'manage_mail',
+    'view_all_mail', 'bulk_mail',
+})
 ```
 
-**Stockage** :
-- Variable d'environnement (recommandé)
-- Jamais en clair dans le code
-- Jamais dans le dépôt Git
-
-**Rotation** :
-1. Exporter toutes les données (elles seront déchiffrées)
-2. Modifier GEC_MASTER_KEY
-3. Réimporter les données (elles seront rechiffrées)
-
-#### GEC_PASSWORD_SALT
-
-Sel additionnel pour le hachage des mots de passe.
-
-**Fonction** : Ajout d'entropie aux mots de passe avant hachage bcrypt
-**Génération** : Identique à GEC_MASTER_KEY
+Points de contrôle (5 niveaux) :
+1. `has_permission()` → retourne False pour les permissions mail si super_admin
+2. `can_view_courrier()` → return False immédiat
+3. `can_edit_courrier()` → return False immédiat
+4. `can_access_courrier()` → return False immédiat
+5. `apply_mail_access_filter()` → `query.filter(False)` (0 résultats)
+6. Route `register_mail` → redirect dashboard + log ACCES_REFUSE
 
 ---
 
-## Authentification
+## 2. Expiration de session automatique (1 heure)
 
-### Hachage des Mots de Passe
-
-Algorithme : bcrypt avec 12 rounds + sel applicatif
-
-```
-password → (password + GEC_PASSWORD_SALT) → bcrypt(12 rounds) → hash
-```
-
-### Exigences Mot de Passe
-
-- Minimum 8 caractères
-- Au moins une majuscule
-- Au moins une minuscule
-- Au moins un chiffre
-- Au moins un caractère spécial (!@#$%^&*...)
-- Pas de patterns prévisibles (123, abc, etc.)
-- Pas de mots de passe courants (password, admin, etc.)
-
-### Protection Contre Brute Force
-
-| Paramètre | Valeur |
-|-----------|--------|
-| Tentatives max avant blocage | 8 |
-| Durée du blocage | 15 minutes |
-| Seuil activités suspectes | 15 |
-| Blocage automatique IP | 30 minutes |
-
-### Rate Limiting
-
-Limites par défaut par route :
-
-| Route | Limite |
-|-------|--------|
-| Login | 30 requêtes / 15 min |
-| Enregistrement courrier | 50 requêtes / 15 min |
-| API générale | 10 requêtes / 15 min |
+- **Durée maximale** : 1 heure après connexion (absolue, indépendante de l'inactivité)
+- **Mécanisme** : `session['login_at']` (timestamp UNIX) stocké à la connexion
+- **Vérification** : `@app.before_request` dans `routes/auth.py` — toute requête authentifiée vérifie l'expiration
+- **Action** : `logout_user()` + `session.clear()` + log `AUTO_DECONNEXION` + redirect login
+- **Durée cookie** : 7 jours max, mais invalidée par before_request après 1h
 
 ---
 
-## Protection Contre les Attaques
+## 3. Cookies de session
 
-### Injection SQL
-
-**Mesures** :
-- Utilisation exclusive de l'ORM SQLAlchemy
-- Paramètres bindés pour requêtes brutes
-- Détection de patterns malveillants
-- Sanitization automatique des entrées
-
-**Patterns détectés** :
-```
-UNION SELECT, DROP TABLE, TRUNCATE
-exec(), execute(), sp_executesql
-0x (encodage hexadécimal)
-OR 1=1, AND 1=0
-```
-
-### Cross-Site Scripting (XSS)
-
-**Mesures** :
-- Échappement automatique Jinja2
-- Fonction sanitize_input() sur toutes les entrées
-- Headers Content-Security-Policy restrictifs
-
-**Patterns détectés** :
-```
-<script>...</script>
-javascript:
-onerror=, onclick=
-<iframe>, <object>, <embed>
-```
-
-### Cross-Site Request Forgery (CSRF)
-
-**Mesures** :
-- Tokens de session UUID4
-- Validation sur toutes les requêtes POST
-- Cookies sécurisés (HttpOnly, Secure, SameSite)
-
-### Path Traversal
-
-**Mesures** :
-- Suppression de `..` dans les chemins de fichiers
-- Limitation de la longueur des noms de fichiers (255 car.)
-- Validation des extensions autorisées
-
-### Open Redirect
-
-**Mesures** :
-- Validation des URLs de redirection
-- Interdiction des schémas dangereux (javascript:, data:)
-- Liste blanche des hôtes autorisés
+| Paramètre | Valeur | Protection |
+|---|---|---|
+| `SESSION_COOKIE_HTTPONLY` | `True` | Cookie inaccessible au JavaScript (XSS) |
+| `SESSION_COOKIE_SECURE` | `True` en production | Cookie transmis HTTPS uniquement |
+| `SESSION_COOKIE_SAMESITE` | `'Lax'` | Protection CSRF cross-site |
+| Durée maximale | 7 jours | Réduction de 30 → 7 jours |
 
 ---
 
-## Validation des Fichiers
+## 4. IP réelle dans les logs
 
-### Extensions Autorisées
+Nginx → Flask via `X-Forwarded-For` validé par proxy de confiance.
 
-```
-pdf, png, jpg, jpeg, tiff, tif, svg
-```
-
-### Validation du Contenu
-
-Vérification des headers de fichiers (magic bytes) :
-
-| Extension | Header attendu |
-|-----------|----------------|
-| PDF | %PDF |
-| PNG | \x89PNG\r\n\x1a\n |
-| JPEG | \xff\xd8\xff |
-| TIFF | II*\x00 |
-
-### Limites
-
-- Taille maximale : 16 MB par fichier
-- Taille totale upload : 100 MB
-
----
-
-## Headers de Sécurité HTTP
-
-```http
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Referrer-Policy: strict-origin-when-cross-origin
-Permissions-Policy: camera=(), microphone=(), geolocation=()
-Cache-Control: no-cache, no-store, must-revalidate
+**Config `app.py`** :
+```python
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 ```
 
-### Content-Security-Policy
+`log_activity()` et `log_courrier_modification()` utilisent `get_client_ip()` de `security/auth.py` qui :
+1. Vérifie que `REMOTE_ADDR` est un proxy de confiance (liste `TRUSTED_PROXIES`)
+2. Extrait le premier IP non-privé/non-loopback de la chaîne `X-Forwarded-For`
+3. Rejette les IPs spoofées si le peer n'est pas de confiance
 
-```
-default-src 'self';
-script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline';
-font-src 'self' data:;
-img-src 'self' data:;
-connect-src 'self';
-frame-ancestors 'none';
-```
+Variable d'environnement : `TRUSTED_PROXIES=127.0.0.1,::1` (défaut)
 
 ---
 
-## Gestion des Sessions
+## 5. Matrice des permissions par rôle
 
-### Configuration
-
-- Durée de vie : 30 jours
-- Stockage : Cookie signé côté client
-- Régénération : À chaque connexion
-
-### Token de Session
-
-- Génération : secrets.token_urlsafe(32)
-- Validation : Vérification IP, expiration 24h
-- Invalidation : À la déconnexion
-
----
-
-## Journalisation de Sécurité
-
-### Événements Journalisés
-
-| Type | Description |
-|------|-------------|
-| LOGIN_SUCCESS | Connexion réussie |
-| LOGIN_FAILED | Tentative de connexion échouée |
-| LOGIN_BLOCKED | Connexion bloquée (rate limit) |
-| LOGOUT | Déconnexion |
-| ACCESS_DENIED | Accès refusé (403) |
-| RATE_LIMIT_EXCEEDED | Dépassement limite requêtes |
-| SQL_INJECTION_ATTEMPT | Tentative injection SQL |
-| XSS_ATTEMPT | Tentative XSS |
-| BRUTE_FORCE_LOGIN | Attaque brute force détectée |
-| IP_BLOCKED | IP automatiquement bloquée |
-
-### Format des Logs
-
-```json
-{
-  "timestamp": "2025-01-15T10:30:00",
-  "action": "LOGIN_FAILED",
-  "details": "Failed login attempt for user: admin",
-  "user_id": null,
-  "username": "admin",
-  "ip_address": "192.168.1.100",
-  "user_agent": "Mozilla/5.0...",
-  "severity": "WARNING"
-}
-```
-
-### Consultation
-
-Les logs de sécurité sont accessibles :
-- Via l'interface web (super admin uniquement)
-- Dans les fichiers de log du serveur
-- Dans la base de données (LogActivite)
+| Action | super_admin | admin | user |
+|---|---|---|---|
+| Gérer les utilisateurs | ✅ | ❌ | ❌ |
+| Configurer le système | ✅ | ❌ | ❌ |
+| Gérer les sauvegardes | ✅ | ❌ | ❌ |
+| Consulter les logs | ✅ | ❌ | ❌ |
+| Gérer la sécurité | ✅ | ❌ | ❌ |
+| **Créer un courrier** | **❌ BLOQUÉ** | ✅ | ✅ (si permission) |
+| **Lire un courrier** | **❌ BLOQUÉ** | ✅ | ✅ (si permission) |
+| **Modifier un courrier** | **❌ BLOQUÉ** | ✅ | ✅ (propre, 24h) |
+| **Supprimer un courrier** | **❌ BLOQUÉ** | ✅ (si permission) | ❌ |
+| Gérer les statuts | ❌ | ✅ | ❌ |
+| Gérer les rôles/permissions | ✅ | ❌ | ❌ |
+| Gérer les départements | ✅ | ❌ | ❌ |
 
 ---
 
-## Gestion des IP
+## 6. Audit trail — Actions loggées
 
-### Liste Blanche
+Toutes les actions dans `LogActivite` avec : `utilisateur_id`, `action`, `description`, `ip_address`, `date_action`, `courrier_id`.
 
-Les adresses IP en liste blanche ne peuvent jamais être bloquées.
+### Authentification
+`CONNEXION` · `CONNEXION_2FA` · `DECONNEXION` · `AUTO_DECONNEXION` · `2FA_ENABLED` · `2FA_DISABLED` · `ACCES_REFUSE`
 
-Configuration via l'interface d'administration :
-1. Paramètres → Sécurité
-2. Ajouter une IP à la liste blanche
+### Navigation
+`NAVIGATION_DASHBOARD` · `NAVIGATION_LISTE_COURRIERS` (filtres loggés) · `NAVIGATION_KANBAN` · `NAVIGATION_RECHERCHE` · `RECHERCHE_COURRIER` (termes loggés) · `NAVIGATION_ANALYTIQUE`
 
-### Blocage d'IP
+### Courriers
+`ENREGISTREMENT_COURRIER` · `CONSULTATION_COURRIER` · `MODIFICATION_COURRIER` · `CHANGEMENT_STATUT` · `SUPPRESSION_COURRIER` · `RESTAURATION_COURRIER` · `CONSULTATION_CORBEILLE` · `VIDAGE_CORBEILLE` · `BULK_STATUT` · `BULK_DELETE` · `SET_DUE_DATE`
 
-Blocage automatique après :
-- 8 tentatives de connexion échouées
-- 15 activités suspectes en 24h
+### Fichiers
+`TELECHARGEMENT_FICHIER` · `TELECHARGEMENT_PIECE_JOINTE` · `VISUALISATION_FICHIER` · `UPLOAD_PIECES_JOINTES` · `UPLOAD_TRANSMISSION_FILE`
 
-Blocage manuel possible par les administrateurs.
+### Transmissions & Signatures
+`TRANSMISSION_COURRIER` · `DOWNLOAD_TRANSMISSION_FILE` · `CIRCUIT_SIGNATURE_INIT` · `SIGNATURE_APPROVED` · `SIGNATURE_REJECTED`
 
----
-
-## Sauvegarde et Restauration
-
-### Sécurité des Sauvegardes
-
-- Les sauvegardes contiennent les données chiffrées
-- Les clés de chiffrement ne sont PAS incluses
-- Documentation des variables d'environnement nécessaires
-
-### Export/Import Sécurisé
-
-Le processus d'export et d'import utilise un chiffrement fort pour garantir la confidentialité des données pendant le transport :
-
-**Export (Chiffré) :**
-1. L'application génère une **clé de sécurité unique** (alphanumérique) pour chaque export.
-2. Cette clé est affichée à l'utilisateur, qui doit la conserver précieusement.
-3. Une archive ZIP est créée via la bibliothèque `pyzipper`, chiffrée en **AES-256** avec cette clé.
-4. Le fichier ZIP téléchargé est illisible sans la clé de sécurité.
-
-**Import (Sécurisé) :**
-1. L'utilisateur téléverse l'archive ZIP chiffrée.
-2. Il doit obligatoirement saisir la **clé de sécurité** correspondante.
-3. L'application utilise cette clé pour déchiffrer l'archive en mémoire, puis re-chiffre les données avec les clés de l'instance locale avant de les insérer en base.
+### Sécurité système
+`LOGIN_BLOCKED` · `LOGIN_FAILED` · `SECURITY_SETTINGS` · `SECURITY_UNBLOCK` · `SECURITY_WHITELIST` · `SECURITY_CONFIG`
 
 ---
 
-## Suppression Sécurisée
+## 7. Chiffrement des données
 
-### Soft Delete
+### Champs DB (AES-256-CBC, PBKDF2-HMAC-SHA256, 100k itérations)
 
-Les courriers supprimés :
-- Passent en statut is_deleted=True
-- Restent accessibles dans la corbeille
-- Conservent leurs données chiffrées
+Chiffré dans `User` : `email_encrypted`, `nom_complet_encrypted`, `matricule_encrypted`, `fonction_encrypted`
 
-### Suppression Définitive
+Chiffré dans `Courrier` : `objet_encrypted`, `expediteur_encrypted`, `destinataire_encrypted`, `numero_reference_encrypted`
 
-Réservée aux super administrateurs :
-- Suppression des données en base
-- Suppression sécurisée des fichiers (3 passes d'écrasement)
-- Journalisation de l'opération
+Clé maître : variable d'environnement `GEC_MASTER_KEY` (obligatoire en production).
+
+### Fichiers uploadés
+Stockés dans `uploads/`. La fonction `encrypt_uploaded_file()` existe dans `security/encryption.py` — activation prévue.
 
 ---
 
-## Recommandations de Déploiement
+## 8. Protections anti-attaque
 
-### Production
-
-1. **HTTPS obligatoire** : Configurer un certificat SSL/TLS valide
-2. **Variables d'environnement** : Ne jamais hardcoder les secrets
-3. **Clés uniques** : Générer GEC_MASTER_KEY et GEC_PASSWORD_SALT uniques
-4. **Mot de passe admin** : Changer immédiatement après installation
-5. **Sauvegardes** : Planifier des sauvegardes régulières
-6. **Mises à jour** : Appliquer les correctifs de sécurité
-
-### Réseau
-
-1. Firewall : Autoriser uniquement le port 5000 (ou 443 si reverse proxy)
-2. Reverse proxy : Utiliser Nginx/Apache pour HTTPS
-3. Base de données : Restreindre l'accès au serveur applicatif uniquement
-
-### Monitoring
-
-1. Surveiller les logs de sécurité
-2. Alerter sur les tentatives d'intrusion
-3. Auditer les accès régulièrement
-
----
-
-## Conformité
-
-### RGPD
-
-- Chiffrement des données personnelles
-- Droit à l'effacement (suppression définitive)
-- Journalisation des accès
-- Export des données utilisateur
-
-### Bonnes Pratiques
-
-Le système suit les recommandations :
-- OWASP Top 10
-- CWE/SANS Top 25
-- NIST Cybersecurity Framework
-
----
-
-## Contact Sécurité
-
-Pour signaler une vulnérabilité :
-- Contacter l'administrateur système
-- Ne pas divulguer publiquement avant correction
-- Fournir les détails techniques pour reproduction
+| Menace | Protection |
+|---|---|
+| Brute force login | Rate limit 8 tentatives → blocage IP 15 min |
+| CSRF | Flask-WTF sur tous les POST |
+| SQL Injection | ORM SQLAlchemy (requêtes paramétrées) + détection patterns |
+| XSS | Jinja2 auto-escape + patterns de détection |
+| Path traversal | `os.path.realpath()` sur tous les téléchargements |
+| Session hijacking | HTTPONLY + SECURE + SAMESITE + expiration 1h |
+| 2FA bypass | TOTP (pyotp) disponible pour super_admin |
+| IP spoofing | get_client_ip() valide le proxy avant de lire X-Forwarded-For |

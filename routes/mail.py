@@ -27,9 +27,17 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 @login_required
 @rate_limit(max_requests=50, per_minutes=15)  # Prevent spam registration
 def register_mail():
+    # RÈGLE INVIOLABLE : super_admin ne peut pas créer de courriers
+    if current_user.is_super_admin():
+        log_activity(current_user.id, "ACCES_REFUSE",
+                     "Tentative de création de courrier par un super_admin — refusé")
+        flash('Les super administrateurs ne peuvent pas créer de courriers. '
+              'Cette action est réservée aux administrateurs et utilisateurs.', 'error')
+        return redirect(url_for('dashboard'))
+
     # Import TypeCourrierSortant
     from models import TypeCourrierSortant
-    
+
     if request.method == 'POST':
         # Récupération des données du formulaire
         numero_reference = request.form.get('numero_reference', '').strip()

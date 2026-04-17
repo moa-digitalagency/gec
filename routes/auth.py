@@ -22,6 +22,38 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
+SESSION_MAX_LIFETIME = 3600  # 1 heure — expiration du token de session après connexion
+
+@app.before_request
+def enforce_session_expiry():
+    """
+    Force la déconnexion automatique 1h après la connexion initiale.
+    Indépendant du délai d'inactivité — la session expire absolument après 1h.
+    """
+    if not current_user.is_authenticated:
+        return
+
+    login_at = session.get('login_at')
+    if login_at is None:
+        # Session sans horodatage (ancienne session) → déconnexion
+        logout_user()
+        session.clear()
+        flash('Votre session a expiré. Veuillez vous reconnecter.', 'info')
+        return redirect(url_for('login'))
+
+    import time
+    elapsed = time.time() - login_at
+    if elapsed > SESSION_MAX_LIFETIME:
+        user_id = current_user.id
+        username = current_user.username
+        logout_user()
+        session.clear()
+        log_activity(user_id, "AUTO_DECONNEXION",
+                     f"Déconnexion automatique de {username} après {int(elapsed // 60)} min (session expirée)")
+        flash('Votre session a expiré après 1 heure. Veuillez vous reconnecter.', 'info')
+        return redirect(url_for('login'))
+
+
 @app.context_processor
 def inject_system_context():
     """Inject system parameters and utility functions into all templates"""
@@ -58,12 +90,18 @@ def apply_mail_access_filter(query, user):
     """
     Applique les restrictions d'accès aux courriers selon les rôles avec exception pour les transmissions.
     Un courrier transmis à un utilisateur devient accessible même si son rôle ne le permet pas normalement.
+
+    RÈGLE INVIOLABLE : super_admin ne peut voir AUCUN courrier (retourne 0 résultats).
     """
     from sqlalchemy import exists
-    
+
     # Base condition : courriers non supprimés
     query = query.filter(Courrier.is_deleted == False)
-    
+
+    # RÈGLE INVIOLABLE : super_admin bloqué de tous les courriers
+    if user.role == 'super_admin':
+        return query.filter(False)  # Résultat toujours vide
+
     # Condition pour courriers transmis à l'utilisateur
     forwarded_condition = exists().where(
         and_(
@@ -71,10 +109,9 @@ def apply_mail_access_filter(query, user):
             CourrierForward.forwarded_to_id == user.id
         )
     )
-    
+
     # Conditions normales selon les permissions
     if user.has_permission('read_all_mail'):
-        # Super admin voit tout - pas besoin d'ajouter de condition
         return query
     elif user.has_permission('read_department_mail'):
         # Peut voir les courriers de son département OU les courriers qui lui sont transmis
@@ -96,9 +133,8 @@ def apply_mail_access_filter(query, user):
         return query.filter(or_(own_mail_condition, forwarded_condition))
     else:
         # Fallback sur l'ancien système avec transmission
-        if user.role == 'super_admin':
-            return query
-        elif user.role == 'admin':
+        # (super_admin déjà bloqué en haut — ne peut pas atteindre ce code)
+        if user.role == 'admin':
             if user.departement_id:
                 department_condition = exists().where(
                     and_(
@@ -162,6 +198,8 @@ def login():
 
                 # Successful login (no 2FA)
                 login_user(user)
+                import time
+                session['login_at'] = time.time()  # Horodatage pour expiration 1h
                 audit_log("LOGIN_SUCCESS", f"Successful login for user: {username}")
                 log_activity(user.id, "CONNEXION", f"Connexion réussie pour {username}")
                 flash('Connexion réussie!', 'success')
@@ -219,6 +257,8 @@ def verify_2fa():
             session.pop('2fa_pending_user_id', None)
             next_url = session.pop('2fa_next', '')
             login_user(user)
+            import time
+            session['login_at'] = time.time()  # Horodatage pour expiration 1h
             audit_log("LOGIN_2FA_SUCCESS", f"2FA réussi pour {user.username}")
             log_activity(user.id, "CONNEXION_2FA", f"Connexion avec 2FA réussie pour {user.username}")
             flash('Connexion réussie!', 'success')

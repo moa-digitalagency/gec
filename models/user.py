@@ -4,6 +4,20 @@ from datetime import datetime, timedelta
 import os
 from security.encryption import encrypt_sensitive_data, decrypt_sensitive_data
 
+# ══════════════════════════════════════════════════════════════════════════════
+# RÈGLE INVIOLABLE — NE PAS MODIFIER
+# Le super_admin est un administrateur système (users, config, sécurité).
+# Il n'a AUCUN accès aux courriers : ni lecture, ni création, ni modification.
+# Cette règle est codée en dur et ne peut PAS être contournée via les rôles/permissions.
+# Seuls les admin et users avec les permissions adéquates accèdent aux courriers.
+# ══════════════════════════════════════════════════════════════════════════════
+_SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS = frozenset({
+    'read_all_mail', 'read_department_mail', 'read_own_mail',
+    'edit_all_mail', 'edit_department_mail', 'edit_own_mail',
+    'create_mail', 'delete_mail', 'restore_mail', 'manage_mail',
+    'view_all_mail', 'bulk_mail',
+})
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -113,6 +127,9 @@ class User(UserMixin, db.Model):
         return self.fonction
 
     def has_permission(self, permission):
+        # RÈGLE INVIOLABLE : super_admin ne peut jamais avoir de permission sur les courriers
+        if self.role == 'super_admin' and permission in _SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS:
+            return False
         if self.role == 'super_admin':
             return True
         from models.rbac import Role
@@ -137,7 +154,10 @@ class User(UserMixin, db.Model):
     def can_access_courrier(self, courrier):
         if not self.actif:
             return False
-        if self.role in ['super_admin', 'admin']:
+        # RÈGLE INVIOLABLE : super_admin exclut
+        if self.role == 'super_admin':
+            return False
+        if self.role == 'admin':
             return True
         if courrier.utilisateur_id == self.id:
             return True
@@ -150,6 +170,9 @@ class User(UserMixin, db.Model):
         return False
 
     def can_view_courrier(self, courrier):
+        # RÈGLE INVIOLABLE : super_admin ne consulte pas les courriers
+        if self.role == 'super_admin':
+            return False
         from models.courrier import CourrierForward
         forwarded_to_user = CourrierForward.query.filter_by(
             courrier_id=courrier.id,
@@ -166,9 +189,7 @@ class User(UserMixin, db.Model):
         elif self.has_permission('read_own_mail'):
             return courrier.utilisateur_id == self.id
         else:
-            if self.role == 'super_admin':
-                return True
-            elif self.role == 'admin':
+            if self.role == 'admin':
                 if self.departement_id is None:
                     return courrier.utilisateur_id == self.id
                 return self.departement_id == courrier.utilisateur_enregistrement.departement_id
@@ -176,8 +197,9 @@ class User(UserMixin, db.Model):
                 return courrier.utilisateur_id == self.id
 
     def can_edit_courrier(self, courrier):
-        if self.is_super_admin():
-            return True
+        # RÈGLE INVIOLABLE : super_admin ne modifie pas les courriers
+        if self.role == 'super_admin':
+            return False
         if self.has_permission('edit_all_mail'):
             return True
         elif self.has_permission('edit_department_mail'):
