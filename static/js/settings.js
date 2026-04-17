@@ -21,28 +21,14 @@ function clearCaches() {
 }
 
 function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-    }`;
-    notification.innerHTML = `
-        <div class="flex items-center">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
-            <span>${message}</span>
-            <button class="ml-2 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-
-    document.body.appendChild(notification);
-
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
+    // Utilise showFlash global (défini dans new_base.html) pour les toasts GEC
+    var flashType = type === 'success' ? 'success' : (type === 'warning' ? 'warning' : 'error');
+    if (typeof window.showFlash === 'function') {
+        window.showFlash(message, flashType);
+    } else {
+        // Fallback si showFlash non disponible
+        alert(message);
+    }
 }
 
 function toggleFormatField() {

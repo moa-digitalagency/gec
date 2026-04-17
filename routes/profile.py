@@ -66,8 +66,31 @@ def upload_profile_photo():
 @login_required
 def profile():
     """Afficher le profil de l'utilisateur actuel"""
-    return render_template('profile.html', user=current_user, 
+    return render_template('profile.html', user=current_user,
                          available_languages=get_available_languages())
+
+@app.route('/update_notification_prefs', methods=['POST'])
+@login_required
+def update_notification_prefs():
+    """Mettre à jour les préférences de notifications par email de l'utilisateur"""
+    current_user.notif_enabled   = bool(request.form.get('notif_enabled'))
+    current_user.notif_new_mail  = bool(request.form.get('notif_new_mail'))
+    current_user.notif_forwarded = bool(request.form.get('notif_forwarded'))
+    current_user.notif_status    = bool(request.form.get('notif_status'))
+    current_user.notif_deadline  = bool(request.form.get('notif_deadline'))
+    current_user.notif_commented = bool(request.form.get('notif_commented'))
+    digest = request.form.get('notif_digest', 'instant')
+    if digest not in ('instant', 'daily', 'weekly'):
+        digest = 'instant'
+    current_user.notif_digest = digest
+    try:
+        db.session.commit()
+        log_activity(current_user.id, "PREFS_NOTIFICATIONS", "Préférences de notifications email mises à jour")
+        flash('Préférences de notifications enregistrées.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erreur lors de la sauvegarde.', 'error')
+    return redirect(url_for('profile'))
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required

@@ -1,19 +1,20 @@
 import os
 import logging
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# Charger .env AVANT tout le reste pour que DATABASE_URL soit disponible
+# immédiatement (encryption.py le chargeait trop tard, après db.init_app)
+from security.encryption import load_env_from_file
+load_env_from_file()
+
+from extensions import db  # db défini dans extensions.py, pas ici
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 csrf = CSRFProtect()
 
 # Create the app

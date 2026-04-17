@@ -998,7 +998,7 @@ function reorderSigs() {
 async function submitCircuit(courrierId) {
   const ids = [...document.querySelectorAll('.sig-select')]
     .map(s => parseInt(s.value)).filter(Boolean);
-  if (!ids.length) { alert('Ajoutez au moins un signataire.'); return; }
+  if (!ids.length) { showFlash('Ajoutez au moins un signataire.', 'warning'); return; }
   const r = await fetch(_circuitUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
@@ -1006,7 +1006,7 @@ async function submitCircuit(courrierId) {
   });
   const data = await r.json();
   if (r.ok) { location.reload(); }
-  else { alert('Erreur : ' + (data.error || 'Inconnue')); }
+  else { showFlash('Erreur : ' + (data.error || 'Inconnue'), 'error'); }
 }
 
 async function signatureAction(sigId, action) {
@@ -1018,7 +1018,7 @@ async function signatureAction(sigId, action) {
   });
   const data = await r.json();
   if (r.ok) { location.reload(); }
-  else { alert('Erreur : ' + (data.error || 'Inconnue')); }
+  else { showFlash('Erreur : ' + (data.error || 'Inconnue'), 'error'); }
 }
 </script>
 <style>

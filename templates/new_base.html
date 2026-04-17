@@ -6,6 +6,8 @@
   <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}</title>
 
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="alternate icon" type="image/png" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="theme-color" content="#3B82F6">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <!-- Fonts & Icons -->
@@ -522,6 +524,27 @@ setTimeout(function(){
   var c=document.getElementById('flash-container');
   if(c){c.style.transition='opacity 0.5s ease';c.style.opacity='0';setTimeout(function(){if(c&&c.parentNode)c.parentNode.removeChild(c);},500);}
 },5000);
+
+// Global showFlash — crée un toast GEC programmatiquement depuis JS
+window.showFlash = function(message, type) {
+  type = type || 'info';
+  var iconMap = { success: 'fa-check', error: 'fa-times', warning: 'fa-exclamation', info: 'fa-info' };
+  var container = document.getElementById('flash-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'gec-flash-container';
+    container.id = 'flash-container';
+    document.body.appendChild(container);
+  }
+  var flash = document.createElement('div');
+  flash.className = 'gec-flash ' + type;
+  flash.innerHTML =
+    '<div class="gec-flash-icon"><i class="fas ' + (iconMap[type] || 'fa-info') + '"></i></div>' +
+    '<div class="gec-flash-body"><div class="gec-flash-text">' + message + '</div></div>' +
+    '<button class="gec-flash-close" onclick="this.closest(\'.gec-flash\').remove()"><i class="fas fa-times"></i></button>';
+  container.appendChild(flash);
+  setTimeout(function() { if (flash.parentNode) { flash.style.transition = 'opacity .4s'; flash.style.opacity = '0'; setTimeout(function() { if (flash.parentNode) flash.remove(); }, 400); } }, 5000);
+};
 </script>
 
 {% block scripts %}{% endblock %}

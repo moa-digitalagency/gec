@@ -9,6 +9,37 @@
 
 {% block content %}
 
+<!-- ── Bannière de salutation ──────────────────────────────────── -->
+<div style="background:linear-gradient(135deg,#0F172A 0%,#1E3A5F 60%,#1E3A8A 100%);border-radius:var(--card-radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+  <div class="gec-avatar" style="width:52px;height:52px;font-size:1.125rem;border:2px solid rgba(255,255,255,.2);flex-shrink:0;background:rgba(255,255,255,.1);">
+    {% if current_user.photo_profile %}
+      <img src="{{ url_for('static', filename='uploads/profiles/' ~ current_user.photo_profile) }}" alt="{{ current_user.nom_complet }}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+    {% else %}
+      {{ current_user.nom_complet[:2].upper() }}
+    {% endif %}
+  </div>
+  <div style="flex:1;min-width:0;">
+    <div style="font-size:1.125rem;font-weight:700;color:#fff;">Bonjour, {{ current_user.nom_complet.split()[0] }} 👋</div>
+    <div id="dash-datetime" style="font-size:.8125rem;color:rgba(255,255,255,.65);margin-top:.125rem;"></div>
+  </div>
+  <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+    <div style="text-align:center;">
+      <div style="font-size:1.375rem;font-weight:700;color:#fff;">{{ total_courriers }}</div>
+      <div style="font-size:.6875rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.05em;">Courriers</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:1.375rem;font-weight:700;color:#34D399;">{{ courriers_today }}</div>
+      <div style="font-size:.6875rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.05em;">Aujourd'hui</div>
+    </div>
+    {% if current_user.role == 'super_admin' and users_count is defined %}
+    <div style="text-align:center;">
+      <div style="font-size:1.375rem;font-weight:700;color:#93C5FD;">{{ users_count }}</div>
+      <div style="font-size:.6875rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.05em;">Utilisateurs</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
 <!-- Page Header -->
 <div class="gec-page-header">
   <div>
@@ -412,4 +443,21 @@
   {% endif %}
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function updateDashClock() {
+  var el = document.getElementById('dash-datetime');
+  if (!el) return;
+  var now = new Date();
+  var opts = {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZoneName: 'short'
+  };
+  el.textContent = now.toLocaleString('fr-FR', opts);
+  setTimeout(updateDashClock, 1000);
+})();
+</script>
 {% endblock %}

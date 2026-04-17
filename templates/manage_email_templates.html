@@ -12,27 +12,43 @@
     <h1 class="gec-page-title"><i class="fas fa-envelope-open-text" style="color:var(--primary);margin-right:.5rem;"></i>Templates Email</h1>
     <p class="gec-page-subtitle">Configurez les templates pour les notifications en français et anglais</p>
   </div>
-  <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau template</a>
+  <div style="display:flex;gap:.625rem;">
+    <button type="button" onclick="initDefaultTemplates()" class="gec-btn gec-btn-secondary">
+      <i class="fas fa-magic"></i> Générer les défauts
+    </button>
+    <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau template</a>
+  </div>
 </div>
+
+{% set tmap = {
+  'new_mail':            ('fa-bell',            '#ECFDF5', 'var(--success)',  'Nouveau Courrier'),
+  'mail_forwarded':      ('fa-share',           '#EFF6FF', 'var(--primary)', 'Transmission Courrier'),
+  'mail_status_changed': ('fa-exchange-alt',    '#F5F3FF', '#7C3AED',        'Changement de Statut'),
+  'mail_reminder':       ('fa-clock',           '#FFFBEB', '#D97706',        'Rappel Courrier'),
+  'mail_assigned':       ('fa-user-check',      '#F0FDFA', '#0D9488',        'Courrier Assigné'),
+  'mail_commented':      ('fa-comment',         '#FDF4FF', '#C026D3',        'Nouveau Commentaire'),
+  'mail_deadline':       ('fa-calendar-times',  '#FEF2F2', '#DC2626',        'Échéance Courrier'),
+  'account_created':     ('fa-user-plus',       '#ECFDF5', 'var(--success)', 'Création de Compte'),
+  'password_reset':      ('fa-key',             '#FFF7ED', '#EA580C',        'Réinitialisation MDP'),
+  'account_locked':      ('fa-lock',            '#FEF2F2', '#DC2626',        'Compte Bloqué'),
+  '2fa_enabled':         ('fa-shield-alt',      '#EFF6FF', 'var(--primary)', 'Double Authentification'),
+  'system_alert':        ('fa-exclamation-triangle','#FFFBEB','#D97706',     'Alerte Système'),
+  'backup_completed':    ('fa-database',        '#F0FDFA', '#0D9488',        'Sauvegarde Terminée'),
+} %}
 
 {% if templates %}
 <div class="gec-grid-2">
   {% for template in templates %}
+  {% set tinfo = tmap.get(template.type_template, ('fa-envelope','var(--body-bg)','var(--t-muted)', template.type_template.replace('_',' ')|title)) %}
   <div class="gec-card">
     <div class="gec-card-header">
       <div style="display:flex;align-items:center;gap:.75rem;">
         <div style="width:40px;height:40px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;
-          {% if template.type_template == 'new_mail' %}background:#ECFDF5;color:var(--success);
-          {% elif template.type_template == 'mail_forwarded' %}background:var(--info-light);color:var(--primary);
-          {% else %}background:var(--body-bg);color:var(--t-muted);{% endif %}">
-          <i class="fas {% if template.type_template == 'new_mail' %}fa-bell{% elif template.type_template == 'mail_forwarded' %}fa-share{% else %}fa-envelope{% endif %}"></i>
+          background:{{ tinfo[1] }};color:{{ tinfo[2] }};">
+          <i class="fas {{ tinfo[0] }}"></i>
         </div>
         <div>
-          <span class="gec-card-title">
-            {% if template.type_template == 'new_mail' %}Nouveau Courrier
-            {% elif template.type_template == 'mail_forwarded' %}Transmission Courrier
-            {% else %}{{ template.type_template.replace('_',' ').title() }}{% endif %}
-          </span>
+          <span class="gec-card-title">{{ tinfo[3] }}</span>
           <div style="display:flex;gap:.375rem;margin-top:.25rem;">
             <span class="gec-badge {% if template.langue == 'fr' %}gec-badge-blue{% else %}gec-badge-green{% endif %}" style="font-size:.625rem;">
               {% if template.langue == 'fr' %}🇫🇷 Français{% else %}🇬🇧 English{% endif %}
@@ -72,8 +88,14 @@
   <div class="gec-empty">
     <div class="gec-empty-icon"><i class="fas fa-envelope-open-text"></i></div>
     <div class="gec-empty-title">Aucun template email</div>
-    <div class="gec-empty-desc">Créez votre premier template pour les notifications.</div>
-    <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary" style="margin-top:1rem;"><i class="fas fa-plus"></i> Créer un template</a>
+    <div class="gec-empty-desc">Générez les 13 templates par défaut en un clic, ou créez-en un manuellement.</div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+      <button type="button" onclick="initDefaultTemplates()" class="gec-btn gec-btn-secondary">
+        <i class="fas fa-magic"></i> Générer les défauts
+      </button>
+      <a href="{{ url_for('add_email_template') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Créer un template</a>
+    </div>
+    <div id="init-result" style="display:none;margin-top:.875rem;font-size:.8125rem;padding:.5rem .875rem;border-radius:var(--r-sm);"></div>
   </div>
 </div>
 {% endif %}
@@ -111,5 +133,32 @@ document.getElementById('confirmDeleteBtn').addEventListener('click',function(){
     document.body.appendChild(f);f.submit();
   }
 });
+
+function initDefaultTemplates(){
+  const resultEl = document.getElementById('init-result');
+  // Show inline feedback if the empty-state div exists, else show a top-level alert
+  const showResult = function(ok, msg) {
+    if (resultEl) {
+      resultEl.style.display='block';
+      resultEl.style.background = ok ? '#d1fae5' : '#fee2e2';
+      resultEl.style.color      = ok ? '#065f46' : '#991b1b';
+      resultEl.textContent = msg;
+    } else {
+      if (typeof showFlash === 'function') showFlash(msg, ok ? 'success' : 'error'); else alert(msg);
+    }
+  };
+
+  fetch('{{ url_for("init_default_email_templates") }}', {method:'POST'})
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.success){
+        showResult(true, '✅ ' + (data.message || 'Templates générés avec succès'));
+        setTimeout(()=>location.reload(), 1500);
+      } else {
+        showResult(false, '❌ ' + (data.message || 'Erreur lors de la génération'));
+      }
+    })
+    .catch(err=>showResult(false, '❌ Erreur réseau : '+err));
+}
 </script>
 {% endblock %}

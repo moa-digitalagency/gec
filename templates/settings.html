@@ -31,11 +31,12 @@
     <div class="gec-card" style="padding:0;overflow:hidden;">
       <div id="settings-tabs" style="display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
         {% set tabs = [
-          ('identite',   'fa-building',       'Identité'),
-          ('terminologie','fa-language',       'Terminologie'),
-          ('numerotation','fa-hashtag',        'Numérotation'),
-          ('pdf',        'fa-file-pdf',        'PDF'),
-          ('email',      'fa-envelope',        'Email'),
+          ('identite',      'fa-building',       'Identité'),
+          ('terminologie',  'fa-language',       'Terminologie'),
+          ('numerotation',  'fa-hashtag',        'Numérotation'),
+          ('pdf',           'fa-file-pdf',       'PDF'),
+          ('notifications', 'fa-bell',           'Notifications'),
+          ('email',         'fa-envelope',       'Email'),
         ] %}
         {% for tab_id, tab_icon, tab_label in tabs %}
         {% if tab_id != 'email' or current_user.has_permission('manage_system_settings') %}
@@ -48,6 +49,7 @@
                        transition:all .15s;flex-shrink:0;margin-bottom:-1px;">
           <i class="fas {{ tab_icon }}" style="font-size:.8125rem;"></i>
           {{ tab_label }}
+          <span class="dirty-dot"></span>
         </button>
         {% endif %}
         {% endfor %}
@@ -55,7 +57,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data" id="settings-form"
-          style="display:flex;flex-direction:column;gap:1.25rem;">
+          novalidate style="display:flex;flex-direction:column;gap:1.25rem;">
 
       <!-- ── TAB: Identité ──────────────────────────────────── -->
       <div class="settings-tab-panel gec-card" id="tab-identite">
@@ -131,6 +133,10 @@
           </div>
 
         </div>
+        <div class="tab-save-bar" id="savebar-identite" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
       </div>
 
       <!-- ── TAB: Terminologie ──────────────────────────────── -->
@@ -186,6 +192,10 @@
             </div>
           </div>
 
+        </div>
+        <div class="tab-save-bar" id="savebar-terminologie" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
         </div>
       </div>
 
@@ -247,6 +257,10 @@
           </div>
 
         </div>
+        <div class="tab-save-bar" id="savebar-numerotation" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
       </div>
 
       <!-- ── TAB: PDF ───────────────────────────────────────── -->
@@ -300,6 +314,86 @@
           </div>
 
         </div>
+        <div class="tab-save-bar" id="savebar-pdf" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
+      </div>
+
+      <!-- ── TAB: Notifications ───────────────────────────────── -->
+      <div class="settings-tab-panel gec-card" id="tab-notifications" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-bell"></i> Paramètres de notifications globaux</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.25rem;">
+
+          <!-- Master switch -->
+          <label class="gec-toggle-wrap">
+            <span class="gec-toggle">
+              <input type="checkbox" name="notifications_enabled" form="settings-form"
+                     {% if parametres.notifications_enabled %}checked{% endif %}>
+              <span class="gec-toggle-slider"></span>
+            </span>
+            <div>
+              <div class="gec-toggle-label"><i class="fas fa-bell" style="color:var(--primary);margin-right:.375rem;"></i> Activer les notifications email système</div>
+              <div class="gec-toggle-desc">Active ou désactive l'envoi de tous les emails de notification pour l'ensemble des utilisateurs</div>
+            </div>
+          </label>
+
+          <!-- Types activés -->
+          <div style="border-top:1px solid var(--border);padding-top:1rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--t-primary);margin-bottom:.75rem;">
+              <i class="fas fa-sliders-h" style="color:var(--primary);margin-right:.375rem;"></i>Types de notifications actifs par défaut
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.5rem;">
+              {% set notif_types = [
+                ('new_mail',            'fa-envelope',            '#2563EB', 'Nouveau courrier'),
+                ('mail_forwarded',      'fa-share-alt',           '#059669', 'Courrier transmis'),
+                ('mail_status_changed', 'fa-exchange-alt',        '#7C3AED', 'Changement de statut'),
+                ('mail_deadline',       'fa-exclamation-circle',  '#DC2626', 'Échéance imminente'),
+                ('mail_commented',      'fa-comment-alt',         '#0284C7', 'Commentaire ajouté'),
+                ('mail_assigned',       'fa-user-check',          '#0284C7', 'Courrier assigné'),
+                ('account_created',     'fa-user-plus',           '#059669', 'Compte créé'),
+                ('system_alert',        'fa-exclamation-triangle','#D97706', 'Alerte système'),
+              ] %}
+              {% for type_key, type_icon, type_color, type_label in notif_types %}
+              <label style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background=''">
+                <input type="checkbox" name="notif_type_{{ type_key }}" form="settings-form"
+                       {% if not parametres.notif_types_enabled or type_key in notif_types_enabled %}checked{% endif %}
+                       style="accent-color:{{ type_color }};">
+                <span style="width:1.5rem;height:1.5rem;border-radius:4px;background:{{ type_color }}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="fas {{ type_icon }}" style="font-size:.7rem;color:{{ type_color }};"></i>
+                </span>
+                <span style="font-size:.875rem;color:var(--t-primary);">{{ type_label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Fréquence par défaut -->
+          <div style="border-top:1px solid var(--border);padding-top:1rem;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--t-primary);margin-bottom:.75rem;">
+              <i class="fas fa-clock" style="color:var(--primary);margin-right:.375rem;"></i>Fréquence d'envoi par défaut
+            </p>
+            <div style="display:flex;flex-direction:column;gap:.5rem;">
+              {% for val, label in [('instant','Immédiat — dès l\'action'),('daily','Résumé quotidien'),('weekly','Résumé hebdomadaire')] %}
+              <label style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;" onclick="highlightDigest(this)">
+                <input type="radio" name="notif_default_digest" value="{{ val }}" form="settings-form"
+                       {% if (parametres.notif_default_digest or 'instant') == val %}checked{% endif %}>
+                <span style="font-size:.875rem;color:var(--t-primary);">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <p style="font-size:.75rem;color:var(--t-muted);padding:.5rem .625rem;background:var(--body-bg);border-radius:var(--r-sm);border-left:3px solid var(--primary);">
+            <i class="fas fa-info-circle" style="margin-right:.375rem;color:var(--primary);"></i>Ces paramètres définissent les défauts système. Chaque utilisateur peut affiner ses préférences dans son profil.
+          </p>
+        </div>
+        <div class="tab-save-bar" id="savebar-notifications" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
       </div>
 
       <!-- ── TAB: Email ─────────────────────────────────────── -->
@@ -341,7 +435,7 @@
           <div id="resend-section" {% if parametres.email_provider == 'smtp' %}style="display:none"{% endif %}>
             <div class="gec-alert gec-alert-info" style="margin-bottom:.875rem;">
               <i class="fas fa-info-circle"></i>
-              <div><strong>Resend — Service Email Professionnel</strong><br>Créez un compte et obtenez votre clé API sur <strong>resend.com</strong></div>
+              <div><strong>Resend — Service Email Professionnel</strong><br>Créez un compte et obtenez votre clé API sur <strong>resend.com</strong>. L'adresse expéditeur doit appartenir à un domaine vérifié sur Resend.</div>
             </div>
             <div class="gec-form-group">
               <label class="gec-label" for="resend_api_key"><i class="fas fa-key" style="color:var(--primary);"></i> Clé API Resend</label>
@@ -352,6 +446,13 @@
                 Format : <span class="gec-code">re_XXXXXXXXX</span>
                 {% if parametres.resend_api_key %}&nbsp;<span style="color:var(--success);"><i class="fas fa-check-circle"></i> Clé configurée</span>{% endif %}
               </p>
+            </div>
+            <div class="gec-form-group" style="margin-top:.75rem;">
+              <label class="gec-label" for="resend_from_email"><i class="fas fa-at" style="color:var(--primary);"></i> Adresse expéditeur (from)</label>
+              <input type="email" id="resend_from_email" name="smtp_username"
+                     value="{{ parametres.smtp_username or '' }}"
+                     class="gec-input" placeholder="noreply@votredomaine.com">
+              <p class="gec-form-hint">Doit être sur un domaine vérifié dans votre espace Resend. Si vide, <span class="gec-code">onboarding@resend.dev</span> sera utilisé (réservé aux tests).</p>
             </div>
           </div>
 
@@ -413,10 +514,11 @@
             <!-- Test SMTP inline -->
             <div style="background:var(--body-bg);border:1px solid var(--border);border-radius:var(--r-md);padding:.875rem;">
               <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin-bottom:.625rem;"><i class="fas fa-paper-plane" style="color:var(--primary);margin-right:.375rem;"></i>Tester la configuration SMTP</p>
-              <form action="{{ url_for('test_smtp_config') }}" method="POST" style="display:flex;gap:.5rem;">
-                <input type="email" name="test_email" placeholder="email@test.com" required class="gec-input" style="flex:1;">
-                <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-paper-plane"></i> Tester</button>
-              </form>
+              <div style="display:flex;gap:.5rem;">
+                <input type="email" id="smtp-test-email" placeholder="email@test.com" class="gec-input" style="flex:1;">
+                <button type="button" onclick="testSmtpConfig()" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-paper-plane"></i> Tester</button>
+              </div>
+              <div id="smtp-test-result" style="display:none;margin-top:.625rem;font-size:.8125rem;padding:.5rem .75rem;border-radius:var(--r-sm);"></div>
             </div>
           </div>
 
@@ -435,6 +537,10 @@
           {% endif %}
 
         </div>
+        <div class="tab-save-bar" id="savebar-email" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
       </div>
       {% endif %}
 
@@ -444,61 +550,80 @@
     {% if current_user.is_super_admin() or current_user.has_permission('manage_system_settings') %}
     <div class="gec-card">
       <div class="gec-card-header">
-        <span class="gec-card-title"><i class="fas fa-th"></i> Accès rapide aux modules</span>
+        <span class="gec-card-title"><i class="fas fa-th-list"></i> Accès rapide aux modules</span>
       </div>
-      <div class="gec-card-body">
-        <div class="gec-grid-3">
-          <a href="{{ url_for('manage_statuses') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-tags"></i></div>
-            <div><div class="gec-shortcut-title">Statuts</div><div class="gec-shortcut-desc">Statuts de courriers</div></div>
-          </a>
-          <a href="{{ url_for('manage_outgoing_types') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-mail-bulk"></i></div>
-            <div><div class="gec-shortcut-title">Types sortants</div><div class="gec-shortcut-desc">Types de courriers sortants</div></div>
-          </a>
-          <a href="{{ url_for('manage_email_templates') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#4F46E5;"><i class="fas fa-envelope"></i></div>
-            <div><div class="gec-shortcut-title">Modèles Email</div><div class="gec-shortcut-desc">Templates d'emails</div></div>
-          </a>
-          {% if current_user.is_super_admin() %}
-          <a href="{{ url_for('manage_departments') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#ECFDF5;color:#059669;"><i class="fas fa-building"></i></div>
-            <div><div class="gec-shortcut-title">{{ get_appellation_entites() }}</div><div class="gec-shortcut-desc">Structure organisationnelle</div></div>
-          </a>
-          <a href="{{ url_for('manage_roles') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#FDF4FF;color:#C026D3;"><i class="fas fa-user-shield"></i></div>
-            <div><div class="gec-shortcut-title">Rôles</div><div class="gec-shortcut-desc">Rôles et permissions</div></div>
-          </a>
-          <a href="{{ url_for('manage_users') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-users"></i></div>
-            <div><div class="gec-shortcut-title">Utilisateurs</div><div class="gec-shortcut-desc">Comptes et accès</div></div>
-          </a>
-          <a href="{{ url_for('security_settings') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></div>
-            <div><div class="gec-shortcut-title">Sécurité</div><div class="gec-shortcut-desc">Paramètres de sécurité</div></div>
-          </a>
-          <a href="{{ url_for('manage_backups') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#FFF7ED;color:#D97706;"><i class="fas fa-database"></i></div>
-            <div><div class="gec-shortcut-title">Sauvegardes</div><div class="gec-shortcut-desc">Gérer les sauvegardes</div></div>
-          </a>
-          <a href="{{ url_for('manage_languages') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#F0FDFA;color:#0D9488;"><i class="fas fa-language"></i></div>
-            <div><div class="gec-shortcut-title">Langues</div><div class="gec-shortcut-desc">Traductions disponibles</div></div>
-          </a>
-          <a href="{{ url_for('view_logs') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-list-alt"></i></div>
-            <div><div class="gec-shortcut-title">Logs activité</div><div class="gec-shortcut-desc">Historique des actions</div></div>
-          </a>
-          <a href="{{ url_for('security_logs') }}" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></div>
-            <div><div class="gec-shortcut-title">Logs sécurité</div><div class="gec-shortcut-desc">Événements de sécurité</div></div>
-          </a>
-          <a href="#" id="clear-cache-btn" class="gec-shortcut-card">
-            <div class="gec-shortcut-icon" style="background:#FFFBEB;color:#D97706;"><i class="fas fa-broom"></i></div>
-            <div><div class="gec-shortcut-title">Vider les caches</div><div class="gec-shortcut-desc">Améliorer les performances</div></div>
-          </a>
-          {% endif %}
-        </div>
+      <div class="gec-card-body" style="padding:.5rem 0;">
+
+        <div class="qa-group-label">Courriers</div>
+        <a href="{{ url_for('manage_statuses') }}" class="qa-row">
+          <span class="qa-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-tags"></i></span>
+          <span class="qa-body"><span class="qa-title">Statuts</span><span class="qa-desc">Gérer les statuts de courriers</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_outgoing_types') }}" class="qa-row">
+          <span class="qa-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-mail-bulk"></i></span>
+          <span class="qa-body"><span class="qa-title">Types sortants</span><span class="qa-desc">Types de courriers sortants</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_email_templates') }}" class="qa-row">
+          <span class="qa-icon" style="background:#EFF6FF;color:#4F46E5;"><i class="fas fa-envelope"></i></span>
+          <span class="qa-body"><span class="qa-title">Modèles Email</span><span class="qa-desc">Templates d'emails</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+
+        {% if current_user.is_super_admin() %}
+        <div class="qa-group-label" style="margin-top:.75rem;">Organisation</div>
+        <a href="{{ url_for('manage_departments') }}" class="qa-row">
+          <span class="qa-icon" style="background:#ECFDF5;color:#059669;"><i class="fas fa-building"></i></span>
+          <span class="qa-body"><span class="qa-title">{{ get_appellation_entites() }}</span><span class="qa-desc">Structure organisationnelle</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_roles') }}" class="qa-row">
+          <span class="qa-icon" style="background:#FDF4FF;color:#C026D3;"><i class="fas fa-user-shield"></i></span>
+          <span class="qa-body"><span class="qa-title">Rôles</span><span class="qa-desc">Rôles et permissions</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_users') }}" class="qa-row">
+          <span class="qa-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-users"></i></span>
+          <span class="qa-body"><span class="qa-title">Utilisateurs</span><span class="qa-desc">Comptes et accès</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+
+        <div class="qa-group-label" style="margin-top:.75rem;">Système</div>
+        <a href="{{ url_for('security_settings') }}" class="qa-row">
+          <span class="qa-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></span>
+          <span class="qa-body"><span class="qa-title">Sécurité</span><span class="qa-desc">Paramètres de sécurité</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_backups') }}" class="qa-row">
+          <span class="qa-icon" style="background:#FFF7ED;color:#D97706;"><i class="fas fa-database"></i></span>
+          <span class="qa-body"><span class="qa-title">Sauvegardes</span><span class="qa-desc">Gérer les sauvegardes</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('manage_languages') }}" class="qa-row">
+          <span class="qa-icon" style="background:#F0FDFA;color:#0D9488;"><i class="fas fa-language"></i></span>
+          <span class="qa-body"><span class="qa-title">Langues</span><span class="qa-desc">Traductions disponibles</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="#" id="clear-cache-btn" class="qa-row">
+          <span class="qa-icon" style="background:#FFFBEB;color:#D97706;"><i class="fas fa-broom"></i></span>
+          <span class="qa-body"><span class="qa-title">Vider les caches</span><span class="qa-desc">Améliorer les performances</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+
+        <div class="qa-group-label" style="margin-top:.75rem;">Audit</div>
+        <a href="{{ url_for('view_logs') }}" class="qa-row">
+          <span class="qa-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-list-alt"></i></span>
+          <span class="qa-body"><span class="qa-title">Logs activité</span><span class="qa-desc">Historique des actions</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        <a href="{{ url_for('security_logs') }}" class="qa-row">
+          <span class="qa-icon" style="background:#FEF2F2;color:#DC2626;"><i class="fas fa-shield-alt"></i></span>
+          <span class="qa-body"><span class="qa-title">Logs sécurité</span><span class="qa-desc">Événements de sécurité</span></span>
+          <i class="fas fa-chevron-right qa-arrow"></i>
+        </a>
+        {% endif %}
+
       </div>
     </div>
     {% endif %}
@@ -558,23 +683,24 @@
       </div>
     </div>
 
-    <!-- Test email -->
-    <div class="gec-card">
+    <!-- Test email — visible seulement sur l'onglet email -->
+    <div class="gec-card" id="sidebar-test-email-card" style="display:none;">
       <div class="gec-card-header">
         <span class="gec-card-title"><i class="fas fa-paper-plane"></i> Test Email</span>
       </div>
       <div class="gec-card-body" style="display:flex;flex-direction:column;gap:.875rem;">
         <p style="font-size:.8125rem;color:var(--t-muted);">Vérifiez la configuration en envoyant un email de test.</p>
-        <form method="POST" action="{{ url_for('settings') }}" style="display:flex;flex-direction:column;gap:.75rem;">
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
           <div class="gec-form-group">
-            <label class="gec-label" for="test_email"><i class="fas fa-at" style="color:var(--primary);"></i> Email de test</label>
-            <input type="email" id="test_email" name="test_email" required
+            <label class="gec-label" for="sidebar-test-email"><i class="fas fa-at" style="color:var(--primary);"></i> Email de test</label>
+            <input type="email" id="sidebar-test-email"
                    placeholder="votre@email.com" class="gec-input">
           </div>
-          <button type="submit" class="gec-btn gec-btn-primary" style="justify-content:center;">
+          <button type="button" onclick="testSmtpConfig('sidebar-test-email','sidebar-test-result')" class="gec-btn gec-btn-primary" style="justify-content:center;">
             <i class="fas fa-paper-plane"></i> Envoyer le test
           </button>
-        </form>
+          <div id="sidebar-test-result" style="display:none;font-size:.8125rem;padding:.5rem .75rem;border-radius:var(--r-sm);"></div>
+        </div>
       </div>
     </div>
 
@@ -589,6 +715,7 @@
           ('terminologie','fa-language','Terminologie','Entités, responsable'),
           ('numerotation','fa-hashtag','Numérotation','Format des accusés'),
           ('pdf','fa-file-pdf','PDF','En-têtes, logos PDF'),
+          ('notifications','fa-bell','Notifications','Emails, fréquence'),
           ('email','fa-envelope','Email','SMTP / Resend'),
         ] %}
         {% if tab_id != 'email' or current_user.has_permission('manage_system_settings') %}
@@ -632,40 +759,123 @@
 </div><!-- end two-col -->
 
 <style>
-.settings-tab-btn { color: var(--t-muted); border-bottom: 2px solid transparent !important; }
+.settings-tab-btn { color: var(--t-muted); border-bottom: 2px solid transparent !important; position:relative; }
 .settings-tab-btn.active { color: var(--primary) !important; border-bottom-color: var(--primary) !important; background: rgba(37,99,235,.05); }
 .settings-tab-btn:hover:not(.active) { color: var(--t-secondary); background: var(--body-bg); }
+.settings-tab-btn .dirty-dot { display:none; position:absolute; top:6px; right:6px; width:6px; height:6px; border-radius:50%; background:var(--warning,#D97706); }
+.settings-tab-btn.is-dirty .dirty-dot { display:block; }
+
+.tab-save-bar { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.25rem; background:var(--card-bg,#fff); border:1px solid var(--border); border-top:3px solid var(--primary); border-radius:0 0 var(--r-lg,12px) var(--r-lg,12px); gap:.75rem; }
+
+.qa-group-label { font-size:.6875rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--t-muted); padding:.375rem 1rem; margin-top:.25rem; }
+.qa-row { display:flex; align-items:center; gap:.875rem; padding:.625rem 1rem; text-decoration:none; cursor:pointer; transition:background .12s; border-left:3px solid transparent; }
+.qa-row:hover { background:var(--body-bg); border-left-color:var(--primary); }
+.qa-icon { width:2rem; height:2rem; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.8125rem; }
+.qa-body { display:flex; flex-direction:column; flex:1; min-width:0; }
+.qa-title { font-size:.875rem; font-weight:600; color:var(--t-primary); }
+.qa-desc { font-size:.75rem; color:var(--t-muted); }
+.qa-arrow { color:var(--t-muted); font-size:.625rem; flex-shrink:0; opacity:.5; transition:opacity .12s,transform .12s; }
+.qa-row:hover .qa-arrow { opacity:1; transform:translateX(2px); }
 </style>
+
+<!-- Dirty guard modal -->
+<div id="dirty-guard-modal" class="gec-modal-overlay" style="display:none;" onclick="if(event.target===this)closeDirtyModal()">
+  <div class="gec-modal" style="max-width:400px;">
+    <div class="gec-modal-header">
+      <span class="gec-modal-title"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> Modifications non enregistrées</span>
+    </div>
+    <div class="gec-modal-body">
+      <p style="font-size:.9375rem;color:var(--t-secondary);">Vous avez des modifications non enregistrées sur cet onglet. Voulez-vous les abandonner ?</p>
+    </div>
+    <div class="gec-modal-footer">
+      <button onclick="closeDirtyModal()" class="gec-btn gec-btn-secondary">Rester sur cet onglet</button>
+      <button onclick="confirmLeaveDirty()" class="gec-btn gec-btn-danger"><i class="fas fa-trash"></i> Abandonner</button>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 <script>
+// ── Dirty state tracking ─────────────────────────────────────────
+var _formDirty = false;
+var _pendingTab = null;
+var _currentTab = localStorage.getItem('gec-settings-tab') || 'identite';
+
+function markDirty() {
+  _formDirty = true;
+  var btn = document.querySelector('[data-tab="' + _currentTab + '"]');
+  if (btn) btn.classList.add('is-dirty');
+  document.querySelectorAll('.tab-dirty-hint').forEach(function(h) { h.style.visibility = 'hidden'; });
+  var hint = document.querySelector('#savebar-' + _currentTab + ' .tab-dirty-hint');
+  if (hint) hint.style.visibility = 'visible';
+}
+function clearDirty() {
+  _formDirty = false;
+  document.querySelectorAll('.settings-tab-btn').forEach(function(b) { b.classList.remove('is-dirty'); });
+  document.querySelectorAll('.tab-dirty-hint').forEach(function(h) { h.style.visibility = 'hidden'; });
+}
+function closeDirtyModal() {
+  document.getElementById('dirty-guard-modal').style.display = 'none';
+  _pendingTab = null;
+}
+function confirmLeaveDirty() {
+  clearDirty();
+  document.getElementById('dirty-guard-modal').style.display = 'none';
+  if (_pendingTab) { _doSwitchTab(_pendingTab); _pendingTab = null; }
+}
+
+// Écouter les modifications du formulaire
+(function() {
+  var form = document.getElementById('settings-form');
+  if (form) {
+    form.addEventListener('input', markDirty);
+    form.addEventListener('change', markDirty);
+  }
+  // Effacer dirty après submit
+  if (form) form.addEventListener('submit', clearDirty);
+})();
+
 // ── Tab switching ─────────────────────────────────────────────────
-function switchTab(tabId) {
-  // Hide all panels
+function _doSwitchTab(tabId) {
+  _currentTab = tabId;
   document.querySelectorAll('.settings-tab-panel').forEach(function(p) {
     p.style.display = 'none';
   });
-  // Deactivate all tab buttons
   document.querySelectorAll('.settings-tab-btn').forEach(function(b) {
     b.classList.remove('active');
   });
-  // Show target panel
+  // Hide all save bars, show only the active one
+  document.querySelectorAll('.tab-save-bar').forEach(function(b) { b.style.display = 'none'; });
+  var bar = document.getElementById('savebar-' + tabId);
+  if (bar) bar.style.display = 'flex';
   var panel = document.getElementById('tab-' + tabId);
   if (panel) panel.style.display = '';
-  // Activate button
   var btn = document.querySelector('[data-tab="' + tabId + '"]');
   if (btn) btn.classList.add('active');
-  // Save in localStorage
+  // Sidebar Test Email — visible seulement sur l'onglet email
+  var testCard = document.getElementById('sidebar-test-email-card');
+  if (testCard) testCard.style.display = (tabId === 'email') ? '' : 'none';
   localStorage.setItem('gec-settings-tab', tabId);
 }
+function switchTab(tabId) {
+  if (_formDirty && tabId !== _currentTab) {
+    _pendingTab = tabId;
+    document.getElementById('dirty-guard-modal').style.display = 'flex';
+    return;
+  }
+  _doSwitchTab(tabId);
+}
 
-// Restore last tab on page load
+// Restore last tab on page load — also remove header save btn (tabs have their own)
 (function() {
   var last = localStorage.getItem('gec-settings-tab') || 'identite';
-  switchTab(last);
+  _doSwitchTab(last);
+  // Hide the global header save button since each tab has its own
+  var hdrSave = document.querySelector('.gec-page-header button[type="submit"]');
+  if (hdrSave) hdrSave.style.display = 'none';
 })();
 
 // ── Logo preview ─────────────────────────────────────────────────
@@ -743,12 +953,67 @@ if (titreEl) {
   });
 }
 
+// ── SMTP test via fetch ───────────────────────────────────────────
+function testSmtpConfig(inputId, resultId) {
+  inputId  = inputId  || 'smtp-test-email';
+  resultId = resultId || 'smtp-test-result';
+  var emailInput  = document.getElementById(inputId);
+  var resultEl    = document.getElementById(resultId);
+  if (!emailInput || !resultEl) return;
+  var email = emailInput.value.trim();
+  if (!email) { emailInput.focus(); return; }
+
+  resultEl.style.display = 'block';
+  resultEl.style.background = 'var(--body-bg)';
+  resultEl.style.color = 'var(--t-muted)';
+  resultEl.textContent = '⏳ Envoi en cours…';
+
+  var fd = new FormData();
+  fd.append('test_email', email);
+
+  fetch('{{ url_for("test_smtp_config") }}', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      resultEl.style.display = 'block';
+      if (data.success) {
+        resultEl.style.background = '#d1fae5';
+        resultEl.style.color = '#065f46';
+      } else {
+        resultEl.style.background = '#fee2e2';
+        resultEl.style.color = '#991b1b';
+      }
+      resultEl.textContent = data.message || (data.success ? '✅ Succès' : '❌ Erreur');
+    })
+    .catch(function(err) {
+      resultEl.style.display = 'block';
+      resultEl.style.background = '#fee2e2';
+      resultEl.style.color = '#991b1b';
+      resultEl.textContent = '❌ Erreur réseau : ' + err;
+    });
+}
+
 // ── Active mode label styling on load ────────────────────────────
 (function() {
   var checked = document.querySelector('input[name="mode_numero_accuse"]:checked');
   if (checked) onModeChange(checked);
   var providerChecked = document.querySelector('input[name="email_provider"]:checked');
   if (providerChecked) toggleEmailProvider(providerChecked.value);
+})();
+
+// ── Digest radio highlight ────────────────────────────────────────
+function highlightDigest(label) {
+  var panel = label.closest('.settings-tab-panel');
+  if (!panel) return;
+  panel.querySelectorAll('label[onclick]').forEach(function(l) {
+    l.style.borderColor = '';
+    l.style.background = '';
+  });
+  label.style.borderColor = 'var(--primary)';
+  label.style.background = 'var(--primary-light, #EFF6FF)';
+}
+(function() {
+  var checked = document.querySelector('input[name="notif_default_digest"]:checked');
+  if (checked) highlightDigest(checked.closest('label'));
 })();
 </script>
 {% endblock %}

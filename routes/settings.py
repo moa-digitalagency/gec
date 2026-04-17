@@ -161,24 +161,77 @@ def delete_email_template(template_id):
     
     return redirect(url_for('manage_email_templates'))
 
+@app.route('/init_default_email_templates', methods=['POST'])
+@login_required
+@rate_limit(max_requests=5, per_minutes=15)
+def init_default_email_templates():
+    """Génère tous les templates email par défaut manquants"""
+    if not current_user.is_super_admin():
+        return jsonify({'success': False, 'message': 'Accès non autorisé.'}), 403
+    try:
+        from models import EmailTemplate
+        created = 0
+        defaults = [
+            ('new_mail',            'fr', 'Nouveau courrier enregistré : {{objet}}',
+             '<p>Bonjour,</p><p>Un nouveau courrier a été enregistré : <strong>{{objet}}</strong>.</p>'),
+            ('mail_forwarded',      'fr', 'Courrier transmis : {{objet}}',
+             '<p>Bonjour,</p><p>Le courrier <strong>{{objet}}</strong> vous a été transmis.</p>'),
+            ('mail_status_changed', 'fr', 'Changement de statut : {{objet}}',
+             '<p>Bonjour,</p><p>Le statut du courrier <strong>{{objet}}</strong> a changé.</p>'),
+            ('mail_reminder',       'fr', 'Rappel échéance : {{objet}}',
+             '<p>Bonjour,</p><p>Rappel : le courrier <strong>{{objet}}</strong> arrive à échéance.</p>'),
+            ('mail_assigned',       'fr', 'Courrier assigné : {{objet}}',
+             '<p>Bonjour,</p><p>Le courrier <strong>{{objet}}</strong> vous a été assigné.</p>'),
+            ('mail_commented',      'fr', 'Nouveau commentaire : {{objet}}',
+             '<p>Bonjour,</p><p>Un commentaire a été ajouté sur le courrier <strong>{{objet}}</strong>.</p>'),
+            ('mail_deadline',       'fr', 'Échéance imminente : {{objet}}',
+             '<p>Bonjour,</p><p>Le courrier <strong>{{objet}}</strong> arrive à échéance dans 24h.</p>'),
+            ('account_created',     'fr', 'Votre compte GEC a été créé',
+             '<p>Bonjour {{nom}},</p><p>Votre compte GEC a été créé. Identifiant : <strong>{{username}}</strong>.</p>'),
+            ('password_reset',      'fr', 'Réinitialisation de votre mot de passe',
+             '<p>Bonjour,</p><p>Votre mot de passe a été réinitialisé.</p>'),
+            ('account_locked',      'fr', 'Compte verrouillé',
+             '<p>Bonjour,</p><p>Votre compte a été temporairement verrouillé.</p>'),
+            ('2fa_enabled',         'fr', 'Authentification à deux facteurs activée',
+             '<p>Bonjour,</p><p>La 2FA a été activée sur votre compte.</p>'),
+            ('system_alert',        'fr', 'Alerte système GEC',
+             '<p>Bonjour,</p><p>Une alerte système a été générée : <strong>{{message}}</strong>.</p>'),
+            ('backup_completed',    'fr', 'Sauvegarde terminée',
+             '<p>Bonjour,</p><p>La sauvegarde de la base de données a été effectuée avec succès.</p>'),
+        ]
+        for type_t, langue, sujet, contenu in defaults:
+            exists = EmailTemplate.query.filter_by(type_template=type_t, langue=langue).first()
+            if not exists:
+                t = EmailTemplate(
+                    type_template=type_t, langue=langue, sujet=sujet,
+                    contenu_html=contenu, contenu_texte='', actif=True,
+                    cree_par_id=current_user.id
+                )
+                db.session.add(t)
+                created += 1
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'{created} template(s) créé(s).'})
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur init_default_email_templates: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/test_smtp_config', methods=['POST'])
 @login_required
 @rate_limit(max_requests=5, per_minutes=15)
 def test_smtp_config():
     """Teste la configuration SMTP en envoyant un email de test"""
     if not current_user.has_permission('manage_system_settings') and not current_user.is_super_admin():
-        flash('Vous n\'avez pas l\'autorisation d\'accéder à cette fonctionnalité.', 'error')
-        return redirect(url_for('dashboard'))
-    
+        return jsonify({'success': False, 'message': "Vous n'avez pas l'autorisation d'accéder à cette fonctionnalité."}), 403
+
     try:
         from services.email import send_email_from_system_config
         from models import ParametresSysteme
-        
+
         # Email de test
         test_email = sanitize_input(request.form.get('test_email', '').strip())
         if not test_email:
-            flash('Veuillez saisir un email de test.', 'error')
-            return redirect(url_for('settings'))
+            return jsonify({'success': False, 'message': 'Veuillez saisir un email de test.'})
         
         # Récupérer le nom du logiciel
         nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
@@ -245,21 +298,19 @@ def test_smtp_config():
         
         # Envoyer l'email de test
         if send_email_from_system_config(test_email, subject, html_content, text_content):
-            log_activity(current_user.id, "TEST_SMTP_SUCCESS", 
+            log_activity(current_user.id, "TEST_SMTP_SUCCESS",
                         f"Test SMTP réussi vers {test_email}")
-            flash(f'✅ Email de test envoyé avec succès à {test_email}! Vérifiez votre boîte de réception.', 'success')
+            return jsonify({'success': True, 'message': f'✅ Email de test envoyé avec succès à {test_email} ! Vérifiez votre boîte de réception.'})
         else:
-            log_activity(current_user.id, "TEST_SMTP_FAILED", 
+            log_activity(current_user.id, "TEST_SMTP_FAILED",
                         f"Échec du test SMTP vers {test_email}")
-            flash('❌ Erreur lors de l\'envoi de l\'email de test. Vérifiez votre configuration SMTP.', 'error')
-    
+            return jsonify({'success': False, 'message': "❌ Erreur lors de l'envoi de l'email de test. Vérifiez votre configuration SMTP."})
+
     except Exception as e:
         logging.error(f"Erreur lors du test SMTP: {e}")
-        log_activity(current_user.id, "TEST_SMTP_ERROR", 
+        log_activity(current_user.id, "TEST_SMTP_ERROR",
                     f"Erreur lors du test SMTP: {str(e)}")
-        flash('❌ Erreur lors du test de configuration SMTP.', 'error')
-    
-    return redirect(url_for('settings'))
+        return jsonify({'success': False, 'message': f'❌ Erreur lors du test de configuration SMTP : {str(e)}'}), 500
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -330,6 +381,17 @@ def settings():
             # Notifications pour super admin (seuls les super admin peuvent modifier)
             if current_user.is_super_admin():
                 parametres.notify_superadmin_new_mail = bool(request.form.get('notify_superadmin_new_mail'))
+                # Paramètres notifications globaux
+                parametres.notifications_enabled = bool(request.form.get('notifications_enabled'))
+                digest = request.form.get('notif_default_digest', 'instant')
+                if digest not in ('instant', 'daily', 'weekly'):
+                    digest = 'instant'
+                parametres.notif_default_digest = digest
+                # Types activés (liste JSON)
+                all_types = ['new_mail','mail_forwarded','mail_status_changed','mail_deadline',
+                             'mail_commented','mail_assigned','account_created','system_alert']
+                enabled = [t for t in all_types if request.form.get(f'notif_type_{t}')]
+                parametres.notif_types_enabled = json.dumps(enabled)
             
             # Paramètres SMTP et Resend (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
@@ -431,9 +493,16 @@ def settings():
         
         # Backup files maintenant gérés dans la page dédiée
         
-        return render_template('settings.html', 
+        # Parse notif_types_enabled (JSON list) pour le template
+        try:
+            notif_types_enabled = json.loads(parametres.notif_types_enabled) if parametres.notif_types_enabled else []
+        except Exception:
+            notif_types_enabled = []
+
+        return render_template('settings.html',
                               parametres=parametres,
-                              format_preview=format_preview)
+                              format_preview=format_preview,
+                              notif_types_enabled=notif_types_enabled)
 
 @app.route('/clear_cache', methods=['POST'])
 @login_required

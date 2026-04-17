@@ -125,8 +125,8 @@
 function updateLabel(input){if(input.files.length>0)document.getElementById('uploadLabel').textContent=input.files[0].name;}
 function toggleLanguage(code,enabled){
   fetch(`/toggle_language/${code}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})})
-  .then(r=>r.json()).then(d=>{if(d.success){location.reload();}else{alert(d.message||'Erreur');}})
-  .catch(()=>alert('Erreur réseau'));
+  .then(r=>r.json()).then(d=>{if(d.success){location.reload();}else{showFlash(d.message||'Erreur','error');}})
+  .catch(()=>showFlash('Erreur réseau','error'));
 }
 function deleteLanguage(code){
   document.getElementById('languageToDelete').textContent=code.toUpperCase();

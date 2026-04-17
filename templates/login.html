@@ -29,9 +29,8 @@
           <img src="{{ url_for('uploaded_file', filename=sys.logo_url.split('/')[-1]) }}"
                alt="Logo" style="height:72px;width:auto;object-fit:contain;margin:0 auto;display:block;">
         {% else %}
-          <div style="width:72px;height:72px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto;">
-            <i class="fas fa-mail-bulk" style="font-size:1.75rem;color:#60A5FA;"></i>
-          </div>
+          <img src="{{ url_for('static', filename='favicon.svg') }}"
+               alt="GEC" style="width:72px;height:72px;object-fit:contain;margin:0 auto;display:block;border-radius:18px;">
         {% endif %}
       </div>
 

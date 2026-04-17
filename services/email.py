@@ -122,13 +122,24 @@ def send_email_with_resend(
             logging.error("Clé API Resend non configurée dans les paramètres système")
             return False
 
-        sender_email = ParametresSysteme.get_valeur('smtp_username') or \
-                       os.environ.get('SMTP_EMAIL', 'noreply@gec.local')
+        # From-address priority: email_contact → smtp_username → onboarding@resend.dev
+        email_contact = ParametresSysteme.get_valeur('email_contact') or ''
+        smtp_username = ParametresSysteme.get_valeur('smtp_username') or ''
+        nom_logiciel  = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
+
+        # Resend free tier only allows onboarding@resend.dev or a verified domain
+        # Use onboarding@resend.dev as safe default when no real domain is configured
+        if email_contact and '@' in email_contact and not email_contact.endswith('.local'):
+            sender_email = email_contact
+        elif smtp_username and '@' in smtp_username and not smtp_username.endswith('.local'):
+            sender_email = smtp_username
+        else:
+            sender_email = 'onboarding@resend.dev'
 
         _resend_sdk.api_key = resend_api_key
 
         params: _resend_sdk.Emails.SendParams = {
-            "from": f"GEC <{sender_email}>",
+            "from": f"{nom_logiciel} <{sender_email}>",
             "to": [to_email],
             "subject": subject,
         }
@@ -225,10 +236,17 @@ def test_resend_configuration(test_email: str) -> dict:
     try:
         from models import ParametresSysteme
         software_name = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
-        sender_email  = ParametresSysteme.get_valeur('smtp_username') or 'noreply@gec.local'
+        email_contact = ParametresSysteme.get_valeur('email_contact') or ''
+        smtp_username = ParametresSysteme.get_valeur('smtp_username') or ''
+        if email_contact and '@' in email_contact and not email_contact.endswith('.local'):
+            sender_email = email_contact
+        elif smtp_username and '@' in smtp_username and not smtp_username.endswith('.local'):
+            sender_email = smtp_username
+        else:
+            sender_email = 'onboarding@resend.dev'
     except Exception:
         software_name = 'GEC'
-        sender_email  = 'noreply@gec.local'
+        sender_email  = 'onboarding@resend.dev'
 
     subject = f"Test Resend — {software_name}"
     html_content = f"""
@@ -248,15 +266,30 @@ def test_resend_configuration(test_email: str) -> dict:
     </body></html>
     """
 
-    success = send_email_with_resend(test_email, subject, html_content)
-    if success:
+    # Send and capture detailed API errors
+    try:
+        parametres   = ParametresSysteme.get_parametres()
+        resend_api_key = parametres.get_resend_api_key()
+        _resend_sdk.api_key = resend_api_key
+
+        params = {
+            "from": f"{software_name} <{sender_email}>",
+            "to":   [test_email],
+            "subject": subject,
+            "html": html_content,
+        }
+        _resend_sdk.Emails.send(params)
         details = "\n".join(prerequisites['diagnostic_details'])
         return {'success': True, 'message': f"✅ Email de test envoyé à {test_email}.\n\n📋 Vérifications:\n{details}"}
-    else:
+    except Exception as api_err:
+        err_str = str(api_err)
         details = "\n".join(prerequisites['diagnostic_details'])
+        hint = ""
+        if "domain" in err_str.lower() or "sender" in err_str.lower() or "from" in err_str.lower():
+            hint = f"\n\n💡 Astuce : votre domaine expéditeur ({sender_email}) n'est peut-être pas vérifié sur Resend. Vérifiez https://resend.com/domains ou utilisez onboarding@resend.dev pour les tests."
         return {
             'success': False,
-            'message': f"❌ Échec technique malgré une configuration valide.\n\n📋 Vérifications:\n{details}\n\nVérifiez les logs pour plus de détails."
+            'message': f"❌ Erreur API Resend : {err_str}{hint}\n\n📋 Vérifications:\n{details}"
         }
 
 

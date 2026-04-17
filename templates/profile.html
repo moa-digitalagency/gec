@@ -104,6 +104,118 @@
   </div>
 </div>
 
+<!-- ── Section Préférences de notifications ────────────────── -->
+<div class="gec-card" style="margin-bottom:1.5rem;">
+  <div class="gec-card-header">
+    <span class="gec-card-title"><i class="fas fa-bell" style="color:var(--primary);margin-right:.375rem;"></i> Préférences de notifications</span>
+  </div>
+  <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.5rem;">
+
+    <!-- ── Bloc 1 : Notifications dans l'app (toujours actives) ── -->
+    <div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem;">
+        <div style="width:28px;height:28px;border-radius:6px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-mobile-alt" style="font-size:.75rem;color:#059669;"></i>
+        </div>
+        <div>
+          <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Notifications dans l'application</p>
+          <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Visibles dans la cloche en haut de page</p>
+        </div>
+        <span class="gec-badge gec-badge-green" style="margin-left:auto;font-size:.625rem;"><i class="fas fa-lock" style="margin-right:.25rem;"></i>Toujours actif</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.375rem;">
+        {% for notif_label, notif_icon, notif_color in [
+          ('Nouveau courrier enregistré', 'fa-envelope',           '#2563EB'),
+          ('Courrier transmis',           'fa-share-alt',          '#059669'),
+          ('Changement de statut',        'fa-exchange-alt',       '#7C3AED'),
+          ('Échéance imminente',          'fa-exclamation-circle', '#DC2626'),
+          ('Commentaire ajouté',          'fa-comment-alt',        '#0284C7'),
+        ] %}
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.4rem .75rem;border:1px solid var(--border);border-radius:var(--r-sm);opacity:.85;">
+          <span style="width:1.5rem;height:1.5rem;border-radius:4px;background:{{ notif_color }}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas {{ notif_icon }}" style="font-size:.7rem;color:{{ notif_color }};"></i>
+          </span>
+          <span style="font-size:.875rem;color:var(--t-primary);flex:1;">{{ notif_label }}</span>
+          <span style="font-size:.6875rem;color:#059669;font-weight:600;"><i class="fas fa-check" style="margin-right:.25rem;"></i>Activé</span>
+        </div>
+        {% endfor %}
+      </div>
+      <p style="font-size:.75rem;color:var(--t-muted);margin-top:.625rem;padding:.5rem .625rem;background:var(--body-bg);border-radius:var(--r-sm);border-left:3px solid #059669;">
+        <i class="fas fa-info-circle" style="margin-right:.375rem;color:#059669;"></i>Les notifications dans l'app sont toujours actives et ne peuvent pas être désactivées.
+      </p>
+    </div>
+
+    <!-- ── Bloc 2 : Notifications par email ── -->
+    <div id="notif-email" style="border-top:2px solid var(--border);padding-top:1.25rem;">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem;">
+        <div style="width:28px;height:28px;border-radius:6px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-envelope" style="font-size:.75rem;color:#2563EB;"></i>
+        </div>
+        <div>
+          <p style="font-size:.875rem;font-weight:600;color:var(--t-primary);margin:0;">Notifications par email</p>
+          <p style="font-size:.75rem;color:var(--t-muted);margin:0;">Choisissez les alertes reçues par email</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('update_notification_prefs') }}" style="display:flex;flex-direction:column;gap:1rem;">
+        <!-- Master switch email -->
+        <label class="gec-toggle-wrap">
+          <span class="gec-toggle">
+            <input type="checkbox" name="notif_enabled" {% if current_user.notif_enabled %}checked{% endif %}>
+            <span class="gec-toggle-slider"></span>
+          </span>
+          <div>
+            <div class="gec-toggle-label"><i class="fas fa-envelope" style="color:#2563EB;margin-right:.375rem;"></i> Activer les emails de notification</div>
+            <div class="gec-toggle-desc">Si désactivé, aucun email ne sera envoyé (les notifs dans l'app restent actives)</div>
+          </div>
+        </label>
+
+        <div style="border-top:1px solid var(--border);padding-top:1rem;">
+          <p style="font-size:.8125rem;font-weight:600;color:var(--t-primary);margin-bottom:.75rem;">
+            <i class="fas fa-filter" style="color:var(--primary);margin-right:.375rem;"></i>Types d'emails à recevoir
+          </p>
+          <div style="display:flex;flex-direction:column;gap:.5rem;">
+            {% for notif_name, notif_label, notif_icon, notif_color in [
+              ('notif_new_mail',  'Nouveau courrier enregistré', 'fa-envelope',           '#2563EB'),
+              ('notif_forwarded', 'Courrier transmis',           'fa-share-alt',          '#059669'),
+              ('notif_status',    'Changement de statut',        'fa-exchange-alt',       '#7C3AED'),
+              ('notif_deadline',  'Échéance imminente',          'fa-exclamation-circle', '#DC2626'),
+              ('notif_commented', 'Commentaire ajouté',          'fa-comment-alt',        '#0284C7'),
+            ] %}
+            <label style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:background .12s;" onmouseover="this.style.background='var(--body-bg)'" onmouseout="this.style.background=''">
+              <input type="checkbox" name="{{ notif_name }}" {% if current_user | attr(notif_name) %}checked{% endif %}
+                     style="accent-color:{{ notif_color }};">
+              <span style="width:1.5rem;height:1.5rem;border-radius:4px;background:{{ notif_color }}1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas {{ notif_icon }}" style="font-size:.7rem;color:{{ notif_color }};"></i>
+              </span>
+              <span style="font-size:.875rem;color:var(--t-primary);">{{ notif_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:1rem;">
+          <label class="gec-label" for="notif_digest">
+            <i class="fas fa-clock" style="color:var(--primary);"></i> Fréquence d'envoi des emails
+          </label>
+          <select id="notif_digest" name="notif_digest" class="gec-input" style="max-width:260px;">
+            <option value="instant" {% if (current_user.notif_digest or 'instant') == 'instant' %}selected{% endif %}>Immédiat — dès l'action</option>
+            <option value="daily"   {% if (current_user.notif_digest or '') == 'daily' %}selected{% endif %}>Résumé quotidien</option>
+            <option value="weekly"  {% if (current_user.notif_digest or '') == 'weekly' %}selected{% endif %}>Résumé hebdomadaire</option>
+          </select>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm">
+            <i class="fas fa-save"></i> Enregistrer mes préférences email
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
 <!-- 2FA Section (super_admin only) -->
 {% if current_user.is_super_admin() %}
 <div class="gec-card">

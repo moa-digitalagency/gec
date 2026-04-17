@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from flask_login import UserMixin
 from datetime import datetime, timedelta
 import os
@@ -15,7 +15,7 @@ _SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS = frozenset({
     'read_all_mail', 'read_department_mail', 'read_own_mail',
     'edit_all_mail', 'edit_department_mail', 'edit_own_mail',
     'create_mail', 'delete_mail', 'restore_mail', 'manage_mail',
-    'view_all_mail', 'bulk_mail',
+    'view_all_mail', 'bulk_mail', 'view_trash', 'permanent_delete',
 })
 
 
@@ -40,6 +40,16 @@ class User(UserMixin, db.Model):
     matricule_encrypted = db.Column(db.Text, nullable=True)
     fonction_encrypted = db.Column(db.Text, nullable=True)
     password_hash_encrypted = db.Column(db.Text, nullable=True)
+
+    # Préférences notifications par email (in-app = toujours actif)
+    notif_enabled      = db.Column(db.Boolean, default=True,      nullable=False)
+    notif_new_mail     = db.Column(db.Boolean, default=True,      nullable=False)
+    notif_forwarded    = db.Column(db.Boolean, default=True,      nullable=False)
+    notif_status       = db.Column(db.Boolean, default=True,      nullable=False)
+    notif_deadline     = db.Column(db.Boolean, default=True,      nullable=False)
+    notif_commented    = db.Column(db.Boolean, default=False,     nullable=False)
+    notif_digest       = db.Column(db.String(10), default='instant', nullable=False)
+    # valeurs : 'instant' | 'daily' | 'weekly'
 
     # 2FA TOTP
     totp_secret = db.Column(db.String(64), nullable=True)

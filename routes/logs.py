@@ -40,17 +40,18 @@ def view_logs():
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
     
-    # Construction de la requête
-    query = LogActivite.query.join(User).order_by(LogActivite.date_action.desc())
-    
-    # Filtre de recherche textuelle
+    # Construction de la requête — outerjoin pour inclure les logs sans utilisateur
+    query = LogActivite.query.outerjoin(User, LogActivite.utilisateur_id == User.id)\
+                             .order_by(LogActivite.date_action.desc())
+
+    # Filtre de recherche textuelle (ilike = insensible à la casse)
     if search:
         query = query.filter(
             db.or_(
-                LogActivite.action.contains(search),
-                LogActivite.description.contains(search),
-                User.username.contains(search),
-                User.nom_complet.contains(search)
+                LogActivite.action.ilike(f'%{search}%'),
+                LogActivite.description.ilike(f'%{search}%'),
+                User.username.ilike(f'%{search}%'),
+                User.nom_complet.ilike(f'%{search}%')
             )
         )
     
@@ -79,27 +80,43 @@ def view_logs():
         except ValueError:
             pass
     
-    # Pagination
+    # Pagination — on passe l'objet complet (pas .items) pour que le template accède à .total etc.
     logs_paginated = query.paginate(page=page, per_page=per_page, error_out=False)
-    logs = logs_paginated.items
-    
-    # Obtenir les actions uniques pour le filtre
+
+    # Actions uniques pour le filtre
     actions_distinctes = db.session.query(LogActivite.action).distinct().order_by(LogActivite.action).all()
-    actions_list = [action[0] for action in actions_distinctes]
-    
-    # Obtenir les utilisateurs pour le filtre
-    users_list = User.query.order_by(User.username).all()
-    
+    actions_list = [a[0] for a in actions_distinctes if a[0]]
+
+    # Utilisateurs pour le filtre
+    users_list = User.query.order_by(User.nom_complet).all()
+
+    # Stats pour le header
+    from datetime import date
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    logs_today   = LogActivite.query.filter(LogActivite.date_action >= today_start).count()
+    unique_users = db.session.query(LogActivite.utilisateur_id).distinct().count()
+    last_log     = LogActivite.query.order_by(LogActivite.date_action.desc()).first()
+
+    # Top 5 actions les plus fréquentes
+    from sqlalchemy import func
+    top_actions = db.session.query(
+        LogActivite.action,
+        func.count(LogActivite.id).label('cnt')
+    ).group_by(LogActivite.action).order_by(func.count(LogActivite.id).desc()).limit(5).all()
+
     return render_template('logs.html',
-                         logs=logs,
-                         pagination=logs_paginated,
-                         search=search,
-                         action_filter=action_filter,
-                         user_filter=user_filter,
-                         date_from=date_from,
-                         date_to=date_to,
-                         actions_list=actions_list,
-                         users_list=users_list)
+                           logs=logs_paginated,
+                           search=search,
+                           action_filter=action_filter,
+                           user_filter=user_filter,
+                           date_from=date_from,
+                           date_to=date_to,
+                           actions_list=actions_list,
+                           users_list=users_list,
+                           logs_today=logs_today,
+                           unique_users=unique_users,
+                           last_log=last_log,
+                           top_actions=top_actions)
 
 @app.route("/security_logs")
 @login_required

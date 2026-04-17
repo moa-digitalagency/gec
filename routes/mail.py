@@ -20,7 +20,7 @@ from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActi
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 from services.email import send_new_mail_notification, send_mail_forwarded_notification
 from routes.auth import apply_mail_access_filter
-from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
+from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
 @app.route('/register_mail', methods=['GET', 'POST'])
@@ -165,7 +165,17 @@ def register_mail():
         file.save(fichier_chemin)
         fichier_nom = file.filename
         fichier_type = filename.rsplit('.', 1)[1].lower()
-        
+
+        # Chiffrement du fichier au repos
+        fichier_is_encrypted = False
+        try:
+            encrypted_path = encrypt_uploaded_file(fichier_chemin)
+            if encrypted_path:
+                fichier_chemin = encrypted_path
+                fichier_is_encrypted = True
+        except Exception as e_enc:
+            logging.warning(f"Chiffrement fichier principal ignoré : {e_enc}")
+
         # Création du courrier
         courrier = Courrier(
             numero_accuse_reception=numero_accuse,
@@ -180,6 +190,7 @@ def register_mail():
             fichier_nom=fichier_nom,
             fichier_chemin=fichier_chemin,
             fichier_type=fichier_type,
+            fichier_encrypted=fichier_is_encrypted,
             utilisateur_id=current_user.id,
             secretaire_general_copie=secretaire_general_copie,
             autres_informations=autres_informations if type_courrier == 'SORTANT' else None
@@ -281,13 +292,23 @@ def register_mail():
                             extra_path = os.path.join('uploads', extra_filename)
                             extra_file.seek(0)
                             extra_file.save(extra_path)
+                            # Chiffrement pièce jointe supplémentaire
+                            extra_is_encrypted = False
+                            try:
+                                enc_extra = encrypt_uploaded_file(extra_path)
+                                if enc_extra:
+                                    extra_path = enc_extra
+                                    extra_is_encrypted = True
+                            except Exception as e_enc2:
+                                logging.warning(f"Chiffrement pièce jointe ignoré : {e_enc2}")
                             attachment = CourrierAttachment(
                                 courrier_id=courrier.id,
                                 fichier_nom=extra_file.filename,
                                 fichier_chemin=extra_path,
                                 fichier_type=extra_filename.rsplit('.', 1)[-1].lower(),
                                 fichier_taille=os.path.getsize(extra_path),
-                                uploaded_by_id=current_user.id
+                                uploaded_by_id=current_user.id,
+                                fichier_encrypted=extra_is_encrypted
                             )
                             db.session.add(attachment)
                             extra_saved.append(extra_file.filename)
@@ -488,7 +509,7 @@ def set_due_date(id):
 @app.route('/admin/send_reminders', methods=['POST'])
 @login_required
 def send_reminders_manual():
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         abort(403)
     count = _send_overdue_reminders()
     flash(f'Rappels envoyés : {count} courrier(s) notifié(s).', 'success')
@@ -839,14 +860,25 @@ def download_file(id):
         
         # Vérifier si le fichier existe
         if os.path.exists(file_path):
-            log_activity(current_user.id, "TELECHARGEMENT_FICHIER", 
+            log_activity(current_user.id, "TELECHARGEMENT_FICHIER",
                         f"Téléchargement du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
-            
-            directory = os.path.dirname(file_path)
-            filename = os.path.basename(file_path)
-            
+
+            # Déchiffrement si nécessaire avant envoi
+            send_path = file_path
+            temp_decrypted = None
+            if getattr(courrier, 'fichier_encrypted', False):
+                try:
+                    temp_decrypted = decrypt_file_for_download(file_path)
+                    if temp_decrypted:
+                        send_path = temp_decrypted
+                except Exception as e_dec:
+                    logging.warning(f"Déchiffrement ignoré pour téléchargement : {e_dec}")
+
+            directory = os.path.dirname(send_path)
+            filename = os.path.basename(send_path)
+
             logging.info(f"Directory: {directory}, Filename: {filename}")
-            
+
             # Déterminer le mimetype
             mimetype = 'application/octet-stream'
             if courrier.fichier_nom:
@@ -857,9 +889,9 @@ def download_file(id):
                     mimetype = 'image/jpeg'
                 elif ext == 'png':
                     mimetype = 'image/png'
-            
-            return send_from_directory(directory, filename, 
-                                     as_attachment=True, 
+
+            return send_from_directory(directory, filename,
+                                     as_attachment=True,
                                      download_name=courrier.fichier_nom,
                                      mimetype=mimetype)
         else:
@@ -901,13 +933,23 @@ def download_attachment(attachment_id):
                  f"Téléchargement de la pièce jointe {attachment.fichier_nom} du courrier {courrier.numero_accuse_reception}",
                  courrier.id)
 
+    # Déchiffrement si nécessaire avant envoi
+    send_path = file_path
+    if getattr(attachment, 'fichier_encrypted', False):
+        try:
+            temp_dec = decrypt_file_for_download(file_path)
+            if temp_dec:
+                send_path = temp_dec
+        except Exception as e_dec:
+            logging.warning(f"Déchiffrement pièce jointe ignoré : {e_dec}")
+
     ext = attachment.fichier_nom.lower().rsplit('.', 1)[-1] if '.' in attachment.fichier_nom else ''
     mimetype_map = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
     mimetype = mimetype_map.get(ext, 'application/octet-stream')
 
     return send_from_directory(
-        os.path.dirname(file_path),
-        os.path.basename(file_path),
+        os.path.dirname(send_path),
+        os.path.basename(send_path),
         as_attachment=True,
         download_name=attachment.fichier_nom,
         mimetype=mimetype
@@ -1150,14 +1192,24 @@ def view_file(id):
         
         # Vérifier si le fichier existe
         if os.path.exists(file_path):
-            log_activity(current_user.id, "VISUALISATION_FICHIER", 
+            log_activity(current_user.id, "VISUALISATION_FICHIER",
                         f"Visualisation du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
-            
-            directory = os.path.dirname(file_path)
-            filename = os.path.basename(file_path)
-            
+
+            # Déchiffrement si nécessaire avant affichage
+            send_path = file_path
+            if getattr(courrier, 'fichier_encrypted', False):
+                try:
+                    temp_dec = decrypt_file_for_download(file_path)
+                    if temp_dec:
+                        send_path = temp_dec
+                except Exception as e_dec:
+                    logging.warning(f"Déchiffrement visualisation ignoré : {e_dec}")
+
+            directory = os.path.dirname(send_path)
+            filename = os.path.basename(send_path)
+
             logging.info(f"Directory: {directory}, Filename: {filename}")
-            
+
             # Déterminer le mimetype
             mimetype = 'application/octet-stream'
             if courrier.fichier_nom:
@@ -1168,8 +1220,8 @@ def view_file(id):
                     mimetype = 'image/jpeg'
                 elif ext == 'png':
                     mimetype = 'image/png'
-            
-            return send_from_directory(directory, filename, 
+
+            return send_from_directory(directory, filename,
                                      as_attachment=False,
                                      mimetype=mimetype)
         else:
@@ -1256,9 +1308,9 @@ def trash():
 @app.route('/empty_trash', methods=['POST'])
 @login_required
 def empty_trash():
-    """Vider définitivement la corbeille (super admin only)"""
-    if not current_user.is_super_admin():
-        flash('Seuls les super administrateurs peuvent vider la corbeille.', 'error')
+    """Vider définitivement la corbeille"""
+    if not current_user.has_permission('permanent_delete'):
+        flash('Vous n\'avez pas la permission de vider la corbeille définitivement.', 'error')
         return redirect(url_for('trash'))
     
     # Supprimer définitivement tous les courriers de la corbeille

@@ -1,4 +1,4 @@
-from app import db
+from extensions import db
 from datetime import datetime, timedelta
 import logging
 
@@ -39,6 +39,12 @@ class ParametresSysteme(db.Model):
 
     notify_superadmin_new_mail = db.Column(db.Boolean, nullable=False, default=True)
     whatsapp_number = db.Column(db.String(20), nullable=True, default='243860493345')
+
+    # Paramètres notification globaux
+    notifications_enabled  = db.Column(db.Boolean, default=True, nullable=False)
+    notif_default_digest   = db.Column(db.String(10), default='instant', nullable=False)
+    notif_types_enabled    = db.Column(db.Text, nullable=True)
+    # JSON list ex: ["new_mail","mail_forwarded","mail_status_changed","mail_deadline","mail_commented"]
 
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

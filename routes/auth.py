@@ -22,36 +22,39 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
-SESSION_MAX_LIFETIME = 3600  # 1 heure — expiration du token de session après connexion
+SESSION_INACTIVITY_TIMEOUT = 3600  # 1 heure — déconnexion après 1h d'inactivité
 
 @app.before_request
 def enforce_session_expiry():
     """
-    Force la déconnexion automatique 1h après la connexion initiale.
-    Indépendant du délai d'inactivité — la session expire absolument après 1h.
+    Force la déconnexion automatique après 1h d'inactivité.
+    Le timer se réinitialise à chaque requête — seule une absence d'activité pendant 1h déclenche la déconnexion.
     """
     if not current_user.is_authenticated:
         return
 
-    login_at = session.get('login_at')
-    if login_at is None:
+    import time
+    last_activity = session.get('last_activity')
+    if last_activity is None:
         # Session sans horodatage (ancienne session) → déconnexion
         logout_user()
         session.clear()
         flash('Votre session a expiré. Veuillez vous reconnecter.', 'info')
         return redirect(url_for('login'))
 
-    import time
-    elapsed = time.time() - login_at
-    if elapsed > SESSION_MAX_LIFETIME:
+    elapsed = time.time() - last_activity
+    if elapsed > SESSION_INACTIVITY_TIMEOUT:
         user_id = current_user.id
         username = current_user.username
         logout_user()
         session.clear()
         log_activity(user_id, "AUTO_DECONNEXION",
-                     f"Déconnexion automatique de {username} après {int(elapsed // 60)} min (session expirée)")
-        flash('Votre session a expiré après 1 heure. Veuillez vous reconnecter.', 'info')
+                     f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
+        flash('Votre session a expiré après 1 heure d\'inactivité. Veuillez vous reconnecter.', 'info')
         return redirect(url_for('login'))
+
+    # Mettre à jour le timestamp d'activité à chaque requête
+    session['last_activity'] = time.time()
 
 
 @app.context_processor
@@ -199,7 +202,7 @@ def login():
                 # Successful login (no 2FA)
                 login_user(user)
                 import time
-                session['login_at'] = time.time()  # Horodatage pour expiration 1h
+                session['last_activity'] = time.time()  # Horodatage pour expiration après inactivité
                 audit_log("LOGIN_SUCCESS", f"Successful login for user: {username}")
                 log_activity(user.id, "CONNEXION", f"Connexion réussie pour {username}")
                 flash('Connexion réussie!', 'success')
@@ -258,7 +261,7 @@ def verify_2fa():
             next_url = session.pop('2fa_next', '')
             login_user(user)
             import time
-            session['login_at'] = time.time()  # Horodatage pour expiration 1h
+            session['last_activity'] = time.time()  # Horodatage pour expiration après inactivité
             audit_log("LOGIN_2FA_SUCCESS", f"2FA réussi pour {user.username}")
             log_activity(user.id, "CONNEXION_2FA", f"Connexion avec 2FA réussie pour {user.username}")
             flash('Connexion réussie!', 'success')

@@ -103,11 +103,24 @@ def _get_trusted_proxies():
 def get_client_ip():
     """Get the real client IP address.
 
-    X-Forwarded-For is only trusted when the direct peer (REMOTE_ADDR) is a
-    known proxy — prevents IP spoofing by untrusted clients.
+    Priority:
+    1. X-Real-IP (set by Nginx — most reliable, single IP)
+    2. X-Forwarded-For (only if REMOTE_ADDR is a trusted proxy)
+    3. REMOTE_ADDR fallback
     """
     remote_addr = request.environ.get('REMOTE_ADDR', 'unknown')
 
+    # 1. X-Real-IP — Nginx le positionne directement, toujours fiable
+    x_real_ip = request.environ.get('HTTP_X_REAL_IP', '').strip()
+    if x_real_ip:
+        try:
+            addr = ipaddress.ip_address(x_real_ip)
+            if not addr.is_loopback:
+                return x_real_ip
+        except ValueError:
+            pass
+
+    # 2. X-Forwarded-For — uniquement si le peer direct est un proxy de confiance
     try:
         remote_net = ipaddress.ip_address(remote_addr)
         trusted = _get_trusted_proxies()
@@ -118,7 +131,6 @@ def get_client_ip():
     if peer_is_trusted:
         forwarded_ips = request.environ.get('HTTP_X_FORWARDED_FOR')
         if forwarded_ips:
-            # Prend le premier IP non-privé/non-loopback de la chaîne
             for ip_str in reversed(forwarded_ips.split(',')):
                 ip_str = ip_str.strip()
                 try:
@@ -127,7 +139,6 @@ def get_client_ip():
                         return ip_str
                 except ValueError:
                     continue
-            # Fallback : premier de la liste
             return forwarded_ips.split(',')[0].strip()
 
     return remote_addr

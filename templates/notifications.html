@@ -19,6 +19,18 @@
   {% endif %}
 </div>
 
+<!-- ── Bannière info : notifs in-app toujours actives ── -->
+<div style="display:flex;align-items:flex-start;gap:.875rem;padding:.875rem 1rem;margin-bottom:1.25rem;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r-md);">
+  <div style="width:32px;height:32px;border-radius:50%;background:#D1FAE5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <i class="fas fa-mobile-alt" style="color:#059669;font-size:.875rem;"></i>
+  </div>
+  <div style="flex:1;">
+    <p style="font-size:.875rem;font-weight:600;color:#065F46;margin:0 0 .25rem;">Notifications dans l'application — toujours actives</p>
+    <p style="font-size:.8125rem;color:#047857;margin:0;">Ces notifications ne peuvent pas être désactivées. Pour gérer vos <strong>notifications par email</strong>, rendez-vous dans <a href="{{ url_for('profile') }}#notif-email" style="color:#059669;text-decoration:underline;">votre profil</a>.</p>
+  </div>
+  <span class="gec-badge gec-badge-green" style="font-size:.625rem;white-space:nowrap;"><i class="fas fa-lock" style="margin-right:.25rem;"></i>Toujours actif</span>
+</div>
+
 <div class="gec-card">
   <div class="gec-card-header">
     <span class="gec-card-title"><i class="fas fa-list"></i> Mes notifications</span>

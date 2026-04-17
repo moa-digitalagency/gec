@@ -323,6 +323,33 @@ def run_automatic_migrations(app, db):
             except Exception as e:
                 logging.warning(f"Index GIN (optionnel) non créé: {e}")
 
+        # Migration 13: Préférences notifications par email (utilisateurs)
+        user_table = '"user"' if get_database_type() == 'postgresql' else 'user'
+        user_notif_cols = [
+            ('notif_enabled',   'BOOLEAN DEFAULT 1'),
+            ('notif_new_mail',  'BOOLEAN DEFAULT 1'),
+            ('notif_forwarded', 'BOOLEAN DEFAULT 1'),
+            ('notif_status',    'BOOLEAN DEFAULT 1'),
+            ('notif_deadline',  'BOOLEAN DEFAULT 1'),
+            ('notif_commented', 'BOOLEAN DEFAULT 0'),
+            ('notif_digest',    "VARCHAR(10) DEFAULT 'instant'"),
+        ]
+        for col, defn in user_notif_cols:
+            if add_column_safely(engine, user_table, col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration 13: Colonne {col} ajoutée aux utilisateurs")
+
+        # Migration 14: Paramètres notification globaux (système)
+        sys_notif_cols = [
+            ('notifications_enabled', 'BOOLEAN DEFAULT 1'),
+            ('notif_default_digest',  "VARCHAR(10) DEFAULT 'instant'"),
+            ('notif_types_enabled',   'TEXT'),
+        ]
+        for col, defn in sys_notif_cols:
+            if add_column_safely(engine, 'parametres_systeme', col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration 14: Colonne {col} ajoutée aux paramètres système")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements
