@@ -46,7 +46,7 @@ if %errorLevel% == 0 (
 echo.
 echo [ETAPE 3/8] Installation de Git...
 winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
-if %errorLevel__ == 0 (
+if %errorLevel% == 0 (
     echo [OK] Git installe avec succes
 ) else (
     echo [AVERTISSEMENT] Erreur lors de l'installation de Git, continuons...
@@ -87,7 +87,7 @@ powershell.exe -Command "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Fo
 
 REM Creer l'environnement virtuel
 python -m venv .venv
-if %errorLevel__ neq 0 (
+if %errorLevel% neq 0 (
     echo [INFO] Tentative avec py -3.11...
     py -3.11 -m venv .venv
 )
@@ -97,7 +97,7 @@ call .venv\Scripts\activate.bat
 python -m pip install --upgrade pip wheel
 python -m pip install -r requirements.txt
 
-if %errorLevel__ == 0 (
+if %errorLevel% == 0 (
     echo [OK] Dependances installees avec succes
 ) else (
     echo [ERREUR] Echec de l'installation des dependances

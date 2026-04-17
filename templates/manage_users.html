@@ -146,7 +146,7 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                {% for user in users %}
+                {% for user in pagination.items %}
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -254,11 +254,39 @@
     <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
     <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur</h3>
     <p class="text-gray-500 mb-4">Commencez par ajouter votre premier utilisateur.</p>
-    <a href="{{ url_for('add_user') }}" 
+    <a href="{{ url_for('add_user') }}"
        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700">
         <i class="fas fa-plus mr-2"></i>
         Ajouter un Utilisateur
     </a>
+</div>
+{% endif %}
+
+{% if pagination.pages > 1 %}
+<div class="flex items-center justify-between mt-6 px-4">
+    <p class="text-sm text-gray-600">
+        Page {{ pagination.page }} / {{ pagination.pages }} &mdash; {{ users|length }} utilisateur(s) au total
+    </p>
+    <div class="flex space-x-1">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('manage_users', page=pagination.prev_num) }}"
+           class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-100">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        {% endif %}
+        {% for p in range(1, pagination.pages + 1) %}
+        <a href="{{ url_for('manage_users', page=p) }}"
+           class="px-3 py-1 rounded border text-sm {% if p == pagination.page %}bg-rdc-blue text-white border-rdc-blue{% else %}border-gray-300 text-gray-700 hover:bg-gray-100{% endif %}">
+            {{ p }}
+        </a>
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('manage_users', page=pagination.next_num) }}"
+           class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-100">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
 </div>
 {% endif %}
 {% endblock %}

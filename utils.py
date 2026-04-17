@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 # Import moved to function level to avoid circular import
 # from models import LogActivite
 
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif', 'svg'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}
 
 # Configuration des langues par défaut (peut être étendue automatiquement)
 DEFAULT_LANGUAGE_CONFIG = {

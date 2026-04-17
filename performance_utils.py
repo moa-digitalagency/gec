@@ -207,11 +207,13 @@ def get_dashboard_statistics():
     week_ago = today - timedelta(days=7)
     
     stats = {
-        'total_courriers': Courrier.query.count(),
+        'total_courriers': Courrier.query.filter(Courrier.is_deleted == False).count(),
         'courriers_today': Courrier.query.filter(
+            Courrier.is_deleted == False,
             Courrier.date_enregistrement >= today
         ).count(),
         'courriers_this_week': Courrier.query.filter(
+            Courrier.is_deleted == False,
             Courrier.date_enregistrement >= week_ago
         ).count(),
         'total_users': User.query.filter_by(actif=True).count(),
