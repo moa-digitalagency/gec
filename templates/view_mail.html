@@ -210,10 +210,15 @@
                 {% if courriers %}
                 <!-- Export Button -->
                 <div class="flex items-center space-x-2">
-                    <a href="{{ url_for('export_mail_list', **request.args) }}" 
+                    <a href="{{ url_for('export_mail_list', **request.args) }}"
                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors">
                         <i class="fas fa-file-pdf mr-2"></i>
                         Exporter en PDF
+                    </a>
+                    <a href="{{ url_for('export_mail_list_excel', **request.args) }}"
+                       class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">
+                        <i class="fas fa-file-excel mr-2"></i>
+                        Exporter en Excel
                     </a>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-rdc-blue text-white">

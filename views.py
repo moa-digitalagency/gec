@@ -1548,6 +1548,254 @@ def export_mail_list():
         flash('Erreur lors de l\'export PDF de la liste.', 'error')
         return redirect(url_for('view_mail'))
 
+@app.route('/export_mail_list_excel')
+@login_required
+def export_mail_list_excel():
+    """Export filtered mail list to Excel (.xlsx)"""
+    try:
+        import io
+        import xlsxwriter
+
+        # Reuse the same filters as export_mail_list / view_mail
+        search       = request.args.get('search', '')
+        date_from    = request.args.get('date_from', '')
+        date_to      = request.args.get('date_to', '')
+        statut       = request.args.get('statut', '')
+        type_courrier = request.args.get('type_courrier', '')
+        sort_by      = request.args.get('sort_by', 'date_enregistrement')
+        sort_order   = request.args.get('sort_order', 'desc')
+
+        query = Courrier.query
+        query = apply_mail_access_filter(query, current_user)
+
+        if search:
+            cond = optimize_search_query(search, Courrier)
+            if cond is not None:
+                query = query.filter(cond)
+            else:
+                query = query.filter(
+                    or_(
+                        Courrier.numero_accuse_reception.contains(search),
+                        Courrier.objet.contains(search),
+                        Courrier.expediteur.contains(search),
+                        Courrier.destinataire.contains(search),
+                    )
+                )
+
+        if type_courrier:
+            query = query.filter(Courrier.type_courrier == type_courrier)
+        if statut:
+            query = query.filter(Courrier.statut == statut)
+        if date_from:
+            try:
+                query = query.filter(
+                    Courrier.date_enregistrement >= datetime.strptime(date_from, '%Y-%m-%d').date()
+                )
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                query = query.filter(
+                    Courrier.date_enregistrement <= datetime.strptime(date_to, '%Y-%m-%d').date()
+                )
+            except ValueError:
+                pass
+
+        if sort_by in ['date_enregistrement', 'numero_accuse_reception', 'expediteur', 'objet', 'statut']:
+            col = getattr(Courrier, sort_by)
+            query = query.order_by(col.desc() if sort_order == 'desc' else col.asc())
+
+        courriers = query.all()
+
+        # ------------------------------------------------------------------ #
+        # Build workbook in memory
+        # ------------------------------------------------------------------ #
+        output = io.BytesIO()
+        wb = xlsxwriter.Workbook(output, {'in_memory': True})
+
+        # --- Formats ---
+        hdr_fmt = wb.add_format({
+            'bold': True, 'bg_color': '#1e40af', 'font_color': '#ffffff',
+            'border': 1, 'align': 'center', 'valign': 'vcenter',
+            'text_wrap': True
+        })
+        cell_fmt = wb.add_format({'border': 1, 'valign': 'vcenter', 'text_wrap': True})
+        date_fmt = wb.add_format({'border': 1, 'valign': 'vcenter', 'num_format': 'dd/mm/yyyy'})
+        retard_fmt = wb.add_format({
+            'border': 1, 'valign': 'vcenter', 'bg_color': '#fee2e2', 'font_color': '#991b1b'
+        })
+        even_fmt = wb.add_format({'border': 1, 'valign': 'vcenter', 'bg_color': '#f0f9ff', 'text_wrap': True})
+        statut_colors = {
+            'RECU':      ('#dcfce7', '#166534'),
+            'EN_COURS':  ('#fef9c3', '#854d0e'),
+            'TRAITE':    ('#dbeafe', '#1e40af'),
+            'ARCHIVE':   ('#f3f4f6', '#374151'),
+            'REJETE':    ('#fee2e2', '#991b1b'),
+        }
+
+        # ================================================================== #
+        # Sheet 1 — Liste des courriers
+        # ================================================================== #
+        ws = wb.add_worksheet('Courriers')
+        ws.freeze_panes(1, 0)
+        ws.set_zoom(90)
+
+        headers = [
+            ('N° Accusé',          20),
+            ('Type',               12),
+            ('N° Référence',       18),
+            ('Expéditeur',         25),
+            ('Destinataire',       25),
+            ('Objet',              40),
+            ('Date Rédaction',     15),
+            ('Date Enregistrement',18),
+            ('Statut',             14),
+            ('Échéance',           14),
+            ('Tags',               20),
+        ]
+        for col_idx, (title, width) in enumerate(headers):
+            ws.write(0, col_idx, title, hdr_fmt)
+            ws.set_column(col_idx, col_idx, width)
+        ws.set_row(0, 28)
+
+        today = datetime.utcnow().date()
+        for row_idx, c in enumerate(courriers, start=1):
+            is_retard = (c.due_date and c.due_date < today and
+                         c.statut not in ('TRAITE', 'ARCHIVE', 'REJETE'))
+            base = retard_fmt if is_retard else (even_fmt if row_idx % 2 == 0 else cell_fmt)
+
+            # Statut coloured format
+            bg, fg = statut_colors.get(c.statut, ('#ffffff', '#111827'))
+            s_fmt = wb.add_format({
+                'border': 1, 'valign': 'vcenter',
+                'bg_color': bg, 'font_color': fg, 'bold': True, 'align': 'center'
+            })
+
+            tags_str = ', '.join(t.tag.nom for t in c.tags.all()) if c.tags else ''
+
+            ws.write(row_idx, 0,  c.numero_accuse_reception or '', base)
+            ws.write(row_idx, 1,  c.type_courrier or '', base)
+            ws.write(row_idx, 2,  str(c.numero_reference) if c.numero_reference else '', base)
+            ws.write(row_idx, 3,  c.expediteur or '', base)
+            ws.write(row_idx, 4,  c.destinataire or '', base)
+            ws.write(row_idx, 5,  c.objet or '', base)
+            if c.date_courrier:
+                ws.write_datetime(row_idx, 6, datetime.combine(c.date_courrier, datetime.min.time()), date_fmt)
+            else:
+                ws.write(row_idx, 6, '', base)
+            if c.date_enregistrement:
+                ws.write_datetime(row_idx, 7, datetime.combine(c.date_enregistrement, datetime.min.time()), date_fmt)
+            else:
+                ws.write(row_idx, 7, '', base)
+            ws.write(row_idx, 8,  c.statut or '', s_fmt)
+            if c.due_date:
+                ws.write_datetime(row_idx, 9, datetime.combine(c.due_date, datetime.min.time()), date_fmt)
+            else:
+                ws.write(row_idx, 9, '', base)
+            ws.write(row_idx, 10, tags_str, base)
+
+        # ================================================================== #
+        # Sheet 2 — Statistiques
+        # ================================================================== #
+        ws2 = wb.add_worksheet('Statistiques')
+        ws2.set_column(0, 0, 30)
+        ws2.set_column(1, 1, 15)
+
+        title_fmt = wb.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#1e40af',
+            'font_color': '#ffffff', 'border': 1
+        })
+        sub_fmt = wb.add_format({'bold': True, 'bg_color': '#dbeafe', 'border': 1})
+        num_fmt = wb.add_format({'border': 1, 'align': 'right', 'num_format': '#,##0'})
+
+        ws2.merge_range('A1:B1', 'Statistiques — Liste des courriers', title_fmt)
+        ws2.set_row(0, 24)
+
+        ws2.write(1, 0, 'Total courriers exportés', sub_fmt)
+        ws2.write(1, 1, len(courriers), num_fmt)
+
+        # Filtres appliqués
+        ws2.write(3, 0, 'Filtres appliqués', sub_fmt)
+        ws2.write(3, 1, '', sub_fmt)
+        filter_rows = [
+            ('Recherche',    search or '—'),
+            ('Type',         type_courrier or '—'),
+            ('Statut',       statut or '—'),
+            ('Date début',   date_from or '—'),
+            ('Date fin',     date_to or '—'),
+        ]
+        for i, (k, v) in enumerate(filter_rows, start=4):
+            ws2.write(i, 0, k, cell_fmt)
+            ws2.write(i, 1, v, cell_fmt)
+
+        # Répartition par statut
+        row = 4 + len(filter_rows) + 1
+        ws2.write(row, 0, 'Répartition par statut', sub_fmt)
+        ws2.write(row, 1, 'Nombre', sub_fmt)
+        row += 1
+        from collections import Counter
+        statut_counts = Counter(c.statut for c in courriers if c.statut)
+        for s, cnt in sorted(statut_counts.items()):
+            bg2, fg2 = statut_colors.get(s, ('#ffffff', '#111827'))
+            s2_fmt = wb.add_format({'border': 1, 'bg_color': bg2, 'font_color': fg2, 'bold': True})
+            n2_fmt = wb.add_format({'border': 1, 'align': 'right', 'bg_color': bg2})
+            ws2.write(row, 0, s, s2_fmt)
+            ws2.write(row, 1, cnt, n2_fmt)
+            row += 1
+
+        # Répartition par type
+        row += 1
+        ws2.write(row, 0, 'Répartition par type', sub_fmt)
+        ws2.write(row, 1, 'Nombre', sub_fmt)
+        row += 1
+        type_counts = Counter(c.type_courrier for c in courriers if c.type_courrier)
+        for t, cnt in sorted(type_counts.items()):
+            ws2.write(row, 0, t, cell_fmt)
+            ws2.write(row, 1, cnt, num_fmt)
+            row += 1
+
+        # Courriers en retard
+        retard_list = [c for c in courriers if c.due_date and c.due_date < today
+                       and c.statut not in ('TRAITE', 'ARCHIVE', 'REJETE')]
+        row += 1
+        ws2.write(row, 0, 'Courriers en retard (échéance dépassée)', sub_fmt)
+        ws2.write(row, 1, len(retard_list), num_fmt)
+
+        # Export info
+        row += 2
+        info_fmt = wb.add_format({'italic': True, 'font_color': '#6b7280', 'border': 1})
+        ws2.write(row, 0, 'Généré le', info_fmt)
+        ws2.write(row, 1, datetime.now().strftime('%d/%m/%Y %H:%M'), info_fmt)
+
+        wb.close()
+        output.seek(0)
+
+        log_activity(current_user.id, "EXPORT_LISTE_EXCEL",
+                     f"Export Excel de {len(courriers)} courriers")
+
+        filename_parts = ['liste_courriers']
+        if search:
+            filename_parts.append(f"recherche_{search[:20]}")
+        if type_courrier:
+            filename_parts.append(type_courrier.lower())
+        if date_from or date_to:
+            filename_parts.append("filtre_date")
+        filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M'))
+        filename = '_'.join(filename_parts) + '.xlsx'
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        logging.error(f"Erreur lors de l'export Excel de la liste: {e}")
+        flash("Erreur lors de l'export Excel.", 'error')
+        return redirect(url_for('view_mail'))
+
+
 @app.route('/download_file/<int:id>')
 @login_required
 def download_file(id):
