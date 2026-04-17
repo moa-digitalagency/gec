@@ -1,54 +1,146 @@
 """
-Performance utilities for GEC application
+Performance utilities for GEC application.
+Cache backend: Redis when available, in-memory dict as fallback.
+Set REDIS_URL env var to enable Redis (e.g. redis://localhost:6379/0).
 """
+import os
 import time
+import pickle
 import functools
+import logging
 from flask import current_app, g
 from sqlalchemy import text
 from app import db
 
-# Simple in-memory cache for development (use Redis in production)
-_cache = {}
-_cache_ttl = {}
+# ---------------------------------------------------------------------------
+# Cache backend — Redis with automatic in-memory fallback
+# ---------------------------------------------------------------------------
 
-def cache_result(ttl=300):  # 5 minutes default TTL
-    """Simple caching decorator for function results"""
+_redis_client = None
+_redis_available = False
+
+
+def _get_redis():
+    """Return a live Redis client, or None if unavailable."""
+    global _redis_client, _redis_available
+    if _redis_client is not None:
+        return _redis_client if _redis_available else None
+
+    redis_url = os.environ.get("REDIS_URL", "")
+    if not redis_url:
+        _redis_available = False
+        return None
+
+    try:
+        import redis
+        client = redis.Redis.from_url(redis_url, socket_connect_timeout=1, socket_timeout=1)
+        client.ping()
+        _redis_client = client
+        _redis_available = True
+        logging.info("Cache: Redis connecté (%s)", redis_url)
+    except Exception as exc:
+        logging.warning("Cache: Redis indisponible (%s) — fallback mémoire actif", exc)
+        _redis_client = None
+        _redis_available = False
+
+    return _redis_client if _redis_available else None
+
+
+# In-memory fallback storage
+_cache: dict = {}
+_cache_ttl: dict = {}
+
+
+def _mem_get(key: str):
+    if key in _cache and time.time() < _cache_ttl.get(key, 0):
+        return _cache[key]
+    return None
+
+
+def _mem_set(key: str, value, ttl: int):
+    _cache[key] = value
+    _cache_ttl[key] = time.time() + ttl
+
+
+def _mem_delete(key: str):
+    _cache.pop(key, None)
+    _cache_ttl.pop(key, None)
+
+
+def cache_get(key: str):
+    """Get a value from Redis (if available) or in-memory cache."""
+    r = _get_redis()
+    if r is not None:
+        try:
+            raw = r.get(key)
+            if raw is not None:
+                return pickle.loads(raw)
+            return None
+        except Exception as exc:
+            logging.warning("cache_get Redis error: %s — falling back to memory", exc)
+
+    return _mem_get(key)
+
+
+def cache_set(key: str, value, ttl: int = 300):
+    """Store a value in Redis (if available) or in-memory cache."""
+    r = _get_redis()
+    if r is not None:
+        try:
+            r.setex(key, ttl, pickle.dumps(value))
+            return
+        except Exception as exc:
+            logging.warning("cache_set Redis error: %s — falling back to memory", exc)
+
+    _mem_set(key, value, ttl)
+
+
+def cache_delete(key: str):
+    """Delete a key from both backends."""
+    r = _get_redis()
+    if r is not None:
+        try:
+            r.delete(key)
+        except Exception:
+            pass
+    _mem_delete(key)
+
+
+def cache_result(ttl=300):
+    """Caching decorator — uses Redis when available, in-memory otherwise."""
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # Create cache key from function name and arguments
-            cache_key = f"{func.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
-            
-            current_time = time.time()
-            
-            # Check if cached result exists and is still valid
-            if (cache_key in _cache and 
-                cache_key in _cache_ttl and 
-                current_time < _cache_ttl[cache_key]):
-                return _cache[cache_key]
-            
-            # Execute function and cache result
+            cache_key = f"gec:{func.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
+            cached = cache_get(cache_key)
+            if cached is not None:
+                return cached
             result = func(*args, **kwargs)
-            _cache[cache_key] = result
-            _cache_ttl[cache_key] = current_time + ttl
-            
+            cache_set(cache_key, result, ttl)
             return result
         return wrapper
     return decorator
 
+
 def clear_cache():
-    """Clear all cached results"""
+    """Clear all cached results from both backends."""
     global _cache, _cache_ttl
+    r = _get_redis()
+    if r is not None:
+        try:
+            # Only flush keys with our prefix to avoid nuking unrelated data
+            for k in r.scan_iter("gec:*"):
+                r.delete(k)
+        except Exception as exc:
+            logging.warning("clear_cache Redis error: %s", exc)
     _cache.clear()
     _cache_ttl.clear()
 
+
 def clean_expired_cache():
-    """Remove expired cache entries"""
+    """Remove expired in-memory cache entries (Redis handles TTL natively)."""
     current_time = time.time()
-    expired_keys = [
-        key for key, expiry in _cache_ttl.items()
-        if current_time >= expiry
-    ]
+    expired_keys = [k for k, exp in _cache_ttl.items() if current_time >= exp]
     for key in expired_keys:
         _cache.pop(key, None)
         _cache_ttl.pop(key, None)
