@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification 2FA — GEC</title>
+    <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
+    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
+    <script>(function(){ if(localStorage.getItem('gec-dark')==='1') document.documentElement.classList.add('dark'); })();</script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-md">
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <i class="fas fa-shield-alt text-3xl text-blue-600"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Double Authentification</h1>
+            <p class="text-sm text-gray-500 mt-2">Saisissez le code à 6 chiffres de votre application d'authentification</p>
+        </div>
+
+        {% if error %}
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-sm text-red-700">
+            <i class="fas fa-exclamation-circle"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Code TOTP</label>
+                <input type="text" name="token" inputmode="numeric" pattern="[0-9 ]{6,7}"
+                       maxlength="7" autofocus autocomplete="one-time-code"
+                       placeholder="000 000"
+                       class="w-full text-center text-3xl font-bold tracking-widest border-2 border-gray-300 rounded-xl px-4 py-3
+                              focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all">
+                <p class="text-xs text-gray-400 text-center mt-2">Le code se renouvelle toutes les 30 secondes</p>
+            </div>
+
+            <button type="submit"
+                    class="w-full py-3 px-6 text-white font-semibold bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-check-circle"></i>
+                Vérifier le code
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('login') }}" class="text-sm text-gray-500 hover:text-blue-600 transition-colors">
+                <i class="fas fa-arrow-left mr-1"></i>Retour à la connexion
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Auto-format input -->
+<script>
+document.querySelector('input[name="token"]')?.addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '').slice(0, 6);
+    this.value = v.length > 3 ? v.slice(0,3) + ' ' + v.slice(3) : v;
+});
+</script>
+</body>
+</html>

@@ -78,6 +78,11 @@ class User(UserMixin, db.Model):
     matricule_encrypted = db.Column(db.Text, nullable=True)  # Matricule crypté
     fonction_encrypted = db.Column(db.Text, nullable=True)  # Fonction cryptée
     password_hash_encrypted = db.Column(db.Text, nullable=True)  # Hash de mot de passe crypté
+
+    # 2FA TOTP
+    totp_secret      = db.Column(db.String(64), nullable=True)   # Secret base32
+    totp_enabled     = db.Column(db.Boolean, default=False, nullable=False)
+    totp_pending_secret = db.Column(db.String(64), nullable=True) # Secret en cours d'activation
     
 
     
@@ -86,6 +91,21 @@ class User(UserMixin, db.Model):
     logs = db.relationship('LogActivite', backref='utilisateur', lazy=True)
     departement = db.relationship('Departement', foreign_keys=[departement_id], backref='utilisateurs', lazy=True)
     
+    def get_totp_uri(self, issuer='GEC-Courrier'):
+        """Retourne l'URI otpauth:// pour le QR code"""
+        import pyotp
+        return pyotp.totp.TOTP(self.totp_pending_secret or self.totp_secret).provisioning_uri(
+            name=self.email, issuer_name=issuer
+        )
+
+    def verify_totp(self, token):
+        """Vérifie un token TOTP contre le secret actif (fenêtre ±1)"""
+        import pyotp
+        if not self.totp_enabled or not self.totp_secret:
+            return False
+        totp = pyotp.TOTP(self.totp_secret)
+        return totp.verify(token, valid_window=1)
+
     def set_encrypted_email(self, email):
         """Définit l'email crypté"""
         self.email = email  # Garde aussi en clair pour la compatibilité

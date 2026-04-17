@@ -254,6 +254,17 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration: Table courrier_tag créée")
 
+        # Migration 11: Colonnes 2FA TOTP sur la table user
+        totp_columns = [
+            ('totp_secret',          'VARCHAR(64)'),
+            ('totp_enabled',         'BOOLEAN DEFAULT FALSE'),
+            ('totp_pending_secret',  'VARCHAR(64)'),
+        ]
+        for col, defn in totp_columns:
+            if add_column_safely(engine, user_table_name, col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration: Colonne 2FA {col} ajoutée aux utilisateurs")
+
         # Migration 10: Table circuit de signature hiérarchique
         sig_sql = f'''
             CREATE TABLE courrier_signature (

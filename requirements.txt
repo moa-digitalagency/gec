@@ -29,6 +29,8 @@ bcrypt==4.3.0                  # Hachage sécurisé des mots de passe (version m
 pycryptodome==3.23.0            # Opérations cryptographiques supplémentaires (version mise à jour)
 email-validator==2.2.0         # Validation des adresses email
 pyzipper==0.3.6                # Gestion des archives ZIP avec chiffrement AES
+pyotp==2.9.0                   # Génération et vérification TOTP (2FA)
+qrcode[pil]==8.0               # Génération de QR codes
 
 # Génération de Documents
 # -----------------------

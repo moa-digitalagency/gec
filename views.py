@@ -154,22 +154,24 @@ def login():
             stored_hash = user.get_decrypted_password_hash()
             
             if check_password_hash(stored_hash, password):
-                # Successful login
                 reset_failed_login_attempts(client_ip)
+
+                # 2FA check — if enabled, redirect to TOTP step
+                if user.totp_enabled and user.totp_secret:
+                    session['2fa_pending_user_id'] = user.id
+                    session['2fa_next'] = request.args.get('next', '')
+                    return redirect(url_for('verify_2fa'))
+
+                # Successful login (no 2FA)
                 login_user(user)
-                
-                # Audit log
                 audit_log("LOGIN_SUCCESS", f"Successful login for user: {username}")
                 log_activity(user.id, "CONNEXION", f"Connexion réussie pour {username}")
-                
                 flash('Connexion réussie!', 'success')
-                
-                # Secure redirect
+
                 next_page = request.args.get('next')
                 if next_page:
                     from security_utils import secure_redirect
                     return redirect(secure_redirect(next_page))
-                
                 return redirect(url_for('dashboard'))
             else:
                 # Failed password check
@@ -195,6 +197,111 @@ def logout():
     logout_user()
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
+
+# ============================================================ #
+#  C3 — 2FA TOTP (super_admin uniquement)
+# ============================================================ #
+
+@app.route('/verify_2fa', methods=['GET', 'POST'])
+def verify_2fa():
+    """Étape de vérification TOTP après le mot de passe"""
+    pending_id = session.get('2fa_pending_user_id')
+    if not pending_id:
+        return redirect(url_for('login'))
+
+    user = User.query.get(pending_id)
+    if not user:
+        session.pop('2fa_pending_user_id', None)
+        return redirect(url_for('login'))
+
+    error = None
+    if request.method == 'POST':
+        token = request.form.get('token', '').strip().replace(' ', '')
+        if user.verify_totp(token):
+            session.pop('2fa_pending_user_id', None)
+            next_url = session.pop('2fa_next', '')
+            login_user(user)
+            audit_log("LOGIN_2FA_SUCCESS", f"2FA réussi pour {user.username}")
+            log_activity(user.id, "CONNEXION_2FA", f"Connexion avec 2FA réussie pour {user.username}")
+            flash('Connexion réussie!', 'success')
+            if next_url:
+                from security_utils import secure_redirect
+                return redirect(secure_redirect(next_url))
+            return redirect(url_for('dashboard'))
+        else:
+            audit_log("LOGIN_2FA_FAILED", f"Code 2FA invalide pour {user.username}", "WARNING")
+            error = 'Code invalide. Réessayez.'
+
+    return render_template('verify_2fa.html', error=error)
+
+
+@app.route('/profile/2fa/setup', methods=['GET', 'POST'])
+@login_required
+def setup_2fa():
+    """Activation de la 2FA — uniquement super_admin"""
+    if current_user.role != 'super_admin':
+        abort(403)
+
+    import pyotp, qrcode, io, base64
+
+    if request.method == 'POST':
+        token = request.form.get('token', '').strip().replace(' ', '')
+        pending = current_user.totp_pending_secret
+        if not pending:
+            flash('Session expirée, recommencez.', 'error')
+            return redirect(url_for('setup_2fa'))
+
+        totp = pyotp.TOTP(pending)
+        if totp.verify(token, valid_window=1):
+            current_user.totp_secret = pending
+            current_user.totp_pending_secret = None
+            current_user.totp_enabled = True
+            db.session.commit()
+            log_activity(current_user.id, "2FA_ENABLED", "Double authentification activée")
+            flash('Double authentification activée avec succès.', 'success')
+            return redirect(url_for('profile'))
+        else:
+            flash('Code incorrect. Réessayez.', 'error')
+            return redirect(url_for('setup_2fa'))
+
+    # GET — générer un nouveau secret pending
+    secret = pyotp.random_base32()
+    current_user.totp_pending_secret = secret
+    db.session.commit()
+
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=current_user.email, issuer_name='GEC-Courrier'
+    )
+
+    # QR code en base64
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    return render_template('setup_2fa.html', qr_b64=qr_b64, secret=secret)
+
+
+@app.route('/profile/2fa/disable', methods=['POST'])
+@login_required
+def disable_2fa():
+    """Désactiver la 2FA"""
+    if current_user.role != 'super_admin':
+        abort(403)
+
+    token = request.form.get('token', '').strip().replace(' ', '')
+    if not current_user.verify_totp(token):
+        flash('Code incorrect. La 2FA n\'a pas été désactivée.', 'error')
+        return redirect(url_for('profile'))
+
+    current_user.totp_enabled = False
+    current_user.totp_secret = None
+    current_user.totp_pending_secret = None
+    db.session.commit()
+    log_activity(current_user.id, "2FA_DISABLED", "Double authentification désactivée")
+    flash('Double authentification désactivée.', 'info')
+    return redirect(url_for('profile'))
+
 
 @app.route('/manage_email_templates')
 @login_required

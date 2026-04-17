@@ -174,12 +174,80 @@
                 <i class="fas fa-info-circle mr-1"></i>
                 Dernière mise à jour: {{ user.date_creation.strftime('%d/%m/%Y à %H:%M') if user.date_creation else 'N/A' }}
             </div>
-            <a href="{{ url_for('edit_profile') }}" 
+            <a href="{{ url_for('edit_profile') }}"
                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
                 <i class="fas fa-edit mr-2"></i>
                 Modifier mon profil
             </a>
         </div>
     </div>
+
+    <!-- 2FA Section (super_admin uniquement) -->
+    {% if current_user.role == 'super_admin' %}
+    <div class="bg-white shadow-rdc rounded-xl mt-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-shield-alt text-rdc-blue"></i>
+                Double Authentification (2FA)
+            </h2>
+        </div>
+        <div class="p-6">
+            {% if current_user.totp_enabled %}
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                        <i class="fas fa-check-circle"></i> Activée
+                    </span>
+                    <p class="text-sm text-gray-600">Votre compte est protégé par la double authentification TOTP.</p>
+                </div>
+                <div>
+                    <button onclick="document.getElementById('disable-2fa-modal').style.display='flex'"
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                        <i class="fas fa-lock-open"></i> Désactiver la 2FA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Disable modal -->
+            <div id="disable-2fa-modal" style="display:none" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Désactiver la 2FA</h3>
+                    <p class="text-sm text-gray-500 mb-5">Saisissez votre code TOTP actuel pour confirmer.</p>
+                    <form method="POST" action="{{ url_for('disable_2fa') }}" autocomplete="off">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="token" inputmode="numeric" maxlength="7"
+                               placeholder="000 000" autofocus
+                               class="w-full text-center text-2xl font-bold tracking-widest border-2 border-gray-300 rounded-xl px-4 py-3 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none mb-4">
+                        <div class="flex gap-3">
+                            <button type="button" onclick="document.getElementById('disable-2fa-modal').style.display='none'"
+                                    class="flex-1 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                Annuler
+                            </button>
+                            <button type="submit"
+                                    class="flex-1 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                                Confirmer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+                        <i class="fas fa-lock-open"></i> Non activée
+                    </span>
+                    <p class="text-sm text-gray-600">Renforcez la sécurité de votre compte avec l'authentification à deux facteurs.</p>
+                </div>
+                <a href="{{ url_for('setup_2fa') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i class="fas fa-shield-alt"></i> Activer la 2FA
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
