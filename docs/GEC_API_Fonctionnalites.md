@@ -322,13 +322,13 @@ class ParametresSysteme:
     format_numero_accuse: str          # Format numérotation
     appellation_departement: str       # Label départements
     titre_responsable_structure: str   # Titre du responsable
-    email_provider: str                # sendgrid, smtp
+    email_provider: str                # resend, smtp
     smtp_server: str                   # Serveur SMTP
     smtp_port: int                     # Port SMTP
     smtp_username: str                 # Email expéditeur
     smtp_password: str                 # Mot de passe (chiffré)
     smtp_use_tls: bool                 # Utiliser TLS
-    sendgrid_api_key: str              # Clé API (chiffrée)
+    resend_api_key: str              # Clé API (chiffrée)
     notify_superadmin_new_mail: bool   # Notifier super admin
 ```
 

@@ -36,7 +36,7 @@ gec/
 ├── utils.py            # Helpers : PDF, accuse reception, logs, langue, export
 ├── encryption_utils.py # AES-256 : encrypt/decrypt données sensibles
 ├── security_utils.py   # Rate limit, IP block, audit log, sanitize, headers
-├── email_utils.py      # Notifications email (SendGrid/SMTP)
+├── email_utils.py      # Notifications email (Resend API + SMTP fallback)
 ├── performance_utils.py# Cache, stats dashboard, optimisation requêtes
 ├── migration_utils.py  # Migrations automatiques colonnes manquantes
 ├── export_import_utils.py # Backup/restore complet (ZIP + DB)

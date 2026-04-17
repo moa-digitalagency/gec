@@ -2090,7 +2090,7 @@ def settings():
             if current_user.is_super_admin():
                 parametres.notify_superadmin_new_mail = bool(request.form.get('notify_superadmin_new_mail'))
             
-            # Paramètres SMTP et SendGrid (soumis aux permissions)
+            # Paramètres SMTP et Resend (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
                 # Paramètres SMTP
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None

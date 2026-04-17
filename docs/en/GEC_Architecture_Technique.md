@@ -54,7 +54,7 @@ graph TD
     *   `flask-login`: Session management.
     *   `flask-migrate`: Database migrations.
     *   `reportlab`: PDF generation.
-    *   `sendgrid-python`: Transactional email sending.
+    *   `resend-python`: Transactional email sending.
 
 ### Frontend
 *   **Templating:** Jinja2 (Server-side rendering).

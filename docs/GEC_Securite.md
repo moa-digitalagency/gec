@@ -30,7 +30,7 @@ Les données suivantes sont chiffrées en base de données avec AES-256-CBC :
 - Numéro de référence
 
 **Système** :
-- Clé API SendGrid
+- Clé API Resend
 - Mot de passe SMTP
 
 #### Fichiers Attachés

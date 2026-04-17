@@ -104,7 +104,7 @@
 
 ### 3.3 Multi-channel Notifications
 *   **In-App:** Real-time notification center (Badge, Dropdown).
-*   **Email:** Asynchronous notifications via SMTP or SendGrid (Responsive HTML Template).
+*   **Email:** Asynchronous notifications via SMTP or Resend (Responsive HTML Template).
 
 ---
 

@@ -279,7 +279,7 @@ Traductions ajoutées pour les deux langues:
   - Cryptographie (cryptography, pycryptodome, bcrypt)
   - Génération de documents (reportlab, xlsxwriter, pandas)
   - Traitement d'images (opencv-python, pillow)
-  - Communication (sendgrid, requests)
+  - Communication (resend, requests)
   - Serveur web (gunicorn)
 
 #### Déploiement
@@ -485,8 +485,8 @@ Les clés suivantes doivent être configurées pour la persistence et la sécuri
    - Par défaut: "TempPassword123!"
    - ⚠️ Doit être changé immédiatement après première connexion
 
-#### Configuration Sendgrid
-- Intégration Sendgrid configurée mais nécessite setup
+#### Configuration Resend
+- Intégration Resend configurée mais nécessite setup
 - Voir `use_integration` pour configurer les clés API
 
 ### 📋 À Faire (TODO)
@@ -505,8 +505,8 @@ Les clés suivantes doivent être configurées pour la persistence et la sécuri
    - Utilisateur: sa.gec001
    - Mot de passe par défaut: TempPassword123!
 
-3. Configurer Sendgrid pour les notifications email
-   - Utiliser l'intégration Replit Sendgrid
+3. Configurer Resend pour les notifications email
+   - Utiliser Resend API (resend.com)
    - Configurer les templates d'email
 
 #### Optimisations Futures

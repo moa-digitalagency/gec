@@ -124,7 +124,7 @@ Ce document recense de manière exhaustive toutes les fonctionnalités technique
 ### 3.3 Notifications
 *   **Canaux :**
     *   **In-App :** Table `Notification`, indicateur visuel (badge), page dédiée.
-    *   **Email :** Envoi via SMTP ou SendGrid.
+    *   **Email :** Envoi via SMTP ou Resend.
 *   **Événements déclencheurs :**
     *   Nouveau courrier enregistré (pour Admins/Super Admins).
     *   Courrier transmis (pour le destinataire).
@@ -140,7 +140,7 @@ Ce document recense de manière exhaustive toutes les fonctionnalités technique
     *   Identité : Nom logiciel, Logos (App & PDF), Slogan/Footer.
     *   Organisation : Adresse, Téléphone, Email contact.
     *   PDF : Titre, Sous-titre, Pays, Copyright.
-    *   Email : Choix Provider (SMTP/SendGrid), Clés API, Identifiants SMTP (mot de passe chiffré).
+    *   Email : Choix Provider (SMTP/Resend), Clés API, Identifiants SMTP (mot de passe chiffré).
     *   Nomenclature : Format Accusé de réception, Appellation "Département", Titre Responsable.
 
 ### 4.2 Gestion Organisationnelle

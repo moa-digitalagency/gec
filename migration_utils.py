@@ -161,7 +161,7 @@ def run_automatic_migrations(app, db):
 
         # Migration 5: Vérification des colonnes critiques
         critical_columns = [
-            ('parametres_systeme', 'email_provider', "VARCHAR(20) DEFAULT 'sendgrid'"),
+            ('parametres_systeme', 'email_provider', "VARCHAR(20) DEFAULT 'resend'"),
             ('parametres_systeme', 'notify_superadmin_new_mail', 'BOOLEAN DEFAULT TRUE'),
             ('parametres_systeme', 'titre_responsable_structure', "VARCHAR(100) DEFAULT 'Secrétaire Général'"),
         ]

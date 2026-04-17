@@ -574,7 +574,7 @@ def create_pre_update_backup():
                 'nom_logiciel', 'nom_organisation', 'adresse_organisation', 
                 'telephone_organisation', 'email_organisation', 'logo_organisation',
                 'fuseau_horaire', 'format_date', 'langue_defaut', 
-                'sendgrid_api_key', 'email_provider', 'smtp_server', 'smtp_port',
+                'resend_api_key', 'email_provider', 'smtp_server', 'smtp_port',
                 'smtp_username', 'smtp_password', 'smtp_use_tls',
                 'notify_superadmin_new_mail', 'titre_responsable_structure'
             ]
@@ -714,7 +714,7 @@ def create_system_backup():
             'DATABASE_URL': 'URL de connexion PostgreSQL (requise)',
             'GEC_MASTER_KEY': 'Clé maître pour le chiffrement (64 caractères hex)',
             'GEC_PASSWORD_SALT': 'Sel pour les mots de passe (64 caractères hex)',
-            'SENDGRID_API_KEY': 'Clé API SendGrid pour les emails',
+            'RESEND_API_KEY': 'Clé API Resend pour les emails',
             'SMTP_SERVER': 'Serveur SMTP pour les emails',
             'SMTP_PORT': 'Port SMTP',
             'SMTP_EMAIL': 'Adresse email SMTP',

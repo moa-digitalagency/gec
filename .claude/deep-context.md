@@ -103,7 +103,7 @@ Deux événements déclenchent un email :
 2. Courrier transmis → notifie le destinataire de la transmission
 
 Templates configurables en base (`EmailTemplate`) avec variables dynamiques `{{nom_variable}}`.  
-Deux providers : **SendGrid** (API key) ou **SMTP** classique — choix dans `ParametresSysteme`.
+Deux providers : **Resend** (API key `re_xxx`) ou **SMTP** classique — choix dans `ParametresSysteme`.
 
 ---
 
@@ -125,4 +125,4 @@ Fonctionnalités ajoutées en septembre 2025 :
 - Mise à jour système en ligne (Git) et hors ligne (ZIP)
 - Templates email dynamiques multi-langues
 - Autocomplete de recherche
-- Support SendGrid
+- Support Resend API

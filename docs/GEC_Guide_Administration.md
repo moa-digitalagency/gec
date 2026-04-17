@@ -67,7 +67,7 @@ Accessible via **Paramètres → Paramètres généraux**.
 ### Configuration Email
 Le GEC supporte deux modes d'envoi pour les notifications :
 
-1.  **SendGrid (Recommandé) :**
+1.  **Resend (Recommandé) :**
     *   Nécessite une clé API.
     *   Plus fiable pour la délivrabilité.
 2.  **SMTP Standard :**

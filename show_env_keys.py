@@ -27,12 +27,12 @@ def show_env_keys():
         'SMTP_EMAIL': 'Email expéditeur / Sender email',
         'SMTP_PASSWORD': 'Mot de passe SMTP / SMTP password',
         'SMTP_USE_TLS': 'Utiliser TLS / Use TLS',
-        'SENDGRID_API_KEY': 'Clé API SendGrid / SendGrid API key'
+        'RESEND_API_KEY': 'Clé API Resend / Resend API key'
     }
-    
+
     # Variables critiques qui doivent être masquées partiellement
-    sensitive_vars = ['DATABASE_URL', 'SESSION_SECRET', 'GEC_MASTER_KEY', 'GEC_PASSWORD_SALT', 
-                      'ADMIN_PASSWORD', 'SMTP_PASSWORD', 'SENDGRID_API_KEY']
+    sensitive_vars = ['DATABASE_URL', 'SESSION_SECRET', 'GEC_MASTER_KEY', 'GEC_PASSWORD_SALT',
+                      'ADMIN_PASSWORD', 'SMTP_PASSWORD', 'RESEND_API_KEY']
     
     print("📋 VARIABLES CONFIGURÉES / CONFIGURED VARIABLES:")
     print("-" * 80 + "\n")

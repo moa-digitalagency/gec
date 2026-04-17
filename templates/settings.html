@@ -365,7 +365,7 @@
                             <select id="email_provider" 
                                     name="email_provider" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="resend" {% if parametres.email_provider in ('resend', 'sendgrid', '') or not parametres.email_provider %}selected{% endif %}>
+                                <option value="resend" {% if parametres.email_provider in ('resend', '') or not parametres.email_provider %}selected{% endif %}>
                                     Resend (Recommandé — API moderne)
                                 </option>
                                 <option value="smtp" {% if parametres.email_provider == 'smtp' %}selected{% endif %}>

@@ -27,7 +27,7 @@ werkzeug>=3.0.0
 bcrypt>=4.0.0
 cryptography>=41.0.0
 pycryptodome>=3.19.0
-sendgrid>=6.0.0
+resend>=2.10.0
 reportlab>=4.0.0
 xlsxwriter>=3.0.0
 pandas>=2.0.0
@@ -239,14 +239,14 @@ SMTP_USE_TLS=True
 
 ## Configuration Email
 
-### SendGrid (Recommandé)
+### Resend (Recommandé)
 
-1. Créer un compte sur sendgrid.com
+1. Créer un compte sur resend.com
 2. Générer une clé API
 3. Configurer dans l'interface GEC :
    - Paramètres → Configuration Email
-   - Coller la clé API SendGrid
-   - Sélectionner le fournisseur "SendGrid"
+   - Coller la clé API Resend
+   - Sélectionner le fournisseur "Resend"
 
 ### SMTP Traditionnel
 
@@ -373,9 +373,9 @@ chmod 755 uploads exports backups
 ### Les emails ne s'envoient pas
 
 **Vérifier** :
-- Configuration SendGrid/SMTP correcte
+- Configuration Resend/SMTP correcte
 - Connexion internet active
-- Adresse email expéditeur vérifiée (SendGrid)
+- Adresse email expéditeur vérifiée (Resend)
 
 ### Page blanche ou erreur 500
 

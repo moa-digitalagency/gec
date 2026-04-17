@@ -47,7 +47,7 @@ Le GEC (Gestion Électronique du Courrier) est une application web développée 
 
 | Service | Usage |
 |---------|-------|
-| SendGrid | Envoi d'emails |
+| Resend | Envoi d'emails |
 | PostgreSQL (Neon) | Base de données cloud |
 
 ---
@@ -63,7 +63,7 @@ gec/
 ├── utils.py                  # Fonctions utilitaires générales
 ├── security_utils.py         # Sécurité, rate limiting, validation
 ├── encryption_utils.py       # Chiffrement AES, gestion des clés
-├── email_utils.py            # Envoi emails (SendGrid/SMTP)
+├── email_utils.py            # Envoi emails (Resend/SMTP)
 ├── migration_utils.py        # Migrations automatiques BDD
 ├── export_import_utils.py    # Export/Import de courriers
 ├── performance_utils.py      # Cache, optimisations
@@ -275,7 +275,7 @@ StatutCourrier ──────< Courrier
 |--------|-----------------|
 | User | email, nom_complet, matricule, fonction, password_hash |
 | Courrier | objet, expediteur, destinataire, numero_reference |
-| ParametresSysteme | sendgrid_api_key, smtp_password |
+| ParametresSysteme | resend_api_key, smtp_password |
 
 ---
 
@@ -348,11 +348,11 @@ def get_dashboard_statistics():
 ├─────────────────────────────────────────────┤
 │                    │                        │
 │   ┌────────────────▼────────────────┐       │
-│   │  email_provider == 'sendgrid'?  │       │
+│   │  email_provider == 'resend'?  │       │
 │   └────────────────┬────────────────┘       │
 │         Oui        │        Non             │
 │   ┌────────────────▼────┐  ┌───────▼──────┐ │
-│   │ send_with_sendgrid()│  │send_with_smtp│ │
+│   │ send_with_resend()│  │send_with_smtp│ │
 │   └─────────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────┘
 ```
