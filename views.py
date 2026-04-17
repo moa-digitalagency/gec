@@ -438,24 +438,100 @@ def test_smtp_config():
 @login_required
 def dashboard():
     with PerformanceMonitor("dashboard_load"):
-        # Use cached statistics for better performance
         stats = get_dashboard_statistics()
-        
-        # Get recent mail specific to user permissions (including forwarded mail)
+
         recent_query = Courrier.query
         recent_query = apply_mail_access_filter(recent_query, current_user)
-        
         recent_courriers = recent_query.order_by(
             Courrier.date_enregistrement.desc()
         ).limit(5).all()
-        
-        return render_template('dashboard.html', 
+
+        role_data = _get_role_dashboard_data(current_user)
+
+        return render_template('dashboard.html',
                              total_courriers=stats['total_courriers'],
                              courriers_today=stats['courriers_today'],
                              courriers_this_week=stats['courriers_this_week'],
                              total_users=stats['total_users'],
                              recent_courriers=recent_courriers,
-                             recent_activities=stats['recent_activities'])
+                             recent_activities=stats['recent_activities'],
+                             role_data=role_data)
+
+
+def _get_role_dashboard_data(user):
+    """Retourne des données spécifiques au rôle de l'utilisateur."""
+    from datetime import datetime, timedelta
+    from models import CourrierForward, Departement
+    from sqlalchemy import func
+
+    data = {}
+
+    if user.role == 'super_admin':
+        # Stats par statut
+        statut_counts = db.session.query(
+            Courrier.statut, func.count(Courrier.id)
+        ).filter(Courrier.is_deleted == False).group_by(Courrier.statut).all()
+        data['statut_counts'] = {s: c for s, c in statut_counts}
+
+        # Top 5 départements par volume
+        top_depts = db.session.query(
+            Departement.nom, func.count(Courrier.id).label('nb')
+        ).join(User, User.departement_id == Departement.id)\
+         .join(Courrier, Courrier.utilisateur_id == User.id)\
+         .filter(Courrier.is_deleted == False)\
+         .group_by(Departement.nom)\
+         .order_by(func.count(Courrier.id).desc())\
+         .limit(5).all()
+        data['top_depts'] = [{'nom': d, 'nb': n} for d, n in top_depts]
+
+        # Courriers EN_COURS > 7 jours
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        data['en_cours_retard'] = Courrier.query.filter(
+            Courrier.is_deleted == False,
+            Courrier.statut == 'EN_COURS',
+            Courrier.date_modification_statut <= cutoff
+        ).count()
+
+    elif user.role == 'admin':
+        dept_id = user.departement_id
+        # Courriers du département
+        dept_query = Courrier.query.join(User, Courrier.utilisateur_id == User.id)\
+            .filter(User.departement_id == dept_id, Courrier.is_deleted == False)
+        data['dept_total'] = dept_query.count()
+        data['dept_non_traites'] = dept_query.filter(
+            Courrier.statut.in_(['RECU', 'EN_COURS'])
+        ).count()
+
+        # Top utilisateurs actifs dans le département
+        from models import LogActivite
+        top_users = db.session.query(
+            User.nom_complet, func.count(LogActivite.id).label('nb')
+        ).join(LogActivite, LogActivite.utilisateur_id == User.id)\
+         .filter(User.departement_id == dept_id)\
+         .filter(LogActivite.date_action >= datetime.utcnow() - timedelta(days=30))\
+         .group_by(User.nom_complet)\
+         .order_by(func.count(LogActivite.id).desc())\
+         .limit(5).all()
+        data['top_users'] = [{'nom': n, 'nb': c} for n, c in top_users]
+
+    else:  # user
+        # Mes courriers en attente
+        data['mes_en_attente'] = Courrier.query.filter(
+            Courrier.utilisateur_id == user.id,
+            Courrier.is_deleted == False,
+            Courrier.statut.in_(['RECU', 'EN_COURS'])
+        ).count()
+        data['mes_total'] = Courrier.query.filter(
+            Courrier.utilisateur_id == user.id,
+            Courrier.is_deleted == False
+        ).count()
+
+        # Transmissions reçues récentes
+        data['transmissions_recentes'] = CourrierForward.query.filter_by(
+            forwarded_to_id=user.id
+        ).order_by(CourrierForward.date_transmission.desc()).limit(5).all()
+
+    return data
 
 @app.route('/register_mail', methods=['GET', 'POST'])
 @login_required
@@ -2318,8 +2394,8 @@ def courrier_timeline(id):
     # Transmissions
     forwards = CourrierForward.query.filter_by(courrier_id=id).order_by(CourrierForward.date_envoi.asc()).all()
     for f in forwards:
-        dest_name = f.destinataire.nom_complet if f.destinataire else '?'
-        src_name = f.expediteur.nom_complet if f.expediteur else '?'
+        dest_name = f.forwarded_to.nom_complet if f.forwarded_to else '?'
+        src_name = f.forwarded_by.nom_complet if f.forwarded_by else '?'
         events.append({
             'type': 'transmission',
             'icon': 'fa-share',
@@ -2327,8 +2403,8 @@ def courrier_timeline(id):
             'title': f'Transmis à {dest_name}',
             'detail': f.message[:80] + '…' if f.message and len(f.message) > 80 else (f.message or ''),
             'user': src_name,
-            'date': f.date_envoi.strftime('%d/%m/%Y %H:%M') if f.date_envoi else '',
-            'ts': f.date_envoi.timestamp() if f.date_envoi else 0,
+            'date': f.date_transmission.strftime('%d/%m/%Y %H:%M') if f.date_transmission else '',
+            'ts': f.date_transmission.timestamp() if f.date_transmission else 0,
         })
 
     # Commentaires
