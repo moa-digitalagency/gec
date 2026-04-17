@@ -293,7 +293,7 @@ def setup_2fa():
             return redirect(url_for('setup_2fa'))
 
         totp = pyotp.TOTP(pending)
-        if totp.verify(token, valid_window=1):
+        if totp.verify(token, valid_window=4):
             current_user.totp_secret = pending
             current_user.totp_pending_secret = None
             current_user.totp_enabled = True

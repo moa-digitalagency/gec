@@ -72,7 +72,9 @@ class User(UserMixin, db.Model):
         if not self.totp_enabled or not self.totp_secret:
             return False
         totp = pyotp.TOTP(self.totp_secret)
-        return totp.verify(token, valid_window=1)
+        # valid_window=4 : tolère ±2 minutes de dérive d'horloge entre le
+        # téléphone et le serveur (9 fenêtres de 30 s, soit ±120 s).
+        return totp.verify(token, valid_window=4)
 
     def set_encrypted_email(self, email):
         self.email = email
