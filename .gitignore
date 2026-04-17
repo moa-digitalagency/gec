@@ -26,7 +26,7 @@ instance/
 *.sqlite3
 
 # Fichiers de données utilisateur
-uploads/
+static/uploads/
 data/
 
 # Fichiers de session / cookies de développement

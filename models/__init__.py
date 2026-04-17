@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import uuid
 import os
 import logging
-from encryption_utils import encryption_manager, encrypt_sensitive_data, decrypt_sensitive_data
+from security.encryption import encryption_manager, encrypt_sensitive_data, decrypt_sensitive_data
 import os
 
 class Departement(db.Model):
@@ -321,14 +321,14 @@ class User(UserMixin, db.Model):
         """Retourne l'URL de la photo de profil ou une image par défaut"""
         if self.photo_profile:
             # Essayer d'abord le dossier uploads/profiles
-            profile_path = os.path.join('uploads/profiles', self.photo_profile)
+            profile_path = os.path.join('static/uploads/profiles', self.photo_profile)
             if os.path.exists(profile_path):
                 return f'/static/uploads/profiles/{self.photo_profile}'
             # Sinon essayer le dossier static/uploads/profiles  
             static_path = os.path.join('static/uploads/profiles', self.photo_profile)
             if os.path.exists(static_path):
                 return f'/static/uploads/profiles/{self.photo_profile}'
-        return '/static/images/default-profile.svg'
+        return '/static/img/default-profile.svg'
     
     @staticmethod
     def init_super_admin():
@@ -576,7 +576,7 @@ class Courrier(db.Model):
     def set_file_checksum(self, file_path):
         """Calcule et définit le checksum du fichier"""
         if file_path and os.path.exists(file_path):
-            from encryption_utils import encryption_manager
+            from security.encryption import encryption_manager
             try:
                 self.fichier_checksum = encryption_manager.generate_file_checksum(file_path)
             except Exception as e:
@@ -587,7 +587,7 @@ class Courrier(db.Model):
         if not self.fichier_checksum or not file_path or not os.path.exists(file_path):
             return False
         
-        from encryption_utils import encryption_manager
+        from security.encryption import encryption_manager
         try:
             current_checksum = encryption_manager.generate_file_checksum(file_path)
             return current_checksum == self.fichier_checksum
@@ -905,7 +905,7 @@ class ParametresSysteme(db.Model):
         if not self.smtp_password:
             return None
         try:
-            from security_utils import decrypt_data
+            from security.auth import decrypt_data
             return decrypt_data(self.smtp_password)
         except Exception as e:
             import logging

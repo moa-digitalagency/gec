@@ -3,7 +3,7 @@ import json
 import pyzipper
 import unittest
 from app import app, db
-from export_import_utils import import_courriers_from_package
+from utils.export_import import import_courriers_from_package
 
 class TestImportLogic(unittest.TestCase):
     def setUp(self):

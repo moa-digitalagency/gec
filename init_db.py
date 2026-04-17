@@ -2,7 +2,7 @@ import os
 import logging
 from app import app, db
 import models
-from migration_utils import run_automatic_migrations, apply_database_specific_fixes
+from utils.migrations import run_automatic_migrations, apply_database_specific_fixes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

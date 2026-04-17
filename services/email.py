@@ -339,7 +339,7 @@ def send_email_with_smtp(
         # Déchiffrer le mot de passe SMTP si crypté
         if smtp_password and smtp_password.startswith('encrypted:'):
             try:
-                from encryption_utils import EncryptionManager
+                from security.encryption import EncryptionManager
                 smtp_password = EncryptionManager().decrypt_data(smtp_password)
             except Exception as e:
                 logging.warning(f"Déchiffrement SMTP: {e}")

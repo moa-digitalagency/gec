@@ -59,7 +59,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "echo": False,
 }
 # Configure upload settings
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Initialize extensions
@@ -81,12 +81,12 @@ with app.app_context():
     db.create_all()
     
     # Execute automatic migrations to handle new columns
-    from migration_utils import run_automatic_migrations, apply_database_specific_fixes
+    from utils.migrations import run_automatic_migrations, apply_database_specific_fixes
     run_automatic_migrations(app, db)
     apply_database_specific_fixes(db.engine)
     
     # Import security utilities
-    from security_utils import add_security_headers, clean_security_storage, audit_log
+    from security import add_security_headers, clean_security_storage, audit_log
     
     @app.before_request
     def before_request():
@@ -169,7 +169,7 @@ with app.app_context():
         """Job périodique : rappels d'échéances toutes les 6 heures."""
         try:
             with app.app_context():
-                from views import _send_overdue_reminders
+                from routes import _send_overdue_reminders
                 n = _send_overdue_reminders()
                 if n:
                     logging.info(f"Scheduler: {n} rappel(s) d'échéance envoyé(s)")
@@ -222,4 +222,4 @@ def inject_system_parameters():
 # Enhanced error handlers are now in views.py
 
 # Import views
-import views
+import routes

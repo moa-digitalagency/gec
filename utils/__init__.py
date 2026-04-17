@@ -419,7 +419,7 @@ def validate_backup_integrity(backup_filename):
                 issues.append("Aucune sauvegarde de base de données trouvée")
             
             # Vérifier les dossiers importants
-            important_folders = ['uploads/', 'forward_attachments/', 'lang/', 'templates/', 'static/']
+            important_folders = ['static/uploads/', 'forward_attachments/', 'lang/', 'templates/', 'static/']
             for folder in important_folders:
                 folder_files = [f for f in file_list if f.startswith(folder)]
                 if not folder_files and folder != 'forward_attachments/':  # forward_attachments peut être vide
@@ -775,7 +775,7 @@ def create_system_backup():
                         zipf.write(file_path, arc_path)
         
         # Sauvegarder les fichiers statiques critiques (CSS, JS, images)
-        static_folders = ['static/css', 'static/js', 'static/images', 'static/vendor']
+        static_folders = ['static/css', 'static/js', 'static/img', 'static/vendor']
         for folder in static_folders:
             if os.path.exists(folder):
                 for root, dirs, files in os.walk(folder):
@@ -1030,7 +1030,7 @@ def verify_backup_integrity(backup_filename):
             
             # Vérifier la présence des fichiers critiques
             files_in_zip = zipf.namelist()
-            critical_files = ['database_backup.sql', 'database.db', 'uploads/', 'lang/']
+            critical_files = ['database_backup.sql', 'database.db', 'static/uploads/', 'lang/']
             found_critical = any(any(f.startswith(critical) for f in files_in_zip) for critical in critical_files)
             
             if not found_critical:
@@ -1976,7 +1976,7 @@ def send_comment_notification(email, courrier_data):
         """
         
         # Envoyer l'email
-        from email_utils import send_email_from_system_config
+        from services.email import send_email_from_system_config
         return send_email_from_system_config(email, subject, html_content)
         
     except Exception as e:

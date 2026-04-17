@@ -21,7 +21,7 @@ import pyzipper
 from datetime import datetime
 from app import db
 from models import Courrier, CourrierForward
-from encryption_utils import encryption_manager, decrypt_sensitive_data, encrypt_sensitive_data
+from security.encryption import encryption_manager, decrypt_sensitive_data, encrypt_sensitive_data
 
 # Version du format d'export pour assurer la compatibilité
 EXPORT_FORMAT_VERSION = "1.0.0"

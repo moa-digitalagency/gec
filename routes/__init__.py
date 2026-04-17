@@ -20,9 +20,9 @@ from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActi
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 
 # Le support des langues est maintenant dans utils.py
-from email_utils import send_new_mail_notification, send_mail_forwarded_notification
-from security_utils import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
-from performance_utils import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
+from services.email import send_new_mail_notification, send_mail_forwarded_notification
+from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
+from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
 @app.context_processor
 def inject_system_context():
@@ -170,7 +170,7 @@ def login():
 
                 next_page = request.args.get('next')
                 if next_page:
-                    from security_utils import secure_redirect
+                    from security import secure_redirect
                     return redirect(secure_redirect(next_page))
                 return redirect(url_for('dashboard'))
             else:
@@ -225,7 +225,7 @@ def verify_2fa():
             log_activity(user.id, "CONNEXION_2FA", f"Connexion avec 2FA réussie pour {user.username}")
             flash('Connexion réussie!', 'success')
             if next_url:
-                from security_utils import secure_redirect
+                from security import secure_redirect
                 return redirect(secure_redirect(next_url))
             return redirect(url_for('dashboard'))
         else:
@@ -452,7 +452,7 @@ def test_smtp_config():
         return redirect(url_for('dashboard'))
     
     try:
-        from email_utils import send_email_from_system_config
+        from services.email import send_email_from_system_config
         from models import ParametresSysteme
         
         # Email de test
@@ -1927,8 +1927,8 @@ def download_file(id):
         file_path = courrier.fichier_chemin
         if file_path.startswith('/'):
             # Chemin absolu - chercher la partie uploads
-            if 'uploads/' in file_path:
-                relative_path = file_path.split('uploads/')[-1]
+            if 'static/uploads/' in file_path:
+                relative_path = file_path.split('static/uploads/')[-1]
                 file_path = os.path.join('uploads', relative_path)
 
         # Protection path traversal : vérifier que le chemin reste dans uploads/
@@ -2047,7 +2047,7 @@ def settings():
                     flash('Adresse email invalide.', 'error')
                     return redirect(url_for('settings'))
 
-                from email_utils import test_resend_configuration
+                from services.email import test_resend_configuration
                 result = test_resend_configuration(test_email)
 
                 if result['success']:
@@ -2102,7 +2102,7 @@ def settings():
                 smtp_password = request.form.get('smtp_password', '').strip()
                 if smtp_password:
                     # Crypter le mot de passe SMTP
-                    from encryption_utils import EncryptionManager
+                    from security.encryption import EncryptionManager
                     encryption_manager = EncryptionManager()
                     parametres.smtp_password = encryption_manager.encrypt_data(smtp_password)
                 
@@ -2142,7 +2142,7 @@ def settings():
                                 print(f"DEBUG: Removed old logo: {old_full_path}")
                         
                         logo.save(logo_path)
-                        parametres.logo_url = f'/uploads/{logo_filename}'
+                        parametres.logo_url = f'/static/uploads/{logo_filename}'
                         print(f"DEBUG: New logo saved: {parametres.logo_url}")
                         flash('Logo téléchargé avec succès!', 'success')
                     except Exception as e:
@@ -2167,7 +2167,7 @@ def settings():
                     
                     try:
                         logo_pdf.save(logo_pdf_path)
-                        parametres.logo_pdf = f'/uploads/{logo_pdf_filename}'
+                        parametres.logo_pdf = f'/static/uploads/{logo_pdf_filename}'
                         flash('Logo PDF téléchargé avec succès!', 'success')
                     except Exception as e:
                         flash(f'Erreur lors du téléchargement du logo PDF: {str(e)}', 'error')
@@ -2206,7 +2206,7 @@ def clear_cache_route():
     
     try:
         # Import et appel de la fonction clear_cache depuis performance_utils
-        from performance_utils import clear_cache
+        from utils.performance import clear_cache
         clear_cache()
         
         # Log de l'action
@@ -2277,7 +2277,7 @@ def export_courriers():
         return redirect(url_for('manage_backups'))
     
     try:
-        from export_import_utils import create_export_package
+        from utils.export_import import create_export_package
         
         # Options d'export
         export_all = request.form.get('export_all', 'false') == 'true'
@@ -2355,7 +2355,7 @@ def import_courriers():
             flash('Le fichier doit être au format ZIP', 'error')
             return redirect(url_for('manage_backups'))
         
-        from export_import_utils import import_courriers_from_package
+        from utils.export_import import import_courriers_from_package
         
         # Sauvegarder temporairement le fichier
         import tempfile
@@ -2637,7 +2637,7 @@ def update_offline():
         # Fichiers et dossiers à préserver (ne jamais remplacer)
         preserve_patterns = [
             'instance/gec.db',
-            'uploads/',
+            'static/uploads/',
             '.env',
             'backups/',
             'exports/',
@@ -3183,8 +3183,8 @@ def view_file(id):
         file_path = courrier.fichier_chemin
         if file_path.startswith('/'):
             # Chemin absolu - chercher la partie uploads
-            if 'uploads/' in file_path:
-                relative_path = file_path.split('uploads/')[-1]
+            if 'static/uploads/' in file_path:
+                relative_path = file_path.split('static/uploads/')[-1]
                 file_path = os.path.join('uploads', relative_path)
         
         # Log du chemin final
@@ -4394,7 +4394,7 @@ def bad_request_error(error):
 
 @app.errorhandler(403)
 def forbidden_error(error):
-    from security_utils import audit_log
+    from security import audit_log
     try:
         audit_log("ACCESS_DENIED", f"403 error for URL: {request.url}")
     except:
@@ -4407,7 +4407,7 @@ def not_found_error(error):
 
 @app.errorhandler(429)
 def rate_limit_error(error):
-    from security_utils import audit_log
+    from security import audit_log
     try:
         audit_log("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
     except:
@@ -4940,7 +4940,7 @@ def security_logs():
         flash('Vous n\'avez pas les permissions pour consulter les logs de sécurité.', 'error')
         return redirect(url_for('dashboard'))
     
-    from security_utils import get_security_logs, get_security_stats
+    from security import get_security_logs, get_security_stats
     
     # Paramètres de filtrage
     level = request.args.get("level", "")
@@ -4980,7 +4980,7 @@ def security_settings():
         flash('Vous n\'avez pas les permissions pour gérer les paramètres de sécurité.', 'error')
         return redirect(url_for('dashboard'))
         
-    from security_utils import (MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_DURATION, 
+    from security import (MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_DURATION, 
                                SUSPICIOUS_ACTIVITY_THRESHOLD, AUTO_BLOCK_DURATION,
                                _blocked_ips, _failed_login_attempts, get_security_logs)
     
@@ -5105,7 +5105,7 @@ def security_settings():
 
 def export_security_logs(level, event_type, date_start, date_end):
     """Exporte les logs de sécurité en CSV"""
-    from security_utils import get_security_logs
+    from security import get_security_logs
     from flask import Response
     import csv
     import io
