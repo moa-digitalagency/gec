@@ -571,6 +571,26 @@ class Courrier(db.Model):
             logging.error(f"Erreur lors de la vérification de l'intégrité: {e}")
             return False
 
+class CourrierAttachment(db.Model):
+    """Pièces jointes supplémentaires d'un courrier"""
+    __tablename__ = 'courrier_attachment'
+
+    id = db.Column(db.Integer, primary_key=True)
+    courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    fichier_nom = db.Column(db.String(255), nullable=False)       # Nom original
+    fichier_chemin = db.Column(db.String(500), nullable=False)    # Chemin relatif
+    fichier_type = db.Column(db.String(50), nullable=True)        # Extension
+    fichier_taille = db.Column(db.Integer, nullable=True)         # Taille en octets
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    uploaded_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    courrier = db.relationship('Courrier', backref=db.backref('attachments', lazy='dynamic'))
+    uploaded_by = db.relationship('User', foreign_keys=[uploaded_by_id])
+
+    def __repr__(self):
+        return f'<CourrierAttachment {self.fichier_nom}>'
+
+
 class CourrierModification(db.Model):
     """Historique des modifications des courriers"""
     __tablename__ = 'courrier_modification'

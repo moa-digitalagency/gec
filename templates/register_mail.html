@@ -273,6 +273,26 @@
                         </div>
                     </div>
                     
+                    <!-- Pièces jointes supplémentaires -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-paperclip mr-1 text-gray-500"></i>
+                            Pièces jointes supplémentaires
+                            <span class="text-xs text-gray-400 ml-1">(optionnel — plusieurs fichiers possibles)</span>
+                        </label>
+                        <input type="file"
+                               name="fichiers_supplementaires"
+                               multiple
+                               accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif"
+                               class="block w-full text-sm text-gray-500
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-md file:border-0
+                                      file:text-sm file:font-medium
+                                      file:bg-gray-100 file:text-gray-700
+                                      hover:file:bg-gray-200 cursor-pointer">
+                        <p class="mt-1 text-xs text-gray-400">PDF, JPG, PNG, TIFF — 16 MB max par fichier</p>
+                    </div>
+
                     <!-- Submit Buttons -->
                     <div class="flex flex-col sm:flex-row gap-3 pt-6">
                         <button type="submit" 

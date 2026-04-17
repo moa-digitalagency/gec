@@ -188,6 +188,35 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info(f"✓ Migration: Colonne whatsapp_number ajoutée aux paramètres")
 
+        # Migration 8: Table des pièces jointes supplémentaires
+        pk_serial = "SERIAL PRIMARY KEY" if db_type == "postgresql" else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        attachment_sql = f'''
+            CREATE TABLE courrier_attachment (
+                id {pk_serial},
+                courrier_id INTEGER NOT NULL REFERENCES courrier(id),
+                fichier_nom VARCHAR(255) NOT NULL,
+                fichier_chemin VARCHAR(500) NOT NULL,
+                fichier_type VARCHAR(50),
+                fichier_taille INTEGER,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                uploaded_by_id INTEGER NOT NULL REFERENCES "user"(id)
+            )
+        ''' if db_type == "postgresql" else f'''
+            CREATE TABLE courrier_attachment (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                courrier_id INTEGER NOT NULL REFERENCES courrier(id),
+                fichier_nom VARCHAR(255) NOT NULL,
+                fichier_chemin VARCHAR(500) NOT NULL,
+                fichier_type VARCHAR(50),
+                fichier_taille INTEGER,
+                uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                uploaded_by_id INTEGER NOT NULL REFERENCES user(id)
+            )
+        '''
+        if create_table_safely(engine, 'courrier_attachment', attachment_sql):
+            migrations_applied += 1
+            logging.info("✓ Migration: Table courrier_attachment créée")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements

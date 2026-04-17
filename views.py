@@ -16,7 +16,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
+from models import User, Courrier, CourrierAttachment, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 
 # Le support des langues est maintenant dans utils.py
@@ -693,9 +693,37 @@ def register_mail():
                 logging.error(f"Erreur lors de l'envoi des notifications: {e}")
                 # Ne pas interrompre le processus si les notifications échouent
             
+            # Pièces jointes supplémentaires
+            extra_files = request.files.getlist('fichiers_supplementaires')
+            for extra_file in extra_files:
+                if extra_file and extra_file.filename and extra_file.filename != '':
+                    try:
+                        is_valid_extra, msg_extra = validate_file_upload(extra_file)
+                        if is_valid_extra:
+                            extra_filename = secure_filename(extra_file.filename)
+                            extra_ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+                            extra_filename = f"{extra_ts}_{extra_filename}"
+                            extra_path = os.path.join('uploads', extra_filename)
+                            extra_file.seek(0)
+                            extra_file.save(extra_path)
+                            attachment = CourrierAttachment(
+                                courrier_id=courrier.id,
+                                fichier_nom=extra_file.filename,
+                                fichier_chemin=extra_path,
+                                fichier_type=extra_filename.rsplit('.', 1)[-1].lower(),
+                                fichier_taille=os.path.getsize(extra_path),
+                                uploaded_by_id=current_user.id
+                            )
+                            db.session.add(attachment)
+                        else:
+                            logging.warning(f"Pièce jointe supplémentaire rejetée : {msg_extra}")
+                    except Exception as e_att:
+                        logging.error(f"Erreur sauvegarde pièce jointe supplémentaire: {e_att}")
+            db.session.commit()
+
             flash(f'Courrier enregistré avec succès! N° d\'accusé: {numero_accuse}', 'success')
             return redirect(url_for('mail_detail', id=courrier.id))
-            
+
         except Exception as e:
             db.session.rollback()
             logging.error(f"Erreur lors de l'enregistrement: {e}")
@@ -1314,6 +1342,44 @@ def download_file(id):
     
     flash('Fichier non trouvé.', 'error')
     return redirect(url_for('mail_detail', id=id))
+
+@app.route('/download_attachment/<int:attachment_id>')
+@login_required
+def download_attachment(attachment_id):
+    attachment = CourrierAttachment.query.get_or_404(attachment_id)
+    courrier = Courrier.query.get_or_404(attachment.courrier_id)
+
+    if not current_user.can_view_courrier(courrier):
+        audit_log("UNAUTHORIZED_DOWNLOAD", f"Tentative d'accès non autorisé à la pièce jointe {attachment_id}")
+        abort(403)
+
+    file_path = attachment.fichier_chemin
+    uploads_dir = os.path.realpath('uploads')
+    real_path = os.path.realpath(file_path)
+    if not real_path.startswith(uploads_dir + os.sep) and real_path != uploads_dir:
+        audit_log("PATH_TRAVERSAL_ATTEMPT", f"Tentative de path traversal sur pièce jointe {attachment_id}")
+        abort(403)
+
+    if not os.path.exists(file_path):
+        flash('Fichier non trouvé.', 'error')
+        return redirect(url_for('mail_detail', id=courrier.id))
+
+    log_activity(current_user.id, "TELECHARGEMENT_PIECE_JOINTE",
+                 f"Téléchargement de la pièce jointe {attachment.fichier_nom} du courrier {courrier.numero_accuse_reception}",
+                 courrier.id)
+
+    ext = attachment.fichier_nom.lower().rsplit('.', 1)[-1] if '.' in attachment.fichier_nom else ''
+    mimetype_map = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
+    mimetype = mimetype_map.get(ext, 'application/octet-stream')
+
+    return send_from_directory(
+        os.path.dirname(file_path),
+        os.path.basename(file_path),
+        as_attachment=True,
+        download_name=attachment.fichier_nom,
+        mimetype=mimetype
+    )
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
