@@ -23,6 +23,8 @@ from security import rate_limit, sanitize_input, validate_file_upload, log_secur
 from routes.auth import apply_mail_access_filter
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
+KANBAN_COLUMNS = ['RECU', 'EN_COURS', 'TRAITE', 'ARCHIVE', 'REJETE']
+
 @app.route('/kanban')
 @login_required
 def kanban_view():
