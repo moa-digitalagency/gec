@@ -2732,6 +2732,85 @@ def change_status(id):
 
     return redirect(url_for('mail_detail', id=id))
 
+
+# ============================================================ #
+#  A3 — Vue Kanban avec drag & drop
+# ============================================================ #
+KANBAN_COLUMNS = ['RECU', 'EN_COURS', 'TRAITE', 'ARCHIVE', 'REJETE']
+
+@app.route('/kanban')
+@login_required
+def kanban_view():
+    """Board Kanban — colonnes par statut avec drag & drop"""
+    query = Courrier.query.filter(Courrier.is_deleted == False)
+    query = apply_mail_access_filter(query, current_user)
+
+    # Filtre optionnel par type
+    type_courrier = request.args.get('type_courrier', '')
+    if type_courrier:
+        query = query.filter(Courrier.type_courrier == type_courrier)
+
+    courriers = query.order_by(Courrier.date_enregistrement.desc()).all()
+
+    columns = {s: [] for s in KANBAN_COLUMNS}
+    for c in courriers:
+        if c.statut in columns:
+            columns[c.statut].append(c)
+        else:
+            columns.setdefault(c.statut, []).append(c)
+
+    today = datetime.utcnow().date()
+    return render_template(
+        'kanban.html',
+        columns=columns,
+        kanban_columns=KANBAN_COLUMNS,
+        today=today,
+        type_courrier=type_courrier,
+    )
+
+
+@app.route('/api/courrier/<int:id>/move', methods=['PATCH'])
+@login_required
+def kanban_move_card(id):
+    """Drag & drop — déplace un courrier vers un nouveau statut"""
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        return jsonify({'error': 'Accès refusé'}), 403
+
+    data = request.get_json(silent=True) or {}
+    new_statut = data.get('statut', '').strip().upper()
+    if new_statut not in KANBAN_COLUMNS:
+        return jsonify({'error': 'Statut invalide'}), 400
+
+    old_statut = courrier.statut
+    if old_statut == new_statut:
+        return jsonify({'ok': True, 'statut': new_statut})
+
+    courrier.statut = new_statut
+    courrier.modifie_par_id = current_user.id
+
+    from models import CourrierModification
+    db.session.add(CourrierModification(
+        courrier_id=courrier.id,
+        utilisateur_id=current_user.id,
+        champ_modifie='statut',
+        ancienne_valeur=old_statut,
+        nouvelle_valeur=new_statut,
+        ip_address=get_client_ip()
+    ))
+
+    try:
+        db.session.commit()
+        log_activity(current_user.id, "KANBAN_MOVE",
+                     f"Courrier {courrier.numero_accuse_reception} déplacé : {old_statut} → {new_statut}",
+                     courrier.id)
+        return jsonify({'ok': True, 'statut': new_statut})
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur kanban_move_card: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/courrier/<int:id>/timeline')
 @login_required
 def courrier_timeline(id):

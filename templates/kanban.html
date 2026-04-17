@@ -1,0 +1,279 @@
+{% extends "new_base.html" %}
+{% block title %}Vue Kanban — GEC{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-columns text-rdc-blue"></i>
+                Vue Kanban
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Glissez-déposez les courriers pour changer leur statut</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Filtre type -->
+            <form method="GET" class="flex items-center gap-2">
+                <select name="type_courrier" onchange="this.form.submit()"
+                        class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rdc-blue">
+                    <option value="">Tous les types</option>
+                    <option value="ENTRANT"  {% if type_courrier=='ENTRANT' %}selected{% endif %}>Entrant</option>
+                    <option value="SORTANT"  {% if type_courrier=='SORTANT' %}selected{% endif %}>Sortant</option>
+                    <option value="INTERNE"  {% if type_courrier=='INTERNE' %}selected{% endif %}>Interne</option>
+                </select>
+            </form>
+            <a href="{{ url_for('view_mail') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rdc-blue rounded-lg hover:bg-blue-800 transition-colors">
+                <i class="fas fa-list"></i>
+                Vue liste
+            </a>
+        </div>
+    </div>
+
+    <!-- Board -->
+    <div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
+        {% set col_meta = {
+            'RECU':     {'label': 'Reçu',     'icon': 'fa-inbox',         'bg': 'bg-blue-50',   'hdr': 'bg-blue-600',  'badge': 'bg-blue-100 text-blue-800'},
+            'EN_COURS': {'label': 'En cours',  'icon': 'fa-spinner',       'bg': 'bg-yellow-50', 'hdr': 'bg-yellow-500','badge': 'bg-yellow-100 text-yellow-800'},
+            'TRAITE':   {'label': 'Traité',    'icon': 'fa-check-circle',  'bg': 'bg-green-50',  'hdr': 'bg-green-600', 'badge': 'bg-green-100 text-green-800'},
+            'ARCHIVE':  {'label': 'Archivé',   'icon': 'fa-archive',       'bg': 'bg-gray-100',  'hdr': 'bg-gray-500',  'badge': 'bg-gray-200 text-gray-700'},
+            'REJETE':   {'label': 'Rejeté',    'icon': 'fa-times-circle',  'bg': 'bg-red-50',    'hdr': 'bg-red-600',   'badge': 'bg-red-100 text-red-800'},
+        } %}
+
+        {% for col_id in kanban_columns %}
+        {% set meta = col_meta[col_id] %}
+        {% set cards = columns[col_id] %}
+        <div class="kanban-column flex-shrink-0 w-72 flex flex-col rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+             data-statut="{{ col_id }}">
+
+            <!-- Column header -->
+            <div class="{{ meta.hdr }} px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-white font-semibold text-sm">
+                    <i class="fas {{ meta.icon }}"></i>
+                    {{ meta.label }}
+                </div>
+                <span class="bg-white bg-opacity-30 text-white text-xs font-bold px-2 py-0.5 rounded-full count-badge">
+                    {{ cards|length }}
+                </span>
+            </div>
+
+            <!-- Drop zone -->
+            <div class="kanban-cards {{ meta.bg }} flex-1 p-2 space-y-2 min-h-24 overflow-y-auto"
+                 style="max-height: calc(100vh - 230px);"
+                 data-statut="{{ col_id }}">
+
+                {% for c in cards %}
+                {% set is_retard = c.due_date and c.due_date < today and col_id not in ['TRAITE','ARCHIVE','REJETE'] %}
+                <div class="kanban-card bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+                     data-id="{{ c.id }}"
+                     draggable="true">
+
+                    <!-- Top: N° accusé + badges -->
+                    <div class="flex items-start justify-between gap-1 mb-2">
+                        <a href="{{ url_for('mail_detail', id=c.id) }}"
+                           class="text-xs font-bold text-rdc-blue hover:underline leading-tight">
+                            {{ c.numero_accuse_reception or '#' ~ c.id }}
+                        </a>
+                        <div class="flex flex-wrap gap-1 justify-end">
+                            {% if c.type_courrier %}
+                            <span class="text-xs px-1.5 py-0.5 rounded font-medium
+                                {% if c.type_courrier == 'ENTRANT' %}bg-indigo-100 text-indigo-700
+                                {% elif c.type_courrier == 'SORTANT' %}bg-orange-100 text-orange-700
+                                {% else %}bg-purple-100 text-purple-700{% endif %}">
+                                {{ c.type_courrier|capitalize }}
+                            </span>
+                            {% endif %}
+                            {% if is_retard %}
+                            <span class="text-xs px-1.5 py-0.5 rounded font-bold bg-red-100 text-red-700 animate-pulse">
+                                EN RETARD
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Objet -->
+                    <p class="text-xs text-gray-800 font-medium leading-snug line-clamp-2 mb-2">
+                        {{ c.objet or '(sans objet)' }}
+                    </p>
+
+                    <!-- Expéditeur / Destinataire -->
+                    <p class="text-xs text-gray-500 truncate mb-1">
+                        <i class="fas fa-user mr-1"></i>
+                        {{ c.expediteur or c.destinataire or '—' }}
+                    </p>
+
+                    <!-- Date -->
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="text-xs text-gray-400">
+                            <i class="fas fa-calendar mr-1"></i>
+                            {{ c.date_enregistrement.strftime('%d/%m/%Y') if c.date_enregistrement else '—' }}
+                        </span>
+                        {% if c.due_date %}
+                        <span class="text-xs {% if is_retard %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">
+                            <i class="fas fa-clock mr-1"></i>{{ c.due_date.strftime('%d/%m') }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tags -->
+                    {% set tag_list = c.tags.all() %}
+                    {% if tag_list %}
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        {% for ct in tag_list[:3] %}
+                        <span class="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                              style="background-color: {{ ct.tag.couleur }}22; color: {{ ct.tag.couleur }};">
+                            {{ ct.tag.nom }}
+                        </span>
+                        {% endfor %}
+                        {% if tag_list|length > 3 %}
+                        <span class="text-xs text-gray-400">+{{ tag_list|length - 3 }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <!-- Empty state -->
+                {% if not cards %}
+                <div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">
+                    <i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>
+                    Aucun courrier
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div id="kanban-toast"
+     class="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white transition-all duration-300 translate-y-8 opacity-0 pointer-events-none">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ================================================================
+// Drag & Drop Kanban — native HTML5 API (no extra library needed)
+// ================================================================
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    let draggedCard = null;
+    let sourceColumn = null;
+
+    // ---- Drag events on cards ----
+    function attachCardEvents(card) {
+        card.addEventListener('dragstart', e => {
+            draggedCard = card;
+            sourceColumn = card.closest('.kanban-cards');
+            card.classList.add('opacity-50', 'ring-2', 'ring-rdc-blue');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        card.addEventListener('dragend', () => {
+            card.classList.remove('opacity-50', 'ring-2', 'ring-rdc-blue');
+            document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue'));
+        });
+    }
+
+    // ---- Drop zones ----
+    document.querySelectorAll('.kanban-cards').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            zone.classList.add('bg-blue-100', 'ring-2', 'ring-rdc-blue');
+        });
+        zone.addEventListener('dragleave', e => {
+            if (!zone.contains(e.relatedTarget)) {
+                zone.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue');
+            }
+        });
+        zone.addEventListener('drop', async e => {
+            e.preventDefault();
+            zone.classList.remove('bg-blue-100', 'ring-2', 'ring-rdc-blue');
+
+            if (!draggedCard || zone === sourceColumn) return;
+
+            const newStatut = zone.dataset.statut;
+            const courrierId = draggedCard.dataset.id;
+
+            // Optimistic UI — move card immediately
+            const placeholder = zone.querySelector('.empty-placeholder');
+            if (placeholder) placeholder.remove();
+            zone.appendChild(draggedCard);
+
+            // Remove empty placeholder from source if now empty
+            if (sourceColumn && sourceColumn.querySelectorAll('.kanban-card').length === 0) {
+                sourceColumn.insertAdjacentHTML('beforeend',
+                    '<div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">' +
+                    '<i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>Aucun courrier</div>');
+            }
+
+            updateBadges();
+
+            // API call
+            try {
+                const res = await fetch(`/api/courrier/${courrierId}/move`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF
+                    },
+                    body: JSON.stringify({ statut: newStatut })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+                showToast(`Statut mis à jour : ${newStatut.replace('_', ' ')}`, 'green');
+            } catch (err) {
+                showToast('Erreur : ' + err.message, 'red');
+                // Rollback — move card back
+                if (sourceColumn) {
+                    const ep = zone.querySelector('.empty-placeholder');
+                    if (zone.querySelectorAll('.kanban-card').length <= 1 && ep) ep.remove();
+                    sourceColumn.appendChild(draggedCard);
+                    if (zone.querySelectorAll('.kanban-card').length === 0) {
+                        zone.insertAdjacentHTML('beforeend',
+                            '<div class="empty-placeholder text-center py-8 text-gray-400 text-xs select-none">' +
+                            '<i class="fas fa-inbox text-2xl mb-2 block opacity-30"></i>Aucun courrier</div>');
+                    }
+                    updateBadges();
+                }
+            }
+
+            draggedCard = null;
+            sourceColumn = null;
+        });
+    });
+
+    // ---- Init card events ----
+    document.querySelectorAll('.kanban-card').forEach(attachCardEvents);
+
+    // ---- Update column count badges ----
+    function updateBadges() {
+        document.querySelectorAll('.kanban-column').forEach(col => {
+            const count = col.querySelectorAll('.kanban-card').length;
+            const badge = col.querySelector('.count-badge');
+            if (badge) badge.textContent = count;
+        });
+    }
+
+    // ---- Toast ----
+    function showToast(msg, color) {
+        const toast = document.getElementById('kanban-toast');
+        toast.textContent = msg;
+        toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white
+            transition-all duration-300 bg-${color}-600`;
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-8', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+        });
+        setTimeout(() => {
+            toast.classList.add('translate-y-8', 'opacity-0');
+            toast.classList.remove('translate-y-0', 'opacity-100');
+        }, 3000);
+    }
+})();
+</script>
+{% endblock %}
