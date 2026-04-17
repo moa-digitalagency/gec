@@ -1247,6 +1247,34 @@ class CourrierForward(db.Model):
         
         db.session.commit()
 
+class CourrierSignature(db.Model):
+    """Circuit de signature hiérarchique — une ligne par signataire dans l'ordre"""
+    __tablename__ = 'courrier_signature'
+
+    id            = db.Column(db.Integer, primary_key=True)
+    courrier_id   = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    signataire_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    ordre         = db.Column(db.Integer, nullable=False)  # 1, 2, 3 …
+    # Statut individuel : PENDING, SIGNED, REJECTED, SKIPPED
+    statut        = db.Column(db.String(20), nullable=False, default='PENDING', index=True)
+    commentaire   = db.Column(db.Text, nullable=True)
+    signed_at     = db.Column(db.DateTime, nullable=True)
+
+    # Qui a initié le circuit
+    initiated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    initiated_at    = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    courrier    = db.relationship('Courrier',
+                                  backref=db.backref('signatures', lazy='dynamic',
+                                                     order_by='CourrierSignature.ordre'))
+    signataire  = db.relationship('User', foreign_keys=[signataire_id],
+                                  backref='signatures_demandees')
+    initiated_by = db.relationship('User', foreign_keys=[initiated_by_id])
+
+    def __repr__(self):
+        return f'<CourrierSignature courrier={self.courrier_id} user={self.signataire_id} ordre={self.ordre} statut={self.statut}>'
+
+
 class EmailTemplate(db.Model):
     """Templates d'email pour les notifications multi-langues"""
     __tablename__ = 'email_template'

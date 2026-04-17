@@ -16,7 +16,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
+from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward, CourrierSignature
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 
 # Le support des langues est maintenant dans utils.py
@@ -1082,6 +1082,14 @@ def bulk_action():
         flash('Action inconnue.', 'error')
 
     return redirect(url_for('view_mail'))
+
+
+@app.route('/api/users_list')
+@login_required
+def api_users_list():
+    """Retourne la liste des utilisateurs actifs pour l'autocomplete (circuit signature, etc.)"""
+    users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
+    return jsonify([{'id': u.id, 'nom_complet': u.nom_complet} for u in users])
 
 
 @app.route('/api/tags', methods=['GET'])
@@ -2809,6 +2817,180 @@ def kanban_move_card(id):
         db.session.rollback()
         logging.error(f"Erreur kanban_move_card: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================================ #
+#  C1 — Circuit de signature hiérarchique
+# ============================================================ #
+
+@app.route('/courrier/<int:id>/circuit_signature', methods=['GET', 'POST'])
+@login_required
+def circuit_signature(id):
+    """Initier ou consulter le circuit de signature d'un courrier"""
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+
+    if request.method == 'POST':
+        # Seuls admin/super_admin peuvent initier un circuit
+        if current_user.role not in ('admin', 'super_admin'):
+            return jsonify({'error': 'Permission refusée'}), 403
+
+        data = request.get_json(silent=True) or {}
+        signataire_ids = data.get('signataires', [])
+        if not signataire_ids or not isinstance(signataire_ids, list):
+            return jsonify({'error': 'Liste de signataires invalide'}), 400
+
+        # Supprimer un circuit existant si on le réinitialise
+        CourrierSignature.query.filter_by(courrier_id=courrier.id).delete()
+
+        for ordre, uid in enumerate(signataire_ids, start=1):
+            user = User.query.get(uid)
+            if not user:
+                continue
+            sig = CourrierSignature(
+                courrier_id=courrier.id,
+                signataire_id=int(uid),
+                ordre=ordre,
+                statut='PENDING',
+                initiated_by_id=current_user.id,
+            )
+            db.session.add(sig)
+
+        try:
+            db.session.commit()
+            log_activity(current_user.id, "CIRCUIT_SIGNATURE_INIT",
+                         f"Circuit de signature initié pour courrier {courrier.numero_accuse_reception}",
+                         courrier.id)
+            # Notification au premier signataire
+            _notify_next_signataire(courrier)
+            return jsonify({'ok': True, 'message': 'Circuit initié avec succès'})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+
+    # GET — renvoyer l'état du circuit
+    sigs = CourrierSignature.query.filter_by(courrier_id=courrier.id).order_by(CourrierSignature.ordre).all()
+    return jsonify({
+        'courrier_id': courrier.id,
+        'circuit': [
+            {
+                'id': s.id,
+                'ordre': s.ordre,
+                'signataire': {'id': s.signataire_id, 'nom': s.signataire.nom_complet},
+                'statut': s.statut,
+                'commentaire': s.commentaire,
+                'signed_at': s.signed_at.isoformat() if s.signed_at else None,
+            }
+            for s in sigs
+        ]
+    })
+
+
+@app.route('/api/signature/<int:sig_id>/action', methods=['POST'])
+@login_required
+def signature_action(sig_id):
+    """Signer ou rejeter une étape du circuit"""
+    sig = CourrierSignature.query.get_or_404(sig_id)
+
+    # Seul le signataire désigné peut agir
+    if sig.signataire_id != current_user.id:
+        return jsonify({'error': 'Action réservée au signataire désigné'}), 403
+
+    if sig.statut != 'PENDING':
+        return jsonify({'error': 'Cette étape a déjà été traitée'}), 400
+
+    # Vérifier que l'étape précédente est signée (ordre séquentiel strict)
+    if sig.ordre > 1:
+        prev = CourrierSignature.query.filter_by(
+            courrier_id=sig.courrier_id, ordre=sig.ordre - 1
+        ).first()
+        if prev and prev.statut == 'PENDING':
+            return jsonify({'error': 'L\'étape précédente n\'a pas encore été traitée'}), 400
+
+    data = request.get_json(silent=True) or {}
+    action = data.get('action', '').upper()  # SIGNED | REJECTED
+    commentaire = (data.get('commentaire') or '').strip()
+
+    if action not in ('SIGNED', 'REJECTED'):
+        return jsonify({'error': 'Action invalide (SIGNED ou REJECTED)'}), 400
+
+    sig.statut = action
+    sig.commentaire = commentaire or None
+    sig.signed_at = datetime.utcnow()
+
+    courrier = sig.courrier
+    action_label = 'signé' if action == 'SIGNED' else 'rejeté'
+
+    # Log
+    from models import CourrierModification
+    db.session.add(CourrierModification(
+        courrier_id=courrier.id,
+        utilisateur_id=current_user.id,
+        champ_modifie='signature',
+        ancienne_valeur='PENDING',
+        nouvelle_valeur=action,
+        ip_address=get_client_ip()
+    ))
+
+    try:
+        db.session.commit()
+        log_activity(current_user.id, f"SIGNATURE_{action}",
+                     f"Courrier {courrier.numero_accuse_reception} {action_label} par {current_user.nom_complet}",
+                     courrier.id)
+
+        if action == 'SIGNED':
+            _notify_next_signataire(courrier)
+        elif action == 'REJECTED':
+            _notify_circuit_rejected(courrier, sig)
+
+        return jsonify({'ok': True, 'statut': action})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+def _notify_next_signataire(courrier):
+    """Notifie le prochain signataire PENDING dans le circuit"""
+    next_sig = CourrierSignature.query.filter_by(
+        courrier_id=courrier.id, statut='PENDING'
+    ).order_by(CourrierSignature.ordre).first()
+
+    if next_sig:
+        notif = Notification(
+            user_id=next_sig.signataire_id,
+            type_notification='signature_demandee',
+            message=f'Votre signature est requise pour le courrier {courrier.numero_accuse_reception}',
+            courrier_id=courrier.id,
+            date_creation=datetime.utcnow(),
+        )
+        db.session.add(notif)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
+def _notify_circuit_rejected(courrier, sig):
+    """Notifie l'initiateur du circuit en cas de rejet"""
+    initiator_sig = CourrierSignature.query.filter_by(
+        courrier_id=courrier.id
+    ).order_by(CourrierSignature.ordre).first()
+
+    if initiator_sig and initiator_sig.initiated_by_id:
+        notif = Notification(
+            user_id=initiator_sig.initiated_by_id,
+            type_notification='signature_rejetee',
+            message=(f'Le circuit de signature du courrier {courrier.numero_accuse_reception} '
+                     f'a été rejeté par {sig.signataire.nom_complet}'),
+            courrier_id=courrier.id,
+            date_creation=datetime.utcnow(),
+        )
+        db.session.add(notif)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
 
 @app.route('/api/courrier/<int:id>/timeline')

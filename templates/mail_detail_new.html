@@ -440,6 +440,122 @@
         </div>
         {% endif %}
         
+        <!-- Circuit de Signature Section -->
+        <div class="bg-white shadow-rdc rounded-xl" id="circuit-signature-section">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer select-none"
+                 onclick="toggleCircuit()">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-pen-nib mr-2 text-rdc-blue"></i>
+                    Circuit de Signature
+                    {% set sigs = courrier.signatures.all() %}
+                    {% if sigs %}
+                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full font-medium
+                        {% set all_signed = sigs|selectattr('statut','eq','SIGNED')|list|length == sigs|length %}
+                        {% set any_rejected = sigs|selectattr('statut','eq','REJECTED')|list %}
+                        {% if any_rejected %}bg-red-100 text-red-700
+                        {% elif all_signed %}bg-green-100 text-green-700
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {% if any_rejected %}Rejeté
+                        {% elif all_signed %}Complété
+                        {% else %}En cours ({{ sigs|selectattr('statut','eq','SIGNED')|list|length }}/{{ sigs|length }}){% endif %}
+                    </span>
+                    {% endif %}
+                </h2>
+                <i class="fas fa-chevron-down text-gray-400 transition-transform" id="circuit-chevron"></i>
+            </div>
+            <div id="circuit-body" class="p-6 hidden">
+
+                {% set sigs = courrier.signatures.all() %}
+
+                <!-- Existing circuit -->
+                {% if sigs %}
+                <div class="mb-6">
+                    <ol class="relative border-l border-gray-300 ml-3 space-y-6">
+                    {% for s in sigs %}
+                    {% set is_pending = s.statut == 'PENDING' and (loop.first or (sigs[loop.index0-1].statut == 'SIGNED')) %}
+                    <li class="ml-6">
+                        <span class="absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-white
+                            {% if s.statut == 'SIGNED' %}bg-green-500
+                            {% elif s.statut == 'REJECTED' %}bg-red-500
+                            {% elif is_pending %}bg-yellow-400 animate-pulse
+                            {% else %}bg-gray-300{% endif %}">
+                            <i class="fas text-white text-xs
+                                {% if s.statut == 'SIGNED' %}fa-check
+                                {% elif s.statut == 'REJECTED' %}fa-times
+                                {% elif is_pending %}fa-pen
+                                {% else %}fa-clock{% endif %}"></i>
+                        </span>
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    Étape {{ s.ordre }} — {{ s.signataire.nom_complet }}
+                                </p>
+                                {% if s.signed_at %}
+                                <p class="text-xs text-gray-500">
+                                    <i class="fas fa-clock mr-1"></i>{{ s.signed_at.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                                {% endif %}
+                                {% if s.commentaire %}
+                                <p class="text-xs text-gray-600 mt-1 italic">"{{ s.commentaire }}"</p>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded-full font-medium
+                                {% if s.statut == 'SIGNED' %}bg-green-100 text-green-700
+                                {% elif s.statut == 'REJECTED' %}bg-red-100 text-red-700
+                                {% elif is_pending %}bg-yellow-100 text-yellow-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ s.statut }}
+                            </span>
+                        </div>
+                        <!-- Action buttons for current user if it's their turn -->
+                        {% if s.signataire_id == current_user.id and s.statut == 'PENDING' and (loop.first or sigs[loop.index0-1].statut == 'SIGNED') %}
+                        <div class="mt-3 flex items-center gap-3" id="sig-action-{{ s.id }}">
+                            <textarea id="sig-comment-{{ s.id }}" rows="2"
+                                      placeholder="Commentaire (optionnel)…"
+                                      class="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-rdc-blue resize-none"></textarea>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="signatureAction({{ s.id }}, 'SIGNED')"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-check"></i> Signer
+                                </button>
+                                <button onclick="signatureAction({{ s.id }}, 'REJECTED')"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-times"></i> Rejeter
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                    </ol>
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-400 mb-4">Aucun circuit de signature initié pour ce courrier.</p>
+                {% endif %}
+
+                <!-- Init/reset circuit (admin only) -->
+                {% if current_user.role in ['admin', 'super_admin'] %}
+                <div class="border-t border-gray-200 pt-4 mt-2">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-plus-circle mr-1 text-rdc-blue"></i>
+                        {% if sigs %}Réinitialiser le circuit{% else %}Initier un circuit{% endif %}
+                    </h3>
+                    <div id="signataires-list" class="space-y-2 mb-3"></div>
+                    <button type="button" onclick="addSignataire()"
+                            class="text-xs text-rdc-blue hover:underline mb-3 inline-flex items-center gap-1">
+                        <i class="fas fa-user-plus"></i> Ajouter un signataire
+                    </button>
+                    <br>
+                    <button type="button" onclick="submitCircuit({{ courrier.id }})"
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-rdc-blue rounded-lg hover:bg-blue-800 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                        Lancer le circuit
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Timeline Section -->
         <div class="bg-white shadow-rdc rounded-xl">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer select-none"
@@ -1061,6 +1177,85 @@ function loadTimeline() {
             document.getElementById('timeline-loading').innerHTML =
                 '<span class="text-red-400 text-sm"><i class="fas fa-exclamation-circle mr-1"></i>Erreur lors du chargement.</span>';
         });
+}
+
+// ── Circuit de Signature ──────────────────────────────────────────────────────
+const _circuitUrl   = '{{ url_for("circuit_signature", id=courrier.id) }}';
+const _sigActionBase = '/api/signature/';
+let _signataires = [];
+
+function toggleCircuit() {
+    const body    = document.getElementById('circuit-body');
+    const chevron = document.getElementById('circuit-chevron');
+    const hidden  = body.classList.toggle('hidden');
+    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+// Ajouter un sélecteur de signataire
+async function addSignataire() {
+    const list = document.getElementById('signataires-list');
+    const idx  = list.children.length;
+
+    // Lazy-load des utilisateurs
+    if (!_signataires.length) {
+        const r = await fetch('/api/users_list');
+        if (r.ok) _signataires = await r.json();
+    }
+
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+    row.innerHTML = `
+        <span class="text-xs font-bold text-gray-500 w-6">${idx + 1}.</span>
+        <select class="sig-select flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2">
+            <option value="">— Choisir un signataire —</option>
+            ${_signataires.map(u => `<option value="${u.id}">${u.nom_complet}</option>`).join('')}
+        </select>
+        <button type="button" onclick="this.closest('div').remove(); reorderSigs()"
+                class="text-red-400 hover:text-red-600 text-sm"><i class="fas fa-trash"></i></button>
+    `;
+    list.appendChild(row);
+}
+
+function reorderSigs() {
+    document.querySelectorAll('#signataires-list > div').forEach((row, i) => {
+        row.querySelector('span').textContent = `${i + 1}.`;
+    });
+}
+
+async function submitCircuit(courrierId) {
+    const selects = document.querySelectorAll('.sig-select');
+    const ids = [];
+    for (const s of selects) {
+        if (s.value) ids.push(parseInt(s.value));
+    }
+    if (!ids.length) { alert('Ajoutez au moins un signataire.'); return; }
+
+    const r = await fetch(_circuitUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+        body: JSON.stringify({ signataires: ids })
+    });
+    const data = await r.json();
+    if (r.ok) {
+        location.reload();
+    } else {
+        alert('Erreur : ' + (data.error || 'Inconnue'));
+    }
+}
+
+async function signatureAction(sigId, action) {
+    const commentaire = document.getElementById(`sig-comment-${sigId}`)?.value || '';
+    const r = await fetch(`${_sigActionBase}${sigId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _csrfToken },
+        body: JSON.stringify({ action, commentaire })
+    });
+    const data = await r.json();
+    if (r.ok) {
+        location.reload();
+    } else {
+        alert('Erreur : ' + (data.error || 'Inconnue'));
+    }
 }
 </script>
 {% endblock %}

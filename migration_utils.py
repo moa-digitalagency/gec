@@ -254,6 +254,24 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration: Table courrier_tag créée")
 
+        # Migration 10: Table circuit de signature hiérarchique
+        sig_sql = f'''
+            CREATE TABLE courrier_signature (
+                id {pk_serial},
+                courrier_id INTEGER NOT NULL REFERENCES courrier(id),
+                signataire_id INTEGER NOT NULL REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                ordre INTEGER NOT NULL,
+                statut VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                commentaire TEXT,
+                signed_at TIMESTAMP,
+                initiated_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                initiated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+            )
+        '''
+        if create_table_safely(engine, 'courrier_signature', sig_sql):
+            migrations_applied += 1
+            logging.info("✓ Migration: Table courrier_signature créée")
+
         # Migration 9: Index GIN pour la recherche full-text (PostgreSQL uniquement)
         if db_type == 'postgresql':
             try:
