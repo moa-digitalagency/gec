@@ -52,7 +52,8 @@ def inject_system_context():
         t=t,
         format_date=format_date,
         get_titre_responsable=get_titre_responsable,
-        get_appellation_entites=get_appellation_entites
+        get_appellation_entites=get_appellation_entites,
+        now=datetime.utcnow,
     )
 
 def apply_mail_access_filter(query, user):
@@ -934,6 +935,79 @@ def view_mail():
                          sg_copie=sg_copie,
                          sort_by=sort_by,
                          sort_order=sort_order)
+
+@app.route('/set_due_date/<int:id>', methods=['POST'])
+@login_required
+def set_due_date(id):
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    due_str = request.form.get('due_date', '').strip()
+    if due_str:
+        try:
+            courrier.due_date = datetime.strptime(due_str, '%Y-%m-%d').date()
+            courrier.reminder_sent_at = None  # Réinitialiser le rappel
+        except ValueError:
+            flash('Format de date invalide.', 'error')
+            return redirect(url_for('mail_detail', id=id))
+    else:
+        courrier.due_date = None
+    db.session.commit()
+    log_activity(current_user.id, "SET_DUE_DATE",
+                 f"Échéance du courrier {courrier.numero_accuse_reception} fixée au {courrier.due_date}", id)
+    flash('Échéance mise à jour.', 'success')
+    return redirect(url_for('mail_detail', id=id))
+
+
+@app.route('/admin/send_reminders', methods=['POST'])
+@login_required
+def send_reminders_manual():
+    if not current_user.is_super_admin():
+        abort(403)
+    count = _send_overdue_reminders()
+    flash(f'Rappels envoyés : {count} courrier(s) notifié(s).', 'success')
+    return redirect(url_for('dashboard'))
+
+
+def _send_overdue_reminders():
+    """Envoie des rappels email pour les courriers EN_COURS dépassant leur échéance."""
+    from datetime import date as date_type
+    from models import Notification
+    today = date_type.today()
+    overdue = Courrier.query.filter(
+        Courrier.is_deleted == False,
+        Courrier.statut.in_(['RECU', 'EN_COURS']),
+        Courrier.due_date < today,
+        Courrier.due_date.isnot(None),
+        Courrier.reminder_sent_at.is_(None)
+    ).all()
+    count = 0
+    for c in overdue:
+        try:
+            creator = User.query.get(c.utilisateur_id)
+            if creator and creator.email:
+                send_new_mail_notification([creator.email], {
+                    'numero_accuse_reception': c.numero_accuse_reception,
+                    'type_courrier': c.type_courrier,
+                    'objet': f'[RAPPEL ÉCHÉANCE] {c.objet}',
+                    'expediteur': c.expediteur or c.destinataire or '',
+                    'created_by': 'Système GEC'
+                })
+            Notification.create_notification(
+                user_id=c.utilisateur_id,
+                type_notification='reminder',
+                titre=f'Échéance dépassée — {c.numero_accuse_reception}',
+                message=f'Le courrier "{c.objet}" était dû le {c.due_date.strftime("%d/%m/%Y")}.',
+                courrier_id=c.id
+            )
+            c.reminder_sent_at = datetime.utcnow()
+            count += 1
+        except Exception as exc:
+            logging.error(f"Erreur rappel courrier {c.id}: {exc}")
+    if count:
+        db.session.commit()
+    return count
+
 
 @app.route('/bulk_action', methods=['POST'])
 @login_required

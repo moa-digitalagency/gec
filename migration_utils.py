@@ -188,6 +188,16 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info(f"✓ Migration: Colonne whatsapp_number ajoutée aux paramètres")
 
+        # Migration 8b: Colonnes rappels / échéances sur courrier
+        reminder_columns = [
+            ('courrier', 'due_date', 'DATE'),
+            ('courrier', 'reminder_sent_at', 'TIMESTAMP'),
+        ]
+        for table, col, defn in reminder_columns:
+            if add_column_safely(engine, table, col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration: Colonne {col} ajoutée à {table}")
+
         # Migration 8: Table des pièces jointes supplémentaires
         pk_serial = "SERIAL PRIMARY KEY" if db_type == "postgresql" else "INTEGER PRIMARY KEY AUTOINCREMENT"
         attachment_sql = f'''

@@ -363,6 +363,13 @@
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ courrier.statut_color }}">
                                 {{ courrier.statut }}
                             </span>
+                            {% if courrier.due_date and courrier.statut not in ['TRAITE','ARCHIVE'] %}
+                                {% if courrier.due_date < now().date() %}
+                                <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">
+                                    <i class="fas fa-clock mr-0.5"></i>Retard
+                                </span>
+                                {% endif %}
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium actions-column">
                             <div class="flex space-x-2">

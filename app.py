@@ -162,6 +162,31 @@ with app.app_context():
     
     logging.info("System parameters and statuses initialized")
 
+    # Planificateur de rappels (s'exécute une fois toutes les 6h dans ce processus)
+    import threading
+
+    def _reminder_job():
+        """Job périodique : rappels d'échéances toutes les 6 heures."""
+        try:
+            with app.app_context():
+                from views import _send_overdue_reminders
+                n = _send_overdue_reminders()
+                if n:
+                    logging.info(f"Scheduler: {n} rappel(s) d'échéance envoyé(s)")
+        except Exception as e:
+            logging.error(f"Scheduler reminder error: {e}")
+        finally:
+            # Re-planifier dans 6 heures
+            t = threading.Timer(6 * 3600, _reminder_job)
+            t.daemon = True
+            t.start()
+
+    # Démarrer uniquement hors mode test
+    if not app.config.get('TESTING'):
+        t0 = threading.Timer(60, _reminder_job)  # 1ère exécution après 1 min
+        t0.daemon = True
+        t0.start()
+
 @login_manager.user_loader
 def load_user(user_id):
     from models import User

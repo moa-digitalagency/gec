@@ -139,10 +139,19 @@
                 {{ role_data.en_cours_retard }}
             </p>
             <p class="text-sm text-gray-500 mt-2">courrier(s) à relancer</p>
-            <a href="{{ url_for('view_mail', statut='EN_COURS') }}"
-               class="mt-3 inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">
-                <i class="fas fa-eye mr-1"></i>Voir
-            </a>
+            <div class="flex justify-center gap-2 mt-3">
+                <a href="{{ url_for('view_mail', statut='EN_COURS') }}"
+                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">
+                    <i class="fas fa-eye mr-1"></i>Voir
+                </a>
+                <form method="POST" action="{{ url_for('send_reminders_manual') }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 transition-colors">
+                        <i class="fas fa-bell mr-1"></i>Rappels
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 

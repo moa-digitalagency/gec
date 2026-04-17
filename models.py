@@ -435,6 +435,10 @@ class Courrier(db.Model):
     fichier_checksum = db.Column(db.String(64), nullable=True)  # Checksum du fichier
     fichier_encrypted = db.Column(db.Boolean, default=False)  # Fichier crypté ?
     
+    # Rappels et échéances
+    due_date = db.Column(db.Date, nullable=True, index=True)          # Date limite de traitement
+    reminder_sent_at = db.Column(db.DateTime, nullable=True)          # Date du dernier rappel envoyé
+
     # Soft delete
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
     deleted_at = db.Column(db.DateTime, nullable=True)

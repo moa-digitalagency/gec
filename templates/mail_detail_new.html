@@ -283,6 +283,42 @@
             </div>
         </div>
         
+        <!-- Échéance / Due Date -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-calendar-alt mr-2 text-rdc-blue"></i>
+                    Échéance
+                    {% if courrier.due_date %}
+                        {% set today = now().date() if now is defined else none %}
+                        {% if courrier.due_date < today and courrier.statut not in ['TRAITE','ARCHIVE'] %}
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 animate-pulse">
+                            <i class="fas fa-exclamation-circle mr-1"></i>EN RETARD
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="p-4">
+                <p class="text-sm text-gray-600 mb-3">
+                    {% if courrier.due_date %}
+                        <span class="font-medium">{{ courrier.due_date.strftime('%d/%m/%Y') }}</span>
+                    {% else %}
+                        <span class="text-gray-400">Aucune échéance fixée</span>
+                    {% endif %}
+                </p>
+                <form method="POST" action="{{ url_for('set_due_date', id=courrier.id) }}" class="flex items-center gap-2">
+                    <input type="date" name="due_date"
+                           value="{{ courrier.due_date.strftime('%Y-%m-%d') if courrier.due_date else '' }}"
+                           class="flex-1 text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
+                    <button type="submit"
+                            class="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-save mr-1"></i>Enregistrer
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- File Attachments -->
         {% set extra_attachments = courrier.attachments.all() %}
         {% if courrier.fichier_nom or extra_attachments %}
