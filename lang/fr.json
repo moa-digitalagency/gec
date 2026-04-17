@@ -121,7 +121,9 @@
   "processed": "Traité",
   "in_progress": "En Cours",
   "received": "Reçu",
-  "copyright": "© 2025 GEC Mines - Secrétariat Général des Mines",
+  "copyright": "© 2025 GEC — Gestion Électronique du Courrier",
+  "welcome_back": "Bon retour",
+  "login_subtitle": "Connectez-vous à votre espace de travail",
   "all_rights_reserved": "Tous droits réservés",
   "backup": {
     "title": "Système de Sauvegarde et Restauration",

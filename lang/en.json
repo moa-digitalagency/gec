@@ -121,7 +121,9 @@
   "processed": "Processed",
   "in_progress": "In Progress",
   "received": "Received",
-  "copyright": "© 2025 GEC Mines - General Secretariat of Mines",
+  "copyright": "© 2025 GEC — Electronic Mail Management",
+  "welcome_back": "Welcome back",
+  "login_subtitle": "Sign in to your workspace",
   "all_rights_reserved": "All rights reserved",
   "backup": {
     "title": "Backup and Restore System",
