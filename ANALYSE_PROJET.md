@@ -76,13 +76,13 @@ Lister TOUT ce qui est dans la racine du projet et identifier les fichiers inuti
 - `install-*.sh`, `install-*.bat` — scripts d'install obsolètes
 - `temp/`, `tmp/`, `.temp/` — dossiers temporaires
 
-**Scripts utilitaires en racine — garder si légitimes :**
+**Scripts utilitaires en racine — règle stricte :**
 
-- `generate_keys.py` → garder (génération clés AES/session)
-- `init_db.py` → garder (initialisation base au déploiement)
-- `cleanup_database.py` → garder (reset démo/test avec confirmation)
-- `show_env_keys.py` → garder, vérifier absence de mentions Replit
-- Tout autre `.py` en racine → évaluer utilité, supprimer si orphelin
+- `init_db.py` → garder (initialisation base au déploiement, au même titre que `requirements.txt`)
+- `show_env_keys.py` → SUPPRIMER (expose les clés en clair, risque sécurité, pas de valeur prod)
+- `generate_keys.py` → SUPPRIMER (one-time setup, commande déjà dans `.env.example`)
+- `cleanup_database.py` → SUPPRIMER (script de reset dev, dangereux en prod)
+- Tout autre `.py` en racine non lié au fonctionnement de l'app → SUPPRIMER
 
 **Vérifier `.gitignore` — doit couvrir au minimum :**
 
