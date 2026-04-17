@@ -1,404 +1,415 @@
 {% extends "new_base.html" %}
+{% block title %}{{ t('dashboard') or 'Tableau de Bord' }} — GEC{% endblock %}
 
-{% block title %}{{ t('dashboard') or 'Tableau de Bord' }} - GEC{% endblock %}
+{% block topbar_title %}
+<div style="display:flex;align-items:center;gap:0.5rem;">
+  <span style="font-size:0.9375rem;font-weight:600;color:var(--t-primary);">{{ t('dashboard') or 'Tableau de Bord' }}</span>
+</div>
+{% endblock %}
 
 {% block content %}
+
 <!-- Page Header -->
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-        <i class="fas fa-tachometer-alt mr-3 text-rdc-blue"></i>
-        {{ t('dashboard') or 'Tableau de Bord' }}
-    </h1>
-    <p class="mt-2 text-gray-600">{{ t('dashboard_overview') or "Vue d'ensemble du système de gestion du courrier" }}</p>
+<div class="gec-page-header">
+  <div>
+    <h1 class="gec-page-title">{{ t('dashboard') or 'Tableau de Bord' }}</h1>
+    <p class="gec-page-subtitle">{{ t('dashboard_overview') or "Vue d'ensemble du système" }}</p>
+  </div>
+  <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary">
+    <i class="fas fa-plus"></i>
+    {{ t('new_mail') or 'Nouveau Courrier' }}
+  </a>
 </div>
 
-<!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <!-- Total Courriers -->
-    <div class="bg-white overflow-hidden shadow-rdc rounded-xl">
-        <div class="bg-rdc-blue px-6 py-4">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-blue-100">{{ t('total_mail') or 'Total Courriers' }}</p>
-                    <p class="text-3xl font-bold text-white">{{ total_courriers }}</p>
-                </div>
-            </div>
-        </div>
+<!-- ── Stat Cards ─────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon blue"><i class="fas fa-inbox"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-label">{{ t('total_mail') or 'Total Courriers' }}</div>
+      <div class="gec-stat-value">{{ total_courriers }}</div>
+      <div class="gec-stat-sub">tous statuts confondus</div>
     </div>
-    
-    <!-- Courriers Today -->
-    <div class="bg-white overflow-hidden shadow-rdc rounded-xl">
-        <div class="bg-rdc-green px-6 py-4">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-calendar-day text-2xl text-white"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-green-100">{{ t('today') or "Aujourd'hui" }}</p>
-                    <p class="text-3xl font-bold text-white">{{ courriers_today }}</p>
-                </div>
-            </div>
-        </div>
+  </div>
+
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon green"><i class="fas fa-calendar-day"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-label">{{ t('today') or "Aujourd'hui" }}</div>
+      <div class="gec-stat-value">{{ courriers_today }}</div>
+      <div class="gec-stat-sub">enregistrés aujourd'hui</div>
     </div>
-    
-    <!-- Current User -->
-    <div class="bg-white overflow-hidden shadow-rdc rounded-xl">
-        <div class="bg-gradient-to-r from-rdc-blue to-rdc-green px-6 py-4">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    {% if current_user.photo_profile %}
-                        <img src="{{ current_user.get_profile_photo_url() }}" 
-                             alt="Photo" 
-                             class="h-12 w-12 rounded-full border-2 border-white">
-                    {% else %}
-                        <div class="h-12 w-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-                            <i class="fas fa-user text-2xl text-white"></i>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-blue-100">{{ t('user') or 'Utilisateur' }}</p>
-                    <p class="text-lg font-bold text-white">{{ current_user.nom_complet }}</p>
-                    <p class="text-xs text-blue-200">
-                        {% if current_user.get_decrypted_fonction() %}
-                            {{ current_user.get_decrypted_fonction() }}
-                        {% else %}
-                            (Fonction absente)
-                        {% endif %}
-                        / 
-                        {% if current_user.departement %}
-                            {{ current_user.departement.nom }}
-                        {% else %}
-                            {{ get_appellation_entites() }} absent
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-        </div>
+  </div>
+
+  {% if current_user.role == 'super_admin' and role_data %}
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon {% if role_data.en_cours_retard > 0 %}red{% else %}teal{% endif %}">
+      <i class="fas fa-clock"></i>
     </div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-label">EN_COURS &gt; 7 jours</div>
+      <div class="gec-stat-value" style="color:{% if role_data.en_cours_retard > 0 %}var(--danger){% else %}var(--success){% endif %};">
+        {{ role_data.en_cours_retard }}
+      </div>
+      <div class="gec-stat-sub">à relancer</div>
+    </div>
+  </div>
+  {% elif current_user.role == 'admin' and role_data %}
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon orange"><i class="fas fa-building"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-label">Mon Département</div>
+      <div class="gec-stat-value">{{ role_data.dept_total }}</div>
+      <div class="gec-stat-sub">
+        <span style="color:{% if role_data.dept_non_traites > 0 %}var(--danger){% else %}var(--success){% endif %};">
+          {{ role_data.dept_non_traites }} non traité{{ 's' if role_data.dept_non_traites != 1 }}
+        </span>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="gec-stat-card">
+    <div class="gec-stat-icon purple"><i class="fas fa-user"></i></div>
+    <div class="gec-stat-body">
+      <div class="gec-stat-label">{{ current_user.nom_complet }}</div>
+      <div class="gec-stat-value" style="font-size:1.25rem;line-height:1.2;">
+        {% if current_user.get_decrypted_fonction() %}
+          {{ current_user.get_decrypted_fonction()|truncate(22,True,'…') }}
+        {% else %}—{% endif %}
+      </div>
+      <div class="gec-stat-sub">
+        {{ current_user.departement.nom if current_user.departement else 'Département non défini' }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 
-<!-- Widgets différenciés par rôle -->
+<!-- ── Role Widgets ──────────────────────────────────────── -->
 {% if role_data %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem;">
 
-    {# ── SUPER ADMIN ───────────────────────────────────────────────── #}
-    {% if current_user.role == 'super_admin' %}
+  {# ── SUPER ADMIN ──────────────────────────────────────── #}
+  {% if current_user.role == 'super_admin' %}
 
-    <!-- Statuts en temps réel -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-rdc-blue to-blue-700">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-chart-pie mr-2"></i>Répartition par statut
-            </h3>
-        </div>
-        <div class="p-4 space-y-2">
-            {% set statut_colors = {'RECU':'bg-blue-100 text-blue-800','EN_COURS':'bg-yellow-100 text-yellow-800','TRAITE':'bg-green-100 text-green-800','ARCHIVE':'bg-gray-100 text-gray-600','URGENT':'bg-red-100 text-red-800'} %}
-            {% for statut, count in role_data.statut_counts.items() %}
-            <div class="flex items-center justify-between">
-                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ statut_colors.get(statut, 'bg-gray-100 text-gray-700') }}">{{ statut }}</span>
-                <span class="font-bold text-gray-700">{{ count }}</span>
-            </div>
-            {% endfor %}
-        </div>
+  <!-- Status distribution -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-chart-pie"></i>Répartition par statut</div>
     </div>
-
-    <!-- Top départements -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-building mr-2"></i>Top 5 Départements
-            </h3>
+    <div class="gec-card-body-sm">
+      {% set statut_styles = {
+        'RECU':     ('gec-status-recu',     'fa-envelope'),
+        'EN_COURS': ('gec-status-en_cours', 'fa-spinner'),
+        'TRAITE':   ('gec-status-traite',   'fa-check-circle'),
+        'ARCHIVE':  ('gec-status-archive',  'fa-archive'),
+        'URGENT':   ('gec-status-urgent',   'fa-exclamation-circle'),
+        'REJETE':   ('gec-status-rejete',   'fa-times-circle')
+      } %}
+      <div style="display:flex;flex-direction:column;gap:0.625rem;">
+        {% for statut, count in role_data.statut_counts.items() %}
+        {% set style = statut_styles.get(statut, ('gec-badge-gray','fa-circle')) %}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+          <span class="gec-badge {{ style[0] }}">
+            <i class="fas {{ style[1] }}" style="font-size:0.5rem;"></i>
+            {{ statut }}
+          </span>
+          <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+            {% set pct = [(count / [total_courriers, 1]|max * 100)|int, 100]|min %}
+            <div style="height:100%;width:{{ pct }}%;background:var(--primary);border-radius:3px;transition:width 0.6s ease;"></div>
+          </div>
+          <span style="font-size:0.875rem;font-weight:700;color:var(--t-primary);min-width:2rem;text-align:right;">{{ count }}</span>
         </div>
-        <div class="p-4 space-y-2">
-            {% if role_data.top_depts %}
-                {% for d in role_data.top_depts %}
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-700 truncate max-w-xs">{{ d.nom }}</span>
-                    <span class="font-bold text-purple-700">{{ d.nb }}</span>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-sm text-gray-400 text-center py-2">Aucune donnée</p>
-            {% endif %}
-        </div>
+        {% endfor %}
+      </div>
     </div>
+  </div>
 
-    <!-- Courriers EN_COURS en retard -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-red-500 to-red-600">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-clock mr-2"></i>EN_COURS &gt; 7 jours
-            </h3>
+  <!-- Top 5 departments -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-building"></i>Top 5 Départements</div>
+    </div>
+    <div class="gec-card-body-sm">
+      {% if role_data.top_depts %}
+      <div style="display:flex;flex-direction:column;gap:0.625rem;">
+        {% for d in role_data.top_depts %}
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span style="font-size:0.75rem;font-weight:700;color:var(--t-muted);min-width:1.25rem;">{{ loop.index }}</span>
+          <span style="flex:1;font-size:0.875rem;color:var(--t-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ d.nom }}</span>
+          <span style="font-size:0.8125rem;font-weight:700;color:var(--primary);">{{ d.nb }}</span>
         </div>
-        <div class="p-6 text-center">
-            <p class="text-5xl font-bold {{ 'text-red-600' if role_data.en_cours_retard > 0 else 'text-green-600' }}">
-                {{ role_data.en_cours_retard }}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="gec-empty" style="padding:1.5rem;">
+        <i class="fas fa-building gec-empty-icon"></i>
+        <p class="gec-empty-desc">Aucune donnée</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Overdue reminder -->
+  {% if role_data.en_cours_retard > 0 %}
+  <div class="gec-card" style="border-color:rgba(239,68,68,0.25);">
+    <div class="gec-card-header" style="background:var(--danger-light);">
+      <div class="gec-card-title" style="color:var(--danger-text);">
+        <i class="fas fa-exclamation-triangle"></i>Courriers en retard
+      </div>
+    </div>
+    <div class="gec-card-body" style="text-align:center;">
+      <div style="font-size:3.5rem;font-weight:800;color:var(--danger);line-height:1;">{{ role_data.en_cours_retard }}</div>
+      <p style="font-size:0.875rem;color:var(--t-muted);margin:0.5rem 0 1.25rem;">courrier(s) EN_COURS &gt; 7 jours</p>
+      <div style="display:flex;gap:0.625rem;justify-content:center;">
+        <a href="{{ url_for('view_mail', statut='EN_COURS') }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+          <i class="fas fa-eye"></i>Voir
+        </a>
+        <form method="POST" action="{{ url_for('send_reminders_manual') }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="gec-btn gec-btn-danger gec-btn-sm">
+            <i class="fas fa-bell"></i>Rappels
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── ADMIN ────────────────────────────────────────────── #}
+  {% elif current_user.role == 'admin' %}
+
+  <!-- Dept stats -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-building"></i>Mon Département</div>
+    </div>
+    <div class="gec-card-body">
+      <div style="display:flex;gap:1.5rem;">
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:2.5rem;font-weight:800;color:var(--primary);">{{ role_data.dept_total }}</div>
+          <div style="font-size:0.8125rem;color:var(--t-muted);">Total courriers</div>
+        </div>
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:2.5rem;font-weight:800;color:{% if role_data.dept_non_traites > 0 %}var(--danger){% else %}var(--success){% endif %};">
+            {{ role_data.dept_non_traites }}
+          </div>
+          <div style="font-size:0.8125rem;color:var(--t-muted);">Non traités</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top users -->
+  <div class="gec-card" style="grid-column: span 2;">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-star"></i>Utilisateurs actifs (30 jours)</div>
+    </div>
+    <div class="gec-card-body-sm">
+      {% if role_data.top_users %}
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        {% for u in role_data.top_users %}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+          <span style="font-size:0.875rem;color:var(--t-secondary);">{{ u.nom }}</span>
+          <span class="gec-badge gec-badge-green">{{ u.nb }} actions</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="gec-empty" style="padding:1.5rem;">
+        <i class="fas fa-users gec-empty-icon"></i>
+        <p class="gec-empty-desc">Aucune activité récente</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── USER ─────────────────────────────────────────────── #}
+  {% else %}
+
+  <!-- My mails -->
+  <div class="gec-card">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-inbox"></i>Mes Courriers</div>
+    </div>
+    <div class="gec-card-body">
+      <div style="display:flex;gap:1.5rem;">
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:2.25rem;font-weight:800;color:var(--warning);">{{ role_data.mes_en_attente }}</div>
+          <div style="font-size:0.8125rem;color:var(--t-muted);">En attente</div>
+        </div>
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:2.25rem;font-weight:800;color:var(--primary);">{{ role_data.mes_total }}</div>
+          <div style="font-size:0.8125rem;color:var(--t-muted);">Total</div>
+        </div>
+      </div>
+      <a href="{{ url_for('view_mail', statut='RECU') }}" class="gec-btn gec-btn-primary" style="width:100%;justify-content:center;margin-top:1rem;">
+        Voir mes courriers en attente
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent transmissions -->
+  <div class="gec-card" style="grid-column: span 2;">
+    <div class="gec-card-header">
+      <div class="gec-card-title"><i class="fas fa-share"></i>Transmissions reçues récentes</div>
+    </div>
+    <div class="gec-card-body-sm">
+      {% if role_data.transmissions_recentes %}
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        {% for fw in role_data.transmissions_recentes %}
+        <div style="display:flex;align-items:center;gap:0.875rem;padding:0.625rem 0.75rem;background:var(--body-bg);border-radius:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:0.875rem;font-weight:500;color:var(--t-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ fw.courrier.numero_accuse_reception }} — {{ fw.courrier.objet[:55] }}{% if fw.courrier.objet|length > 55 %}…{% endif %}
             </p>
-            <p class="text-sm text-gray-500 mt-2">courrier(s) à relancer</p>
-            <div class="flex justify-center gap-2 mt-3">
-                <a href="{{ url_for('view_mail', statut='EN_COURS') }}"
-                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">
-                    <i class="fas fa-eye mr-1"></i>Voir
-                </a>
-                <form method="POST" action="{{ url_for('send_reminders_manual') }}" class="inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit"
-                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600 transition-colors">
-                        <i class="fas fa-bell mr-1"></i>Rappels
-                    </button>
-                </form>
-            </div>
+            <p style="font-size:0.75rem;color:var(--t-muted);">
+              De : {{ fw.forwarded_by.nom_complet if fw.forwarded_by else '?' }}
+            </p>
+          </div>
+          <a href="{{ url_for('mail_detail', id=fw.courrier_id) }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+            <i class="fas fa-eye"></i>
+          </a>
         </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="gec-empty" style="padding:1.5rem;">
+        <i class="fas fa-share gec-empty-icon"></i>
+        <p class="gec-empty-desc">Aucune transmission reçue récemment</p>
+      </div>
+      {% endif %}
     </div>
+  </div>
 
-    {# ── ADMIN ─────────────────────────────────────────────────────── #}
-    {% elif current_user.role == 'admin' %}
-
-    <!-- Stats département -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-rdc-blue to-blue-700">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-building mr-2"></i>Mon Département
-            </h3>
-        </div>
-        <div class="p-4 space-y-3">
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Total courriers</span>
-                <span class="font-bold text-rdc-blue">{{ role_data.dept_total }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Non traités</span>
-                <span class="font-bold {{ 'text-red-600' if role_data.dept_non_traites > 0 else 'text-green-600' }}">
-                    {{ role_data.dept_non_traites }}
-                </span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Top utilisateurs actifs -->
-    <div class="bg-white shadow-rdc rounded-xl md:col-span-2">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-500 to-green-600">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-star mr-2"></i>Utilisateurs actifs (30 jours)
-            </h3>
-        </div>
-        <div class="p-4 space-y-2">
-            {% if role_data.top_users %}
-                {% for u in role_data.top_users %}
-                <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-700">{{ u.nom }}</span>
-                    <span class="text-xs font-semibold px-2 py-0.5 bg-green-100 text-green-700 rounded-full">{{ u.nb }} actions</span>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-sm text-gray-400 text-center py-2">Aucune activité récente</p>
-            {% endif %}
-        </div>
-    </div>
-
-    {# ── USER ──────────────────────────────────────────────────────── #}
-    {% else %}
-
-    <!-- Mes courriers en attente -->
-    <div class="bg-white shadow-rdc rounded-xl">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-rdc-blue to-blue-700">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-inbox mr-2"></i>Mes Courriers
-            </h3>
-        </div>
-        <div class="p-4 space-y-3">
-            <div class="flex justify-between">
-                <span class="text-sm text-gray-600">En attente</span>
-                <span class="font-bold text-yellow-600">{{ role_data.mes_en_attente }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-sm text-gray-600">Total</span>
-                <span class="font-bold text-rdc-blue">{{ role_data.mes_total }}</span>
-            </div>
-            <a href="{{ url_for('view_mail', statut='RECU') }}"
-               class="block text-center mt-2 px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                Voir mes courriers en attente
-            </a>
-        </div>
-    </div>
-
-    <!-- Transmissions reçues récentes -->
-    <div class="bg-white shadow-rdc rounded-xl md:col-span-2">
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
-            <h3 class="text-white font-semibold flex items-center">
-                <i class="fas fa-share mr-2"></i>Transmissions reçues récentes
-            </h3>
-        </div>
-        <div class="p-4">
-            {% if role_data.transmissions_recentes %}
-            <div class="space-y-2">
-                {% for fw in role_data.transmissions_recentes %}
-                <div class="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-medium text-gray-800 truncate">
-                            {{ fw.courrier.numero_accuse_reception }} — {{ fw.courrier.objet[:50] }}{% if fw.courrier.objet|length > 50 %}…{% endif %}
-                        </p>
-                        <p class="text-xs text-gray-500">De : {{ fw.forwarded_by.nom_complet if fw.forwarded_by else '?' }}</p>
-                    </div>
-                    <a href="{{ url_for('mail_detail', id=fw.courrier_id) }}"
-                       class="ml-3 flex-shrink-0 text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-                        Voir
-                    </a>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-sm text-gray-400 text-center py-4">Aucune transmission reçue récemment.</p>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
+  {% endif %}
 
 </div>
 {% endif %}
 
-<!-- Quick Actions -->
-<div class="bg-white shadow-rdc rounded-xl mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-bolt mr-2 text-rdc-blue"></i>
-            {{ t('quick_actions') or 'Actions Rapides' }}
-        </h2>
-    </div>
-    <div class="p-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="{{ url_for('register_mail') }}" 
-               class="flex items-center p-4 border-2 border-dashed border-rdc-blue rounded-lg hover:bg-blue-50 transition-colors group">
-                <i class="fas fa-plus-circle text-2xl text-rdc-blue mr-3 group-hover:scale-110 transition-transform"></i>
-                <div>
-                    <p class="font-medium text-gray-900">{{ t('new_mail') or 'Nouveau Courrier' }}</p>
-                    <p class="text-sm text-gray-500">{{ t('register_mail_desc') or 'Enregistrer un courrier' }}</p>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('view_mail') }}" 
-               class="flex items-center p-4 border-2 border-dashed border-rdc-green rounded-lg hover:bg-green-50 transition-colors group">
-                <i class="fas fa-list text-2xl text-rdc-green mr-3 group-hover:scale-110 transition-transform"></i>
-                <div>
-                    <p class="font-medium text-gray-900">{{ t('consult') or 'Consulter' }}</p>
-                    <p class="text-sm text-gray-500">{{ t('view_all_mail') or 'Voir tous les courriers' }}</p>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('search') }}" 
-               class="flex items-center p-4 border-2 border-dashed border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors group">
-                <i class="fas fa-search text-2xl text-yellow-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                <div>
-                    <p class="font-medium text-gray-900">{{ t('search') or 'Recherche' }}</p>
-                    <p class="text-sm text-gray-500">{{ t('advanced_search') or 'Recherche avancée' }}</p>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('view_mail', sort_by='date_enregistrement', sort_order='desc') }}" 
-               class="flex items-center p-4 border-2 border-dashed border-purple-500 rounded-lg hover:bg-purple-50 transition-colors group">
-                <i class="fas fa-clock text-2xl text-purple-500 mr-3 group-hover:scale-110 transition-transform"></i>
-                <div>
-                    <p class="font-medium text-gray-900">{{ t('recent') or 'Récents' }}</p>
-                    <p class="text-sm text-gray-500">{{ t('recent_mail') or 'Derniers courriers' }}</p>
-                </div>
-            </a>
-        </div>
-    </div>
+<!-- ── Quick Actions ─────────────────────────────────────── -->
+<div style="margin-bottom:1.5rem;">
+  <h2 style="font-size:1rem;font-weight:600;color:var(--t-primary);margin-bottom:0.875rem;display:flex;align-items:center;gap:0.5rem;">
+    <i class="fas fa-bolt" style="color:var(--primary);font-size:0.875rem;"></i>
+    {{ t('quick_actions') or 'Actions Rapides' }}
+  </h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;">
+
+    <a href="{{ url_for('register_mail') }}" class="gec-quick-action">
+      <div class="gec-qa-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-plus-circle"></i></div>
+      <div>
+        <div class="gec-qa-title">{{ t('new_mail') or 'Nouveau' }}</div>
+        <div class="gec-qa-desc">Enregistrer un courrier</div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('view_mail') }}" class="gec-quick-action">
+      <div class="gec-qa-icon" style="background:#ECFDF5;color:#059669;"><i class="fas fa-inbox"></i></div>
+      <div>
+        <div class="gec-qa-title">{{ t('consult') or 'Consulter' }}</div>
+        <div class="gec-qa-desc">Voir tous les courriers</div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('search') }}" class="gec-quick-action">
+      <div class="gec-qa-icon" style="background:#FFFBEB;color:#D97706;"><i class="fas fa-search"></i></div>
+      <div>
+        <div class="gec-qa-title">{{ t('search') or 'Recherche' }}</div>
+        <div class="gec-qa-desc">Recherche avancée</div>
+      </div>
+    </a>
+
+    <a href="{{ url_for('kanban_view') }}" class="gec-quick-action">
+      <div class="gec-qa-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-columns"></i></div>
+      <div>
+        <div class="gec-qa-title">Kanban</div>
+        <div class="gec-qa-desc">Vue par statuts</div>
+      </div>
+    </a>
+
+  </div>
 </div>
 
-<!-- Recent Mail -->
-<div class="bg-white shadow-rdc rounded-xl">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center">
-            <i class="fas fa-history mr-2 text-rdc-blue"></i>
-            {{ t('recent_registered_mail') or 'Derniers Courriers Enregistrés' }}
-        </h2>
+<!-- ── Recent mail table ──────────────────────────────────── -->
+<div class="gec-card">
+  <div class="gec-card-header">
+    <div class="gec-card-title">
+      <i class="fas fa-history"></i>
+      {{ t('recent_registered_mail') or 'Derniers Courriers Enregistrés' }}
     </div>
-    <div class="p-6">
-        {% if recent_courriers %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('receipt_number') or 'N° Accusé' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('reference') or 'Référence' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('sender_recipient') or 'Expéditeur/Destinataire' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('subject') or 'Objet' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('date') or 'Date' }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {{ t('actions') or 'Actions' }}
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for courrier in recent_courriers %}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rdc-blue text-white">
-                                {{ courrier.numero_accuse_reception }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if courrier.numero_reference %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {{ courrier.numero_reference }}
-                                </span>
-                            {% else %}
-                                <span class="text-gray-400 text-sm">Non référencé</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div>
-                                <span class="text-xs text-gray-400">{{ courrier.get_label_contact() }}:</span><br>
-                                <span class="font-medium">{{ courrier.get_contact_principal() if courrier.get_contact_principal() else 'Non spécifié' }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
-                            <div class="max-w-xs truncate" title="{{ courrier.objet }}">
-                                {{ courrier.objet }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ format_date(courrier.date_enregistrement, include_time=True) if courrier.date_enregistrement else 'N/A' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{{ url_for('mail_detail', id=courrier.id) }}" 
-                               class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                                <i class="fas fa-eye mr-1"></i>
-                                Voir
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-12">
-            <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun courrier enregistré</h3>
-            <p class="text-gray-500 mb-6">Commencez par enregistrer votre premier courrier.</p>
-            <a href="{{ url_for('register_mail') }}" 
-               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
-                <i class="fas fa-plus-circle mr-2"></i>
-                Enregistrer le premier courrier
+    <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+      Voir tout <i class="fas fa-arrow-right" style="margin-left:0.25rem;"></i>
+    </a>
+  </div>
+
+  {% if recent_courriers %}
+  <div class="gec-table-wrap">
+    <table class="gec-table">
+      <thead>
+        <tr>
+          <th>{{ t('receipt_number') or 'N° Accusé' }}</th>
+          <th>{{ t('reference') or 'Référence' }}</th>
+          <th>{{ t('sender_recipient') or 'Contact' }}</th>
+          <th>{{ t('subject') or 'Objet' }}</th>
+          <th>{{ t('date') or 'Date' }}</th>
+          <th>Statut</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in recent_courriers %}
+        {% set st = c.statut or 'RECU' %}
+        <tr>
+          <td>
+            <span class="gec-badge gec-badge-blue" style="font-size:0.6875rem;">{{ c.numero_accuse_reception }}</span>
+          </td>
+          <td>
+            {% if c.numero_reference %}
+              <span class="gec-badge gec-badge-gray">{{ c.numero_reference }}</span>
+            {% else %}
+              <span style="color:var(--t-placeholder);font-size:0.8125rem;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size:0.8125rem;">
+              <div style="color:var(--t-muted);font-size:0.75rem;">{{ c.get_label_contact() }}:</div>
+              <div style="font-weight:500;color:var(--t-secondary);">
+                {{ c.get_contact_principal() or 'Non spécifié' }}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.875rem;color:var(--t-secondary);"
+                 title="{{ c.objet }}">{{ c.objet }}</div>
+          </td>
+          <td style="font-size:0.8125rem;color:var(--t-muted);white-space:nowrap;">
+            {{ format_date(c.date_enregistrement, include_time=True) if c.date_enregistrement else 'N/A' }}
+          </td>
+          <td>
+            <span class="gec-badge gec-status-{{ st|lower }}">{{ st }}</span>
+          </td>
+          <td>
+            <a href="{{ url_for('mail_detail', id=c.id) }}" class="gec-btn gec-btn-secondary gec-btn-sm">
+              <i class="fas fa-eye"></i>
             </a>
-        </div>
-        {% endif %}
-    </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="gec-empty">
+    <div class="gec-empty-icon"><i class="fas fa-inbox"></i></div>
+    <div class="gec-empty-title">Aucun courrier enregistré</div>
+    <p class="gec-empty-desc">Commencez par enregistrer votre premier courrier.</p>
+    <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary">
+      <i class="fas fa-plus-circle"></i>Enregistrer le premier courrier
+    </a>
+  </div>
+  {% endif %}
 </div>
+
 {% endblock %}

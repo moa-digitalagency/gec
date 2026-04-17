@@ -1,397 +1,373 @@
 <!DOCTYPE html>
 <html lang="fr" id="html-root">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC - Secrétariat Général des Courrier' }}{% endblock %}</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="alternate icon" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="mask-icon" href="{{ url_for('static', filename='favicon.svg') }}" color="#003087">
-    
-    <!-- Tailwind CSS (local) -->
-    <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
-    <!-- Font Awesome (local) -->
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
-    <!-- DataTables CSS (local) -->
-    <link href="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.css') }}" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}</title>
 
-    <!-- Tailwind Config (must be loaded after tailwindcdn.js) -->
-    <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- CSRF Token (Flask-WTF) -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.css') }}" rel="stylesheet">
 
-    <!-- Dark mode init (avant le rendu pour éviter le flash) -->
-    <script>
-    (function(){
-        if(localStorage.getItem('gec-dark')==='1'){
-            document.documentElement.classList.add('dark');
-        }
-    })();
-    </script>
-    <style>
-        /* Dark mode global overrides */
-        html.dark body { background-color: #111827; color: #f3f4f6; }
-        html.dark .bg-white { background-color: #1f2937 !important; }
-        html.dark .bg-gray-50 { background-color: #111827 !important; }
-        html.dark .bg-gray-100 { background-color: #374151 !important; }
-        html.dark .text-gray-900 { color: #f9fafb !important; }
-        html.dark .text-gray-700 { color: #d1d5db !important; }
-        html.dark .text-gray-600 { color: #9ca3af !important; }
-        html.dark .text-gray-500 { color: #6b7280 !important; }
-        html.dark .border-gray-200 { border-color: #374151 !important; }
-        html.dark .divide-gray-200 > * { border-color: #374151 !important; }
-        html.dark nav.bg-white { background-color: #1e293b !important; }
-        html.dark .shadow-rdc { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
-        html.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; }
-        html.dark input, html.dark select, html.dark textarea {
-            background-color: #374151 !important;
-            color: #f3f4f6 !important;
-            border-color: #4b5563 !important;
-        }
-        html.dark .bg-green-50  { background-color: #064e3b22 !important; }
-        html.dark .bg-blue-50   { background-color: #1e3a5f22 !important; }
-        html.dark .bg-yellow-50 { background-color: #78350f22 !important; }
-        html.dark .bg-red-50    { background-color: #7f1d1d22 !important; }
-        html.dark .bg-gray-50   { background-color: #111827 !important; }
-        html.dark thead.bg-gray-50 { background-color: #1f2937 !important; }
-        html.dark .rounded-xl { border: 1px solid #374151; }
-    </style>
+  <!-- Tailwind + Config -->
+  <script src="{{ url_for('static', filename='vendor/tailwind/tailwindcdn.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+  <!-- Dark mode init — before render to avoid flash -->
+  <script>(function(){if(localStorage.getItem('gec-dark')==='1')document.documentElement.classList.add('dark');})();</script>
+
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 min-h-screen">
-    
-    <!-- Navigation -->
-    {% if current_user.is_authenticated %}
-    <nav class="bg-white shadow-lg border-b-2 border-rdc-blue">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url_for('dashboard') }}" class="flex items-center text-rdc-blue font-bold text-xl">
-                        {% set system_params = get_system_params() %}
-                        {% if system_params.logo_url and system_params.logo_url.strip() %}
-                            <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}" 
-                                 alt="Logo Organisation" 
-                                 class="mr-3 logo-img"
-                                 style="height: 40px; width: auto; max-width: 60px; object-fit: contain;">
-                            <i class="fas fa-mail-bulk mr-3 text-rdc-yellow logo-fallback" style="display: none;"></i>
-                        {% else %}
-                            <i class="fas fa-mail-bulk mr-3 text-rdc-yellow"></i>
-                        {% endif %}
-                        <span>{{ system_params.nom_logiciel if system_params.nom_logiciel else 'GEC - Courrier RDC' }}</span>
-                    </a>
-                </div>
-                
-                <!-- Menu hamburger universel (desktop, tablette, mobile) -->
-                <div class="flex items-center space-x-3">
-                    <!-- Bouton menu principal -->
-                    <button type="button" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="mobile-menu-button">
-                        <i class="fas fa-bars mr-2"></i>
-                        <span class="hidden sm:inline">Menu</span>
-                    </button>
-                    
-                    <!-- Dark mode toggle -->
-                    <button type="button" id="dark-toggle" onclick="toggleDark()"
-                            title="Basculer mode sombre"
-                            class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
-                        <i id="dark-icon" class="fas fa-moon"></i>
-                    </button>
+<body>
 
-                    <!-- Notifications Icon -->
-                    <div class="relative">
-                        <a href="{{ url_for('notifications') }}" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
-                            <i class="fas fa-bell"></i>
-                            <span class="hidden sm:inline ml-1">{{ t('notifications.notifications') or 'Notifications' }}</span>
-                            {% set unread_count = get_unread_notifications_count() %}
-                            {% if unread_count > 0 %}
-                                <span class="absolute -top-1 -right-1 min-w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1" style="min-width: 20px;">
-                                    {{ unread_count if unread_count <= 99 else '99+' }}
-                                </span>
-                            {% endif %}
-                        </a>
-                    </div>
-                    
-                    <!-- Profil utilisateur -->
-                    <div class="relative">
-                        <button type="button" class="px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors" id="user-menu" style="color: #003087 !important; font-weight: bold;">
-                            <div class="h-6 w-6 rounded-full bg-rdc-green flex items-center justify-center mr-2">
-                                {% if current_user.photo_profile %}
-                                    <img src="{{ current_user.get_profile_photo_url() }}" 
-                                         alt="Photo de {{ current_user.nom_complet }}" 
-                                         class="h-6 w-6 rounded-full object-cover">
-                                {% else %}
-                                    <span class="text-white text-xs font-bold">
-                                        {{ current_user.nom_complet[:2].upper() }}
-                                    </span>
-                                {% endif %}
-                            </div>
-                            <span class="hidden md:inline">{{ current_user.nom_complet }}</span>
-                            <span class="md:hidden">
-                                {% if current_user.role == 'super_admin' %}
-                                    <i class="fas fa-crown text-rdc-yellow"></i>
-                                {% elif current_user.role == 'admin' %}
-                                    <i class="fas fa-user-shield"></i>
-                                {% else %}
-                                    <i class="fas fa-user"></i>
-                                {% endif %}
-                            </span>
-                            <i class="fas fa-chevron-down ml-1"></i>
-                        </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden" id="user-dropdown">
-                            <div class="px-4 py-2 border-b border-gray-200">
-                                <div class="text-sm font-medium text-gray-900">{{ current_user.nom_complet }}</div>
-                                <div class="text-xs text-gray-500">
-                                    {% if current_user.role == 'super_admin' %}
-                                        <i class="fas fa-crown mr-1 text-yellow-500"></i>{{ t('super_admin') or 'Super Admin' }}
-                                    {% elif current_user.role == 'admin' %}
-                                        <i class="fas fa-user-shield mr-1 text-blue-500"></i>{{ t('admin') or 'Admin' }}
-                                    {% else %}
-                                        <i class="fas fa-user mr-1 text-gray-500"></i>{{ t('user') or 'Utilisateur' }}
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <a href="{{ url_for('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user-circle mr-2"></i>{{ t('my_profile') or 'Voir mon profil' }}
-                            </a>
-                            <a href="{{ url_for('edit_profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user-edit mr-2"></i>{{ t('edit_profile') or 'Modifier mon profil' }}
-                            </a>
-                            <div class="border-t border-gray-200 my-1"></div>
-                            <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i>{{ t('logout') or 'Déconnexion' }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Menu universel avec animation slide -->
-            <div id="mobile-menu" style="
-                position: fixed; 
-                top: 0; 
-                bottom: 0;
-                right: -320px; 
-                width: 320px; 
-                height: 100vh; 
-                background-color: #003087; 
-                border-left: 3px solid #009639; 
-                padding: 0;
-                z-index: 1000;
-                transition: right 0.3s ease-in-out;
-                overflow-y: auto;
-                box-shadow: -5px 0 15px rgba(0, 48, 135, 0.3);
-                display: block;
-            ">
-                <!-- Menu Content Container -->
-                <div style="height: 100%; display: flex; flex-direction: column; padding: 1rem;">
-                    <!-- Navigation principale -->
-                    <div style="margin-bottom: 1rem;">
-                        <a href="{{ url_for('dashboard') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-tachometer-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('dashboard') or 'Tableau de Bord' }}
-                        </a>
-                        <a href="{{ url_for('register_mail') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-plus-circle" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('register_mail') or 'Enregistrer Courrier' }}
-                        </a>
-                        <a href="{{ url_for('view_mail') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-list" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('view_mail') or 'Consulter Courriers' }}
-                        </a>
-                        <a href="{{ url_for('kanban_view') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-columns" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Vue Kanban
-                        </a>
-                        <a href="{{ url_for('search') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-search" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('advanced_search') or 'Recherche Avancée' }}
-                        </a>
-                        <a href="{{ url_for('analytics') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-chart-bar" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('analytics_dashboard') or 'Tableau de Bord Analytique' }}
-                        </a>
-                        {% if current_user.has_permission('view_trash') %}
-                        <a href="{{ url_for('trash') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-trash-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('trash') or 'Corbeille' }}
-                        </a>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Paramètres -->
-                    <div style="border-top: 1px solid #009639; padding-top: 1rem; margin-bottom: 1rem;">
-                        <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
-                            {{ t('settings') or 'Paramètres' }}
-                        </div>
-                        {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
-                        <a href="{{ url_for('settings') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none;" onmouseover="this.style.backgroundColor='#009639'" onmouseout="this.style.backgroundColor='transparent'">
-                            <i class="fas fa-cog" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ t('system_configuration') or 'Configuration Système' }}
-                        </a>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Spacer to push logout to bottom -->
-                    <div style="flex-grow: 1;"></div>
-                    
-                    <!-- Language Switch -->
-                    <div style="border-top: 1px solid #009639; padding-top: 1rem;">
-                        <div style="color: white; font-size: 0.75rem; padding: 0.25rem 1rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em;">
-                            {{ t('language') or 'Langue' }}
-                        </div>
-                        {% for lang_code, lang_info in get_available_languages().items() %}
-                        <a href="{{ url_for('set_language_route', lang_code=lang_code) }}" 
-                           style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none; {% if current_language == lang_code %}background-color: #009639;{% endif %}" 
-                           onmouseover="this.style.backgroundColor='#009639'" 
-                           onmouseout="this.style.backgroundColor='{% if current_language == lang_code %}#009639{% else %}transparent{% endif %}'">
-                            <i class="fas fa-flag" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            {{ lang_info.flag }} {{ lang_info.name }}
-                        </a>
-                        {% endfor %}
-                    </div>
-                    
-                    <!-- Déconnexion -->
-                    <div style="border-top: 1px solid #009639; padding-top: 1rem; margin-top: auto;">
-                        <a href="{{ url_for('logout') }}" style="color: white; display: block; padding: 0.75rem 1rem; margin: 0.25rem 0; border-radius: 0.375rem; text-decoration: none; background-color: #dc2626;" onmouseover="this.style.backgroundColor='#b91c1c'" onmouseout="this.style.backgroundColor='#dc2626'">
-                            <i class="fas fa-sign-out-alt" style="margin-right: 0.75rem; width: 1.25rem; text-align: center;"></i>
-                            Déconnexion
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+{# ─────────────────────────────────────────────────────────
+   AUTHENTICATED: Sidebar + Topbar + main wrapper OPEN
+   ───────────────────────────────────────────────────────── #}
+{% if current_user.is_authenticated %}
+{% set sys = get_system_params() %}
+{% set cur = request.endpoint %}
+{% set unread = get_unread_notifications_count() %}
+
+<!-- Mobile overlay -->
+<div class="gec-sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────── -->
+<aside class="gec-sidebar" id="gec-sidebar">
+
+  <!-- Logo Header -->
+  <div class="gec-sidebar-header">
+    <a href="{{ url_for('dashboard') }}" class="gec-sidebar-logo" style="flex:1;min-width:0;">
+      {% if sys.logo_url and sys.logo_url.strip() %}
+        <img src="{{ url_for('uploaded_file', filename=sys.logo_url.split('/')[-1]) }}"
+             alt="Logo" class="gec-sidebar-logo-img">
+      {% else %}
+        <div class="gec-sidebar-logo-icon"><i class="fas fa-mail-bulk"></i></div>
+      {% endif %}
+      <div style="min-width:0;">
+        <div class="gec-sidebar-logo-text">{{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}</div>
+        <div class="gec-sidebar-logo-sub">Courrier Électronique</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="gec-sidebar-nav">
+
+    <span class="gec-nav-section-label">Principal</span>
+
+    <a href="{{ url_for('dashboard') }}"
+       class="gec-nav-item {% if cur == 'dashboard' %}active{% endif %}">
+      <i class="fas fa-home gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('dashboard') or 'Tableau de Bord' }}</span>
+    </a>
+
+    <a href="{{ url_for('notifications') }}"
+       class="gec-nav-item {% if cur == 'notifications' %}active{% endif %}">
+      <i class="fas fa-bell gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('notifications.notifications') or 'Notifications' }}</span>
+      {% if unread > 0 %}<span class="gec-nav-badge">{{ unread if unread <= 99 else '99+' }}</span>{% endif %}
+    </a>
+
+    <span class="gec-nav-section-label">Courriers</span>
+
+    <a href="{{ url_for('register_mail') }}"
+       class="gec-nav-item {% if cur == 'register_mail' %}active{% endif %}">
+      <i class="fas fa-plus-circle gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('register_mail') or 'Nouveau Courrier' }}</span>
+    </a>
+
+    <a href="{{ url_for('view_mail') }}"
+       class="gec-nav-item {% if cur in ['view_mail','mail_detail','edit_courrier'] %}active{% endif %}">
+      <i class="fas fa-inbox gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('view_mail') or 'Consulter' }}</span>
+    </a>
+
+    <a href="{{ url_for('kanban_view') }}"
+       class="gec-nav-item {% if cur == 'kanban_view' %}active{% endif %}">
+      <i class="fas fa-columns gec-nav-icon"></i>
+      <span class="gec-nav-label">Vue Kanban</span>
+    </a>
+
+    <a href="{{ url_for('search') }}"
+       class="gec-nav-item {% if cur == 'search' %}active{% endif %}">
+      <i class="fas fa-search gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('advanced_search') or 'Recherche' }}</span>
+    </a>
+
+    <a href="{{ url_for('analytics') }}"
+       class="gec-nav-item {% if cur == 'analytics' %}active{% endif %}">
+      <i class="fas fa-chart-bar gec-nav-icon"></i>
+      <span class="gec-nav-label">Analytique</span>
+    </a>
+
+    {% if current_user.has_permission('view_trash') %}
+    <a href="{{ url_for('trash') }}"
+       class="gec-nav-item {% if cur == 'trash' %}active{% endif %}">
+      <i class="fas fa-trash-alt gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ t('trash') or 'Corbeille' }}</span>
+    </a>
     {% endif %}
-    
-    <!-- Messages Flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="max-w-7xl mx-auto px-4 pt-4">
-                {% for category, message in messages %}
-                    <div class="mb-4 p-4 rounded-md {% if category == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif category == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %}">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                {% if category == 'error' %}
-                                    <i class="fas fa-exclamation-circle"></i>
-                                {% elif category == 'success' %}
-                                    <i class="fas fa-check-circle"></i>
-                                {% else %}
-                                    <i class="fas fa-info-circle"></i>
-                                {% endif %}
-                            </div>
-                            <div class="ml-3">
-                                {{ message }}
-                            </div>
-                            <div class="ml-auto pl-3">
-                                <button type="button" class="dismiss-alert cursor-pointer">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-    
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4">
-        {% block content %}{% endblock %}
-    </main>
-    
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white mt-16">
-        <div class="max-w-7xl mx-auto py-6 px-4 text-center">
-            <div class="flex items-center justify-center mb-2">
-                <i class="fas fa-flag mr-2 text-rdc-yellow"></i>
-                <span class="font-semibold">{{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}</span>
-            </div>
-            <!-- Texte footer configurable -->
-            {% if parametres and parametres.texte_footer %}
-            <p class="text-gray-300 text-sm mb-2">
-                {{ parametres.texte_footer }}
-            </p>
-            {% endif %}
-            <!-- Copyright protégé -->
-            <p class="text-gray-400 text-xs">
-                {% if parametres %}
-                    {{ parametres.get_copyright_decrypte() }}
-                {% else %}
-                    © 2025 GEC. Made with 💖 and ☕  By MOA-Digital Agency LLC
-                {% endif %}
-            </p>
+
+    {% if current_user.has_permission('manage_users') or current_user.is_super_admin() or current_user.role == 'admin' %}
+    <span class="gec-nav-section-label">Administration</span>
+
+    {% if current_user.has_permission('manage_users') or current_user.is_super_admin() %}
+    <a href="{{ url_for('manage_users') }}"
+       class="gec-nav-item {% if 'user' in cur %}active{% endif %}">
+      <i class="fas fa-users gec-nav-icon"></i>
+      <span class="gec-nav-label">Utilisateurs</span>
+    </a>
+    {% endif %}
+
+    {% if current_user.is_super_admin() %}
+    <a href="{{ url_for('manage_departments') }}"
+       class="gec-nav-item {% if 'department' in cur %}active{% endif %}">
+      <i class="fas fa-building gec-nav-icon"></i>
+      <span class="gec-nav-label">{{ get_appellation_entites() or 'Départements' }}</span>
+    </a>
+    <a href="{{ url_for('manage_roles') }}"
+       class="gec-nav-item {% if 'role' in cur %}active{% endif %}">
+      <i class="fas fa-shield-alt gec-nav-icon"></i>
+      <span class="gec-nav-label">Rôles & Permissions</span>
+    </a>
+    {% endif %}
+    {% endif %}
+
+    {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
+    <span class="gec-nav-section-label">Système</span>
+
+    <a href="{{ url_for('settings') }}"
+       class="gec-nav-item {% if cur == 'settings' %}active{% endif %}">
+      <i class="fas fa-cog gec-nav-icon"></i>
+      <span class="gec-nav-label">Configuration</span>
+    </a>
+
+    {% if current_user.is_super_admin() %}
+    <a href="{{ url_for('security_settings') }}"
+       class="gec-nav-item {% if cur == 'security_settings' %}active{% endif %}">
+      <i class="fas fa-shield-virus gec-nav-icon"></i>
+      <span class="gec-nav-label">Sécurité</span>
+    </a>
+    <a href="{{ url_for('manage_backups') }}"
+       class="gec-nav-item {% if cur == 'manage_backups' %}active{% endif %}">
+      <i class="fas fa-database gec-nav-icon"></i>
+      <span class="gec-nav-label">Sauvegardes</span>
+    </a>
+    <a href="{{ url_for('logs') }}"
+       class="gec-nav-item {% if cur in ['logs','security_logs'] %}active{% endif %}">
+      <i class="fas fa-list-alt gec-nav-icon"></i>
+      <span class="gec-nav-label">Journaux</span>
+    </a>
+    {% endif %}
+    {% endif %}
+
+  </nav>
+
+  <!-- Footer — user + logout -->
+  <div class="gec-sidebar-footer">
+    <div class="gec-sidebar-user" onclick="toggleUserMenu()">
+      <div class="gec-user-avatar">
+        {% if current_user.photo_profile %}
+          <img src="{{ current_user.get_profile_photo_url() }}" alt="">
+        {% else %}{{ current_user.nom_complet[:2].upper() }}{% endif %}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="gec-user-name">{{ current_user.nom_complet }}</div>
+        <div class="gec-user-role">
+          {% if current_user.role == 'super_admin' %}<i class="fas fa-crown" style="color:#F59E0B;font-size:0.6rem;"></i> Super Admin
+          {% elif current_user.role == 'admin' %}<i class="fas fa-user-shield" style="color:#60A5FA;font-size:0.6rem;"></i> Admin
+          {% else %}<i class="fas fa-user" style="font-size:0.6rem;"></i> Utilisateur{% endif %}
         </div>
-    </footer>
-    
-    <!-- JavaScript (local) -->
-    <script src="{{ url_for('static', filename='vendor/jquery/jquery-3.7.1.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.js') }}"></script>
-    
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+      </div>
+      <i class="fas fa-ellipsis-v" style="color:var(--sb-section);font-size:0.75rem;"></i>
+    </div>
+    <div id="sb-user-menu" style="display:none;padding-top:0.25rem;">
+      <a href="{{ url_for('profile') }}" class="gec-nav-item" style="padding:0.4rem 0.625rem;">
+        <i class="fas fa-user-circle gec-nav-icon"></i><span class="gec-nav-label">Mon Profil</span>
+      </a>
+      <a href="{{ url_for('edit_profile') }}" class="gec-nav-item" style="padding:0.4rem 0.625rem;">
+        <i class="fas fa-user-edit gec-nav-icon"></i><span class="gec-nav-label">Modifier Profil</span>
+      </a>
+      {% for lang_code, lang_info in get_available_languages().items() %}
+      <a href="{{ url_for('set_language_route', lang_code=lang_code) }}"
+         class="gec-nav-item {% if current_language == lang_code %}active{% endif %}"
+         style="padding:0.4rem 0.625rem;">
+        <span class="gec-nav-icon" style="font-size:0.9rem;">{{ lang_info.flag }}</span>
+        <span class="gec-nav-label">{{ lang_info.name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    <a href="{{ url_for('logout') }}" class="gec-nav-item gec-logout">
+      <i class="fas fa-sign-out-alt gec-nav-icon"></i>
+      <span class="gec-nav-label">Déconnexion</span>
+    </a>
+  </div>
+</aside>
 
-    <!-- CSRF auto-inject : ajoute le token dans tous les formulaires POST et les requêtes AJAX -->
-    <script>
-    (function() {
-        var csrfToken = document.querySelector('meta[name="csrf-token"]');
-        if (!csrfToken) return;
-        var token = csrfToken.getAttribute('content');
+<!-- ── CONTENT WRAPPER ──────────────────────────────────── -->
+<div class="gec-content-wrapper" id="gec-content">
 
-        // Inject hidden input into every form that will POST
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('form').forEach(function(form) {
-                var method = (form.getAttribute('method') || 'get').toLowerCase();
-                if (method === 'post') {
-                    if (!form.querySelector('input[name="csrf_token"]')) {
-                        var input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'csrf_token';
-                        input.value = token;
-                        form.appendChild(input);
-                    }
-                }
-            });
-        });
+  <!-- TOPBAR -->
+  <header class="gec-topbar">
+    <button class="gec-topbar-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+    <div style="flex:1;">{% block topbar_title %}{% endblock %}</div>
+    <div class="gec-topbar-actions">
+      <button class="gec-topbar-btn" onclick="toggleDark()" title="Mode sombre">
+        <i id="dark-icon" class="fas fa-moon"></i>
+      </button>
+      <a href="{{ url_for('notifications') }}" class="gec-topbar-btn">
+        <i class="fas fa-bell"></i>
+        {% if unread > 0 %}<span class="gec-notif-pip"></span>{% endif %}
+      </a>
+      <div class="gec-dropdown" id="tb-user-dd">
+        <button class="gec-topbar-user" onclick="toggleTbUser(event)">
+          <div class="gec-topbar-user-avatar">
+            {% if current_user.photo_profile %}<img src="{{ current_user.get_profile_photo_url() }}" alt="">
+            {% else %}{{ current_user.nom_complet[:2].upper() }}{% endif %}
+          </div>
+          <span class="gec-tb-name" style="font-size:0.875rem;font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ current_user.nom_complet }}
+          </span>
+          <i class="fas fa-chevron-down" style="font-size:0.625rem;color:var(--t-muted);"></i>
+        </button>
+        <div class="gec-dropdown-menu">
+          <div class="gec-dropdown-header">{{ current_user.nom_complet }}</div>
+          <a href="{{ url_for('profile') }}" class="gec-dropdown-item"><i class="fas fa-user-circle"></i>Mon Profil</a>
+          <a href="{{ url_for('edit_profile') }}" class="gec-dropdown-item"><i class="fas fa-user-edit"></i>Modifier Profil</a>
+          {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
+          <a href="{{ url_for('settings') }}" class="gec-dropdown-item"><i class="fas fa-cog"></i>Paramètres</a>
+          {% endif %}
+          <div class="gec-dropdown-divider"></div>
+          <a href="{{ url_for('logout') }}" class="gec-dropdown-item" style="color:var(--danger);">
+            <i class="fas fa-sign-out-alt" style="color:var(--danger);"></i>Déconnexion
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
 
-        // Set header for all jQuery AJAX requests
-        if (typeof $ !== 'undefined') {
-            $.ajaxSetup({ headers: { 'X-CSRFToken': token } });
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+  <div class="gec-flash-container" id="flash-container">
+    {% for category, message in messages %}
+    {% set cat = 'error' if category == 'error' else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) %}
+    <div class="gec-flash {{ cat }}">
+      <div class="gec-flash-icon">
+        <i class="fas {% if cat=='success' %}fa-check{% elif cat=='error' %}fa-times{% elif cat=='warning' %}fa-exclamation{% else %}fa-info{% endif %}"></i>
+      </div>
+      <div class="gec-flash-body"><div class="gec-flash-text">{{ message }}</div></div>
+      <button class="gec-flash-close" onclick="this.closest('.gec-flash').remove()"><i class="fas fa-times"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}{% endwith %}
+
+  <main class="gec-main">
+
+{# ── Unauthenticated: flash + no layout wrappers ───────── #}
+{% else %}
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+<div class="gec-flash-container" id="flash-container" style="top:1rem;">
+  {% for category, message in messages %}
+  {% set cat = 'error' if category == 'error' else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) %}
+  <div class="gec-flash {{ cat }}">
+    <div class="gec-flash-icon">
+      <i class="fas {% if cat=='success' %}fa-check{% elif cat=='error' %}fa-times{% elif cat=='warning' %}fa-exclamation{% else %}fa-info{% endif %}"></i>
+    </div>
+    <div class="gec-flash-body"><div class="gec-flash-text">{{ message }}</div></div>
+    <button class="gec-flash-close" onclick="this.closest('.gec-flash').remove()"><i class="fas fa-times"></i></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}{% endwith %}
+{% endif %}
+
+{# ── SINGLE CONTENT BLOCK (defined once) ─────────────────── #}
+{% block content %}{% endblock %}
+
+{# ── Close authenticated wrappers ─────────────────────────── #}
+{% if current_user.is_authenticated %}
+  </main>
+</div><!-- end content-wrapper -->
+{% endif %}
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='vendor/jquery/jquery-3.7.1.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/base.js') }}"></script>
+
+<!-- CSRF auto-inject -->
+<script>
+(function(){
+  var t=document.querySelector('meta[name="csrf-token"]');if(!t)return;
+  var token=t.getAttribute('content');
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('form').forEach(function(f){
+      if((f.getAttribute('method')||'get').toLowerCase()==='post'){
+        if(!f.querySelector('input[name="csrf_token"]')){
+          var i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value=token;f.appendChild(i);
         }
+      }
+    });
+  });
+  if(typeof $!=='undefined') $.ajaxSetup({headers:{'X-CSRFToken':token}});
+  var origFetch=window.fetch;
+  window.fetch=function(u,o){o=o||{};if(!o.method||o.method.toUpperCase()!=='GET'){o.headers=o.headers||{};o.headers['X-CSRFToken']=token;}return origFetch(u,o);};
+})();
+</script>
 
-        // Set header for fetch() requests
-        var origFetch = window.fetch;
-        window.fetch = function(url, opts) {
-            opts = opts || {};
-            if (!opts.method || opts.method.toUpperCase() !== 'GET') {
-                opts.headers = opts.headers || {};
-                opts.headers['X-CSRFToken'] = token;
-            }
-            return origFetch(url, opts);
-        };
-    })();
-    </script>
+<!-- Dark mode -->
+<script>
+function toggleDark(){
+  var isDark=document.getElementById('html-root').classList.toggle('dark');
+  localStorage.setItem('gec-dark',isDark?'1':'0');
+  var ic=document.getElementById('dark-icon');if(ic)ic.className=isDark?'fas fa-sun':'fas fa-moon';
+}
+(function(){if(document.documentElement.classList.contains('dark')){var ic=document.getElementById('dark-icon');if(ic)ic.className='fas fa-sun';}})();
+</script>
 
-    <!-- Dark mode toggle logic -->
-    <script>
-    function toggleDark() {
-        const html = document.getElementById('html-root');
-        const isDark = html.classList.toggle('dark');
-        localStorage.setItem('gec-dark', isDark ? '1' : '0');
-        document.getElementById('dark-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-    }
-    // Sync icon on load
-    (function(){
-        if(document.documentElement.classList.contains('dark')){
-            var el = document.getElementById('dark-icon');
-            if(el) el.className = 'fas fa-sun';
-        }
-    })();
-    </script>
+<!-- Sidebar & interactions -->
+<script>
+function openSidebar(){
+  document.getElementById('gec-sidebar').classList.add('open');
+  document.getElementById('sb-overlay').classList.add('active');
+}
+function closeSidebar(){
+  var sb=document.getElementById('gec-sidebar');
+  var ov=document.getElementById('sb-overlay');
+  if(sb)sb.classList.remove('open');
+  if(ov)ov.classList.remove('active');
+}
+function toggleUserMenu(){
+  var m=document.getElementById('sb-user-menu');
+  if(m)m.style.display=m.style.display==='none'?'block':'none';
+}
+function toggleTbUser(e){
+  e.stopPropagation();
+  var dd=document.getElementById('tb-user-dd');
+  if(dd)dd.classList.toggle('open');
+}
+document.addEventListener('click',function(e){
+  var dd=document.getElementById('tb-user-dd');
+  if(dd&&!dd.contains(e.target))dd.classList.remove('open');
+});
+// Auto-dismiss flash after 5s
+setTimeout(function(){
+  var c=document.getElementById('flash-container');
+  if(c){c.style.transition='opacity 0.5s ease';c.style.opacity='0';setTimeout(function(){if(c&&c.parentNode)c.parentNode.removeChild(c);},500);}
+},5000);
+</script>
 
-    {% block scripts %}{% endblock %}
+{% block scripts %}{% endblock %}
 </body>
 </html>

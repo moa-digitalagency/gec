@@ -1,78 +1,178 @@
 {% extends "new_base.html" %}
 
-{% block title %}{{ t('login') or 'Connexion' }} - {{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}
+{% block title %}{{ t('login') or 'Connexion' }} — {{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-rdc-blue to-rdc-green py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <div class="bg-white rounded-xl shadow-rdc p-8">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                {% set system_params = get_system_params() %}
-                {% if system_params.logo_url and system_params.logo_url.strip() %}
-                    <div class="mx-auto h-16 w-16 mb-4 flex items-center justify-center">
-                        <img src="{{ url_for('uploaded_file', filename=system_params.logo_url.split('/')[-1]) }}?v={{ range(1000, 9999) | random }}" 
-                             alt="Logo Organisation" 
-                             class="h-16 w-auto max-w-16 object-contain logo-img">
-                        <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center logo-fallback" style="display: none;">
-                            <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="mx-auto h-16 w-16 bg-rdc-blue rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-mail-bulk text-2xl text-rdc-yellow"></i>
-                    </div>
-                {% endif %}
-                <h2 class="text-2xl font-bold text-gray-900">{{ parametres.nom_logiciel if parametres else 'Système GEC' }}</h2>
-                <p class="mt-2 text-sm text-gray-600">{{ parametres.sous_titre_pdf if parametres else 'Secrétariat Général des Courrier' }}</p>
-                <p class="text-xs text-gray-500">{{ get_system_params().pays_pdf or 'République Démocratique du Congo' }}</p>
-            </div>
-            
-            <!-- Form -->
-            <form method="POST" class="space-y-6">
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user mr-1 text-rdc-blue"></i>
-                        {{ t('username') or "Nom d'utilisateur" }}
-                    </label>
-                    <input type="text" 
-                           id="username" 
-                           name="username" 
-                           required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                           placeholder="{{ t('enter_username') or 'Entrez votre nom d\'utilisateur' }}">
-                </div>
-                
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-lock mr-1 text-rdc-blue"></i>
-                        {{ t('password') or 'Mot de passe' }}
-                    </label>
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-rdc-blue focus:border-rdc-blue"
-                           placeholder="{{ t('enter_password') or 'Entrez votre mot de passe' }}">
-                </div>
-                
-                <button type="submit" 
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rdc-blue hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rdc-blue transition-colors">
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    {{ t('login') or 'Se connecter' }}
-                </button>
-            </form>
-            
+{% set sys = get_system_params() %}
+<div style="display:flex;min-height:100vh;">
 
+  <!-- ── LEFT PANEL — decorative ────────────────────────── -->
+  <div class="login-left" style="
+    flex:0 0 45%;
+    background: linear-gradient(160deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:3rem 2.5rem; position:relative; overflow:hidden;
+  ">
+    <!-- Decorative circles -->
+    <div style="position:absolute;top:-80px;right:-80px;width:300px;height:300px;border-radius:50%;background:rgba(59,130,246,0.06);"></div>
+    <div style="position:absolute;bottom:-60px;left:-60px;width:220px;height:220px;border-radius:50%;background:rgba(99,102,241,0.06);"></div>
+    <div style="position:absolute;top:40%;left:-40px;width:140px;height:140px;border-radius:50%;background:rgba(16,185,129,0.05);"></div>
+
+    <!-- Grid dots pattern -->
+    <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;"></div>
+
+    <!-- Content -->
+    <div style="position:relative;z-index:1;text-align:center;max-width:320px;">
+      <!-- Logo -->
+      <div style="margin-bottom:2rem;">
+        {% if sys.logo_url and sys.logo_url.strip() %}
+          <img src="{{ url_for('uploaded_file', filename=sys.logo_url.split('/')[-1]) }}"
+               alt="Logo" style="height:72px;width:auto;object-fit:contain;margin:0 auto;display:block;">
+        {% else %}
+          <div style="width:72px;height:72px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto;">
+            <i class="fas fa-mail-bulk" style="font-size:1.75rem;color:#60A5FA;"></i>
+          </div>
+        {% endif %}
+      </div>
+
+      <h1 style="font-size:1.75rem;font-weight:800;color:#F8FAFC;letter-spacing:-0.02em;margin-bottom:0.75rem;line-height:1.15;">
+        {{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}
+      </h1>
+      <p style="font-size:0.9375rem;color:#94A3B8;line-height:1.6;margin-bottom:2.5rem;">
+        {{ sys.sous_titre_pdf if sys.sous_titre_pdf else 'Gestion Électronique du Courrier' }}
+      </p>
+
+      <!-- Feature bullets -->
+      <div style="display:flex;flex-direction:column;gap:0.875rem;text-align:left;">
+        {% for icon, label in [('fa-inbox','Gestion centralisée des courriers'),('fa-history','Traçabilité complète et audit'),('fa-lock','Sécurité et chiffrement AES-256'),('fa-chart-bar','Analytiques et rapports')] %}
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div style="width:32px;height:32px;background:rgba(59,130,246,0.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas {{ icon }}" style="color:#60A5FA;font-size:0.8125rem;"></i>
+          </div>
+          <span style="font-size:0.875rem;color:#CBD5E1;">{{ label }}</span>
         </div>
-        
-        <!-- Footer info -->
-        <div class="text-center">
-            <p class="text-white text-sm">
-                <i class="fas fa-shield-alt mr-1"></i>
-                Accès sécurisé au système de gestion du courrier
-            </p>
-        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Country -->
+      <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.08);">
+        <span style="font-size:0.8125rem;color:#475569;">
+          {{ sys.pays_pdf or 'République Démocratique du Congo' }}
+        </span>
+      </div>
     </div>
+  </div>
+
+  <!-- ── RIGHT PANEL — form ──────────────────────────────── -->
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--body-bg,#F1F5F9);">
+    <div style="width:100%;max-width:400px;">
+
+      <!-- Mobile logo (hidden on desktop where left panel exists) -->
+      <div class="login-mobile-logo" style="text-align:center;margin-bottom:2rem;display:none;">
+        {% if sys.logo_url and sys.logo_url.strip() %}
+          <img src="{{ url_for('uploaded_file', filename=sys.logo_url.split('/')[-1]) }}"
+               alt="Logo" style="height:56px;width:auto;margin:0 auto 1rem;">
+        {% else %}
+          <div style="width:56px;height:56px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="fas fa-mail-bulk" style="font-size:1.375rem;color:#2563EB;"></i>
+          </div>
+        {% endif %}
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--t-primary,#0F172A);">
+          {{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}
+        </h2>
+      </div>
+
+      <!-- Card -->
+      <div style="background:var(--card-bg,#fff);border:1px solid var(--card-border,#E2E8F0);border-radius:16px;padding:2.5rem;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
+
+        <div style="margin-bottom:2rem;">
+          <h2 style="font-size:1.375rem;font-weight:700;color:var(--t-primary,#0F172A);margin-bottom:0.375rem;">
+            {{ t('welcome_back') or 'Bon retour' }} 👋
+          </h2>
+          <p style="font-size:0.875rem;color:var(--t-muted,#64748B);">
+            {{ t('login_subtitle') or 'Connectez-vous à votre espace de travail' }}
+          </p>
+        </div>
+
+        <form method="POST" style="display:flex;flex-direction:column;gap:1.25rem;">
+          <!-- Username -->
+          <div>
+            <label class="gec-label" for="username">
+              {{ t('username') or "Nom d'utilisateur" }}
+            </label>
+            <div class="gec-input-icon-wrap">
+              <i class="fas fa-user gec-input-icon"></i>
+              <input type="text"
+                     id="username"
+                     name="username"
+                     class="gec-input"
+                     placeholder="{{ t('enter_username') or 'Votre identifiant' }}"
+                     autofocus required
+                     autocomplete="username">
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label class="gec-label" for="password">
+              {{ t('password') or 'Mot de passe' }}
+            </label>
+            <div class="gec-input-icon-wrap" style="position:relative;">
+              <i class="fas fa-lock gec-input-icon"></i>
+              <input type="password"
+                     id="password"
+                     name="password"
+                     class="gec-input"
+                     placeholder="{{ t('enter_password') or 'Votre mot de passe' }}"
+                     required
+                     autocomplete="current-password"
+                     style="padding-right:2.75rem;">
+              <button type="button"
+                      onclick="togglePwd()"
+                      style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t-muted,#94A3B8);cursor:pointer;padding:0;">
+                <i id="pwd-eye" class="fas fa-eye" style="font-size:0.9rem;"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit"
+                  class="gec-btn gec-btn-primary"
+                  style="width:100%;justify-content:center;padding:0.75rem 1rem;font-size:0.9375rem;border-radius:10px;margin-top:0.25rem;">
+            <i class="fas fa-sign-in-alt"></i>
+            {{ t('login') or 'Se connecter' }}
+          </button>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;margin-top:1.5rem;">
+        <p style="font-size:0.75rem;color:var(--t-muted,#94A3B8);display:flex;align-items:center;justify-content:center;gap:0.375rem;">
+          <i class="fas fa-shield-alt" style="color:#10B981;"></i>
+          Accès sécurisé — Données chiffrées AES-256
+        </p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+@media (max-width: 768px) {
+  .login-left { display: none !important; }
+  .login-mobile-logo { display: block !important; }
+}
+</style>
+<script>
+function togglePwd(){
+  var p=document.getElementById('password');
+  var e=document.getElementById('pwd-eye');
+  if(p.type==='password'){
+    p.type='text';
+    e.className='fas fa-eye-slash';
+  } else {
+    p.type='password';
+    e.className='fas fa-eye';
+  }
+}
+</script>
 {% endblock %}
