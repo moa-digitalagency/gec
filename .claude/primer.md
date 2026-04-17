@@ -14,23 +14,51 @@ GEC (Gestion Électronique du Courrier) est une application Flask de gestion de 
 - **PDF** : ReportLab · Export Excel : xlsxwriter
 - **Cache** : Redis (optionnel) + fallback in-memory
 
-## Fichiers principaux
+## Structure des dossiers
 
-| Fichier | Rôle |
-|---|---|
-| `app.py` | Factory Flask, init DB, middlewares, user_loader, scheduler rappels |
-| `main.py` | Point d'entrée (import app, run) |
-| `models.py` | Tous les modèles SQLAlchemy |
-| `views.py` | Toutes les routes Flask (flat, pas de blueprint) |
-| `email_utils.py` | Envoi email via Resend API + SMTP fallback |
-| `migration_utils.py` | Migrations automatiques au démarrage |
-| `performance_utils.py` | Cache Redis/mémoire, FTS, pagination |
-| `security_utils.py` | Rate limit, IP block, audit log, sanitize |
-| `encryption_utils.py` | AES-256 chiffrement données sensibles |
+```text
+gec/
+├── app.py              # Factory Flask, init DB, middlewares, user_loader, scheduler
+├── main.py             # Point d'entrée (import app, run)
+├── init_db.py          # Init base PostgreSQL (tables + données + super admin)
+├── requirements.txt    # Dépendances Python (fichier unique)
+│
+├── models/             # Modèles SQLAlchemy
+├── routes/             # Routes Flask (Blueprint-less, flat)
+├── security/           # AES-256, rate limit, IP block, audit log, sanitize
+├── services/           # email.py (Resend API + SMTP fallback)
+├── utils/              # Helpers, migrations, performance, export/import, lang
+│
+├── algorithms/         # Logique algorithmique métier
+├── config/             # Configuration Flask
+├── scripts/            # Scripts de maintenance
+│
+├── lang/               # Fichiers JSON de traduction (fr.json, en.json)
+├── templates/          # Templates Jinja2
+├── static/
+│   ├── css/ · js/ · img/ · vendor/
+│   └── uploads/        # Fichiers joints (courriers, photos profil)
+└── docs/               # Documentation technique
+```
+
+## Imports à utiliser
+
+```python
+from models import User, Courrier, ...          # modèles
+from security import rate_limit, audit_log, ... # sécurité + chiffrement
+from services.email import send_new_mail_notification
+from utils import t, format_date, ...           # helpers
+from utils.migrations import run_automatic_migrations
+from utils.performance import cache_result
+from utils.export_import import validate_backup_integrity
+```
 
 ## Modèles clés
 
-`User` · `Courrier` · `CourrierForward` · `CourrierComment` · `CourrierModification` · `CourrierAttachment` · `CourrierSignature` · `Tag` · `CourrierTag` · `StatutCourrier` · `Departement` · `Role` · `RolePermission` · `Notification` · `ParametresSysteme` · `LogActivite` · `EmailTemplate`
+`User` · `Courrier` · `CourrierForward` · `CourrierComment` · `CourrierModification`
+`CourrierAttachment` · `CourrierSignature` · `Tag` · `CourrierTag` · `StatutCourrier`
+`Departement` · `Role` · `RolePermission` · `Notification` · `ParametresSysteme`
+`LogActivite` · `EmailTemplate`
 
 ## Rôles
 
@@ -39,7 +67,8 @@ GEC (Gestion Électronique du Courrier) est une application Flask de gestion de 
 ## Règles critiques
 
 1. Jamais modifier directement sur le VPS — workflow local → GitHub → `git pull` VPS
-2. Jamais committer `.env`, `venv/`, `uploads/`, `*.db`
+2. Jamais committer `.env`, `venv/`, `static/uploads/`, `*.db`
 3. `DEBUG=False` en production
 4. Toute nouvelle route : `@login_required` + `has_permission()`
 5. Fichier de dépendances unique : `requirements.txt`
+6. Email : Resend API uniquement (`re_xxx`), jamais SendGrid
