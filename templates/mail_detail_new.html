@@ -360,6 +360,28 @@
         </div>
         {% endif %}
         
+        <!-- Timeline Section -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer select-none"
+                 onclick="toggleTimeline()">
+                <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-history mr-2 text-rdc-blue"></i>
+                    Historique &amp; Timeline
+                </h2>
+                <i class="fas fa-chevron-down text-gray-400 transition-transform" id="timeline-chevron"></i>
+            </div>
+            <div id="timeline-body" class="p-6 hidden">
+                <div id="timeline-loading" class="text-center py-6 text-gray-400">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Chargement…
+                </div>
+                <div id="timeline-list" class="relative hidden">
+                    <!-- Ligne verticale -->
+                    <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                    <div id="timeline-events" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Comments and Annotations Section -->
         <div class="bg-white shadow-rdc rounded-xl">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -816,5 +838,67 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+</script>
+
+<script>
+// ── Timeline ─────────────────────────────────────────────────────────────────
+var _timelineLoaded = false;
+const _colorMap = {
+    green:  'bg-green-100 text-green-700 border-green-200',
+    blue:   'bg-blue-100 text-blue-700 border-blue-200',
+    purple: 'bg-purple-100 text-purple-700 border-purple-200',
+    yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+};
+const _dotMap = {
+    green: 'bg-green-500', blue: 'bg-blue-500',
+    purple: 'bg-purple-500', yellow: 'bg-yellow-400',
+};
+
+function toggleTimeline() {
+    const body = document.getElementById('timeline-body');
+    const chevron = document.getElementById('timeline-chevron');
+    const hidden = body.classList.toggle('hidden');
+    chevron.style.transform = hidden ? '' : 'rotate(180deg)';
+    if (!hidden && !_timelineLoaded) loadTimeline();
+}
+
+function loadTimeline() {
+    _timelineLoaded = true;
+    fetch('{{ url_for("courrier_timeline", id=courrier.id) }}')
+        .then(r => r.json())
+        .then(events => {
+            document.getElementById('timeline-loading').classList.add('hidden');
+            const list = document.getElementById('timeline-list');
+            const container = document.getElementById('timeline-events');
+            container.innerHTML = '';
+            if (!events.length) {
+                container.innerHTML = '<p class="pl-12 text-gray-400 text-sm">Aucun événement enregistré.</p>';
+            } else {
+                events.forEach(ev => {
+                    const colorCls = _colorMap[ev.color] || _colorMap.blue;
+                    const dotCls  = _dotMap[ev.color]  || _dotMap.blue;
+                    container.insertAdjacentHTML('beforeend', `
+                        <div class="flex items-start space-x-4 relative pl-12">
+                            <div class="absolute left-3.5 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white ${dotCls} shadow"></div>
+                            <div class="flex-1 rounded-lg border p-3 ${colorCls}">
+                                <div class="flex items-center justify-between flex-wrap gap-1">
+                                    <span class="font-medium text-sm flex items-center gap-1.5">
+                                        <i class="fas ${ev.icon}"></i>${ev.title}
+                                    </span>
+                                    <span class="text-xs opacity-75">${ev.date}</span>
+                                </div>
+                                ${ev.detail ? `<p class="text-xs mt-1 opacity-80">${ev.detail}</p>` : ''}
+                                <p class="text-xs mt-0.5 opacity-60"><i class="fas fa-user mr-1"></i>${ev.user}</p>
+                            </div>
+                        </div>`);
+                });
+            }
+            list.classList.remove('hidden');
+        })
+        .catch(() => {
+            document.getElementById('timeline-loading').innerHTML =
+                '<span class="text-red-400 text-sm"><i class="fas fa-exclamation-circle mr-1"></i>Erreur lors du chargement.</span>';
+        });
+}
 </script>
 {% endblock %}

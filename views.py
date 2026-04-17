@@ -2252,17 +2252,102 @@ def change_status(id):
         old_status = courrier.statut
         courrier.statut = new_status
         courrier.modifie_par_id = current_user.id
-        
+
+        # Enregistrer dans l'historique pour la timeline
+        from models import CourrierModification
+        mod = CourrierModification(
+            courrier_id=courrier.id,
+            utilisateur_id=current_user.id,
+            champ_modifie='statut',
+            ancienne_valeur=old_status,
+            nouvelle_valeur=new_status,
+            ip_address=get_client_ip()
+        )
+        db.session.add(mod)
+
         try:
             db.session.commit()
-            log_activity(current_user.id, "CHANGEMENT_STATUT", 
+            log_activity(current_user.id, "CHANGEMENT_STATUT",
                         f"Statut du courrier {courrier.numero_accuse_reception} changé de {old_status} à {new_status}", courrier.id)
             flash(f'Statut mis à jour vers "{new_status}"', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Erreur lors de la mise à jour: {str(e)}', 'error')
-    
+
     return redirect(url_for('mail_detail', id=id))
+
+@app.route('/api/courrier/<int:id>/timeline')
+@login_required
+def courrier_timeline(id):
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+
+    from models import CourrierModification, CourrierComment, CourrierForward
+
+    events = []
+
+    # Enregistrement initial
+    events.append({
+        'type': 'creation',
+        'icon': 'fa-plus-circle',
+        'color': 'green',
+        'title': 'Courrier enregistré',
+        'detail': f'N° {courrier.numero_accuse_reception} — statut initial : {courrier.statut}',
+        'user': courrier.utilisateur_enregistrement.nom_complet if courrier.utilisateur_enregistrement else 'Système',
+        'date': courrier.date_enregistrement.strftime('%d/%m/%Y %H:%M') if courrier.date_enregistrement else '',
+        'ts': courrier.date_enregistrement.timestamp() if courrier.date_enregistrement else 0,
+    })
+
+    # Changements de statut
+    mods = CourrierModification.query.filter_by(
+        courrier_id=id, champ_modifie='statut'
+    ).order_by(CourrierModification.date_modification.asc()).all()
+    for m in mods:
+        events.append({
+            'type': 'statut',
+            'icon': 'fa-exchange-alt',
+            'color': 'blue',
+            'title': f'Statut → {m.nouvelle_valeur}',
+            'detail': f'Précédent : {m.ancienne_valeur}',
+            'user': m.utilisateur.nom_complet if m.utilisateur else '?',
+            'date': m.date_modification.strftime('%d/%m/%Y %H:%M') if m.date_modification else '',
+            'ts': m.date_modification.timestamp() if m.date_modification else 0,
+        })
+
+    # Transmissions
+    forwards = CourrierForward.query.filter_by(courrier_id=id).order_by(CourrierForward.date_envoi.asc()).all()
+    for f in forwards:
+        dest_name = f.destinataire.nom_complet if f.destinataire else '?'
+        src_name = f.expediteur.nom_complet if f.expediteur else '?'
+        events.append({
+            'type': 'transmission',
+            'icon': 'fa-share',
+            'color': 'purple',
+            'title': f'Transmis à {dest_name}',
+            'detail': f.message[:80] + '…' if f.message and len(f.message) > 80 else (f.message or ''),
+            'user': src_name,
+            'date': f.date_envoi.strftime('%d/%m/%Y %H:%M') if f.date_envoi else '',
+            'ts': f.date_envoi.timestamp() if f.date_envoi else 0,
+        })
+
+    # Commentaires
+    comments = CourrierComment.query.filter_by(courrier_id=id).order_by(CourrierComment.date_creation.asc()).all()
+    for c in comments:
+        events.append({
+            'type': 'comment',
+            'icon': 'fa-comment',
+            'color': 'yellow',
+            'title': 'Commentaire ajouté',
+            'detail': c.contenu[:80] + '…' if c.contenu and len(c.contenu) > 80 else (c.contenu or ''),
+            'user': c.auteur.nom_complet if c.auteur else '?',
+            'date': c.date_creation.strftime('%d/%m/%Y %H:%M') if c.date_creation else '',
+            'ts': c.date_creation.timestamp() if c.date_creation else 0,
+        })
+
+    events.sort(key=lambda e: e['ts'])
+    return jsonify(events)
+
 
 @app.route('/view_file/<int:id>')
 @login_required
