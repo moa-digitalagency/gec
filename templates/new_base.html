@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +25,43 @@
 
     <!-- CSRF Token (Flask-WTF) -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Dark mode init (avant le rendu pour éviter le flash) -->
+    <script>
+    (function(){
+        if(localStorage.getItem('gec-dark')==='1'){
+            document.documentElement.classList.add('dark');
+        }
+    })();
+    </script>
+    <style>
+        /* Dark mode global overrides */
+        html.dark body { background-color: #111827; color: #f3f4f6; }
+        html.dark .bg-white { background-color: #1f2937 !important; }
+        html.dark .bg-gray-50 { background-color: #111827 !important; }
+        html.dark .bg-gray-100 { background-color: #374151 !important; }
+        html.dark .text-gray-900 { color: #f9fafb !important; }
+        html.dark .text-gray-700 { color: #d1d5db !important; }
+        html.dark .text-gray-600 { color: #9ca3af !important; }
+        html.dark .text-gray-500 { color: #6b7280 !important; }
+        html.dark .border-gray-200 { border-color: #374151 !important; }
+        html.dark .divide-gray-200 > * { border-color: #374151 !important; }
+        html.dark nav.bg-white { background-color: #1e293b !important; }
+        html.dark .shadow-rdc { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+        html.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; }
+        html.dark input, html.dark select, html.dark textarea {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+            border-color: #4b5563 !important;
+        }
+        html.dark .bg-green-50  { background-color: #064e3b22 !important; }
+        html.dark .bg-blue-50   { background-color: #1e3a5f22 !important; }
+        html.dark .bg-yellow-50 { background-color: #78350f22 !important; }
+        html.dark .bg-red-50    { background-color: #7f1d1d22 !important; }
+        html.dark .bg-gray-50   { background-color: #111827 !important; }
+        html.dark thead.bg-gray-50 { background-color: #1f2937 !important; }
+        html.dark .rounded-xl { border: 1px solid #374151; }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     
@@ -57,6 +94,13 @@
                         <span class="hidden sm:inline">Menu</span>
                     </button>
                     
+                    <!-- Dark mode toggle -->
+                    <button type="button" id="dark-toggle" onclick="toggleDark()"
+                            title="Basculer mode sombre"
+                            class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
+                        <i id="dark-icon" class="fas fa-moon"></i>
+                    </button>
+
                     <!-- Notifications Icon -->
                     <div class="relative">
                         <a href="{{ url_for('notifications') }}" class="text-rdc-blue hover:bg-rdc-blue hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
@@ -324,6 +368,23 @@
             }
             return origFetch(url, opts);
         };
+    })();
+    </script>
+
+    <!-- Dark mode toggle logic -->
+    <script>
+    function toggleDark() {
+        const html = document.getElementById('html-root');
+        const isDark = html.classList.toggle('dark');
+        localStorage.setItem('gec-dark', isDark ? '1' : '0');
+        document.getElementById('dark-icon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    // Sync icon on load
+    (function(){
+        if(document.documentElement.classList.contains('dark')){
+            var el = document.getElementById('dark-icon');
+            if(el) el.className = 'fas fa-sun';
+        }
     })();
     </script>
 
