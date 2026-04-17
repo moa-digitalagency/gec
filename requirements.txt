@@ -34,7 +34,7 @@ pyzipper==0.3.6                # Gestion des archives ZIP avec chiffrement AES
 # -----------------------
 reportlab==4.4.2               # Génération de PDF (version mise à jour)
 Pillow==11.3.0                  # Traitement d'images (PIL) (version mise à jour)
-opencv-python==4.12.0.88           # Vision par ordinateur et traitement d'images (version mise à jour)
+# opencv-python supprimé — non utilisé dans le code
 
 # Traitement et Export de Données
 # --------------------------------
