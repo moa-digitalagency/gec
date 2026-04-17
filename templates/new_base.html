@@ -22,6 +22,9 @@
 
     <!-- Tailwind Config (must be loaded after tailwindcdn.js) -->
     <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
+
+    <!-- CSRF Token (Flask-WTF) -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-gray-50 min-h-screen">
     
@@ -282,7 +285,48 @@
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-    
+
+    <!-- CSRF auto-inject : ajoute le token dans tous les formulaires POST et les requêtes AJAX -->
+    <script>
+    (function() {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) return;
+        var token = csrfToken.getAttribute('content');
+
+        // Inject hidden input into every form that will POST
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('form').forEach(function(form) {
+                var method = (form.getAttribute('method') || 'get').toLowerCase();
+                if (method === 'post') {
+                    if (!form.querySelector('input[name="csrf_token"]')) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'csrf_token';
+                        input.value = token;
+                        form.appendChild(input);
+                    }
+                }
+            });
+        });
+
+        // Set header for all jQuery AJAX requests
+        if (typeof $ !== 'undefined') {
+            $.ajaxSetup({ headers: { 'X-CSRFToken': token } });
+        }
+
+        // Set header for fetch() requests
+        var origFetch = window.fetch;
+        window.fetch = function(url, opts) {
+            opts = opts || {};
+            if (!opts.method || opts.method.toUpperCase() !== 'GET') {
+                opts.headers = opts.headers || {};
+                opts.headers['X-CSRFToken'] = token;
+            }
+            return origFetch(url, opts);
+        };
+    })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

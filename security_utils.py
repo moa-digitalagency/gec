@@ -86,14 +86,51 @@ def clean_security_storage():
         if not _suspicious_activities[ip]:
             del _suspicious_activities[ip]
 
+def _get_trusted_proxies():
+    """Retourne la liste des IPs proxy de confiance depuis la config."""
+    raw = os.environ.get('TRUSTED_PROXIES', '127.0.0.1,::1')
+    trusted = set()
+    for entry in raw.split(','):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            trusted.add(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            pass
+    return trusted
+
 def get_client_ip():
-    """Get the real client IP address"""
-    # Check for forwarded IPs first
-    forwarded_ips = request.environ.get('HTTP_X_FORWARDED_FOR')
-    if forwarded_ips:
-        return forwarded_ips.split(',')[0].strip()
-    
-    return request.environ.get('REMOTE_ADDR', 'unknown')
+    """Get the real client IP address.
+
+    X-Forwarded-For is only trusted when the direct peer (REMOTE_ADDR) is a
+    known proxy — prevents IP spoofing by untrusted clients.
+    """
+    remote_addr = request.environ.get('REMOTE_ADDR', 'unknown')
+
+    try:
+        remote_net = ipaddress.ip_address(remote_addr)
+        trusted = _get_trusted_proxies()
+        peer_is_trusted = any(remote_net in net for net in trusted)
+    except ValueError:
+        peer_is_trusted = False
+
+    if peer_is_trusted:
+        forwarded_ips = request.environ.get('HTTP_X_FORWARDED_FOR')
+        if forwarded_ips:
+            # Prend le premier IP non-privé/non-loopback de la chaîne
+            for ip_str in reversed(forwarded_ips.split(',')):
+                ip_str = ip_str.strip()
+                try:
+                    addr = ipaddress.ip_address(ip_str)
+                    if not addr.is_private and not addr.is_loopback:
+                        return ip_str
+                except ValueError:
+                    continue
+            # Fallback : premier de la liste
+            return forwarded_ips.split(',')[0].strip()
+
+    return remote_addr
 
 def is_ip_blocked(ip):
     """Check if IP is blocked - but never block whitelisted IPs"""

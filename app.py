@@ -3,6 +3,7 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -13,6 +14,7 @@ class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
+csrf = CSRFProtect()
 
 # Create the app
 app = Flask(__name__)
@@ -25,6 +27,8 @@ if not _session_secret:
     _session_secret = secrets.token_hex(32)
 app.secret_key = _session_secret
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30  # 30 jours
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # Token CSRF valide 1h
+app.config['SESSION_IDLE_TIMEOUT'] = 900   # 15 min d'inactivité
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Configure the database
@@ -60,6 +64,7 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Initialize extensions
 db.init_app(app)
+csrf.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'  # type: ignore
@@ -86,15 +91,26 @@ with app.app_context():
     @app.before_request
     def before_request():
         """Execute before each request for security checks"""
-        from flask import request
+        from flask import request, session
         from flask_login import current_user
-        
+        import time
+
         # Clean expired security data
         clean_security_storage()
-        
-        # Skip request logging to prevent performance issues
-        # if current_user.is_authenticated and not request.path.startswith('/static'):
-        #     audit_log("REQUEST", f"{request.method} {request.path}")
+
+        # Idle session timeout (15 min d'inactivité)
+        if current_user.is_authenticated and not request.path.startswith('/static'):
+            idle_timeout = app.config.get('SESSION_IDLE_TIMEOUT', 900)
+            last_activity = session.get('_last_activity')
+            now = time.time()
+            if last_activity and (now - last_activity) > idle_timeout:
+                from flask_login import logout_user
+                logout_user()
+                session.clear()
+                from flask import flash, redirect, url_for
+                flash('Session expirée pour inactivité. Veuillez vous reconnecter.', 'warning')
+                return redirect(url_for('login'))
+            session['_last_activity'] = now
     
     @app.after_request
     def after_request(response):
