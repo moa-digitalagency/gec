@@ -226,13 +226,13 @@
     {% if user.totp_secret %}
     <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;">
-        <div class="gec-alert gec-alert-success" style="margin-bottom:1rem;">
+        <div class="gec-alert gec-alert-success" style="margin-bottom:1.25rem;">
           <i class="fas fa-check-circle"></i>
-          <div><strong>2FA activé</strong><br><span style="font-size:.8125rem;">Votre compte est protégé par une authentification à deux facteurs.</span></div>
+          <div><strong>2FA activée</strong><br><span style="font-size:.8125rem;">Votre compte est protégé par une authentification à deux facteurs.</span></div>
         </div>
-        <form method="POST" action="{{ url_for('disable_2fa') }}" onsubmit="return confirm('Désactiver la 2FA réduira la sécurité de votre compte. Continuer ?')">
-          <button type="submit" class="gec-btn gec-btn-danger"><i class="fas fa-shield-alt"></i> Désactiver la 2FA</button>
-        </form>
+        <button type="button" class="gec-btn gec-btn-danger" onclick="document.getElementById('modal-disable-2fa').style.display='flex'">
+          <i class="fas fa-shield-slash"></i> Désactiver la 2FA
+        </button>
       </div>
     </div>
     {% else %}
@@ -245,4 +245,103 @@
   </div>
 </div>
 {% endif %}
+
+<!-- ═══ Modal désactivation 2FA ═══════════════════════════════════════ -->
+{% if current_user.is_super_admin() and user.totp_secret %}
+<div id="modal-disable-2fa"
+     style="display:none;position:fixed;inset:0;z-index:1050;align-items:center;justify-content:center;
+            background:rgba(15,23,42,.55);backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)closeDisable2faModal()">
+
+  <div style="background:var(--card-bg,#fff);border-radius:var(--card-radius,12px);
+              box-shadow:0 24px 64px rgba(0,0,0,.18);width:100%;max-width:420px;
+              margin:1rem;overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-color);">
+      <span style="font-weight:700;font-size:1rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="fas fa-shield-alt" style="color:var(--danger,#DC2626);"></i>
+        Désactiver la 2FA
+      </span>
+      <button type="button" onclick="closeDisable2faModal()"
+              style="background:none;border:none;cursor:pointer;font-size:1.25rem;
+                     color:var(--text-muted);line-height:1;padding:.25rem;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <form method="POST" action="{{ url_for('disable_2fa') }}" id="form-disable-2fa">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div style="padding:1.5rem;">
+
+        <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;">
+          <i class="fas fa-exclamation-triangle" style="color:var(--warning,#D97706);margin-right:.35rem;"></i>
+          Désactiver la 2FA réduira la sécurité de votre compte. Saisissez le code affiché
+          dans votre application d'authentification pour confirmer.
+        </p>
+
+        <div class="gec-form-group" style="margin-bottom:0;">
+          <label class="gec-label" for="totp-disable-token">
+            <i class="fas fa-mobile-alt"></i> Code d'authentification (6 chiffres)
+          </label>
+          <input type="text"
+                 id="totp-disable-token"
+                 name="token"
+                 class="gec-input"
+                 inputmode="numeric"
+                 autocomplete="one-time-code"
+                 maxlength="6"
+                 placeholder="000000"
+                 required
+                 style="letter-spacing:.35em;font-size:1.25rem;text-align:center;font-weight:700;"
+                 autofocus />
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;justify-content:flex-end;gap:.75rem;
+                  padding:1rem 1.5rem;border-top:1px solid var(--border-color);background:var(--bg-soft,#F8FAFC);">
+        <button type="button" onclick="closeDisable2faModal()" class="gec-btn gec-btn-secondary">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+        <button type="submit" class="gec-btn gec-btn-danger" id="btn-confirm-disable">
+          <i class="fas fa-shield-slash"></i> Confirmer la désactivation
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function closeDisable2faModal() {
+  document.getElementById('modal-disable-2fa').style.display = 'none';
+  document.getElementById('totp-disable-token').value = '';
+}
+
+// Auto-format : ne laisser que les chiffres + soumettre auto à 6 chiffres
+document.getElementById('totp-disable-token').addEventListener('input', function () {
+  this.value = this.value.replace(/\D/g, '').slice(0, 6);
+  if (this.value.length === 6) {
+    document.getElementById('btn-confirm-disable').focus();
+  }
+});
+
+// Fermer avec Echap
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') closeDisable2faModal();
+});
+
+// Ouvrir le modal si flash contient une erreur 2FA (après rechargement)
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    {% if 'désactivée' in msg and cat == 'error' %}
+      document.getElementById('modal-disable-2fa').style.display = 'flex';
+    {% endif %}
+  {% endfor %}
+{% endwith %}
+</script>
+{% endif %}
+
 {% endblock %}
