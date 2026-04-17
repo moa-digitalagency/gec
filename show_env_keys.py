@@ -112,7 +112,8 @@ def show_env_keys():
         print("   Copiez le modèle depuis README-ENV.md")
         print("   Copy the template from README-ENV.md")
         print()
-        print("3. Sur Replit, utilisez l'onglet Secrets / On Replit, use the Secrets tab")
+        print("3. Sur VPS, définissez les variables dans le fichier .env du projet")
+        print("   On VPS, define variables in the project .env file")
         print()
     
     print("="*80 + "\n")

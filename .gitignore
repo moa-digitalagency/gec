@@ -28,3 +28,19 @@ instance/
 # Fichiers de données utilisateur
 uploads/
 data/
+
+# Fichiers de session / cookies de développement
+cookies.txt
+*.cookies
+
+# Environnements virtuels
+venv/
+.venv/
+env/
+
+# Screenshots et captures
+screenshots/
+
+# Fichiers IDE
+.vscode/
+.idea/
