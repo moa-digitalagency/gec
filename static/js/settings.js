@@ -67,15 +67,15 @@ function toggleEmailProvider() {
     if (!emailProviderSelect) return;
 
     const emailProvider = emailProviderSelect.value;
-    const smtpSection = document.getElementById('smtp-section');
-    const sendgridSection = document.getElementById('sendgrid-section');
+    const smtpSection   = document.getElementById('smtp-section');
+    const resendSection = document.getElementById('resend-section');
 
     if (emailProvider === 'smtp') {
         smtpSection.classList.remove('hidden');
-        sendgridSection.classList.add('hidden');
+        if (resendSection) resendSection.classList.add('hidden');
     } else {
         smtpSection.classList.add('hidden');
-        sendgridSection.classList.remove('hidden');
+        if (resendSection) resendSection.classList.remove('hidden');
     }
 }
 

@@ -1,44 +1,45 @@
-# GEC — Primer (État Session)
+# GEC — Primer technique
 
-**Dernière mise à jour** : 17 Avril 2026  
-**Statut général** : Application en production sur VPS 2 (port 5004)
+GEC (Gestion Électronique du Courrier) est une application Flask de gestion de courrier administratif pour les institutions africaines (focus RDC). Déployée sur VPS 2 (168.231.86.201) port 5004, gérée via PM2.
 
----
+## Stack
 
-## État Actuel
+- **Backend** : Python 3.11 · Flask 3.1 · SQLAlchemy 2.0 · Gunicorn
+- **Auth** : Flask-Login 0.6 · Flask-WTF (CSRF global)
+- **DB** : PostgreSQL 14+ (prod) · SQLite (dev/tests)
+- **Frontend** : HTML · Tailwind CSS (local vendor) · JS vanilla
+- **Sécurité** : AES-256 (cryptography) · bcrypt · rate limiting · audit log
+- **Email** : Resend API (`resend` SDK) + SMTP fallback
+- **2FA** : TOTP via pyotp (super_admin uniquement)
+- **PDF** : ReportLab · Export Excel : xlsxwriter
+- **Cache** : Redis (optionnel) + fallback in-memory
 
-| Composant           | Statut      | Notes                                      |
-|---------------------|-------------|--------------------------------------------|
-| Backend Flask       | Stable      | Python 3.11, Flask 3.1                     |
-| Base de données     | PostgreSQL  | Prod VPS 2 — SQLite en dev local           |
-| Authentification    | Fonctionnel | Flask-Login + roles/permissions            |
-| Courriers ENTRANT   | Fonctionnel | Numérotation auto/manuelle                 |
-| Courriers SORTANT   | Fonctionnel | Types configurables                        |
-| Transmissions       | Fonctionnel | CourrierForward + notifications            |
-| Export PDF/Excel    | Fonctionnel | ReportLab + pandas/xlsxwriter              |
-| Email notifications | Fonctionnel | SendGrid ou SMTP (configurable en UI)      |
-| Multilingue FR/EN   | Fonctionnel | lang/ + lang_utils.py                      |
-| Chiffrement AES-256 | Actif       | encryption_utils.py — champs _encrypted    |
-| Backup/Restore      | Fonctionnel | export_import_utils.py + UI admin          |
-| Mise à jour système | Fonctionnel | Git (online) + ZIP (offline) via UI admin  |
-| Déploiement VPS 2   | Actif       | PM2 port 5004, /var/websites/gec           |
+## Fichiers principaux
 
----
+| Fichier | Rôle |
+|---|---|
+| `app.py` | Factory Flask, init DB, middlewares, user_loader, scheduler rappels |
+| `main.py` | Point d'entrée (import app, run) |
+| `models.py` | Tous les modèles SQLAlchemy |
+| `views.py` | Toutes les routes Flask (flat, pas de blueprint) |
+| `email_utils.py` | Envoi email via Resend API + SMTP fallback |
+| `migration_utils.py` | Migrations automatiques au démarrage |
+| `performance_utils.py` | Cache Redis/mémoire, FTS, pagination |
+| `security_utils.py` | Rate limit, IP block, audit log, sanitize |
+| `encryption_utils.py` | AES-256 chiffrement données sensibles |
 
-## Session du 17 Avril 2026
+## Modèles clés
 
-- [x] Clone du repo depuis GitHub (`moa-digitalagency/gec`)
-- [x] Initialisation du dossier `.claude/` complet
+`User` · `Courrier` · `CourrierForward` · `CourrierComment` · `CourrierModification` · `CourrierAttachment` · `CourrierSignature` · `Tag` · `CourrierTag` · `StatutCourrier` · `Departement` · `Role` · `RolePermission` · `Notification` · `ParametresSysteme` · `LogActivite` · `EmailTemplate`
 
----
+## Rôles
 
-## TODOs Actifs
+`super_admin` > `admin` > `user` — permissions granulaires via `RolePermission`
 
-_(Aucun TODO actif pour l'instant — à remplir en début de prochaine session)_
+## Règles critiques
 
----
-
-## Contexte de la dernière modification
-
-Première initialisation `.claude/` — pas de modification du code source.  
-Le projet est cloné dans `C:\Users\shaba\Projets Claude\gec`.
+1. Jamais modifier directement sur le VPS — workflow local → GitHub → `git pull` VPS
+2. Jamais committer `.env`, `venv/`, `uploads/`, `*.db`
+3. `DEBUG=False` en production
+4. Toute nouvelle route : `@login_required` + `has_permission()`
+5. Fichier de dépendances unique : `requirements.txt`

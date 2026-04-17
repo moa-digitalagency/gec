@@ -117,10 +117,10 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Table {table_name} créée")
         
-        # Migration 1: Ajouter sendgrid_api_key à parametres_systeme
-        if add_column_safely(engine, 'parametres_systeme', 'sendgrid_api_key', 'VARCHAR(500)'):
+        # Migration 1: Ajouter resend_api_key à parametres_systeme
+        if add_column_safely(engine, 'parametres_systeme', 'resend_api_key', 'VARCHAR(500)'):
             migrations_applied += 1
-            logging.info("✓ Migration: Colonne sendgrid_api_key ajoutée")
+            logging.info("✓ Migration: Colonne resend_api_key ajoutée")
         
         # Migration 3: Colonnes de sécurité et chiffrement (Utilisateurs)
         # Note: 'user' est un mot réservé en PostgreSQL, utiliser des guillemets

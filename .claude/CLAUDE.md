@@ -19,7 +19,7 @@
 | Frontend     | HTML · Tailwind CSS · JS vanilla         |
 | Sécurité     | cryptography (AES-256) · bcrypt · pycryptodome |
 | PDF          | ReportLab 4.4                            |
-| Email        | SendGrid / SMTP configurable             |
+| Email        | Resend API / SMTP configurable           |
 | Export       | pandas · xlsxwriter                      |
 | Multilingue  | Système custom via `lang/` + `lang_utils.py` |
 

@@ -862,10 +862,10 @@ class ParametresSysteme(db.Model):
     titre_responsable_structure = db.Column(db.String(100), nullable=False, default="Secrétaire Général")
     
     # Choix du fournisseur email
-    email_provider = db.Column(db.String(20), nullable=False, default="sendgrid")  # 'sendgrid' ou 'smtp'
-    
-    # Paramètres SendGrid
-    sendgrid_api_key = db.Column(db.String(500), nullable=True)  # Clé API SendGrid (cryptée)
+    email_provider = db.Column(db.String(20), nullable=False, default="resend")  # 'resend' ou 'smtp'
+
+    # Clé API Resend (https://resend.com)
+    resend_api_key = db.Column(db.String(500), nullable=True)  # Clé API Resend (commence par re_)
     
     # Notifications pour super admin
     notify_superadmin_new_mail = db.Column(db.Boolean, nullable=False, default=True)  # Super admin reçoit notifications nouveaux courriers
@@ -912,9 +912,9 @@ class ParametresSysteme(db.Model):
             logging.error(f"Erreur lors du décryptage du mot de passe SMTP: {e}")
             return None
     
-    def get_sendgrid_api_key_decrypted(self):
-        """Retourne la clé API SendGrid (stockage direct sans cryptage)"""
-        return self.sendgrid_api_key if self.sendgrid_api_key else None
+    def get_resend_api_key(self):
+        """Retourne la clé API Resend"""
+        return self.resend_api_key if self.resend_api_key else None
     
     @staticmethod
     def get_parametres():

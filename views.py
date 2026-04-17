@@ -2034,34 +2034,31 @@ def settings():
         # Types de courrier sortant maintenant gérés dans une page dédiée
         
         if request.method == 'POST':
-            # Gestion du test d'email SendGrid en premier
+            # Test email Resend
             if request.form.get('test_email'):
                 test_email = request.form.get('test_email', '').strip()
-                
+
                 if not test_email:
                     flash('Veuillez saisir une adresse email pour le test.', 'error')
                     return redirect(url_for('settings'))
-                
-                # Valider l'email
+
                 import re
-                email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-                if not re.match(email_pattern, test_email):
-                    flash('Veuillez saisir une adresse email valide.', 'error')
+                if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', test_email):
+                    flash('Adresse email invalide.', 'error')
                     return redirect(url_for('settings'))
-                
-                # Effectuer le test SendGrid
-                from email_utils import test_sendgrid_configuration
-                result = test_sendgrid_configuration(test_email)
-                
+
+                from email_utils import test_resend_configuration
+                result = test_resend_configuration(test_email)
+
                 if result['success']:
                     flash(result['message'], 'success')
-                    log_activity(current_user.id, "TEST_EMAIL_SENDGRID", 
-                                f"Test email SendGrid envoyé à {test_email}")
+                    log_activity(current_user.id, "TEST_EMAIL_RESEND",
+                                 f"Test email Resend envoyé à {test_email}")
                 else:
                     flash(result['message'], 'error')
-                    log_activity(current_user.id, "TEST_EMAIL_SENDGRID_ECHEC", 
-                                f"Échec test email SendGrid: {result['message']}")
-                
+                    log_activity(current_user.id, "TEST_EMAIL_RESEND_ECHEC",
+                                 f"Échec test Resend : {result['message']}")
+
                 return redirect(url_for('settings'))
             
             # Sanitize and update parameters
@@ -2084,7 +2081,7 @@ def settings():
             parametres.titre_responsable_structure = sanitize_input(request.form.get('titre_responsable_structure', '').strip()) or "Secrétaire Général"
             
             # Choix du fournisseur email
-            parametres.email_provider = sanitize_input(request.form.get('email_provider', 'sendgrid').strip())
+            parametres.email_provider = sanitize_input(request.form.get('email_provider', 'resend').strip())
             
             # Numéro WhatsApp
             parametres.whatsapp_number = sanitize_input(request.form.get('whatsapp_number', '243860493345').strip())
@@ -2109,16 +2106,13 @@ def settings():
                     encryption_manager = EncryptionManager()
                     parametres.smtp_password = encryption_manager.encrypt_data(smtp_password)
                 
-                # Paramètres SendGrid - Stockage direct pour résoudre le problème de cryptage
-                sendgrid_api_key = request.form.get('sendgrid_api_key', '').strip()
-                
-                # Sauvegarder la clé directement si elle est fournie et n'est pas le placeholder
-                if sendgrid_api_key and sendgrid_api_key != '●●●●●●●●●●●●●●●●●●●●' and len(sendgrid_api_key) > 10:
-                    parametres.sendgrid_api_key = sendgrid_api_key
-                    logging.info(f"✅ Clé SendGrid sauvegardée directement (longueur: {len(sendgrid_api_key)})")
-                elif sendgrid_api_key == '':
-                    # Si le champ est vide, on garde la clé existante
-                    logging.info("Clé SendGrid: champ vide, conservation de la clé existante")
+                # Clé API Resend
+                resend_api_key = request.form.get('resend_api_key', '').strip()
+                if resend_api_key and resend_api_key != '●●●●●●●●●●●●●●●●●●●●' and len(resend_api_key) > 5:
+                    parametres.resend_api_key = resend_api_key
+                    logging.info(f"✅ Clé Resend sauvegardée (longueur: {len(resend_api_key)})")
+                elif resend_api_key == '':
+                    logging.info("Clé Resend: champ vide, conservation de la clé existante")
             
             parametres.modifie_par_id = current_user.id
             
@@ -4466,7 +4460,7 @@ def create_system_backup():
             system_files = [
                 'app.py', 'main.py', 'models.py', 'views.py', 
                 'migration_utils.py', 'security_utils.py', 'email_utils.py',
-                'requirements.txt', 'pyproject.toml', '.replit', '.env'
+                'requirements.txt', '.env'
             ]
             
             for file in system_files:
@@ -4519,7 +4513,7 @@ def create_system_backup():
                         'smtp_email': params.smtp_email,
                         'smtp_use_tls': params.smtp_use_tls,
                         'email_provider': params.email_provider,
-                        'sendgrid_api_key': '***MASKED***',  # Sécurité
+                        'resend_api_key': '***MASKED***',  # Sécurité
                         'appellation_entites': params.appellation_entites,
                         'titre_responsable_structure': params.titre_responsable_structure
                     }

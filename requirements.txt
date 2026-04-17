@@ -1,117 +1,44 @@
-# GEC - Dépendances du Projet
-# =====================================
-# Ce fichier liste toutes les dépendances Python nécessaires pour le projet GEC
-# Date de mise à jour: 2 Septembre 2025
-# Version: 1.1.0
-# Python Version: 3.11+
-#
-# Installation:
-# pip install -r requirements.txt
+# GEC — Dépendances Python
+# Fichier unique, source de vérité pour pip install -r requirements.txt
+# Python 3.11+
 
-# Framework Web Principal
-# -----------------------
-Flask==3.1.1                    # Framework web Python
-Flask-SQLAlchemy==3.1.1        # Extension ORM pour Flask
-Flask-Login==0.6.3             # Gestion de l'authentification
-Flask-WTF==1.2.1               # Protection CSRF globale
-Werkzeug==3.1.3                # Utilitaires WSGI et sécurité
-gunicorn==23.0.0               # Serveur WSGI pour production
+# Framework Web
+Flask==3.1.1
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Werkzeug==3.1.3
+gunicorn==23.0.0
 
 # Base de Données
-# ---------------
-SQLAlchemy==2.0.41              # ORM Python (version mise à jour)
-psycopg2-binary==2.9.10         # Adaptateur PostgreSQL
+SQLAlchemy==2.0.41
+psycopg2-binary==2.9.10
 
-# Sécurité et Chiffrement
-# -----------------------
-cryptography==45.0.6            # Chiffrement AES-256 (version mise à jour)
-bcrypt==4.3.0                  # Hachage sécurisé des mots de passe (version mise à jour)
-pycryptodome==3.23.0            # Opérations cryptographiques supplémentaires (version mise à jour)
-email-validator==2.2.0         # Validation des adresses email
-pyzipper==0.3.6                # Gestion des archives ZIP avec chiffrement AES
-pyotp==2.9.0                   # Génération et vérification TOTP (2FA)
-qrcode[pil]==8.0               # Génération de QR codes
+# Sécurité & Chiffrement
+cryptography==45.0.6
+bcrypt==4.3.0
+pycryptodome==3.23.0
+email-validator==2.2.0
+pyzipper==0.3.6
 
 # Génération de Documents
-# -----------------------
-reportlab==4.4.2               # Génération de PDF (version mise à jour)
-Pillow==11.3.0                  # Traitement d'images (PIL) (version mise à jour)
-# opencv-python supprimé — non utilisé dans le code
+reportlab==4.4.2
+Pillow==11.3.0
 
-# Traitement et Export de Données
-# --------------------------------
-pandas==2.3.1                  # Analyse et manipulation de données (version mise à jour)
-xlsxwriter==3.2.5              # Création de fichiers Excel (version mise à jour)
+# Export de Données
+pandas==2.3.1
+xlsxwriter==3.2.5
 
-# Notifications Email
-# -------------------
-sendgrid==6.12.4               # Service d'envoi d'emails SendGrid
+# Email (API Resend — https://resend.com/docs)
+resend==2.10.0
 
-# Configuration et Outils
-# ------------------------
-requests==2.32.4               # Client HTTP pour API externes
-PyYAML==6.0.2                  # Parsing de fichiers YAML
+# 2FA TOTP
+pyotp==2.9.0
+qrcode[pil]==8.0
 
-# Dépendances Système (pour les mises à jour et sauvegardes)
-# --------------------------------------------
-# git                   # Pour les mises à jour en ligne (installé au niveau système)
-# zip/unzip            # Pour les mises à jour hors ligne (généralement préinstallé)
-# pg_dump              # Pour les sauvegardes PostgreSQL (installé avec PostgreSQL)
-# psql                 # Pour les restaurations PostgreSQL (installé avec PostgreSQL)
+# Outils
+requests==2.32.4
+PyYAML==6.0.2
 
-# Dépendances Automatiques
-# ------------------------
-# Ces packages sont installés automatiquement avec les dépendances ci-dessus:
-# - Jinja2 (moteur de templates)
-# - MarkupSafe (échappement HTML sécurisé)
-# - click (interface ligne de commande)
-# - itsdangerous (sérialisation sécurisée)
-# - numpy (calculs numériques)
-# - python-dateutil (manipulation de dates)
-# - pytz (gestion des fuseaux horaires)
-# - six (compatibilité Python 2/3)
-
-# Notes d'Installation
-# --------------------
-# Pour installer toutes les dépendances:
-# 1. Créez un environnement virtuel: python -m venv venv
-# 2. Activez l'environnement:
-#    - Linux/Mac: source venv/bin/activate
-#    - Windows: venv\Scripts\activate
-# 3. Installez les dépendances: pip install -r requirements.txt
-#
-# Variables d'environnement requises (fichier .env):
-# DATABASE_URL=postgresql://user:password@localhost/gecmines
-# SESSION_SECRET=your-secret-key-here
-# GEC_MASTER_KEY=your-encryption-key
-# GEC_PASSWORD_SALT=your-password-salt
-
-# Fonctionnalités Récentes Ajoutées (Septembre 2025)
-# -----------------------------------------------
-# - Système de traduction multilingue complet (Français/Anglais)
-# - Commutation de langue persistante et dynamique
-# - Page de gestion des langues pour super administrateurs
-# - Sauvegardes/restaurations améliorées avec support PostgreSQL
-# - Récupération sélective de fichiers d'anciennes sauvegardes
-# - Migration automatique avec sauvegarde préventive
-# - Vérification d'intégrité des sauvegardes
-# - Templates d'email multi-langues configurables (Français/Anglais)
-# - Variables dynamiques dans les emails ({{numero_courrier}}, {{nom_utilisateur}}, etc.)
-# - Interface d'administration pour gestion des templates email
-# - Test SMTP intégré dans l'interface des paramètres système
-# - Permissions granulaires pour gestion des templates (manage_email_templates)
-# - Autocomplete de recherche avec suggestions basées sur le texte indexé
-# - Mise à jour du système en ligne (Git) et hors ligne (ZIP) sécurisées
-# - API REST pour les suggestions de recherche (/api/search_suggestions)
-# - Navigation au clavier dans les suggestions d'autocomplete
-# - Sauvegarde automatique avant les mises à jour avec préservation complète des données
-# - Préservation intelligente de la configuration et structure de base de données
-# - Support SendGrid pour notifications email professionnelles
-
-# Configuration Requise
-# ---------------------
-# Python: 3.11+
-# PostgreSQL: 14+ (pour la base de données de production)
-# Mémoire: Minimum 512MB RAM
-# Stockage: 100MB pour l'application + espace pour les fichiers uploadés
-# Git: Pour les mises à jour en ligne (optionnel)
+# Cache (optionnel — fallback in-memory si absent)
+# redis==5.2.1
