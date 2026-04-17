@@ -570,25 +570,27 @@ def register_mail():
             return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
                                  types_courrier_sortant=types_courrier_sortant)
         
-        if allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            # Ajouter timestamp pour éviter les conflits
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"{timestamp}_{filename}"
-            # Stocker le chemin relatif, pas absolu
-            fichier_chemin = os.path.join('uploads', filename)
-            # Créer le dossier uploads s'il n'existe pas
-            os.makedirs('uploads', exist_ok=True)
-            # Sauvegarder le fichier
-            file.save(fichier_chemin)
-            fichier_nom = file.filename
-            fichier_type = filename.rsplit('.', 1)[1].lower()
-        else:
-            flash('Type de fichier non autorisé. Utilisez PDF, JPG, PNG ou TIFF.', 'error')
+        # Validation sécurisée : extension + magic bytes + taille
+        is_valid, validation_msg = validate_file_upload(file)
+        if not is_valid:
+            flash(f'Fichier rejeté : {validation_msg}', 'error')
             statuts_disponibles = StatutCourrier.get_statuts_actifs()
             types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
             return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
                                  types_courrier_sortant=types_courrier_sortant)
+
+        filename = secure_filename(file.filename)
+        # Ajouter timestamp pour éviter les conflits
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        # Stocker le chemin relatif, pas absolu
+        fichier_chemin = os.path.join('uploads', filename)
+        # Créer le dossier uploads s'il n'existe pas
+        os.makedirs('uploads', exist_ok=True)
+        # Sauvegarder le fichier
+        file.save(fichier_chemin)
+        fichier_nom = file.filename
+        fichier_type = filename.rsplit('.', 1)[1].lower()
         
         # Création du courrier
         courrier = Courrier(
@@ -617,6 +619,31 @@ def register_mail():
             log_activity(current_user.id, "ENREGISTREMENT_COURRIER", 
                         f"Enregistrement du courrier {numero_accuse}", courrier.id)
             
+            # Notification SG en copie : notifier le(s) super_admin si le SG doit être informé
+            if type_courrier == 'ENTRANT' and secretaire_general_copie:
+                try:
+                    titre_responsable = ParametresSysteme.get_valeur('titre_responsable_structure', 'Secrétaire Général')
+                    sg_users = User.query.filter_by(role='super_admin', actif=True).all()
+                    for sg_user in sg_users:
+                        Notification.create_notification(
+                            user_id=sg_user.id,
+                            type_notification='sg_copie',
+                            titre=f'[Copie {titre_responsable}] {numero_accuse}',
+                            message=f'Le courrier "{objet}" (de : {expediteur}) vous a été mis en copie.',
+                            courrier_id=courrier.id
+                        )
+                        if sg_user.email:
+                            courrier_sg_data = {
+                                'numero_accuse_reception': numero_accuse,
+                                'type_courrier': type_courrier,
+                                'objet': objet,
+                                'expediteur': expediteur,
+                                'created_by': current_user.nom_complet
+                            }
+                            send_new_mail_notification([sg_user.email], courrier_sg_data)
+                except Exception as e:
+                    logging.error(f"Erreur notification SG en copie: {e}")
+
             # Notifications pour les administrateurs et super administrateurs
             try:
                 # Obtenir les paramètres système pour vérifier les notifications super admin
@@ -1221,12 +1248,12 @@ def export_mail_list():
 @login_required
 def download_file(id):
     courrier = Courrier.query.get_or_404(id)
-    
-    # Debug logging
-    logging.info(f"Tentative de téléchargement - ID: {id}")
-    logging.info(f"Chemin dans DB: {courrier.fichier_chemin}")
-    logging.info(f"Nom du fichier: {courrier.fichier_nom}")
-    
+
+    # Vérification d'accès : l'utilisateur doit avoir le droit de voir ce courrier
+    if not current_user.can_view_courrier(courrier):
+        audit_log("UNAUTHORIZED_DOWNLOAD", f"Tentative d'accès non autorisé au fichier du courrier {id}")
+        abort(403)
+
     # Gérer les chemins relatifs et absolus
     if courrier.fichier_chemin:
         # Si le chemin est absolu, extraire la partie relative
@@ -1236,6 +1263,13 @@ def download_file(id):
             if 'uploads/' in file_path:
                 relative_path = file_path.split('uploads/')[-1]
                 file_path = os.path.join('uploads', relative_path)
+
+        # Protection path traversal : vérifier que le chemin reste dans uploads/
+        uploads_dir = os.path.realpath('uploads')
+        real_path = os.path.realpath(file_path)
+        if not real_path.startswith(uploads_dir + os.sep) and real_path != uploads_dir:
+            audit_log("PATH_TRAVERSAL_ATTEMPT", f"Tentative de path traversal détectée pour le courrier {id}")
+            abort(403)
         
         # Log du chemin final
         logging.info(f"Chemin final à vérifier: {file_path}")
@@ -2266,10 +2300,14 @@ def manage_users():
         flash('Accès refusé. Seuls les super administrateurs peuvent gérer les utilisateurs.', 'error')
         return redirect(url_for('dashboard'))
     
+    page = request.args.get('page', 1, type=int)
+    per_page = 25
     users = User.query.order_by(User.date_creation.desc()).all()
+    pagination = User.query.order_by(User.date_creation.desc()).paginate(page=page, per_page=per_page, error_out=False)
     departements = Departement.get_departements_actifs()
     roles = Role.query.all()
-    return render_template('manage_users.html', users=users, departements=departements,
+    return render_template('manage_users.html', users=users, pagination=pagination,
+                         departements=departements,
                          available_languages=get_available_languages(), roles=roles)
 
 @app.route('/add_user', methods=['GET', 'POST'])

@@ -16,7 +16,14 @@ db = SQLAlchemy(model_class=Base)
 
 # Create the app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-gec-mines")
+_session_secret = os.environ.get("SESSION_SECRET")
+if not _session_secret:
+    if os.environ.get("FLASK_ENV") == "production":
+        raise RuntimeError("SESSION_SECRET est obligatoire en production. Définissez la variable d'environnement.")
+    logging.warning("SESSION_SECRET non défini — clé temporaire utilisée (développement uniquement).")
+    import secrets
+    _session_secret = secrets.token_hex(32)
+app.secret_key = _session_secret
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30  # 30 jours
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
