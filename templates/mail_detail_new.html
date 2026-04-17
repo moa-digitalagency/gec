@@ -283,6 +283,50 @@
             </div>
         </div>
         
+        <!-- Tags -->
+        <div class="bg-white shadow-rdc rounded-xl">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-tags mr-2 text-rdc-blue"></i>
+                    Étiquettes (Tags)
+                </h2>
+            </div>
+            <div class="p-4">
+                <!-- Tags actuels -->
+                <div id="tag-list" class="flex flex-wrap gap-2 mb-3">
+                    {% for ct in courrier.tags %}
+                    <span class="tag-badge inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                          data-id="{{ ct.tag.id }}"
+                          style="background-color: {{ ct.tag.couleur }};">
+                        {{ ct.tag.nom }}
+                        <button type="button" class="ml-1.5 hover:opacity-70 remove-tag-btn"
+                                data-tag-id="{{ ct.tag.id }}" onclick="removeTag({{ ct.tag.id }})">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </span>
+                    {% else %}
+                    <span class="text-xs text-gray-400" id="no-tags-msg">Aucun tag</span>
+                    {% endfor %}
+                </div>
+                <!-- Ajout de tag -->
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="tag-input" placeholder="Rechercher ou créer…"
+                               autocomplete="off"
+                               class="w-full text-sm border border-gray-300 rounded-md px-2.5 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
+                        <ul id="tag-suggestions"
+                            class="absolute z-20 left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg mt-1 hidden max-h-40 overflow-y-auto text-sm"></ul>
+                    </div>
+                    <input type="color" id="tag-color" value="#6B7280" title="Couleur du nouveau tag"
+                           class="h-8 w-10 rounded cursor-pointer border border-gray-300 p-0.5">
+                    <button type="button" onclick="createAndAddTag()"
+                            class="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Ajouter
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Échéance / Due Date -->
         <div class="bg-white shadow-rdc rounded-xl">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -877,6 +921,88 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
+// ── Tags ─────────────────────────────────────────────────────────────────────
+var _currentTagIds = [
+    {% for ct in courrier.tags %}{{ ct.tag.id }}{% if not loop.last %},{% endif %}{% endfor %}
+];
+const _courrierTagsUrl = '{{ url_for("api_courrier_update_tags", id=courrier.id) }}';
+const _tagsApiUrl = '{{ url_for("api_tags_list") }}';
+const _tagsCreateUrl = '{{ url_for("api_tag_create") }}';
+const _csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+function removeTag(tagId) {
+    _currentTagIds = _currentTagIds.filter(id => id !== tagId);
+    _syncTags();
+    document.querySelector(`[data-id="${tagId}"]`)?.remove();
+}
+
+function _syncTags() {
+    fetch(_courrierTagsUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': _csrfToken},
+        body: JSON.stringify({tag_ids: _currentTagIds})
+    });
+    const nm = document.getElementById('no-tags-msg');
+    if (nm) nm.style.display = _currentTagIds.length ? 'none' : '';
+}
+
+function _renderTag(id, nom, couleur) {
+    if (_currentTagIds.includes(id)) return;
+    _currentTagIds.push(id);
+    const list = document.getElementById('tag-list');
+    const nm = document.getElementById('no-tags-msg');
+    if (nm) nm.style.display = 'none';
+    list.insertAdjacentHTML('beforeend', `
+        <span class="tag-badge inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white"
+              data-id="${id}" style="background-color:${couleur};">
+            ${nom}
+            <button type="button" class="ml-1.5 hover:opacity-70" onclick="removeTag(${id})">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </span>`);
+    _syncTags();
+}
+
+async function createAndAddTag() {
+    const inp = document.getElementById('tag-input');
+    const nom = inp.value.trim();
+    if (!nom) return;
+    const couleur = document.getElementById('tag-color').value;
+    const resp = await fetch(_tagsCreateUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': _csrfToken},
+        body: JSON.stringify({nom, couleur})
+    });
+    if (resp.ok) {
+        const t = await resp.json();
+        _renderTag(t.id, t.nom, t.couleur);
+        inp.value = '';
+        document.getElementById('tag-suggestions').classList.add('hidden');
+    }
+}
+
+// Autocomplete
+document.getElementById('tag-input')?.addEventListener('input', async function() {
+    const q = this.value.trim();
+    const sug = document.getElementById('tag-suggestions');
+    if (q.length < 1) { sug.classList.add('hidden'); return; }
+    const data = await (await fetch(`${_tagsApiUrl}?q=${encodeURIComponent(q)}`)).json();
+    sug.innerHTML = '';
+    if (!data.length) { sug.classList.add('hidden'); return; }
+    data.forEach(t => {
+        const li = document.createElement('li');
+        li.className = 'px-3 py-2 cursor-pointer hover:bg-gray-50 flex items-center gap-2';
+        li.innerHTML = `<span class="inline-block w-3 h-3 rounded-full" style="background:${t.couleur}"></span>${t.nom}`;
+        li.onclick = () => { _renderTag(t.id, t.nom, t.couleur); document.getElementById('tag-input').value=''; sug.classList.add('hidden'); };
+        sug.appendChild(li);
+    });
+    sug.classList.remove('hidden');
+});
+document.addEventListener('click', e => {
+    if (!e.target.closest('#tag-input') && !e.target.closest('#tag-suggestions'))
+        document.getElementById('tag-suggestions')?.classList.add('hidden');
+});
+
 // ── Timeline ─────────────────────────────────────────────────────────────────
 var _timelineLoaded = false;
 const _colorMap = {

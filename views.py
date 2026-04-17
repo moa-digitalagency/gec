@@ -16,7 +16,7 @@ from sqlalchemy import or_, and_
 import logging
 
 from app import app, db
-from models import User, Courrier, CourrierAttachment, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
+from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
 
 # Le support des langues est maintenant dans utils.py
@@ -835,6 +835,7 @@ def view_mail():
     statut = request.args.get('statut', '')
     type_courrier_sortant_id = request.args.get('type_courrier_sortant_id', '')
     sg_copie = request.args.get('sg_copie', '')  # Nouveau filtre SG en copie
+    tag_filter = request.args.get('tag', '')      # Filtre par tag (nom)
     sort_by = request.args.get('sort_by', 'date_enregistrement')
     sort_order = request.args.get('sort_order', 'desc')
     
@@ -871,6 +872,12 @@ def view_mail():
         elif sg_copie == 'non':
             query = query.filter(Courrier.secretaire_general_copie == False)
     
+    # Filtre par tag
+    if tag_filter:
+        query = query.join(CourrierTag, CourrierTag.courrier_id == Courrier.id)\
+                     .join(Tag, Tag.id == CourrierTag.tag_id)\
+                     .filter(Tag.nom == tag_filter)
+
     # Filtre par statut
     if statut:
         query = query.filter(Courrier.statut == statut)
@@ -1075,6 +1082,57 @@ def bulk_action():
         flash('Action inconnue.', 'error')
 
     return redirect(url_for('view_mail'))
+
+
+@app.route('/api/tags', methods=['GET'])
+@login_required
+def api_tags_list():
+    q = request.args.get('q', '').strip()
+    query = Tag.query
+    if q:
+        query = query.filter(Tag.nom.ilike(f'%{q}%'))
+    tags = query.order_by(Tag.nom).limit(20).all()
+    return jsonify([{'id': t.id, 'nom': t.nom, 'couleur': t.couleur} for t in tags])
+
+
+@app.route('/api/tags', methods=['POST'])
+@login_required
+def api_tag_create():
+    data = request.get_json(silent=True) or {}
+    nom = sanitize_input(data.get('nom', '').strip())[:50]
+    couleur = data.get('couleur', '#6B7280')
+    if not nom:
+        return jsonify({'error': 'Nom requis'}), 400
+    existing = Tag.query.filter_by(nom=nom).first()
+    if existing:
+        return jsonify({'id': existing.id, 'nom': existing.nom, 'couleur': existing.couleur})
+    tag = Tag(nom=nom, couleur=couleur, created_by_id=current_user.id)
+    db.session.add(tag)
+    db.session.commit()
+    return jsonify({'id': tag.id, 'nom': tag.nom, 'couleur': tag.couleur}), 201
+
+
+@app.route('/api/courrier/<int:id>/tags', methods=['POST'])
+@login_required
+def api_courrier_update_tags(id):
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    data = request.get_json(silent=True) or {}
+    tag_ids = [int(x) for x in data.get('tag_ids', []) if str(x).isdigit()]
+
+    # Supprimer les liaisons existantes
+    CourrierTag.query.filter_by(courrier_id=id).delete()
+    # Recréer
+    for tid in tag_ids:
+        tag = Tag.query.get(tid)
+        if tag:
+            ct = CourrierTag(courrier_id=id, tag_id=tid, added_by_id=current_user.id)
+            db.session.add(ct)
+    db.session.commit()
+    log_activity(current_user.id, "UPDATE_TAGS",
+                 f"Tags mis à jour sur courrier {courrier.numero_accuse_reception}", id)
+    return jsonify({'ok': True, 'count': len(tag_ids)})
 
 
 @app.route('/search')

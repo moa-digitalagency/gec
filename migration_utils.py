@@ -227,6 +227,33 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration: Table courrier_attachment créée")
 
+        # Migration 8c: Tables tag et courrier_tag
+        tag_sql = f'''
+            CREATE TABLE tag (
+                id {pk_type},
+                nom VARCHAR(50) NOT NULL UNIQUE,
+                couleur VARCHAR(7) NOT NULL DEFAULT '#6B7280',
+                created_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+            )
+        '''
+        if create_table_safely(engine, 'tag', tag_sql):
+            migrations_applied += 1
+            logging.info("✓ Migration: Table tag créée")
+
+        ct_sql = f'''
+            CREATE TABLE courrier_tag (
+                courrier_id INTEGER NOT NULL REFERENCES courrier(id),
+                tag_id INTEGER NOT NULL REFERENCES tag(id),
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                added_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                PRIMARY KEY (courrier_id, tag_id)
+            )
+        '''
+        if create_table_safely(engine, 'courrier_tag', ct_sql):
+            migrations_applied += 1
+            logging.info("✓ Migration: Table courrier_tag créée")
+
         # Migration 9: Index GIN pour la recherche full-text (PostgreSQL uniquement)
         if db_type == 'postgresql':
             try:
