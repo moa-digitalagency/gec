@@ -859,6 +859,74 @@ def view_mail():
                          sort_by=sort_by,
                          sort_order=sort_order)
 
+@app.route('/bulk_action', methods=['POST'])
+@login_required
+def bulk_action():
+    action = request.form.get('action', '').strip()
+    ids_raw = request.form.getlist('ids')
+
+    # Valider les IDs
+    try:
+        ids = [int(i) for i in ids_raw if i.isdigit()]
+    except (ValueError, AttributeError):
+        flash('Sélection invalide.', 'error')
+        return redirect(url_for('view_mail'))
+
+    if not ids:
+        flash('Aucun courrier sélectionné.', 'error')
+        return redirect(url_for('view_mail'))
+
+    if len(ids) > 200:
+        flash('Maximum 200 courriers par action groupée.', 'error')
+        return redirect(url_for('view_mail'))
+
+    # Récupérer les courriers accessibles par cet utilisateur
+    courriers = Courrier.query.filter(
+        Courrier.id.in_(ids),
+        Courrier.is_deleted == False
+    ).all()
+
+    # Filtrer par accès utilisateur
+    accessible = [c for c in courriers if current_user.can_view_courrier(c)]
+
+    if not accessible:
+        audit_log("BULK_ACTION_UNAUTHORIZED", f"Tentative d'action groupée non autorisée sur {ids}")
+        abort(403)
+
+    statut_map = {
+        'statut_recu': 'RECU',
+        'statut_en_cours': 'EN_COURS',
+        'statut_traite': 'TRAITE',
+        'statut_archive': 'ARCHIVE',
+    }
+
+    if action in statut_map:
+        new_statut = statut_map[action]
+        for c in accessible:
+            c.statut = new_statut
+        db.session.commit()
+        log_activity(current_user.id, "BULK_STATUT",
+                     f"Statut → {new_statut} sur {len(accessible)} courrier(s)")
+        flash(f'Statut mis à jour pour {len(accessible)} courrier(s).', 'success')
+
+    elif action == 'delete':
+        if not current_user.has_permission('delete_mail'):
+            abort(403)
+        for c in accessible:
+            c.is_deleted = True
+            c.deleted_at = datetime.utcnow()
+            c.deleted_by_id = current_user.id
+        db.session.commit()
+        log_activity(current_user.id, "BULK_DELETE",
+                     f"Suppression groupée de {len(accessible)} courrier(s)")
+        flash(f'{len(accessible)} courrier(s) supprimé(s).', 'success')
+
+    else:
+        flash('Action inconnue.', 'error')
+
+    return redirect(url_for('view_mail'))
+
+
 @app.route('/search')
 @login_required
 def search():

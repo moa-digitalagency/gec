@@ -226,10 +226,48 @@
     </div>
     <div class="p-6">
         {% if courriers %}
+
+        <!-- Barre d'actions groupées (visible quand sélection active) -->
+        <div id="bulk-bar" class="hidden mb-4 flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <span class="text-sm font-medium text-blue-800">
+                <span id="selected-count">0</span> sélectionné(s)
+            </span>
+            <div class="flex items-center gap-2 ml-auto">
+                <form id="bulk-form" method="POST" action="{{ url_for('bulk_action') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div id="bulk-ids-container"></div>
+                    <div class="flex items-center gap-2">
+                        <select name="action" id="bulk-action-select"
+                                class="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-rdc-blue focus:border-rdc-blue">
+                            <option value="">-- Choisir une action --</option>
+                            <option value="statut_recu">Marquer : REÇU</option>
+                            <option value="statut_en_cours">Marquer : EN COURS</option>
+                            <option value="statut_traite">Marquer : TRAITÉ</option>
+                            <option value="statut_archive">Marquer : ARCHIVÉ</option>
+                            {% if current_user.has_permission('delete_mail') %}
+                            <option value="delete">Supprimer la sélection</option>
+                            {% endif %}
+                        </select>
+                        <button type="button" onclick="submitBulkAction()"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-rdc-blue hover:bg-opacity-90 transition-colors">
+                            <i class="fas fa-check mr-1"></i>Appliquer
+                        </button>
+                    </div>
+                </form>
+                <button type="button" onclick="clearSelection()"
+                        class="text-sm text-gray-500 hover:text-gray-700 underline">Désélectionner tout</button>
+            </div>
+        </div>
+
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200" id="courriers-table">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-4 py-3 w-10">
+                            <input type="checkbox" id="select-all" title="Tout sélectionner"
+                                   class="h-4 w-4 text-rdc-blue border-gray-300 rounded cursor-pointer"
+                                   onchange="toggleSelectAll(this)">
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             N° Accusé
                         </th>
@@ -261,7 +299,12 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for courrier in courriers %}
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 courrier-row">
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <input type="checkbox" value="{{ courrier.id }}"
+                                   class="row-checkbox h-4 w-4 text-rdc-blue border-gray-300 rounded cursor-pointer"
+                                   onchange="updateBulkBar()">
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rdc-blue text-white">
                                 {{ courrier.numero_accuse_reception }}
@@ -476,4 +519,45 @@
 {% block scripts %}
 <!-- Custom JS -->
 <script src="{{ url_for('static', filename='js/view_mail.js') }}"></script>
+<script>
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+}
+function updateBulkBar() {
+    const ids = getSelectedIds();
+    const bar = document.getElementById('bulk-bar');
+    document.getElementById('selected-count').textContent = ids.length;
+    bar.classList.toggle('hidden', ids.length === 0);
+    const all = document.querySelectorAll('.row-checkbox');
+    const selectAll = document.getElementById('select-all');
+    if (all.length > 0) {
+        selectAll.checked = ids.length === all.length;
+        selectAll.indeterminate = ids.length > 0 && ids.length < all.length;
+    }
+}
+function toggleSelectAll(cb) {
+    document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = cb.checked; });
+    updateBulkBar();
+}
+function clearSelection() {
+    document.querySelectorAll('.row-checkbox').forEach(c => { c.checked = false; });
+    document.getElementById('select-all').checked = false;
+    updateBulkBar();
+}
+function submitBulkAction() {
+    const action = document.getElementById('bulk-action-select').value;
+    if (!action) { alert('Veuillez choisir une action.'); return; }
+    const ids = getSelectedIds();
+    if (ids.length === 0) { alert('Veuillez sélectionner au moins un courrier.'); return; }
+    if (action === 'delete' && !confirm('Supprimer ' + ids.length + ' courrier(s) ? Cette action est irréversible.')) return;
+    const container = document.getElementById('bulk-ids-container');
+    container.innerHTML = '';
+    ids.forEach(id => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = 'ids'; inp.value = id;
+        container.appendChild(inp);
+    });
+    document.getElementById('bulk-form').submit();
+}
+</script>
 {% endblock %}
