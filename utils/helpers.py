@@ -24,7 +24,7 @@ DEFAULT_LANGUAGE_CONFIG = {
 def get_available_languages():
     """Retourne la liste des langues disponibles en détectant automatiquement les fichiers JSON"""
     languages = {}
-    lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+    lang_dir = os.path.join(os.path.dirname(__file__), '..', 'lang')
     
     if os.path.exists(lang_dir):
         for filename in os.listdir(lang_dir):
@@ -50,7 +50,7 @@ def get_available_languages():
 def get_all_languages():
     """Retourne toutes les langues (activées et désactivées)"""
     languages = {}
-    lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+    lang_dir = os.path.join(os.path.dirname(__file__), '..', 'lang')
     
     if os.path.exists(lang_dir):
         for filename in os.listdir(lang_dir):
@@ -84,7 +84,7 @@ def toggle_language_status(lang_code, enabled):
 
 def download_language_file(lang_code):
     """Télécharge le fichier de langue JSON"""
-    lang_file = os.path.join(os.path.dirname(__file__), 'lang', f'{lang_code}.json')
+    lang_file = os.path.join(os.path.dirname(__file__), '..', 'lang', f'{lang_code}.json')
     if os.path.exists(lang_file):
         return lang_file
     return None
@@ -96,7 +96,7 @@ def upload_language_file(lang_code, file_content):
         json.loads(file_content)
         
         # Créer le dossier lang s'il n'existe pas
-        lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+        lang_dir = os.path.join(os.path.dirname(__file__), '..', 'lang')
         os.makedirs(lang_dir, exist_ok=True)
         
         # Sauvegarder le fichier
@@ -110,7 +110,7 @@ def upload_language_file(lang_code, file_content):
 
 def delete_language_file(lang_code):
     """Supprime un fichier de langue"""
-    lang_file = os.path.join(os.path.dirname(__file__), 'lang', f'{lang_code}.json')
+    lang_file = os.path.join(os.path.dirname(__file__), '..', 'lang', f'{lang_code}.json')
     if os.path.exists(lang_file) and lang_code != 'fr':  # Ne pas supprimer le français
         try:
             os.remove(lang_file)
@@ -217,7 +217,8 @@ def set_language(lang_code):
 
 def load_translations(lang_code='fr'):
     """Charge les traductions pour une langue donnée"""
-    lang_dir = os.path.join(os.path.dirname(__file__), 'lang')
+    # lang/ est à la racine du projet, pas dans utils/
+    lang_dir = os.path.join(os.path.dirname(__file__), '..', 'lang')
     lang_file = os.path.join(lang_dir, f'{lang_code}.json')
     
     if not os.path.exists(lang_file):
