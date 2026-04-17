@@ -619,7 +619,10 @@ def analytics():
             'total': entrants + sortants
         })
     yearly_evolution.reverse()
-    
+
+    log_activity(current_user.id, "NAVIGATION_ANALYTIQUE",
+                 f"Consultation tableau analytique (période: {period}, total: {total_courriers} courriers)")
+
     return render_template('analytics.html',
                          total_courriers=total_courriers,
                          courriers_entrants=courriers_entrants,

@@ -27,15 +27,24 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 @login_required
 def search():
     from models import TypeCourrierSortant
-    
+
     # Récupérer les statuts disponibles pour le formulaire
     statuts_disponibles = StatutCourrier.get_statuts_actifs()
     # Récupérer les types de courrier sortant pour le formulaire
     types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
-    
-    return render_template('search.html', 
-                         statuts_disponibles=statuts_disponibles,
-                         types_courrier_sortant=types_courrier_sortant)
+
+    # Logguer l'accès à la recherche (avec termes si déjà soumis)
+    q = request.args.get('q') or request.args.get('search', '')
+    if q:
+        log_activity(current_user.id, "RECHERCHE_COURRIER",
+                     f"Recherche avancée : \"{q[:120]}\"")
+    else:
+        log_activity(current_user.id, "NAVIGATION_RECHERCHE",
+                     "Accès à la page de recherche avancée")
+
+    return render_template('search.html',
+                           statuts_disponibles=statuts_disponibles,
+                           types_courrier_sortant=types_courrier_sortant)
 
 @app.route('/api/search_suggestions')
 @login_required

@@ -1034,11 +1034,14 @@ def verify_backup_integrity(backup_filename):
         return False, f"Erreur lors de la vérification: {str(e)}"
 
 def log_activity(user_id, action, description, courrier_id=None):
-    """Enregistrer une activité dans les logs"""
+    """Enregistrer une activité dans les logs.
+    L'IP est résolue via get_client_ip() qui gère correctement X-Forwarded-For
+    validé par proxy de confiance (Nginx), évitant le spoofing et le 127.0.0.1 fixe.
+    """
     try:
-        from flask import request
-        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
-        
+        from security.auth import get_client_ip
+        ip_address = get_client_ip()
+
         from models import LogActivite
         from app import db  # Import locally to avoid circular import
         log = LogActivite(
@@ -1048,7 +1051,7 @@ def log_activity(user_id, action, description, courrier_id=None):
             courrier_id=courrier_id,
             ip_address=ip_address
         )
-        
+
         db.session.add(log)
         db.session.commit()
     except Exception as e:
@@ -1059,11 +1062,11 @@ def log_activity(user_id, action, description, courrier_id=None):
 def log_courrier_modification(courrier_id, user_id, champ_modifie, ancienne_valeur, nouvelle_valeur):
     """Enregistrer une modification de courrier"""
     try:
-        from flask import request
+        from security.auth import get_client_ip
         from models import CourrierModification
         from app import db  # Import locally to avoid circular import
-        
-        ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+
+        ip_address = get_client_ip()
         
         modification = CourrierModification(
             courrier_id=courrier_id,

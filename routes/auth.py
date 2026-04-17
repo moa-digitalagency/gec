@@ -315,6 +315,9 @@ def dashboard():
 
         role_data = _get_role_dashboard_data(current_user)
 
+        log_activity(current_user.id, "NAVIGATION_DASHBOARD",
+                     f"Consultation du tableau de bord")
+
         return render_template('dashboard.html',
                              total_courriers=stats['total_courriers'],
                              courriers_today=stats['courriers_today'],

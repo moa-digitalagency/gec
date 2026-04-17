@@ -261,6 +261,7 @@ def register_mail():
             
             # Pièces jointes supplémentaires
             extra_files = request.files.getlist('fichiers_supplementaires')
+            extra_saved = []
             for extra_file in extra_files:
                 if extra_file and extra_file.filename and extra_file.filename != '':
                     try:
@@ -281,11 +282,20 @@ def register_mail():
                                 uploaded_by_id=current_user.id
                             )
                             db.session.add(attachment)
+                            extra_saved.append(extra_file.filename)
                         else:
                             logging.warning(f"Pièce jointe supplémentaire rejetée : {msg_extra}")
                     except Exception as e_att:
                         logging.error(f"Erreur sauvegarde pièce jointe supplémentaire: {e_att}")
             db.session.commit()
+
+            # Log pièces jointes supplémentaires
+            if extra_saved:
+                log_activity(current_user.id, "UPLOAD_PIECES_JOINTES",
+                             f"{len(extra_saved)} pièce(s) jointe(s) ajoutée(s) au courrier "
+                             f"{numero_accuse} : {', '.join(extra_saved[:5])}"
+                             + (" ..." if len(extra_saved) > 5 else ""),
+                             courrier.id)
 
             flash(f'Courrier enregistré avec succès! N° d\'accusé: {numero_accuse}', 'success')
             return redirect(url_for('mail_detail', id=courrier.id))
@@ -415,8 +425,20 @@ def view_mail():
     
     # Récupérer les types de courrier sortant pour le filtre
     types_courrier_sortant = TypeCourrierSortant.query.filter_by(actif=True).order_by(TypeCourrierSortant.ordre_affichage).all()
-    
-    return render_template('view_mail.html', 
+
+    # Log navigation liste courriers (avec filtres actifs si présents)
+    filters_active = [f for f in [
+        f"recherche='{search}'" if search else None,
+        f"statut={statut}" if statut else None,
+        f"type={type_courrier}" if type_courrier else None,
+        f"du={date_from}" if date_from else None,
+        f"au={date_to}" if date_to else None,
+    ] if f]
+    log_activity(current_user.id, "NAVIGATION_LISTE_COURRIERS",
+                 f"Consultation liste courriers — page {page}, {courriers_paginated.total} résultats"
+                 + (f" [filtres: {', '.join(filters_active)}]" if filters_active else ""))
+
+    return render_template('view_mail.html',
                          courriers=courriers,
                          pagination=courriers_paginated,
                          search=search,

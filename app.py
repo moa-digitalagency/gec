@@ -26,10 +26,19 @@ if not _session_secret:
     import secrets
     _session_secret = secrets.token_hex(32)
 app.secret_key = _session_secret
-app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 30  # 30 jours
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # Token CSRF valide 1h
-app.config['SESSION_IDLE_TIMEOUT'] = 900   # 15 min d'inactivité
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7   # 7 jours (réduit de 30 → 7)
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600               # Token CSRF valide 1h
+app.config['SESSION_IDLE_TIMEOUT'] = 900               # 15 min d'inactivité
+
+# Sécurité cookies de session
+_is_production = os.environ.get("FLASK_ENV") == "production"
+app.config['SESSION_COOKIE_SECURE']   = _is_production   # HTTPS only en prod
+app.config['SESSION_COOKIE_HTTPONLY'] = True             # Inaccessible au JS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'           # Protège contre CSRF cross-site
+
+# ProxyFix : x_for=1 résout REMOTE_ADDR depuis X-Forwarded-For (Nginx → Flask)
+# Sans ça, REMOTE_ADDR reste 127.0.0.1 et les logs affichent toujours l'IP du proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Configure the database
 # Strict enforcement of DATABASE_URL and PostgreSQL for production

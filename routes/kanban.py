@@ -47,6 +47,10 @@ def kanban_view():
             columns.setdefault(c.statut, []).append(c)
 
     today = datetime.utcnow().date()
+    total = sum(len(v) for v in columns.values())
+    log_activity(current_user.id, "NAVIGATION_KANBAN",
+                 f"Consultation vue Kanban ({total} courriers{', type: ' + type_courrier if type_courrier else ''})")
+
     return render_template(
         'kanban.html',
         columns=columns,
