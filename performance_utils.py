@@ -211,40 +211,67 @@ def get_database_stats():
         return {}
 
 def optimize_search_query(search_term, query_class):
-    """Optimize full-text search queries"""
+    """
+    Optimise la recherche full-text.
+    - PostgreSQL : utilise to_tsvector / plainto_tsquery sur un champ concaténé
+    - SQLite / autre : fallback ILIKE multi-champ
+    """
     if not search_term or len(search_term.strip()) < 2:
         return None
-    
-    # Clean search term
+
     search_term = search_term.strip()
-    
-    # Split into words for better matching
+
+    # Détection PostgreSQL
+    db_url = str(db.engine.url)
+    if db_url.startswith("postgresql"):
+        return _pg_fts_condition(search_term, query_class)
+
+    # Fallback ILIKE (SQLite / dev)
+    from sqlalchemy import or_
     words = search_term.split()
-    
-    search_conditions = []
-    
-    # Add conditions for each word - including all metadata fields
+    conditions = []
     for word in words:
-        if len(word) >= 2:  # Only search words with 2+ characters
-            word_pattern = f"%{word}%"
-            search_conditions.extend([
-                query_class.numero_accuse_reception.ilike(word_pattern),
-                query_class.numero_reference.ilike(word_pattern),
-                query_class.objet.ilike(word_pattern),
-                query_class.expediteur.ilike(word_pattern),
-                query_class.destinataire.ilike(word_pattern),
-                query_class.statut.ilike(word_pattern),
-                query_class.autres_informations.ilike(word_pattern) if hasattr(query_class, 'autres_informations') else None,
-                query_class.fichier_nom.ilike(word_pattern) if hasattr(query_class, 'fichier_nom') else None
-            ])
-            # Remove None values from search conditions
-            search_conditions = [c for c in search_conditions if c is not None]
-    
-    if search_conditions:
-        from sqlalchemy import or_
-        return or_(*search_conditions)
-    
-    return None
+        if len(word) >= 2:
+            pat = f"%{word}%"
+            conditions.extend([c for c in [
+                query_class.numero_accuse_reception.ilike(pat),
+                query_class.numero_reference.ilike(pat),
+                query_class.objet.ilike(pat),
+                query_class.expediteur.ilike(pat),
+                query_class.destinataire.ilike(pat),
+                query_class.statut.ilike(pat),
+                query_class.autres_informations.ilike(pat) if hasattr(query_class, 'autres_informations') else None,
+                query_class.fichier_nom.ilike(pat) if hasattr(query_class, 'fichier_nom') else None,
+            ] if c is not None])
+    return or_(*conditions) if conditions else None
+
+
+def _pg_fts_condition(search_term: str, query_class):
+    """
+    Retourne une condition SQLAlchemy utilisant to_tsvector + plainto_tsquery.
+    Concatène : objet, expediteur, destinataire, numero_accuse_reception, numero_reference.
+    """
+    from sqlalchemy import func, cast
+    from sqlalchemy.dialects.postgresql import TSVECTOR
+    from sqlalchemy import or_
+
+    # Construire le vecteur de recherche sur les colonnes textuelles
+    concat_expr = func.concat_ws(
+        ' ',
+        func.coalesce(query_class.objet, ''),
+        func.coalesce(query_class.expediteur, ''),
+        func.coalesce(query_class.destinataire, ''),
+        func.coalesce(query_class.numero_accuse_reception, ''),
+        func.coalesce(func.cast(query_class.numero_reference, db.String), ''),
+    )
+    vector = func.to_tsvector('french', concat_expr)
+    query_expr = func.plainto_tsquery('french', search_term)
+    fts_cond = vector.op('@@')(query_expr)
+
+    # Aussi chercher avec ILIKE sur le numéro pour robustesse (codes courts)
+    ilike_cond = query_class.numero_accuse_reception.ilike(f'%{search_term}%')
+
+    return or_(fts_cond, ilike_cond)
 
 def batch_process_items(items, batch_size=100, processor_func=None):
     """Process items in batches for better performance"""

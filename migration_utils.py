@@ -227,6 +227,34 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration: Table courrier_attachment créée")
 
+        # Migration 9: Index GIN pour la recherche full-text (PostgreSQL uniquement)
+        if db_type == 'postgresql':
+            try:
+                with engine.connect() as conn:
+                    # Vérifier si l'index existe déjà
+                    result = conn.execute(text(
+                        "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_courrier_fts'"
+                    ))
+                    if not result.fetchone():
+                        conn.execute(text("""
+                            CREATE INDEX CONCURRENTLY idx_courrier_fts
+                            ON courrier
+                            USING gin(
+                                to_tsvector('french',
+                                    coalesce(objet,'') || ' ' ||
+                                    coalesce(expediteur,'') || ' ' ||
+                                    coalesce(destinataire,'') || ' ' ||
+                                    coalesce(numero_accuse_reception,'') || ' ' ||
+                                    coalesce(numero_reference,'')
+                                )
+                            )
+                        """))
+                        conn.commit()
+                        migrations_applied += 1
+                        logging.info("✓ Migration: Index GIN full-text idx_courrier_fts créé")
+            except Exception as e:
+                logging.warning(f"Index GIN (optionnel) non créé: {e}")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements
