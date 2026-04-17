@@ -270,11 +270,11 @@
       <div class="gec-empty">
         <div class="gec-empty-icon"><i class="fas fa-search"></i></div>
         <div class="gec-empty-title">Aucun courrier trouvé</div>
-        <div class="gec-empty-desc">
-          Essayez de modifier vos critères de recherche ou
-          <a href="{{ url_for('register_mail') }}" style="color:var(--primary);">enregistrez un nouveau courrier</a>.
+        <div class="gec-empty-desc">Essayez de modifier vos critères de recherche ou enregistrez un nouveau courrier.</div>
+        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+          <a href="{{ url_for('register_mail') }}" class="gec-btn gec-btn-primary"><i class="fas fa-plus"></i> Nouveau courrier</a>
+          <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-sync-alt"></i> Voir tous les courriers</a>
         </div>
-        <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary" style="margin-top:1rem;"><i class="fas fa-refresh"></i> Voir tous les courriers</a>
       </div>
       {% endif %}
 
