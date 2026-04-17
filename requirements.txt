@@ -13,6 +13,7 @@
 Flask==3.1.1                    # Framework web Python
 Flask-SQLAlchemy==3.1.1        # Extension ORM pour Flask
 Flask-Login==0.6.3             # Gestion de l'authentification
+Flask-WTF==1.2.1               # Protection CSRF globale
 Werkzeug==3.1.3                # Utilitaires WSGI et sécurité
 gunicorn==23.0.0               # Serveur WSGI pour production
 
