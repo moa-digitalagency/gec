@@ -7,7 +7,13 @@
 
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="alternate icon" type="image/png" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#3B82F6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GEC">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.svg') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <!-- Fonts & Icons -->
@@ -548,5 +554,10 @@ window.showFlash = function(message, type) {
 </script>
 
 {% block scripts %}{% endblock %}
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('{{ url_for("static", filename="js/sw.js") }}');
+}
+</script>
 </body>
 </html>

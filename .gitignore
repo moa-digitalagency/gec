@@ -1,46 +1,78 @@
 
-# Fichiers de sécurité - NE PAS COMMITTER!
+# ─── Sécurité — NE JAMAIS COMMITTER ───────────────────────────────────────────
 .env
 keys_backup_*.txt
 *.key
 *.pem
 
-# Dossiers de cache
+# ─── Configuration locale Claude / CI ─────────────────────────────────────────
+.claude/
+.github/
+
+# ─── Tests et couverture ──────────────────────────────────────────────────────
+tests/
+test/
+.pytest_cache/
+pytest.ini
+*.coverage
+htmlcov/
+
+# ─── Cache Python ─────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
 
-# Fichiers temporaires
-*.tmp
-temp/
-.temp/
+# ─── Environnements virtuels ───────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
 
-# Logs de sécurité
-security.log
-audit.log
-
-# Dossier instance et bases de données locales
+# ─── Dossier instance Flask (DB locale, config runtime) ───────────────────────
 instance/
 *.db
 *.sqlite
 *.sqlite3
 
-# Fichiers de données utilisateur
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+security.log
+audit.log
+
+# ─── Données runtime (générées par l'application) ─────────────────────────────
 static/uploads/
+exports/
+backups/
+forward_attachments/
+security/temp/
 data/
 
-# Fichiers de session / cookies de développement
+# ─── Fichiers temporaires ──────────────────────────────────────────────────────
+*.tmp
+temp/
+.temp/
+
+# ─── Fichiers de session / cookies de développement ──────────────────────────
 cookies.txt
 *.cookies
 
-# Environnements virtuels
-venv/
-.venv/
-env/
-
-# Screenshots et captures
+# ─── Screenshots et captures (dossier test local) ────────────────────────────
 screenshots/
 
-# Fichiers IDE
+# ─── OS / IDE ─────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# ─── Build / packaging ────────────────────────────────────────────────────────
+*.egg-info/
+dist/
+build/
+node_modules/

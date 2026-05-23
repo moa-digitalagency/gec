@@ -554,6 +554,72 @@
     </div>
     {% endif %}
 
+    <!-- ── Historique Signé ── -->
+    {% if action_signatures %}
+    <div class="gec-card" id="signed-history-card" style="position:relative;overflow:hidden;">
+      <div class="gec-card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span class="gec-card-title"><i class="fas fa-shield-alt"></i> Historique Signé</span>
+          <span class="gec-badge gec-badge-blue">{{ action_signatures|length }}</span>
+        </div>
+        <button onclick="verifySignatureChain({{ courrier.id }})"
+                style="font-size:.75rem;padding:.3rem .75rem;border:1px solid var(--primary);border-radius:var(--r-sm);background:transparent;color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:.375rem;"
+                id="verifyBtn">
+          <i class="fas fa-check-double"></i> Vérifier l'intégrité
+        </button>
+      </div>
+      <div class="gec-card-body" style="padding-top:.75rem;">
+        <div id="verifyResult" style="display:none;margin-bottom:.75rem;padding:.625rem .875rem;border-radius:var(--r-sm);font-size:.8125rem;font-weight:500;"></div>
+
+        <div style="position:relative;padding-left:1.75rem;">
+          <!-- Ligne verticale -->
+          <div style="position:absolute;left:.6rem;top:0;bottom:0;width:2px;background:var(--border);border-radius:2px;"></div>
+
+          {% for sig in action_signatures %}
+          {% set meta = sig.get_action_meta() %}
+          <div style="position:relative;margin-bottom:1.125rem;padding-bottom:1.125rem;border-bottom:1px solid var(--border);" class="sig-entry">
+            <!-- Icône sur la ligne -->
+            <div style="position:absolute;left:-1.75rem;width:1.25rem;height:1.25rem;border-radius:50%;background:var(--card-bg);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;top:.125rem;">
+              <i class="{{ meta.icon }} {{ meta.color }}" style="font-size:.5rem;"></i>
+            </div>
+
+            <!-- En-tête entrée -->
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.375rem;">
+              <!-- Avatar initiales -->
+              <div style="width:1.5rem;height:1.5rem;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;color:#fff;flex-shrink:0;">
+                {{ sig.user_nom[:2]|upper }}
+              </div>
+              <span style="font-weight:600;font-size:.8125rem;color:var(--t-primary);">{{ sig.user_nom }}</span>
+              <span style="font-size:.6875rem;color:var(--t-muted);">({{ sig.user_role }})</span>
+              <span class="gec-badge gec-badge-{{ meta.badge_color }}" style="font-size:.625rem;padding:.125rem .5rem;">{{ meta.label }}</span>
+              <span style="font-size:.6875rem;color:var(--t-muted);margin-left:auto;">{{ sig.timestamp.strftime('%d/%m/%Y %H:%M') }}</span>
+            </div>
+
+            <!-- Détails -->
+            {% if sig.details %}
+            {% set det = sig.get_details_dict() %}
+            {% if det %}
+            <div style="font-size:.75rem;color:var(--t-secondary);padding:.375rem .625rem;background:var(--body-bg);border-radius:var(--r-sm);border:1px solid var(--border);margin-bottom:.375rem;">
+              {% for k, v in det.items() %}{% if v %}<span style="margin-right:.75rem;"><strong>{{ k }}:</strong> {{ v }}</span>{% endif %}{% endfor %}
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- Hash tronqué -->
+            <div style="font-size:.6875rem;color:var(--t-muted);display:flex;align-items:center;gap:.375rem;">
+              <i class="fas fa-fingerprint"></i>
+              <span title="{{ sig.hash_signature }}" style="cursor:help;font-family:monospace;">{{ sig.hash_signature[:8] }}…</span>
+              {% if sig.ip_address %}
+              <span style="margin-left:.5rem;"><i class="fas fa-map-marker-alt"></i> {{ sig.ip_address }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
   </div><!-- /main column -->
 
   <!-- ═══════════════════════════════════════════════
@@ -761,6 +827,41 @@ function confirmDeleteMail(id, numero) {
     form.action = `/delete_courrier/${id}`;
     document.body.appendChild(form);
     form.submit();
+  }
+}
+
+// ── Verify signature chain ────────────────────────────────────────────────────
+function _setVerifyResult(result, ok, text) {
+  const colors = ok === true
+    ? { bg: 'rgba(22,163,74,.1)', border: '#16a34a', color: '#16a34a' }
+    : ok === false
+    ? { bg: 'rgba(220,38,38,.1)', border: '#dc2626', color: '#dc2626' }
+    : { bg: 'rgba(245,158,11,.1)', border: '#f59e0b', color: '#f59e0b' };
+  result.style.background = colors.bg;
+  result.style.border = '1px solid ' + colors.border;
+  result.style.color = colors.color;
+  result.textContent = text;
+  result.style.display = 'block';
+}
+async function verifySignatureChain(courrierId) {
+  const btn = document.getElementById('verifyBtn');
+  const result = document.getElementById('verifyResult');
+  btn.disabled = true;
+  btn.textContent = ' Vérification…';
+  result.style.display = 'none';
+  try {
+    const resp = await fetch('/api/courrier/' + courrierId + '/verify_signatures');
+    const data = await resp.json();
+    if (data.valid) {
+      _setVerifyResult(result, true, '✓ Chaîne intègre — ' + data.entries + ' entrée(s) vérifiée(s)');
+    } else {
+      _setVerifyResult(result, false, '✗ Intégrité compromise à l\'entrée #' + data.broken_at);
+    }
+  } catch(e) {
+    _setVerifyResult(result, null, '⚠ Erreur lors de la vérification');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = ' Vérifier l\'intégrité';
   }
 }
 
@@ -1024,4 +1125,21 @@ async function signatureAction(sigId, action) {
 <style>
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 </style>
+<script>
+// ── Skeleton — signed history card ────────────────────────────────────────────
+(function () {
+  var card = document.getElementById('signed-history-card');
+  if (!card) return;
+  var sk = document.createElement('div');
+  sk.className = 'gec-skeleton';
+  sk.style.cssText = 'position:absolute;inset:0;z-index:2;';
+  card.appendChild(sk);
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      sk.remove();
+      card.style.overflow = '';
+    });
+  });
+})();
+</script>
 {% endblock %}

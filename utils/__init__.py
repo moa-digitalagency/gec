@@ -30,6 +30,7 @@ from utils.helpers import (
     log_activity,
     log_courrier_modification,
     get_all_senders,
+    sign_courrier_action,
 )
 
 from utils.pdf import (

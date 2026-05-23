@@ -165,6 +165,7 @@ class CourrierAttachment(db.Model):
     fichier_chemin = db.Column(db.String(500), nullable=False)
     fichier_type = db.Column(db.String(50), nullable=True)
     fichier_taille = db.Column(db.Integer, nullable=True)
+    fichier_encrypted = db.Column(db.Boolean, default=False, nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
@@ -286,3 +287,98 @@ class CourrierSignature(db.Model):
 
     def __repr__(self):
         return f'<CourrierSignature courrier={self.courrier_id} user={self.signataire_id} ordre={self.ordre} statut={self.statut}>'
+
+
+class CourrierActionSignature(db.Model):
+    """Signature électronique de non-répudiation pour chaque action sur un courrier.
+
+    Forme une chaîne de hashes : chaque entrée inclut le hash de l'entrée précédente,
+    rendant toute falsification rétroactive détectable.
+    """
+    __tablename__ = 'courrier_action_signature'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    courrier_id    = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=False, index=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    # Snapshots immuables de l'identité au moment de l'action
+    user_nom       = db.Column(db.String(120), nullable=False)
+    user_role      = db.Column(db.String(20), nullable=False)
+    # Type d'action
+    action_type    = db.Column(db.String(50), nullable=False, index=True)
+    # Détails JSON de l'action (champ modifié, ancienne/nouvelle valeur, destinataire…)
+    details        = db.Column(db.Text, nullable=True)
+    ip_address     = db.Column(db.String(45), nullable=True)
+    timestamp      = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    # Chaîne de hashes
+    previous_hash  = db.Column(db.String(64), nullable=True)
+    hash_signature = db.Column(db.String(64), nullable=False)
+
+    courrier = db.relationship('Courrier',
+                               backref=db.backref('action_signatures', lazy='dynamic',
+                                                  order_by='CourrierActionSignature.timestamp'))
+    user = db.relationship('User', foreign_keys=[user_id],
+                           backref='action_signatures')
+
+    # Types d'actions reconnus
+    ACTIONS = {
+        'CREATION':       ('fas fa-plus-circle', 'text-green-600', 'Création'),
+        'MODIF_STATUT':   ('fas fa-exchange-alt', 'text-blue-600', 'Changement de statut'),
+        'MODIF_CHAMP':    ('fas fa-edit', 'text-yellow-600', 'Modification'),
+        'TRANSMISSION':   ('fas fa-share', 'text-purple-600', 'Transmission'),
+        'COMMENTAIRE':    ('fas fa-comment', 'text-indigo-600', 'Commentaire'),
+        'ANNOTATION':     ('fas fa-highlighter', 'text-orange-600', 'Annotation'),
+        'INSTRUCTION':    ('fas fa-tasks', 'text-red-600', 'Instruction'),
+        'TELECHARGEMENT': ('fas fa-download', 'text-gray-600', 'Téléchargement'),
+        'VISUALISATION':  ('fas fa-eye', 'text-gray-500', 'Visualisation'),
+        'SIGNATURE':      ('fas fa-signature', 'text-green-700', 'Signature'),
+        'REJET':          ('fas fa-times-circle', 'text-red-700', 'Rejet'),
+        'SUPPRESSION':    ('fas fa-trash', 'text-red-600', 'Suppression'),
+        'RESTAURATION':   ('fas fa-undo', 'text-green-500', 'Restauration'),
+        'CIRCUIT_INIT':   ('fas fa-project-diagram', 'text-blue-500', 'Circuit initié'),
+    }
+
+    @property
+    def action_icon(self):
+        return self.ACTIONS.get(self.action_type, ('fas fa-circle', 'text-gray-400', self.action_type))[0]
+
+    @property
+    def action_color(self):
+        return self.ACTIONS.get(self.action_type, ('fas fa-circle', 'text-gray-400', self.action_type))[1]
+
+    @property
+    def action_label(self):
+        return self.ACTIONS.get(self.action_type, ('fas fa-circle', 'text-gray-400', self.action_type))[2]
+
+    @property
+    def hash_short(self):
+        return self.hash_signature[:8] if self.hash_signature else '--------'
+
+    # badge_color maps to gec-badge-* CSS classes
+    BADGE_COLORS = {
+        'CREATION': 'green', 'MODIF_STATUT': 'blue', 'MODIF_CHAMP': 'yellow',
+        'TRANSMISSION': 'blue', 'COMMENTAIRE': 'blue', 'ANNOTATION': 'yellow',
+        'INSTRUCTION': 'red', 'TELECHARGEMENT': 'gray', 'VISUALISATION': 'gray',
+        'SIGNATURE': 'green', 'REJET': 'red', 'SUPPRESSION': 'red',
+        'RESTAURATION': 'green', 'CIRCUIT_INIT': 'blue',
+    }
+
+    def get_action_meta(self):
+        icon, color, label = self.ACTIONS.get(
+            self.action_type, ('fas fa-circle', 'text-gray-400', self.action_type)
+        )
+        return {
+            'icon': icon,
+            'color': color,
+            'label': label,
+            'badge_color': self.BADGE_COLORS.get(self.action_type, 'gray'),
+        }
+
+    def get_details_dict(self):
+        import json
+        try:
+            return json.loads(self.details) if self.details else {}
+        except Exception:
+            return {}
+
+    def __repr__(self):
+        return f'<CourrierActionSignature {self.action_type} courrier={self.courrier_id} user={self.user_id}>'

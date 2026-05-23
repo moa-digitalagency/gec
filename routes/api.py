@@ -146,3 +146,40 @@ def courrier_timeline(id):
     return jsonify(events)
 
 
+@app.route('/api/courrier/<int:id>/verify_signatures')
+@login_required
+def verify_signatures(id):
+    """Revalide toute la chaîne de hashes pour un courrier.
+    Retourne { valid: bool, entries: int, broken_at: int|null }
+    """
+    import hashlib
+    from models.courrier import CourrierActionSignature
+
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+
+    entries = (CourrierActionSignature.query
+               .filter_by(courrier_id=id)
+               .order_by(CourrierActionSignature.timestamp.asc())
+               .all())
+
+    if not entries:
+        return jsonify({'valid': True, 'entries': 0, 'broken_at': None})
+
+    expected_prev = '0' * 64
+    for entry in entries:
+        if entry.previous_hash != expected_prev:
+            return jsonify({'valid': False, 'entries': len(entries), 'broken_at': entry.id})
+
+        payload = (f"{entry.timestamp.isoformat()}|{entry.user_id}|{entry.action_type}|"
+                   f"{entry.courrier_id}|{entry.details or ''}|{entry.previous_hash}")
+        computed = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+        if computed != entry.hash_signature:
+            return jsonify({'valid': False, 'entries': len(entries), 'broken_at': entry.id})
+
+        expected_prev = entry.hash_signature
+
+    return jsonify({'valid': True, 'entries': len(entries), 'broken_at': None})
+
+

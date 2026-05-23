@@ -17,8 +17,8 @@ import logging
 
 from app import app, db
 from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward, CourrierSignature
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files
-from services.email import send_new_mail_notification, send_mail_forwarded_notification
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action
+from services.email import send_new_mail_notification, send_mail_forwarded_notification, send_comment_notification
 from routes.auth import apply_mail_access_filter
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
@@ -199,9 +199,15 @@ def register_mail():
         try:
             db.session.add(courrier)
             db.session.commit()
-            
+
+            sign_courrier_action(courrier.id, current_user, 'CREATION', {
+                'numero_accuse': numero_accuse,
+                'type': type_courrier,
+                'objet': objet,
+            })
+
             # Log de l'activité
-            log_activity(current_user.id, "ENREGISTREMENT_COURRIER", 
+            log_activity(current_user.id, "ENREGISTREMENT_COURRIER",
                         f"Enregistrement du courrier {numero_accuse}", courrier.id)
             
             # Notification SG en copie : notifier le(s) super_admin si le SG doit être informé
@@ -668,15 +674,23 @@ def mail_detail(id):
     
     # Récupérer tous les utilisateurs actifs pour la transmission (disponible à tous)
     users = User.query.filter_by(actif=True).order_by(User.nom_complet).all()
-    
-    log_activity(current_user.id, "CONSULTATION_COURRIER", 
+
+    # Récupérer les signatures d'actions pour la timeline signée
+    from models.courrier import CourrierActionSignature
+    action_signatures = (CourrierActionSignature.query
+                         .filter_by(courrier_id=id)
+                         .order_by(CourrierActionSignature.timestamp.asc())
+                         .all())
+
+    log_activity(current_user.id, "CONSULTATION_COURRIER",
                 f"Consultation du courrier {courrier.numero_accuse_reception}", courrier.id)
-    return render_template('mail_detail_new.html', 
+    return render_template('mail_detail_new.html',
                           courrier=courrier,
                           statuts_disponibles=statuts_disponibles,
                           comments=comments,
                           forwards=forwards,
-                          users=users)
+                          users=users,
+                          action_signatures=action_signatures)
 
 @app.route('/edit_courrier/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -781,9 +795,14 @@ def edit_courrier(id):
             
             # Mettre à jour le modifieur et la date
             courrier.modifie_par_id = current_user.id
-            
+
+            if changes:
+                sign_courrier_action(courrier.id, current_user, 'MODIF_CHAMP', {
+                    'champs': changes,
+                })
+
             db.session.commit()
-            
+
             if changes:
                 changes_text = ', '.join(changes)
                 log_activity(current_user.id, "MODIFICATION_COURRIER", 
@@ -862,6 +881,13 @@ def download_file(id):
         if os.path.exists(file_path):
             log_activity(current_user.id, "TELECHARGEMENT_FICHIER",
                         f"Téléchargement du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
+            try:
+                sign_courrier_action(courrier.id, current_user, 'TELECHARGEMENT',
+                                     {'fichier': courrier.fichier_nom})
+                db.session.commit()
+            except Exception as _se:
+                db.session.rollback()
+                logging.warning(f"Signature téléchargement ignorée: {_se}")
 
             # Déchiffrement si nécessaire avant envoi
             send_path = file_path
@@ -890,10 +916,17 @@ def download_file(id):
                 elif ext == 'png':
                     mimetype = 'image/png'
 
-            return send_from_directory(directory, filename,
-                                     as_attachment=True,
-                                     download_name=courrier.fichier_nom,
-                                     mimetype=mimetype)
+            try:
+                return send_from_directory(directory, filename,
+                                         as_attachment=True,
+                                         download_name=courrier.fichier_nom,
+                                         mimetype=mimetype)
+            finally:
+                if temp_decrypted and os.path.exists(temp_decrypted):
+                    try:
+                        os.remove(temp_decrypted)
+                    except Exception:
+                        pass
         else:
             logging.error(f"Fichier non trouvé au chemin: {file_path}")
             # Essayer de lister le contenu du dossier uploads
@@ -935,6 +968,7 @@ def download_attachment(attachment_id):
 
     # Déchiffrement si nécessaire avant envoi
     send_path = file_path
+    temp_dec = None
     if getattr(attachment, 'fichier_encrypted', False):
         try:
             temp_dec = decrypt_file_for_download(file_path)
@@ -947,13 +981,20 @@ def download_attachment(attachment_id):
     mimetype_map = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
     mimetype = mimetype_map.get(ext, 'application/octet-stream')
 
-    return send_from_directory(
-        os.path.dirname(send_path),
-        os.path.basename(send_path),
-        as_attachment=True,
-        download_name=attachment.fichier_nom,
-        mimetype=mimetype
-    )
+    try:
+        return send_from_directory(
+            os.path.dirname(send_path),
+            os.path.basename(send_path),
+            as_attachment=True,
+            download_name=attachment.fichier_nom,
+            mimetype=mimetype
+        )
+    finally:
+        if temp_dec and os.path.exists(temp_dec):
+            try:
+                os.remove(temp_dec)
+            except Exception:
+                pass
 
 
 @app.route('/change_status/<int:id>', methods=['POST'])
@@ -978,6 +1019,10 @@ def change_status(id):
             ip_address=get_client_ip()
         )
         db.session.add(mod)
+        sign_courrier_action(courrier.id, current_user, 'MODIF_STATUT', {
+            'ancien_statut': old_status,
+            'nouveau_statut': new_status,
+        })
 
         try:
             db.session.commit()
@@ -1029,6 +1074,10 @@ def circuit_signature(id):
                 initiated_by_id=current_user.id,
             )
             db.session.add(sig)
+
+        sign_courrier_action(courrier.id, current_user, 'CIRCUIT_INIT', {
+            'signataires': signataire_ids,
+        })
 
         try:
             db.session.commit()
@@ -1105,6 +1154,11 @@ def signature_action(sig_id):
         nouvelle_valeur=action,
         ip_address=get_client_ip()
     ))
+    sign_courrier_action(courrier.id, current_user,
+                         'SIGNATURE' if action == 'SIGNED' else 'REJET', {
+                             'commentaire': commentaire or None,
+                             'ordre': sig.ordre,
+                         })
 
     try:
         db.session.commit()
@@ -1170,7 +1224,11 @@ def _notify_circuit_rejected(courrier, sig):
 @login_required
 def view_file(id):
     courrier = Courrier.query.get_or_404(id)
-    
+
+    if not current_user.can_view_courrier(courrier):
+        audit_log("UNAUTHORIZED_VIEW", f"Tentative d'accès non autorisé au fichier du courrier {id}")
+        abort(403)
+
     # Debug logging
     logging.info(f"Tentative de visualisation - ID: {id}")
     logging.info(f"Chemin dans DB: {courrier.fichier_chemin}")
@@ -1194,14 +1252,22 @@ def view_file(id):
         if os.path.exists(file_path):
             log_activity(current_user.id, "VISUALISATION_FICHIER",
                         f"Visualisation du fichier du courrier {courrier.numero_accuse_reception}", courrier.id)
+            try:
+                sign_courrier_action(courrier.id, current_user, 'VISUALISATION',
+                                     {'fichier': courrier.fichier_nom})
+                db.session.commit()
+            except Exception as _se:
+                db.session.rollback()
+                logging.warning(f"Signature visualisation ignorée: {_se}")
 
             # Déchiffrement si nécessaire avant affichage
             send_path = file_path
+            temp_dec_view = None
             if getattr(courrier, 'fichier_encrypted', False):
                 try:
-                    temp_dec = decrypt_file_for_download(file_path)
-                    if temp_dec:
-                        send_path = temp_dec
+                    temp_dec_view = decrypt_file_for_download(file_path)
+                    if temp_dec_view:
+                        send_path = temp_dec_view
                 except Exception as e_dec:
                     logging.warning(f"Déchiffrement visualisation ignoré : {e_dec}")
 
@@ -1221,9 +1287,16 @@ def view_file(id):
                 elif ext == 'png':
                     mimetype = 'image/png'
 
-            return send_from_directory(directory, filename,
-                                     as_attachment=False,
-                                     mimetype=mimetype)
+            try:
+                return send_from_directory(directory, filename,
+                                         as_attachment=False,
+                                         mimetype=mimetype)
+            finally:
+                if temp_dec_view and os.path.exists(temp_dec_view):
+                    try:
+                        os.remove(temp_dec_view)
+                    except Exception:
+                        pass
         else:
             logging.error(f"Fichier non trouvé au chemin: {file_path}")
     else:
@@ -1247,7 +1320,11 @@ def delete_courrier(id):
     courrier.is_deleted = True
     courrier.deleted_at = datetime.utcnow()
     courrier.deleted_by_id = current_user.id
-    
+
+    sign_courrier_action(courrier.id, current_user, 'SUPPRESSION', {
+        'numero_accuse': courrier.numero_accuse_reception,
+    })
+
     try:
         db.session.commit()
         log_activity(current_user.id, "SUPPRESSION_COURRIER", 
@@ -1275,7 +1352,11 @@ def restore_courrier(id):
     courrier.is_deleted = False
     courrier.deleted_at = None
     courrier.deleted_by_id = None
-    
+
+    sign_courrier_action(courrier.id, current_user, 'RESTAURATION', {
+        'numero_accuse': courrier.numero_accuse_reception,
+    })
+
     try:
         db.session.commit()
         log_activity(current_user.id, "RESTAURATION_COURRIER", 
@@ -1336,6 +1417,7 @@ def profile_photo(filename):
     return send_file(os.path.join(profile_folder, filename))
 
 @app.route('/uploads/<filename>')
+@login_required
 def uploaded_file(filename):
     """Servir les fichiers uploadés (logos, etc.)"""
     try:
@@ -1374,7 +1456,8 @@ def forward_mail(courrier_id):
         file = request.files['attachment']
         if file and file.filename:
             # Valider le fichier
-            if validate_file_upload(file):
+            is_valid_fwd, _ = validate_file_upload(file)
+            if is_valid_fwd:
                 # Créer le répertoire s'il n'existe pas
                 forward_uploads_dir = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), 'forwards')
                 os.makedirs(forward_uploads_dir, exist_ok=True)
@@ -1416,8 +1499,14 @@ def forward_mail(courrier_id):
     
     try:
         db.session.add(forward)
+        sign_courrier_action(courrier_id, current_user, 'TRANSMISSION', {
+            'destinataire_id': int(user_id),
+            'destinataire_nom': user.nom_complet,
+            'message': message or None,
+            'fichier_joint': attachment_original_name or None,
+        })
         db.session.commit()
-        
+
         # Créer une notification dans l'application
         Notification.create_notification(
             user_id=user_id,
@@ -1520,10 +1609,21 @@ def add_comment(courrier_id):
         type_comment=type_comment
     )
     
+    action_type_map = {
+        'comment': 'COMMENTAIRE',
+        'annotation': 'ANNOTATION',
+        'instruction': 'INSTRUCTION',
+    }
+
     try:
         db.session.add(comment)
+        sign_courrier_action(courrier_id, current_user,
+                             action_type_map.get(type_comment, 'COMMENTAIRE'), {
+                                 'type': type_comment,
+                                 'extrait': commentaire[:200],
+                             })
         db.session.commit()
-        
+
         # Identifier les personnes à notifier (créateur + dernière personne qui a reçu le courrier)
         users_to_notify = set()
         

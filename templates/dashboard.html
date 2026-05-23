@@ -53,7 +53,7 @@
 </div>
 
 <!-- ── Stat Cards ─────────────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
+<div id="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
 
   <div class="gec-stat-card">
     <div class="gec-stat-icon blue"><i class="fas fa-inbox"></i></div>
@@ -447,6 +447,32 @@
 
 {% block scripts %}
 <script>
+// ── Skeleton loading — stat grid ────────────────────────────────────────────
+(function () {
+  var grid = document.getElementById('stat-grid');
+  if (!grid) return;
+  var cards = grid.querySelectorAll('.gec-stat-card');
+  // Freeze card dimensions and overlay a skeleton shimmer
+  cards.forEach(function (card) {
+    var sk = document.createElement('div');
+    sk.className = 'gec-skeleton gec-skeleton-card';
+    sk.style.cssText = 'position:absolute;inset:0;z-index:1;border-radius:inherit;';
+    card.style.position = 'relative';
+    card.style.overflow = 'hidden';
+    card.appendChild(sk);
+  });
+  // Remove after first paint
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      cards.forEach(function (card) {
+        var sk = card.querySelector('.gec-skeleton');
+        if (sk) sk.remove();
+        card.style.overflow = '';
+      });
+    });
+  });
+})();
+
 (function updateDashClock() {
   var el = document.getElementById('dash-datetime');
   if (!el) return;

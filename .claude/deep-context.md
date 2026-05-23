@@ -1,16 +1,16 @@
 # GEC — Contexte Domaine Approfondi
 
-> Ce fichier contient tout ce qui ne se dérive pas du code :  
+> Ce fichier contient tout ce qui ne se dérive pas du code :
 > le métier, les règles implicites, le contexte client.
 
 ---
 
 ## Qu'est-ce que GEC ?
 
-**GEC** (Gestion Électronique du Courrier) est un logiciel propriétaire MOA Digital Agency.  
+**GEC** (Gestion Électronique du Courrier) est un logiciel propriétaire MOA Digital Agency.
 Il sert à dématérialiser et tracer tous les flux de courrier (entrant et sortant) d'une administration ou entreprise.
 
-**Cible principale** : administrations publiques africaines (RDC en priorité).  
+**Cible principale** : administrations publiques africaines (RDC en priorité).
 **Contexte réglementaire** : besoin de traçabilité stricte, d'audit, et de sécurité des données sensibles.
 
 ---
@@ -30,7 +30,6 @@ Il sert à dématérialiser et tracer tous les flux de courrier (entrant et sort
 1. Agent rédige/enregistre un courrier à envoyer
 2. Champs : destinataire, type (Note circulaire, Lettre, Mémorandum...), objet, date d'émission
 3. Même cycle de statuts qu'entrant
-4. Pas d'expéditeur (c'est l'organisme lui-même)
 
 ### Transmission (Forward)
 - N'importe quel utilisateur autorisé peut transmettre un courrier à un collègue
@@ -45,14 +44,72 @@ Il sert à dématérialiser et tracer tous les flux de courrier (entrant et sort
 La visibilité des courriers suit cette hiérarchie (cf. `User.can_view_courrier()`) :
 
 ```
-super_admin  → voit TOUT
+super_admin  → AUCUN accès aux courriers (INVIOLABLE — _SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS)
 admin        → voit les courriers de SON département
 user         → voit SEULEMENT ses propres courriers
 ```
 
-**Exception critique** : si un courrier a été transmis (`CourrierForward`) à un utilisateur,  
-cet utilisateur peut le voir QUELLE QUE SOIT sa permission de base.  
-Cette logique est dans `apply_mail_access_filter()` dans `views.py`.
+**Exception** : si un courrier a été transmis à un utilisateur, cet utilisateur peut le voir quelle que soit sa permission de base. Logique dans `apply_mail_access_filter()`.
+
+---
+
+## Signature Électronique Non-Répudiation (ajoutée mai 2026)
+
+### Principe
+
+Chaque action sur un courrier génère une entrée `CourrierActionSignature` avec :
+- **Hash SHA-256** : `SHA256(timestamp|user_id|action_type|courrier_id|details|previous_hash)`
+- **previous_hash** : hash de l'entrée précédente → chaîne infalsifiable
+- **Snapshots immuables** : `user_nom` + `user_role` au moment de l'action (même si l'utilisateur est modifié/supprimé après)
+- **IP address** : adresse IP réelle (via ProxyFix + get_client_ip())
+
+### Pourquoi c'est non-falsifiable
+
+Modifier rétroactivement une entrée invalide son hash. Modifier le hash invalide le `previous_hash` de l'entrée suivante, et ainsi de suite. La chaîne entière s'effondre. Vérifiable via `GET /api/courrier/<id>/verify_signatures`.
+
+### Actions couvertes
+
+CREATION · MODIF_STATUT · MODIF_CHAMP · TRANSMISSION · COMMENTAIRE · ANNOTATION · INSTRUCTION · TELECHARGEMENT · VISUALISATION · SIGNATURE · REJET · SUPPRESSION · RESTAURATION · CIRCUIT_INIT
+
+### Affichage
+
+Section "Historique Signé" dans `mail_detail_new.html` — timeline verticale avec badge couleur, hash tronqué (8 chars) + tooltip, bouton AJAX de vérification d'intégrité.
+
+---
+
+## Sécurité — Chiffrement
+
+### AES-256-GCM v2 (depuis mai 2026)
+
+**Fichiers joints chiffrés** (format binaire) :
+```
+Magic 4 bytes : b'GEC2'
+Nonce 12 bytes (GCM)
+Tag 16 bytes (authenticité + intégrité)
+Ciphertext (variable)
+```
+Détection : `file.read(4) == b'GEC2'` → v2 GCM. Sinon → v1 CBC (backward-compat).
+
+**Champs DB chiffrés** (`objet_encrypted`, `expediteur_encrypted`, etc.) :
+Format v2 : `v2:base64(nonce+tag+ciphertext)`. Format v1 : raw base64 sans préfixe.
+
+**Avantage GCM vs CBC** : GCM authentifie le chiffré (tag de 16 bytes). Une modification du chiffré est détectable immédiatement au déchiffrement. CBC ne protège pas l'intégrité.
+
+**Fail-fast** : si `GEC_MASTER_KEY` absente au démarrage → log CRITICAL + exception. Jamais de clé volatile en RAM (les données chiffrées deviendraient illisibles au redémarrage).
+
+### Audit Log
+
+Toutes les actions importantes génèrent un `LogActivite`.
+Les events de sécurité (tentatives échouées, IP bloquées) sont dans `security.auth.audit_log()`.
+
+### Blocage IP
+
+Après X tentatives de connexion échouées → IP bloquée automatiquement (durée configurable).
+Table `IPBlock` — whitelist dans `IPWhitelist`.
+
+### Headers de sécurité
+
+Injectés via `add_security_headers()` dans `after_request` (CSP, X-Frame-Options, etc.).
 
 ---
 
@@ -66,63 +123,46 @@ GEC est pensé pour être déployé pour différents types d'organisations :
 
 ---
 
-## Sécurité — Points Importants
-
-### Chiffrement des données sensibles
-Certains champs sont stockés **en double** : en clair (compatibilité) + chiffré AES-256.  
-Colonnes chiffrées : `email_encrypted`, `nom_complet_encrypted`, `objet_encrypted`, `expediteur_encrypted`, etc.  
-Clé de chiffrement : variable `GEC_MASTER_KEY` (jamais en dur).
-
-### Audit Log
-Toutes les actions importantes génèrent un `LogActivite`.  
-Les events de sécurité (tentatives échouées, IP bloquées) sont dans `security_utils.audit_log()`.
-
-### Blocage IP
-Après X tentatives de connexion échouées → IP bloquée automatiquement (durée configurable).  
-Table `IPBlock` — whitelist dans `IPWhitelist`.
-
-### Headers de sécurité
-Injectés via `add_security_headers()` dans `after_request` (CSP, X-Frame-Options, etc.).
-
----
-
-## Numérotation des Courriers
-
-Deux modes :
-- **Automatique** : compteur auto par année, format configurable
-- **Manuel** : l'agent saisit lui-même le numéro
-
-La logique est dans `utils.generate_accuse_reception()`.
-
----
-
 ## Notifications Email
 
 Deux événements déclenchent un email :
 1. Nouveau courrier enregistré → notifie les admins/super_admin configurés
-2. Courrier transmis → notifie le destinataire de la transmission
+2. Courrier transmis → notifie le destinataire
+3. Commentaire ajouté → notifie les participants (`send_comment_notification`)
 
-Templates configurables en base (`EmailTemplate`) avec variables dynamiques `{{nom_variable}}`.  
-Deux providers : **Resend** (API key `re_xxx`) ou **SMTP** classique — choix dans `ParametresSysteme`.
+Templates configurables en base (`EmailTemplate`). Providers : **Resend** (`re_xxx`) ou **SMTP**.
+
+---
+
+## PWA (ajoutée mai 2026)
+
+GEC est installable comme application native sur mobile/desktop :
+- `static/manifest.json` : métadonnées, icônes, start_url `/dashboard`
+- `static/js/sw.js` : cache offline pour les assets statiques, network-first pour les pages HTML
+- Icônes SVG 192px + 512px (bleu-indigo gradient, enveloppe)
+
+Cas d'usage : agents terrain sans connexion stable → accès aux dernières pages visitées en mode offline.
 
 ---
 
 ## Déploiement en Production
 
 - VPS 2 : `168.231.86.201` — `/var/websites/gec` — port `5004`
-- Process manager : PM2
+- Process manager : PM2 (nom PM2 : `gec`)
 - Reverse proxy : Nginx (HTTPS)
 - SSH : `ssh -i ~/.ssh/vps1_access root@168.231.86.201`
 - Workflow : **jamais éditer sur le VPS** — toujours local → GitHub → `git pull` VPS
 
+**Migration DB en attente** (mai 2026) :
+```bash
+flask db migrate -m "add courrier_action_signature and fichier_encrypted"
+flask db upgrade
+```
+
 ---
 
-## Historique Produit (depuis requirements.txt)
+## Historique Produit
 
-Fonctionnalités ajoutées en septembre 2025 :
-- Multilingue FR/EN complet
-- Backup/restore PostgreSQL
-- Mise à jour système en ligne (Git) et hors ligne (ZIP)
-- Templates email dynamiques multi-langues
-- Autocomplete de recherche
-- Support Resend API
+- **Avril 2026** : Redesign UX complet (design system gec-*, sidebar accordéon, skeleton, dark theme)
+- **Mai 2026** : AES-256-GCM v2, signature électronique non-répudiation, PWA, skeleton loading, bugs B1-B7 fixés
+- **Sept 2025** : Multilingue FR/EN, backup/restore PostgreSQL, templates email dynamiques, Resend API, 2FA TOTP

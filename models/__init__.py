@@ -2,7 +2,7 @@
 
 from models.organization import Departement, TypeCourrierSortant, StatutCourrier
 from models.user import User
-from models.courrier import Courrier, CourrierAttachment, CourrierModification, CourrierForward, CourrierComment, CourrierSignature
+from models.courrier import Courrier, CourrierAttachment, CourrierModification, CourrierForward, CourrierComment, CourrierSignature, CourrierActionSignature
 from models.tag import Tag, CourrierTag
 from models.rbac import Role, RolePermission
 from models.system import ParametresSysteme, EmailTemplate, IPBlock, IPWhitelist
@@ -22,7 +22,7 @@ def init_default_data():
 __all__ = [
     'Departement', 'TypeCourrierSortant', 'StatutCourrier',
     'User',
-    'Courrier', 'CourrierAttachment', 'CourrierModification', 'CourrierForward', 'CourrierComment', 'CourrierSignature',
+    'Courrier', 'CourrierAttachment', 'CourrierModification', 'CourrierForward', 'CourrierComment', 'CourrierSignature', 'CourrierActionSignature',
     'Tag', 'CourrierTag',
     'Role', 'RolePermission',
     'ParametresSysteme', 'EmailTemplate', 'IPBlock', 'IPWhitelist',

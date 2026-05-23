@@ -1382,3 +1382,41 @@ html.dark thead.bg-gray-50 { background-color: rgba(255,255,255,0.03) !important
 }
 .gec-shortcut-title { font-size: 0.9375rem; font-weight: 600; color: var(--t-primary); }
 .gec-shortcut-desc { font-size: 0.8125rem; color: var(--t-muted); line-height: 1.4; }
+
+/* ── Skeleton Loading ──────────────────────────────────────────────────────── */
+@keyframes gec-skeleton-wave {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.gec-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--body-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 200% 100%;
+  animation: gec-skeleton-wave 1.5s infinite linear;
+  border-radius: var(--r-sm);
+  color: transparent !important;
+}
+.gec-skeleton-text {
+  height: 1em;
+  margin-bottom: 0.375rem;
+  border-radius: var(--r-sm);
+}
+.gec-skeleton-card {
+  height: 120px;
+  border-radius: var(--r-lg);
+}
+.gec-skeleton-row {
+  height: 3rem;
+  border-radius: var(--r-sm);
+  margin-bottom: 0.5rem;
+}
+.gec-skeleton-circle {
+  border-radius: 50%;
+}
+/* Hide real content until skeleton is removed */
+[data-skeleton="true"] > *:not(.gec-skeleton-placeholder) { opacity: 0; }
+[data-skeleton="true"] .gec-skeleton-placeholder { display: block !important; }

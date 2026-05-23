@@ -521,3 +521,50 @@ def send_mail_forwarded_notification(
         )
 
     return send_email_from_system_config(user_email, subject, html_content, text_content)
+
+
+def send_comment_notification(
+    user_email: str,
+    courrier_data: dict,
+    language: str = 'fr',
+) -> bool:
+    """Notifie un utilisateur qu'un commentaire/annotation/instruction a été ajouté sur un courrier."""
+    if not user_email or not user_email.strip():
+        return False
+
+    from models import ParametresSysteme
+    nom_logiciel = ParametresSysteme.get_valeur('nom_logiciel', 'GEC')
+
+    comment_type = courrier_data.get('comment_type', 'commentaire')
+    type_labels = {'comment': 'Commentaire', 'annotation': 'Annotation', 'instruction': 'Instruction'}
+    type_label = type_labels.get(comment_type, 'Commentaire')
+    added_by = courrier_data.get('added_by', 'Un utilisateur')
+    comment_text = courrier_data.get('comment_text', '')
+
+    subject = f"{type_label} ajouté — {courrier_data.get('numero_accuse_reception', 'N/A')}"
+    html_content = f"""
+    <html><body style="font-family:Arial,sans-serif;color:#333">
+      <div style="max-width:600px;margin:0 auto;padding:20px;border:1px solid #ddd;border-radius:8px">
+        <div style="background:#6366f1;color:white;padding:20px;text-align:center;border-radius:6px 6px 0 0">
+          <h2>{nom_logiciel} — Nouveau {type_label}</h2>
+        </div>
+        <div style="padding:20px">
+          <p>Bonjour,</p>
+          <p><strong>{added_by}</strong> a ajouté un {type_label.lower()} sur le courrier suivant&nbsp;:</p>
+          <div style="background:#f8f9fa;padding:15px;border-radius:5px;margin:10px 0">
+            <p><strong>N° Accusé :</strong> {courrier_data.get('numero_accuse_reception','N/A')}</p>
+            <p><strong>Objet :</strong> {courrier_data.get('objet','N/A')}</p>
+            <p><strong>{type_label} :</strong> {comment_text[:300]}{'...' if len(comment_text) > 300 else ''}</p>
+            <p><strong>Date :</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+          </div>
+        </div>
+      </div>
+    </body></html>"""
+    text_content = (
+        f"{nom_logiciel} — {type_label} par {added_by}\n"
+        f"N° {courrier_data.get('numero_accuse_reception','N/A')} · "
+        f"{courrier_data.get('objet','N/A')}\n"
+        f"{comment_text[:200]}"
+    )
+
+    return send_email_from_system_config(user_email, subject, html_content, text_content)

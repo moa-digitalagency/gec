@@ -347,6 +347,35 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/view_mail.js') }}"></script>
 <script>
+// ── Skeleton rows — table de courriers ──────────────────────────────────────
+(function () {
+  var tbody = document.querySelector('#courriers-table tbody');
+  if (!tbody) return;
+  var cols = document.querySelectorAll('#courriers-table thead th').length || 7;
+  // Inject 5 skeleton rows before real content paints
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < 5; i++) {
+    var tr = document.createElement('tr');
+    for (var j = 0; j < cols; j++) {
+      var td = document.createElement('td');
+      var sk = document.createElement('div');
+      sk.className = 'gec-skeleton gec-skeleton-text';
+      sk.style.width = (60 + Math.random() * 30).toFixed(0) + '%';
+      td.appendChild(sk);
+      tr.appendChild(td);
+    }
+    tr.className = 'gec-skeleton-row-tr';
+    frag.appendChild(tr);
+  }
+  tbody.insertBefore(frag, tbody.firstChild);
+  // Remove skeleton rows after DOM ready
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      document.querySelectorAll('.gec-skeleton-row-tr').forEach(function (r) { r.remove(); });
+    });
+  });
+})();
+
 // Bulk actions
 function getSelectedIds() {
   return Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);

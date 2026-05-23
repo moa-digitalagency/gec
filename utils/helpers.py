@@ -1085,6 +1085,47 @@ def log_courrier_modification(courrier_id, user_id, champ_modifie, ancienne_vale
         from app import db  # Import locally to avoid circular import
         db.session.rollback()
 
+def sign_courrier_action(courrier_id, user, action_type, details=None, ip=None):
+    """Crée une entrée CourrierActionSignature avec hash de chaîne SHA-256.
+    Doit être appelée juste avant db.session.commit() — elle ajoute l'entrée
+    à la session sans committer elle-même.
+    """
+    import hashlib
+    from models.courrier import CourrierActionSignature
+    from app import db
+
+    from security.auth import get_client_ip
+
+    prev = (CourrierActionSignature.query
+            .filter_by(courrier_id=courrier_id)
+            .order_by(CourrierActionSignature.timestamp.desc())
+            .first())
+    previous_hash = prev.hash_signature if prev else '0' * 64
+
+    timestamp = datetime.utcnow()
+    details_str = (json.dumps(details, ensure_ascii=False, sort_keys=True)
+                   if details else '')
+
+    payload = (f"{timestamp.isoformat()}|{user.id}|{action_type}|"
+               f"{courrier_id}|{details_str}|{previous_hash}")
+    hash_sig = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+    entry = CourrierActionSignature(
+        courrier_id=courrier_id,
+        user_id=user.id,
+        user_nom=user.nom_complet,
+        user_role=user.role,
+        action_type=action_type,
+        details=details_str,
+        ip_address=ip or get_client_ip(),
+        timestamp=timestamp,
+        previous_hash=previous_hash,
+        hash_signature=hash_sig,
+    )
+    db.session.add(entry)
+    return entry
+
+
 def get_all_senders():
     """Récupérer la liste de tous les expéditeurs/destinataires uniques"""
     try:
