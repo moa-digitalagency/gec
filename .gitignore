@@ -76,3 +76,9 @@ Desktop.ini
 dist/
 build/
 node_modules/
+
+# Local working/assets folders (never commit)
+.communication/
+.content_*/
+.site-demo/
+.Card_Assets/
