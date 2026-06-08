@@ -202,6 +202,13 @@ def load_user(user_id):
     from models import User
     return User.query.get(int(user_id))
 
+# SEO : expose le flag noindex aux templates (activé via SEO_NOINDEX dans .env)
+@app.context_processor
+def inject_seo_flags():
+    return {
+        'seo_noindex': os.environ.get('SEO_NOINDEX', '').strip().lower() in ('1', 'true', 'yes', 'on')
+    }
+
 # Add language functions to template context
 @app.context_processor
 def inject_language_functions():

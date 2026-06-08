@@ -676,7 +676,14 @@ def add_security_headers(response):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
-    
+
+    # SEO : noindex pour les instances privées/clients (ex. dpemgec.site).
+    # Activé via SEO_NOINDEX=true dans le .env de l'instance concernée.
+    # Le header X-Robots-Tag couvre toutes les réponses (HTML, PDF, statiques)
+    # et est respecté par tous les moteurs (Google, Bing, etc.).
+    if os.environ.get('SEO_NOINDEX', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive, nosnippet'
+
     return response
 
 def require_https():
