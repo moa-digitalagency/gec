@@ -12,5 +12,9 @@ class LogActivite(db.Model):
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     courrier_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=True, index=True)
 
+    # Relation vers le courrier lié (utilisée par l'export PDF des logs).
+    # 'utilisateur' est fourni par le backref de User.logs ; 'courrier' manquait.
+    courrier = db.relationship('Courrier', foreign_keys=[courrier_id], lazy=True)
+
     def __repr__(self):
         return f'<LogActivite {self.action} by {self.utilisateur.username}>'
