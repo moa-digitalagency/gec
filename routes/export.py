@@ -276,8 +276,8 @@ def export_mail_list_excel():
             ws.write(row_idx, 3,  c.expediteur or '', base)
             ws.write(row_idx, 4,  c.destinataire or '', base)
             ws.write(row_idx, 5,  c.objet or '', base)
-            if c.date_courrier:
-                ws.write_datetime(row_idx, 6, datetime.combine(c.date_courrier, datetime.min.time()), date_fmt)
+            if c.date_redaction:
+                ws.write_datetime(row_idx, 6, datetime.combine(c.date_redaction, datetime.min.time()), date_fmt)
             else:
                 ws.write(row_idx, 6, '', base)
             if c.date_enregistrement:
