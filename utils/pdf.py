@@ -3,6 +3,7 @@ import uuid
 import logging
 from datetime import datetime
 from flask import request, session
+from utils.helpers import format_date
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
