@@ -396,8 +396,8 @@ def export_mail_list_excel():
 @app.route('/export_logs_pdf')
 @login_required
 def export_logs_pdf_route():
-    """Exporter les logs d'activité en PDF - accessible uniquement aux super admins"""
-    if not current_user.is_super_admin():
+    """Exporter les logs d'activité en PDF"""
+    if not current_user.has_permission('view_all_logs'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     

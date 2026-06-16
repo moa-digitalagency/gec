@@ -136,11 +136,13 @@
       <span class="gec-nav-label">Recherche Avancée</span>
     </a>
 
+    {% if current_user.has_permission('view_all_logs') %}
     <a href="{{ url_for('analytics') }}"
        class="gec-nav-item {% if cur == 'analytics' %}active{% endif %}">
       <i class="fas fa-chart-bar gec-nav-icon"></i>
       <span class="gec-nav-label">Analytique</span>
     </a>
+    {% endif %}
 
     <a href="{{ url_for('senders_list') }}"
        class="gec-nav-item {% if cur == 'senders_list' %}active{% endif %}">
@@ -178,7 +180,7 @@
     {% endif %}
 
     <!-- ── ADMINISTRATION ── -->
-    {% if current_user.has_permission('manage_users') or current_user.is_super_admin() or current_user.role == 'admin' %}
+    {% if current_user.has_permission('manage_users') or current_user.has_permission('manage_roles') or current_user.has_permission('manage_departments') or current_user.has_permission('manage_statuses') %}
     <span class="gec-nav-section-label">Administration</span>
 
     {% set admin_active = cur in ['manage_users','add_user','edit_user','manage_departments','add_department','edit_department','manage_roles','add_role','edit_role','manage_statuses','manage_outgoing_types','edit_outgoing_type','add_outgoing_type'] %}
@@ -192,7 +194,7 @@
     </a>
     {% endif %}
 
-    {% if current_user.is_super_admin() %}
+    {% if current_user.has_permission('manage_departments') or current_user.has_permission('manage_roles') %}
     <!-- Collapsible: Structure organisationnelle -->
     <div class="gec-nav-group-toggle {% if cur in ['manage_departments','add_department','edit_department','manage_roles','add_role','edit_role'] %}open group-active{% endif %}"
          onclick="toggleNavGroup('org-group', this)" id="org-group-toggle">
@@ -238,15 +240,17 @@
     {% endif %}
 
     <!-- ── SYSTÈME ── -->
-    {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
+    {% if current_user.has_permission('manage_system_settings') or current_user.has_permission('manage_email_templates') or current_user.has_permission('view_all_logs') or current_user.has_permission('view_security_logs') or current_user.has_permission('manage_security_settings') or current_user.has_permission('manage_backup') or current_user.has_permission('manage_updates') %}
     <span class="gec-nav-section-label">Système</span>
 
     <!-- Paramètres principaux -->
+    {% if current_user.has_permission('manage_system_settings') %}
     <a href="{{ url_for('settings') }}"
        class="gec-nav-item {% if cur == 'settings' %}active{% endif %}">
       <i class="fas fa-cog gec-nav-icon"></i>
       <span class="gec-nav-label">Configuration</span>
     </a>
+    {% endif %}
 
     <!-- Email & Templates -->
     <div class="gec-nav-group-toggle {% if cur in ['manage_email_templates','add_email_template','edit_email_template'] %}open group-active{% endif %}"
@@ -264,7 +268,7 @@
       </a>
     </div>
 
-    {% if current_user.is_super_admin() %}
+    {% if current_user.has_permission('view_all_logs') or current_user.has_permission('view_security_logs') or current_user.has_permission('manage_security_settings') or current_user.has_permission('manage_backup') or current_user.has_permission('manage_updates') %}
     <!-- Sécurité & Logs -->
     <div class="gec-nav-group-toggle {% if cur in ['security_settings','view_logs','security_logs'] %}open group-active{% endif %}"
          onclick="toggleNavGroup('security-group', this)" id="security-group-toggle">

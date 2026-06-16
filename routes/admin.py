@@ -96,8 +96,8 @@ def manage_statuses():
 @app.route('/manage_roles')
 @login_required
 def manage_roles():
-    """Gestion des rôles et permissions - accessible uniquement aux super admins"""
-    if not current_user.is_super_admin():
+    """Gestion des rôles et permissions"""
+    if not current_user.has_permission('manage_roles'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -132,6 +132,11 @@ def manage_roles():
         'manage_roles': {
             'name': 'Gérer les rôles',
             'description': 'Modifier les permissions des rôles utilisateur',
+            'category': 'Administration'
+        },
+        'manage_departments': {
+            'name': 'Gérer les départements',
+            'description': 'Créer, modifier et supprimer les départements',
             'category': 'Administration'
         },
         'manage_system_settings': {
@@ -235,7 +240,7 @@ def manage_roles():
 @login_required
 def add_role():
     """Ajouter un nouveau rôle"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_roles'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -293,6 +298,7 @@ def add_role():
     all_permissions = {
         'manage_users': 'Gérer les utilisateurs',
         'manage_roles': 'Gérer les rôles',
+        'manage_departments': 'Gérer les départements',
         'manage_system_settings': 'Paramètres système',
         'view_all_logs': 'Consulter les logs',
         'view_security_logs': 'Consulter logs de sécurité',
@@ -334,7 +340,7 @@ def add_role():
 @login_required
 def edit_role(role_id):
     """Modifier un rôle existant"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_roles'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -386,6 +392,7 @@ def edit_role(role_id):
     all_permissions = {
         'manage_users': 'Gérer les utilisateurs',
         'manage_roles': 'Gérer les rôles',
+        'manage_departments': 'Gérer les départements',
         'manage_system_settings': 'Paramètres système',
         'view_all_logs': 'Consulter les logs',
         'view_security_logs': 'Consulter logs de sécurité',
@@ -429,7 +436,7 @@ def edit_role(role_id):
 @login_required
 def delete_role(role_id):
     """Supprimer un rôle"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_roles'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -462,8 +469,8 @@ def delete_role(role_id):
 @app.route('/manage_departments')
 @login_required
 def manage_departments():
-    """Gestion des départements - accessible uniquement aux super admins"""
-    if not current_user.is_super_admin():
+    """Gestion des départements"""
+    if not current_user.has_permission('manage_departments'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -475,7 +482,7 @@ def manage_departments():
 @login_required
 def add_department():
     """Ajouter un nouveau département"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_departments'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -515,7 +522,7 @@ def add_department():
 @login_required
 def edit_department(dept_id):
     """Modifier un département"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_departments'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -566,7 +573,7 @@ def edit_department(dept_id):
 @login_required
 def delete_department(dept_id):
     """Supprimer un département"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_departments'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     

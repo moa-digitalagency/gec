@@ -26,7 +26,7 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 @login_required
 def backup_system():
     """Créer une sauvegarde complète du système"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent créer des sauvegardes.', 'error')
         return redirect(url_for('settings'))
     
@@ -45,7 +45,7 @@ def backup_system():
 @login_required
 def backup_pre_update():
     """Créer une sauvegarde de sécurité avant mise à jour avec protection des paramètres"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent créer des sauvegardes de sécurité.', 'error')
         return redirect(url_for('settings'))
     
@@ -65,7 +65,7 @@ def backup_pre_update():
 @login_required
 def export_courriers():
     """Exporter les courriers avec déchiffrement pour transfert vers une autre instance"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent exporter les courriers.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -104,7 +104,7 @@ def export_courriers():
 @login_required
 def download_export(filename):
     """Télécharger un fichier d'export sécurisé"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé.', 'error')
         return redirect(url_for('manage_backups'))
 
@@ -129,7 +129,7 @@ def download_export(filename):
 @login_required
 def import_courriers():
     """Importer les courriers avec rechiffrement depuis une autre instance"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent importer les courriers.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -213,7 +213,7 @@ def import_courriers():
 @login_required
 def download_backup(filename):
     """Télécharger un fichier de sauvegarde - accès restreint aux super admins"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent télécharger les sauvegardes.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -262,7 +262,7 @@ def download_backup(filename):
 @login_required
 def restore_system():
     """Restaurer le système depuis une sauvegarde"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent restaurer le système.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -293,7 +293,7 @@ def restore_system():
 @login_required
 def validate_backup(filename):
     """Valider l'intégrité d'un fichier de sauvegarde"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -1079,12 +1079,12 @@ def restore_database(backup_file_path):
 @login_required
 def manage_backups():
     """Page dédiée pour la gestion des sauvegardes et restaurations"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent gérer les sauvegardes.', 'error')
         return redirect(url_for('dashboard'))
     
     # Récupérer la liste des fichiers de sauvegarde
-    backup_files = get_backup_files() if current_user.is_super_admin() else []
+    backup_files = get_backup_files() if current_user.has_permission('manage_backup') else []
     
     # Récupérer la liste des utilisateurs pour l'import
     users = User.query.filter_by(actif=True).order_by(User.username).all()
@@ -1095,7 +1095,7 @@ def manage_backups():
 @login_required
 def restore_from_backup(filename):
     """Restaurer le système depuis un fichier de sauvegarde spécifique"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent restaurer le système.', 'error')
         return redirect(url_for('manage_backups'))
     
@@ -1146,7 +1146,7 @@ def restore_from_backup(filename):
 @login_required
 def delete_backup(filename):
     """Supprimer un fichier de sauvegarde"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_backup'):
         flash('Accès refusé. Seuls les super administrateurs peuvent supprimer des sauvegardes.', 'error')
         return redirect(url_for('manage_backups'))
     

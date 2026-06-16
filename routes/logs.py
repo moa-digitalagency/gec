@@ -25,8 +25,8 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 @app.route('/logs')
 @login_required
 def view_logs():
-    """Consulter les logs d'activité - accessible uniquement aux super admins"""
-    if not current_user.is_super_admin():
+    """Consulter les logs d'activité"""
+    if not current_user.has_permission('view_all_logs'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -337,8 +337,8 @@ def export_security_logs(level, event_type, date_start, date_end):
 def analytics():
     """Tableau de bord analytique avec statistiques et graphiques"""
     # Vérification des permissions
-    if not current_user.is_super_admin():
-        flash('Accès refusé. Seuls les super administrateurs peuvent accéder aux analyses.', 'error')
+    if not current_user.has_permission('view_all_logs'):
+        flash('Accès refusé. Vous n\'avez pas la permission d\'accéder aux analyses.', 'error')
         return redirect(url_for('dashboard'))
     
     from datetime import datetime, timedelta
@@ -449,7 +449,7 @@ def analytics():
     processed_mails = Courrier.query.filter_by(statut='TRAITE', is_deleted=False).all()
     avg_processing_time = 0
     if processed_mails:
-        total_time = sum([(m.date_enregistrement - m.date_redaction).days 
+        total_time = sum([(m.date_enregistrement.date() - m.date_redaction).days
                          for m in processed_mails if m.date_redaction])
         avg_processing_time = total_time / len(processed_mails) if processed_mails else 0
     

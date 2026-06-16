@@ -161,7 +161,7 @@ class User(UserMixin, db.Model):
         return self.role in ['super_admin', 'admin']
 
     def can_manage_users(self):
-        return self.role == 'super_admin'
+        return self.has_permission('manage_users')
 
     def can_access_courrier(self, courrier):
         if not self.actif:
