@@ -199,6 +199,21 @@ def manage_roles():
             'description': 'Accès uniquement aux courriers enregistrés par soi-même',
             'category': 'Accès Courrier'
         },
+        'edit_all_mail': {
+            'name': 'Modifier tous les courriers',
+            'description': 'Modifier n\'importe quel courrier du système',
+            'category': 'Édition Courrier'
+        },
+        'edit_department_mail': {
+            'name': 'Modifier les courriers du département',
+            'description': 'Modifier les courriers de son département uniquement',
+            'category': 'Édition Courrier'
+        },
+        'edit_own_mail': {
+            'name': 'Modifier ses propres courriers',
+            'description': 'Modifier uniquement les courriers enregistrés par soi-même',
+            'category': 'Édition Courrier'
+        },
         'manage_updates': {
             'name': 'Gérer les mises à jour système',
             'description': 'Effectuer des mises à jour en ligne ou hors ligne du système',
@@ -236,7 +251,12 @@ def add_role():
         if Role.query.filter_by(nom=nom).first():
             flash('Ce nom de rôle existe déjà.', 'error')
             return redirect(url_for('add_role'))
-        
+
+        # Un rôle doit obligatoirement avoir au moins une action assignée
+        if not permissions:
+            flash('Un rôle doit avoir au moins une action assignée.', 'error')
+            return redirect(url_for('add_role'))
+
         try:
             # Créer le nouveau rôle
             nouveau_role = Role(
@@ -288,6 +308,9 @@ def add_role():
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
         'read_own_mail': 'Lire ses propres courriers',
+        'edit_all_mail': 'Modifier tous les courriers',
+        'edit_department_mail': 'Modifier les courriers du département',
+        'edit_own_mail': 'Modifier ses propres courriers',
         'manage_updates': 'Gérer les mises à jour système',
         'manage_backup': 'Gérer les sauvegardes'
     }
@@ -330,7 +353,12 @@ def edit_role(role_id):
         role.actif = 'actif' in request.form
         
         permissions = request.form.getlist('permissions')
-        
+
+        # Un rôle doit obligatoirement avoir au moins une action assignée
+        if not permissions:
+            flash('Un rôle doit avoir au moins une action assignée.', 'error')
+            return redirect(url_for('edit_role', role_id=role.id))
+
         try:
             # Supprimer les anciennes permissions
             RolePermission.query.filter_by(role_id=role.id).delete()
@@ -373,6 +401,9 @@ def edit_role(role_id):
         'read_all_mail': 'Lire tous les courriers',
         'read_department_mail': 'Lire courriers du département',
         'read_own_mail': 'Lire ses propres courriers',
+        'edit_all_mail': 'Modifier tous les courriers',
+        'edit_department_mail': 'Modifier les courriers du département',
+        'edit_own_mail': 'Modifier ses propres courriers',
         'manage_updates': 'Gérer les mises à jour système',
         'manage_backup': 'Gérer les sauvegardes'
     }
@@ -391,6 +422,7 @@ def edit_role(role_id):
     return render_template('edit_role.html',
                          role=role,
                          all_permissions=all_permissions,
+                         role_permissions=role.get_permissions_list(),
                          couleurs_disponibles=couleurs_disponibles)
 
 @app.route('/delete_role/<int:role_id>', methods=['POST'])

@@ -135,24 +135,10 @@ def apply_mail_access_filter(query, user):
         own_mail_condition = (Courrier.utilisateur_id == user.id)
         return query.filter(or_(own_mail_condition, forwarded_condition))
     else:
-        # Fallback sur l'ancien système avec transmission
-        # (super_admin déjà bloqué en haut — ne peut pas atteindre ce code)
-        if user.role == 'admin':
-            if user.departement_id:
-                department_condition = exists().where(
-                    and_(
-                        User.id == Courrier.utilisateur_id,
-                        User.departement_id == user.departement_id
-                    )
-                )
-                return query.filter(or_(department_condition, forwarded_condition))
-            else:
-                own_mail_condition = (Courrier.utilisateur_id == user.id)
-                return query.filter(or_(own_mail_condition, forwarded_condition))
-        else:
-            # Utilisateur normal : ses propres courriers OU ceux transmis
-            own_mail_condition = (Courrier.utilisateur_id == user.id)
-            return query.filter(or_(own_mail_condition, forwarded_condition))
+        # Aucune action read_* assignée au rôle : restreint à ses propres courriers
+        # OU ceux qui lui ont été transmis (plus de raccourci codé en dur par rôle).
+        own_mail_condition = (Courrier.utilisateur_id == user.id)
+        return query.filter(or_(own_mail_condition, forwarded_condition))
 
 @app.route('/')
 def index():

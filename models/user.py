@@ -169,10 +169,14 @@ class User(UserMixin, db.Model):
         # RÈGLE INVIOLABLE : super_admin exclut
         if self.role == 'super_admin':
             return False
-        if self.role == 'admin':
-            return True
+        # Propriétaire : accès à son propre courrier
         if courrier.utilisateur_id == self.id:
             return True
+        # Destinataire d'une transmission : accès au courrier transmis
+        from models.courrier import CourrierForward
+        if CourrierForward.query.filter_by(courrier_id=courrier.id, forwarded_to_id=self.id).first():
+            return True
+        # Sinon, accès strictement selon les actions read_* assignées au rôle
         if self.has_permission('read_all_mail'):
             return True
         elif self.has_permission('read_department_mail') and self.departement_id:
@@ -192,21 +196,20 @@ class User(UserMixin, db.Model):
         ).first()
         if forwarded_to_user:
             return True
+        # Propriétaire : accès à son propre courrier
+        if courrier.utilisateur_id == self.id:
+            return True
+        # Sinon, lecture strictement selon les actions read_* assignées au rôle
         if self.has_permission('read_all_mail'):
             return True
         elif self.has_permission('read_department_mail'):
             if self.departement_id is None:
-                return courrier.utilisateur_id == self.id
+                return False
             return self.departement_id == courrier.utilisateur_enregistrement.departement_id
         elif self.has_permission('read_own_mail'):
             return courrier.utilisateur_id == self.id
-        else:
-            if self.role == 'admin':
-                if self.departement_id is None:
-                    return courrier.utilisateur_id == self.id
-                return self.departement_id == courrier.utilisateur_enregistrement.departement_id
-            else:
-                return courrier.utilisateur_id == self.id
+        # Aucune action read_* assignée : restreint (propriétaire/transmis déjà gérés ci-dessus)
+        return False
 
     def can_edit_courrier(self, courrier):
         # RÈGLE INVIOLABLE : super_admin ne modifie pas les courriers
@@ -220,10 +223,7 @@ class User(UserMixin, db.Model):
             return False
         elif self.has_permission('edit_own_mail'):
             return courrier.utilisateur_id == self.id
-        if self.role == 'admin':
-            if hasattr(courrier, 'utilisateur_enregistrement') and courrier.utilisateur_enregistrement:
-                return courrier.utilisateur_enregistrement.departement_id == self.departement_id
-            return courrier.utilisateur_id == self.id
+        # Propriétaire sans action d'édition : fenêtre de 24h après enregistrement
         if courrier.utilisateur_id == self.id:
             from datetime import datetime, timedelta
             time_limit = courrier.date_enregistrement + timedelta(hours=24)
