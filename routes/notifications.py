@@ -49,6 +49,28 @@ def mark_notification_read(notification_id):
     notification.mark_as_read()
     return redirect(url_for('notifications'))
 
+@app.route('/delete_notification/<int:notification_id>', methods=['POST'])
+@login_required
+def delete_notification(notification_id):
+    """Supprimer une notification de l'utilisateur"""
+    notification = Notification.query.get_or_404(notification_id)
+
+    # Vérifier que la notification appartient à l'utilisateur actuel
+    if notification.user_id != current_user.id:
+        flash('Accès refusé.', 'error')
+        return redirect(url_for('notifications'))
+
+    try:
+        db.session.delete(notification)
+        db.session.commit()
+        flash('Notification supprimée.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Erreur lors de la suppression de la notification: {e}")
+        flash('Erreur lors de la suppression de la notification.', 'error')
+
+    return redirect(url_for('notifications'))
+
 @app.route('/mark_all_notifications_read', methods=['POST'])
 @login_required
 def mark_all_notifications_read():

@@ -57,7 +57,7 @@
         <div style="display:flex;align-items:center;gap:.75rem;font-size:.75rem;color:var(--t-muted);">
           <span><i class="fas fa-clock" style="margin-right:.25rem;"></i>{{ n.date_creation.strftime('%d/%m/%Y à %H:%M') }}</span>
           {% if n.courrier_id %}
-          <a href="{{ url_for('view_mail_detail', mail_id=n.courrier_id) }}" style="color:var(--primary);font-weight:500;">
+          <a href="{{ url_for('mail_detail', id=n.courrier_id) }}" style="color:var(--primary);font-weight:500;">
             <i class="fas fa-external-link-alt" style="margin-right:.25rem;"></i>Voir le courrier
           </a>
           {% endif %}
@@ -65,11 +65,11 @@
       </div>
       <div style="display:flex;gap:.375rem;flex-shrink:0;">
         {% if not n.lu %}
-        <form method="POST" action="{{ url_for('mark_notification_read', notif_id=n.id) }}" class="inline">
+        <form method="POST" action="{{ url_for('mark_notification_read', notification_id=n.id) }}" class="inline">
           <button type="submit" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Marquer comme lu"><i class="fas fa-check"></i></button>
         </form>
         {% endif %}
-        <form method="POST" action="{{ url_for('delete_notification', notif_id=n.id) }}" class="inline">
+        <form method="POST" action="{{ url_for('delete_notification', notification_id=n.id) }}" class="inline">
           <button type="submit" class="gec-btn gec-btn-icon gec-btn-sm" style="color:var(--danger);background:none;border:none;" title="Supprimer"><i class="fas fa-trash"></i></button>
         </form>
       </div>
