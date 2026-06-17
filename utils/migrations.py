@@ -40,10 +40,10 @@ def add_column_safely(engine, table_name, column_name, column_definition):
     """Ajoute une colonne de manière sécurisée si elle n'existe pas"""
     try:
         if not check_column_exists(engine, table_name, column_name):
-            # Normalisation des booléens pour PostgreSQL vs SQLite
-            if "DEFAULT 1" in column_definition or "DEFAULT 0" in column_definition:
-                 if get_database_type() == "postgresql":
-                     column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
+            # Normalisation des booléens pour PostgreSQL — UNIQUEMENT pour les colonnes
+            # BOOLEAN (ne pas corrompre les INTEGER tels que 'DEFAULT 15' ou 'DEFAULT 100').
+            if "BOOLEAN" in column_definition.upper() and get_database_type() == "postgresql":
+                column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
 
             quoted = table_name if table_name.startswith('"') else (f'"{table_name}"' if get_database_type() == "postgresql" else table_name)
             sql = f"ALTER TABLE {quoted} ADD COLUMN {column_name} {column_definition}"
