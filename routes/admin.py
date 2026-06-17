@@ -22,6 +22,60 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
+# ============================================================================
+# Source de vérité unique pour l'éditeur de rôles (permissions, couleurs, icônes).
+# Définie une seule fois ici et réutilisée par manage_roles / add_role / edit_role.
+# ============================================================================
+PERMISSIONS_CATALOG = {
+    'manage_users':            {'name': 'Gérer les utilisateurs',        'description': 'Créer, modifier et supprimer des comptes utilisateur',          'category': 'Administration'},
+    'manage_roles':            {'name': 'Gérer les rôles',               'description': 'Créer et modifier les rôles et leurs permissions',              'category': 'Administration'},
+    'manage_departments':      {'name': 'Gérer les départements',        'description': 'Créer, modifier et supprimer les départements',                 'category': 'Administration'},
+    'manage_system_settings':  {'name': 'Paramètres système',            'description': 'Configurer les paramètres généraux du système',                  'category': 'Configuration'},
+    'manage_statuses':         {'name': 'Gérer les statuts',             'description': 'Créer et modifier les statuts de courrier',                     'category': 'Configuration'},
+    'manage_email_templates':  {'name': 'Gérer les modèles email',       'description': 'Créer et modifier les modèles de notification email',           'category': 'Configuration'},
+    'view_all_logs':           {'name': "Consulter les logs d'activité", 'description': "Accéder aux journaux d'activité et aux analyses",               'category': 'Surveillance'},
+    'view_security_logs':      {'name': 'Consulter les logs de sécurité','description': 'Accéder aux journaux de sécurité',                              'category': 'Surveillance'},
+    'manage_security_settings':{'name': 'Gérer la sécurité',             'description': 'Configurer les paramètres de sécurité (IP, blocages)',           'category': 'Surveillance'},
+    'manage_updates':          {'name': 'Gérer les mises à jour',        'description': 'Effectuer les mises à jour du système',                          'category': 'Système'},
+    'manage_backup':           {'name': 'Gérer les sauvegardes',         'description': 'Créer et restaurer des sauvegardes du système',                  'category': 'Système'},
+    'register_mail':           {'name': 'Enregistrer courriers',         'description': 'Créer de nouveaux enregistrements de courrier',                 'category': 'Courrier'},
+    'view_mail':               {'name': 'Consulter courriers',           'description': 'Voir et accéder aux courriers enregistrés',                     'category': 'Courrier'},
+    'search_mail':             {'name': 'Rechercher courriers',          'description': 'Effectuer des recherches dans les courriers',                   'category': 'Courrier'},
+    'export_data':             {'name': 'Exporter données',              'description': 'Exporter les courriers en PDF / Excel',                         'category': 'Courrier'},
+    'delete_mail':             {'name': 'Supprimer courriers',           'description': 'Supprimer des courriers (corbeille)',                           'category': 'Courrier'},
+    'view_trash':              {'name': 'Accéder à la corbeille',        'description': 'Voir les courriers supprimés',                                  'category': 'Courrier'},
+    'restore_mail':            {'name': 'Restaurer courriers',           'description': 'Restaurer des courriers depuis la corbeille',                   'category': 'Courrier'},
+    'read_all_mail':           {'name': 'Lire tous les courriers',       'description': 'Accès complet à tous les courriers du système',                 'category': 'Accès Courrier'},
+    'read_department_mail':    {'name': 'Lire courriers du département',  'description': 'Accès aux courriers du département uniquement',                  'category': 'Accès Courrier'},
+    'read_own_mail':           {'name': 'Lire ses propres courriers',    'description': 'Accès aux courriers enregistrés par soi-même',                  'category': 'Accès Courrier'},
+    'edit_all_mail':           {'name': 'Modifier tous les courriers',   'description': "Modifier n'importe quel courrier du système",                    'category': 'Édition Courrier'},
+    'edit_department_mail':    {'name': 'Modifier courriers du département','description': 'Modifier les courriers de son département uniquement',          'category': 'Édition Courrier'},
+    'edit_own_mail':           {'name': 'Modifier ses propres courriers','description': 'Modifier uniquement ses propres courriers',                      'category': 'Édition Courrier'},
+}
+
+ROLE_COLORS = [
+    ('bg-blue-100 text-blue-800', 'Bleu'),
+    ('bg-green-100 text-green-800', 'Vert'),
+    ('bg-yellow-100 text-yellow-800', 'Jaune'),
+    ('bg-red-100 text-red-800', 'Rouge'),
+    ('bg-purple-100 text-purple-800', 'Violet'),
+    ('bg-gray-100 text-gray-800', 'Gris'),
+    ('bg-indigo-100 text-indigo-800', 'Indigo'),
+    ('bg-pink-100 text-pink-800', 'Rose'),
+]
+
+ROLE_ICONS = [
+    ('fas fa-user', 'Utilisateur'),
+    ('fas fa-user-tie', 'Professionnel'),
+    ('fas fa-user-cog', 'Gestionnaire'),
+    ('fas fa-briefcase', 'Manager'),
+    ('fas fa-clipboard-list', 'Superviseur'),
+    ('fas fa-key', 'Responsable'),
+    ('fas fa-shield-alt', 'Sécurité'),
+    ('fas fa-crown', 'Direction'),
+]
+
+
 @app.route('/manage_statuses', methods=['GET', 'POST'])
 @login_required
 def manage_statuses():
@@ -123,113 +177,7 @@ def manage_roles():
         }
     
     # Définition de toutes les permissions disponibles
-    all_permissions = {
-        'manage_users': {
-            'name': 'Gérer les utilisateurs',
-            'description': 'Créer, modifier et supprimer des comptes utilisateur',
-            'category': 'Administration'
-        },
-        'manage_roles': {
-            'name': 'Gérer les rôles',
-            'description': 'Modifier les permissions des rôles utilisateur',
-            'category': 'Administration'
-        },
-        'manage_departments': {
-            'name': 'Gérer les départements',
-            'description': 'Créer, modifier et supprimer les départements',
-            'category': 'Administration'
-        },
-        'manage_system_settings': {
-            'name': 'Paramètres système',
-            'description': 'Configurer les paramètres généraux du système',
-            'category': 'Configuration'
-        },
-        'view_all_logs': {
-            'name': 'Consulter les logs',
-            'description': 'Accéder aux journaux d\'activité du système',
-            'category': 'Surveillance'
-        },
-        'manage_statuses': {
-            'name': 'Gérer les statuts',
-            'description': 'Créer et modifier les statuts de courrier',
-            'category': 'Configuration'
-        },
-        'register_mail': {
-            'name': 'Enregistrer courriers',
-            'description': 'Créer de nouveaux enregistrements de courrier',
-            'category': 'Courrier'
-        },
-        'view_mail': {
-            'name': 'Consulter courriers',
-            'description': 'Voir et accéder aux courriers enregistrés',
-            'category': 'Courrier'
-        },
-        'search_mail': {
-            'name': 'Rechercher courriers',
-            'description': 'Effectuer des recherches dans les courriers',
-            'category': 'Courrier'
-        },
-        'export_data': {
-            'name': 'Exporter données',
-            'description': 'Exporter les courriers en PDF et autres formats',
-            'category': 'Courrier'
-        },
-        'delete_mail': {
-            'name': 'Supprimer courriers',
-            'description': 'Supprimer définitivement des courriers',
-            'category': 'Courrier'
-        },
-        'view_trash': {
-            'name': 'Accéder à la corbeille',
-            'description': 'Voir les courriers supprimés dans la corbeille',
-            'category': 'Courrier'
-        },
-        'restore_mail': {
-            'name': 'Restaurer courriers',
-            'description': 'Restaurer des courriers depuis la corbeille',
-            'category': 'Courrier'
-        },
-        'read_all_mail': {
-            'name': 'Lire tous les courriers',
-            'description': 'Accès complet à tous les courriers du système',
-            'category': 'Accès Courrier'
-        },
-        'read_department_mail': {
-            'name': 'Lire courriers du département',
-            'description': 'Accès aux courriers du département uniquement',
-            'category': 'Accès Courrier'
-        },
-        'read_own_mail': {
-            'name': 'Lire ses propres courriers',
-            'description': 'Accès uniquement aux courriers enregistrés par soi-même',
-            'category': 'Accès Courrier'
-        },
-        'edit_all_mail': {
-            'name': 'Modifier tous les courriers',
-            'description': 'Modifier n\'importe quel courrier du système',
-            'category': 'Édition Courrier'
-        },
-        'edit_department_mail': {
-            'name': 'Modifier les courriers du département',
-            'description': 'Modifier les courriers de son département uniquement',
-            'category': 'Édition Courrier'
-        },
-        'edit_own_mail': {
-            'name': 'Modifier ses propres courriers',
-            'description': 'Modifier uniquement les courriers enregistrés par soi-même',
-            'category': 'Édition Courrier'
-        },
-        'manage_updates': {
-            'name': 'Gérer les mises à jour système',
-            'description': 'Effectuer des mises à jour en ligne ou hors ligne du système',
-            'category': 'Administration'
-        },
-        'manage_backup': {
-            'name': 'Gérer les sauvegardes',
-            'description': 'Créer et restaurer des sauvegardes du système',
-            'category': 'Administration'
-        }
-    }
+    all_permissions = PERMISSIONS_CATALOG
     
     return render_template('manage_roles.html',
                          roles_permissions=roles_data,
@@ -295,46 +243,14 @@ def add_role():
             flash(f'Erreur lors de la création du rôle: {str(e)}', 'error')
     
     # Définir les permissions disponibles
-    all_permissions = {
-        'manage_users': 'Gérer les utilisateurs',
-        'manage_roles': 'Gérer les rôles',
-        'manage_departments': 'Gérer les départements',
-        'manage_system_settings': 'Paramètres système',
-        'view_all_logs': 'Consulter les logs',
-        'view_security_logs': 'Consulter logs de sécurité',
-        'manage_security_settings': 'Gérer paramètres de sécurité',
-        'manage_statuses': 'Gérer les statuts',
-        'register_mail': 'Enregistrer courriers',
-        'view_mail': 'Consulter courriers',
-        'search_mail': 'Rechercher courriers',
-        'export_data': 'Exporter données',
-        'delete_mail': 'Supprimer courriers',
-        'view_trash': 'Accéder à la corbeille',
-        'restore_mail': 'Restaurer courriers supprimés',
-        'read_all_mail': 'Lire tous les courriers',
-        'read_department_mail': 'Lire courriers du département',
-        'read_own_mail': 'Lire ses propres courriers',
-        'edit_all_mail': 'Modifier tous les courriers',
-        'edit_department_mail': 'Modifier les courriers du département',
-        'edit_own_mail': 'Modifier ses propres courriers',
-        'manage_updates': 'Gérer les mises à jour système',
-        'manage_backup': 'Gérer les sauvegardes'
-    }
+    all_permissions = {k: v['name'] for k, v in PERMISSIONS_CATALOG.items()}
     
-    couleurs_disponibles = [
-        ('bg-blue-100 text-blue-800', 'Bleu'),
-        ('bg-green-100 text-green-800', 'Vert'),
-        ('bg-yellow-100 text-yellow-800', 'Jaune'),
-        ('bg-red-100 text-red-800', 'Rouge'),
-        ('bg-purple-100 text-purple-800', 'Violet'),
-        ('bg-gray-100 text-gray-800', 'Gris'),
-        ('bg-indigo-100 text-indigo-800', 'Indigo'),
-        ('bg-pink-100 text-pink-800', 'Rose')
-    ]
+    couleurs_disponibles = ROLE_COLORS
     
     return render_template('add_role.html',
                          all_permissions=all_permissions,
-                         couleurs_disponibles=couleurs_disponibles)
+                         couleurs_disponibles=couleurs_disponibles,
+                         role_icons=ROLE_ICONS)
 
 @app.route('/edit_role/<int:role_id>', methods=['GET', 'POST'])
 @login_required
@@ -389,48 +305,16 @@ def edit_role(role_id):
             flash(f'Erreur lors de la modification: {str(e)}', 'error')
     
     # Définir les permissions disponibles
-    all_permissions = {
-        'manage_users': 'Gérer les utilisateurs',
-        'manage_roles': 'Gérer les rôles',
-        'manage_departments': 'Gérer les départements',
-        'manage_system_settings': 'Paramètres système',
-        'view_all_logs': 'Consulter les logs',
-        'view_security_logs': 'Consulter logs de sécurité',
-        'manage_security_settings': 'Gérer paramètres de sécurité',
-        'manage_statuses': 'Gérer les statuts',
-        'register_mail': 'Enregistrer courriers',
-        'view_mail': 'Consulter courriers',
-        'search_mail': 'Rechercher courriers',
-        'export_data': 'Exporter données',
-        'delete_mail': 'Supprimer courriers',
-        'view_trash': 'Accéder à la corbeille',
-        'restore_mail': 'Restaurer courriers supprimés',
-        'read_all_mail': 'Lire tous les courriers',
-        'read_department_mail': 'Lire courriers du département',
-        'read_own_mail': 'Lire ses propres courriers',
-        'edit_all_mail': 'Modifier tous les courriers',
-        'edit_department_mail': 'Modifier les courriers du département',
-        'edit_own_mail': 'Modifier ses propres courriers',
-        'manage_updates': 'Gérer les mises à jour système',
-        'manage_backup': 'Gérer les sauvegardes'
-    }
+    all_permissions = {k: v['name'] for k, v in PERMISSIONS_CATALOG.items()}
     
-    couleurs_disponibles = [
-        ('bg-blue-100 text-blue-800', 'Bleu'),
-        ('bg-green-100 text-green-800', 'Vert'),
-        ('bg-yellow-100 text-yellow-800', 'Jaune'),
-        ('bg-red-100 text-red-800', 'Rouge'),
-        ('bg-purple-100 text-purple-800', 'Violet'),
-        ('bg-gray-100 text-gray-800', 'Gris'),
-        ('bg-indigo-100 text-indigo-800', 'Indigo'),
-        ('bg-pink-100 text-pink-800', 'Rose')
-    ]
+    couleurs_disponibles = ROLE_COLORS
     
     return render_template('edit_role.html',
                          role=role,
                          all_permissions=all_permissions,
                          role_permissions=role.get_permissions_list(),
-                         couleurs_disponibles=couleurs_disponibles)
+                         couleurs_disponibles=couleurs_disponibles,
+                         role_icons=ROLE_ICONS)
 
 @app.route('/delete_role/<int:role_id>', methods=['POST'])
 @login_required

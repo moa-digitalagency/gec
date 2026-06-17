@@ -52,7 +52,7 @@
           <div class="gec-form-group">
             <label class="gec-label" for="icone"><i class="fas fa-icons" style="color:var(--primary);"></i> Icône</label>
             <select id="icone" name="icone" class="gec-select">
-              {% for v, n in [('fas fa-user','Utilisateur'),('fas fa-user-tie','Professionnel'),('fas fa-user-cog','Gestionnaire'),('fas fa-briefcase','Manager'),('fas fa-clipboard-list','Superviseur'),('fas fa-key','Responsable')] %}
+              {% for v, n in role_icons %}
               <option value="{{ v }}" {% if role.icone == v %}selected{% endif %}>{{ n }}</option>
               {% endfor %}
             </select>

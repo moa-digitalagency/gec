@@ -85,7 +85,7 @@
       {% endif %}
       <div style="min-width:0;">
         <div class="gec-sidebar-logo-text">{{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}</div>
-        <div class="gec-sidebar-logo-sub">Gestion Électronique du Courrier</div>
+        <div class="gec-sidebar-logo-sub">{{ sys.sous_titre_pdf if sys and sys.sous_titre_pdf else 'Gestion Électronique du Courrier' }}</div>
       </div>
     </a>
   </div>

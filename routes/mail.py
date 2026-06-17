@@ -1050,8 +1050,10 @@ def circuit_signature(id):
         abort(403)
 
     if request.method == 'POST':
-        # Seuls admin/super_admin peuvent initier un circuit
-        if current_user.role not in ('admin', 'super_admin'):
+        # Initier un circuit de signature = action d'édition de courrier (pilotée par permission)
+        if not (current_user.has_permission('edit_all_mail')
+                or current_user.has_permission('edit_department_mail')
+                or current_user.has_permission('edit_own_mail')):
             return jsonify({'error': 'Permission refusée'}), 403
 
         data = request.get_json(silent=True) or {}

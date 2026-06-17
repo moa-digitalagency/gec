@@ -237,9 +237,9 @@ class User(UserMixin, db.Model):
             return True
         if self.has_permission('receive_new_mail_notifications'):
             return True
-        elif self.has_permission('manage_mail') or self.has_permission('read_all_mail'):
+        elif self.has_permission('manage_mail') or self.has_permission('read_all_mail') or self.has_permission('read_department_mail'):
             return True
-        return self.role in ['admin', 'super_admin']
+        return False
 
     def get_profile_photo_url(self):
         if self.photo_profile:
@@ -262,10 +262,10 @@ class User(UserMixin, db.Model):
                     print(f"Utilisateur {first_user.username} promu super admin")
             return
         super_admin = User(
-            username='admin',
-            email='admin@gec.cd',
+            username=os.environ.get('FIRST_ADMIN_USERNAME', 'admin'),
+            email=os.environ.get('FIRST_ADMIN_EMAIL', 'admin@gec.cd'),
             nom_complet='Super Administrateur',
-            password_hash=generate_password_hash('Admin2025!'),
+            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'Admin2025!')),
             role='super_admin',
             langue='fr',
             actif=True

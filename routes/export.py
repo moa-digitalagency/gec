@@ -1048,8 +1048,10 @@ def export_analytics(format):
             elements.append(Spacer(1, 30))
         
         # Footer avec informations du système et utilisateur
+        _sys = ParametresSysteme.get_parametres()
+        _app_name = _sys.nom_logiciel if _sys and _sys.nom_logiciel else 'GEC'
         footer_para = Paragraph(
-            f"<i>Ce rapport a été généré automatiquement par le système GEC - Gestion Électronique du Courrier<br/>"
+            f"<i>Ce rapport a été généré automatiquement par {_app_name}<br/>"
             f"Total de {total_courriers} courriers analysés - Généré par: {current_user.nom_complet}<br/>"
             f"Page générée le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
             styles['Normal']

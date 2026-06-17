@@ -129,30 +129,34 @@ with app.app_context():
     
     # Context processors sont maintenant définis dans views.py pour éviter les dépendances circulaires
     
-    # Create default admin user if none exists
+    # Compte super admin initial — configurable par variables d'environnement
+    # (les instances existantes ne sont pas affectées : le bloc ne s'exécute que si absent).
     from werkzeug.security import generate_password_hash
-    admin_user = models.User.query.filter_by(username='sa.gec001').first()
+    _admin_username = os.environ.get('FIRST_ADMIN_USERNAME', 'sa.gec001')
+    _admin_email = os.environ.get('FIRST_ADMIN_EMAIL', 'admin@gec.cd')
+    _admin_password = os.environ.get('ADMIN_PASSWORD', 'TempPassword123!')
+    admin_user = models.User.query.filter_by(username=_admin_username).first()
     if not admin_user:
         # Check if old admin exists
         old_admin = models.User.query.filter_by(username='admin').first()
         if old_admin:
             # Just update the username
-            old_admin.username = 'sa.gec001'
-            old_admin.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
+            old_admin.username = _admin_username
+            old_admin.password_hash = generate_password_hash(_admin_password)
             db.session.commit()
-            logging.info("Admin user updated (username: sa.gec001)")
+            logging.info(f"Admin user updated (username: {_admin_username})")
         else:
             # Create new admin
             admin_user = models.User()
-            admin_user.username = 'sa.gec001'
-            admin_user.email = 'admin@mines.gov.cd'
+            admin_user.username = _admin_username
+            admin_user.email = _admin_email
             admin_user.nom_complet = 'Administrateur Système'
-            admin_user.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
+            admin_user.password_hash = generate_password_hash(_admin_password)
             admin_user.role = 'super_admin'
             admin_user.langue = 'fr'
             db.session.add(admin_user)
             db.session.commit()
-            logging.info("Default super admin user created (username: sa.gec001)")
+            logging.info(f"Default super admin user created (username: {_admin_username})")
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
