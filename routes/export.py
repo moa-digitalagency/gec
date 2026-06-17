@@ -209,6 +209,10 @@ def export_mail_list_excel():
         # ------------------------------------------------------------------ #
         output = io.BytesIO()
         wb = xlsxwriter.Workbook(output, {'in_memory': True})
+        # Identité de l'organisation (branding du document)
+        _p = ParametresSysteme.get_parametres()
+        _org = (_p.titre_pdf or _p.nom_logiciel or 'GEC') if _p else 'GEC'
+        wb.set_properties({'title': 'Export des courriers', 'company': _org, 'author': _org})
 
         # --- Formats ---
         hdr_fmt = wb.add_format({
@@ -236,6 +240,7 @@ def export_mail_list_excel():
         ws = wb.add_worksheet('Courriers')
         ws.freeze_panes(1, 0)
         ws.set_zoom(90)
+        ws.set_header(f'&L&"Helvetica,Bold"{_org}&R&"Helvetica"Généré le {datetime.now().strftime("%d/%m/%Y")}')
 
         headers = [
             ('N° Accusé',          20),
@@ -305,7 +310,7 @@ def export_mail_list_excel():
         sub_fmt = wb.add_format({'bold': True, 'bg_color': '#dbeafe', 'border': 1})
         num_fmt = wb.add_format({'border': 1, 'align': 'right', 'num_format': '#,##0'})
 
-        ws2.merge_range('A1:B1', 'Statistiques — Liste des courriers', title_fmt)
+        ws2.merge_range('A1:B1', f'{_org} — Statistiques', title_fmt)
         ws2.set_row(0, 24)
 
         ws2.write(1, 0, 'Total courriers exportés', sub_fmt)
@@ -532,6 +537,13 @@ def export_analytics(format):
         # Créer un fichier Excel avec plusieurs feuilles
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            # Identité de l'organisation dans les propriétés du fichier (branding)
+            try:
+                _ap = ParametresSysteme.get_parametres()
+                _aorg = (_ap.titre_pdf or _ap.nom_logiciel or 'GEC') if _ap else 'GEC'
+                writer.book.set_properties({'title': 'Rapport analytique', 'company': _aorg, 'author': _aorg})
+            except Exception:
+                pass
             # Feuille 1 : Statistiques générales
             stats_df = pd.DataFrame({
                 'Métrique': ['Total Courriers', 'Courriers Entrants', 'Courriers Sortants'],
@@ -686,8 +698,38 @@ def export_analytics(format):
         elements = []
         styles = getSampleStyleSheet()
         
+        # En-tête : logo + identité de l'organisation (cohérent avec les autres documents générés)
+        _p = ParametresSysteme.get_parametres()
+        try:
+            from reportlab.platypus import Image as _RLImage
+            from reportlab.lib.units import inch as _inch
+            from reportlab.lib.styles import ParagraphStyle as _PS
+            from reportlab.lib import colors as _colors
+            _logo_path = None
+            for _src in (_p.logo_pdf, _p.logo_url):
+                if _src and _src.startswith('/uploads/'):
+                    _cand = os.path.join('uploads', _src[9:])
+                    if os.path.exists(_cand):
+                        _logo_path = _cand
+                        break
+            if _logo_path:
+                from PIL import Image as _PILImage
+                _w, _h = _PILImage.open(_logo_path).size
+                _r = min(1.5 * _inch / _w, 1.0 * _inch / _h)
+                _logo = _RLImage(_logo_path, width=_w * _r, height=_h * _r)
+                _logo.hAlign = 'CENTER'
+                elements.append(_logo)
+                elements.append(Spacer(1, 8))
+            if _p and _p.pays_pdf:
+                elements.append(Paragraph(_p.pays_pdf, _PS('PaysAna', parent=styles['Normal'], fontSize=14, fontName='Helvetica-Bold', alignment=1, textColor=_colors.darkblue, spaceAfter=6)))
+            _org = ' — '.join([x for x in [(_p.titre_pdf if _p else None), (_p.sous_titre_pdf if _p else None)] if x])
+            if _org:
+                elements.append(Paragraph(_org, _PS('OrgAna', parent=styles['Normal'], fontSize=11, alignment=1, spaceAfter=10)))
+        except Exception as _e:
+            logging.warning(f"En-tête analytics PDF non rendu: {_e}")
+
         # Titre principal
-        title = Paragraph("Rapport Analytique Complet - GEC", styles['Title'])
+        title = Paragraph("Rapport Analytique" + (f" — {_p.nom_logiciel}" if _p and _p.nom_logiciel else ""), styles['Title'])
         elements.append(title)
         elements.append(Spacer(1, 20))
         

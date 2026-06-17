@@ -201,7 +201,7 @@ def export_courrier_pdf(courrier):
             print(f"Erreur chargement logo: {e}")  # Pour debug
     
     # Titre configuré du document
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     # En-tête pays - PREMIER ÉLÉMENT
@@ -523,7 +523,7 @@ def export_mail_list_pdf(courriers, filters):
     )
     
     # En-tête
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     # En-tête pays - PREMIER ÉLÉMENT
@@ -982,7 +982,7 @@ def export_logs_pdf(logs, filters):
     story.append(Paragraph(pays_text, pays_style))
     
     # Titre et sous-titre
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)
