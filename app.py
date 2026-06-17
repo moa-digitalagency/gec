@@ -107,20 +107,8 @@ with app.app_context():
 
         # Clean expired security data
         clean_security_storage()
-
-        # Idle session timeout (15 min d'inactivité)
-        if current_user.is_authenticated and not request.path.startswith('/static'):
-            idle_timeout = app.config.get('SESSION_IDLE_TIMEOUT', 900)
-            last_activity = session.get('_last_activity')
-            now = time.time()
-            if last_activity and (now - last_activity) > idle_timeout:
-                from flask_login import logout_user
-                logout_user()
-                session.clear()
-                from flask import flash, redirect, url_for
-                flash('Session expirée pour inactivité. Veuillez vous reconnecter.', 'warning')
-                return redirect(url_for('login'))
-            session['_last_activity'] = now
+        # NB : l'expiration de session par inactivité est gérée de façon UNIFIÉE et
+        # configurable dans routes/auth.py → enforce_session_expiry (Paramètres → Sécurité).
     
     @app.after_request
     def after_request(response):
@@ -160,7 +148,17 @@ with app.app_context():
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
-    
+
+    # Appliquer les paramètres de sécurité configurables (Paramètres → Sécurité).
+    # Modifiables en UI ; durée de session et taille d'upload prennent effet au redémarrage.
+    try:
+        from datetime import timedelta as _td
+        app.config['PERMANENT_SESSION_LIFETIME'] = _td(days=parametres.session_lifetime_days or 7)
+        app.config['MAX_CONTENT_LENGTH'] = (parametres.max_upload_mb or 100) * 1024 * 1024
+        app.config['SESSION_IDLE_TIMEOUT'] = (parametres.session_idle_timeout_min or 15) * 60
+    except Exception as _e:
+        logging.warning(f"Paramètres de sécurité non appliqués: {_e}")
+
     # Initialize default statuses
     models.StatutCourrier.init_default_statuts()
     
@@ -180,9 +178,11 @@ with app.app_context():
     import threading
 
     def _reminder_job():
-        """Job périodique : rappels d'échéances toutes les 6 heures."""
+        """Job périodique : rappels d'échéances (intervalle configurable, défaut 6h)."""
+        _interval_h = 6
         try:
             with app.app_context():
+                _interval_h = models.ParametresSysteme.get_parametres().reminder_interval_h or 6
                 from routes import _send_overdue_reminders
                 n = _send_overdue_reminders()
                 if n:
@@ -190,8 +190,8 @@ with app.app_context():
         except Exception as e:
             logging.error(f"Scheduler reminder error: {e}")
         finally:
-            # Re-planifier dans 6 heures
-            t = threading.Timer(6 * 3600, _reminder_job)
+            # Re-planifier selon l'intervalle configuré
+            t = threading.Timer(_interval_h * 3600, _reminder_job)
             t.daemon = True
             t.start()
 

@@ -223,10 +223,16 @@ class User(UserMixin, db.Model):
             return False
         elif self.has_permission('edit_own_mail'):
             return courrier.utilisateur_id == self.id
-        # Propriétaire sans action d'édition : fenêtre de 24h après enregistrement
+        # Propriétaire sans action d'édition : fenêtre configurable après enregistrement
+        # (Paramètres → Sécurité, défaut 24h)
         if courrier.utilisateur_id == self.id:
             from datetime import datetime, timedelta
-            time_limit = courrier.date_enregistrement + timedelta(hours=24)
+            from models.system import ParametresSysteme
+            try:
+                window_h = ParametresSysteme.get_parametres().courrier_edit_window_h or 24
+            except Exception:
+                window_h = 24
+            time_limit = courrier.date_enregistrement + timedelta(hours=window_h)
             return datetime.now() <= time_limit
         return False
 

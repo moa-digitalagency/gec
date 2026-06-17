@@ -46,6 +46,13 @@ class ParametresSysteme(db.Model):
     notif_types_enabled    = db.Column(db.Text, nullable=True)
     # JSON list ex: ["new_mail","mail_forwarded","mail_status_changed","mail_deadline","mail_commented"]
 
+    # Sécurité & sessions (configurable en UI — Paramètres → Sécurité)
+    session_idle_timeout_min = db.Column(db.Integer, nullable=False, default=15)   # déconnexion après X min d'inactivité
+    session_lifetime_days    = db.Column(db.Integer, nullable=False, default=7)    # durée max d'une session (jours)
+    max_upload_mb            = db.Column(db.Integer, nullable=False, default=100)  # taille max d'un fichier (Mo)
+    courrier_edit_window_h   = db.Column(db.Integer, nullable=False, default=24)   # délai d'édition d'un courrier par son créateur (heures)
+    reminder_interval_h      = db.Column(db.Integer, nullable=False, default=6)    # intervalle des rappels d'échéance (heures)
+
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)

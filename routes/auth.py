@@ -22,7 +22,7 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
-SESSION_INACTIVITY_TIMEOUT = 3600  # 1 heure — déconnexion après 1h d'inactivité
+SESSION_INACTIVITY_TIMEOUT = 900  # Valeur de repli (15 min) — la vraie valeur vient de Paramètres → Sécurité
 
 @app.before_request
 def enforce_session_expiry():
@@ -43,14 +43,20 @@ def enforce_session_expiry():
         return redirect(url_for('login'))
 
     elapsed = time.time() - last_activity
-    if elapsed > SESSION_INACTIVITY_TIMEOUT:
+    # Délai d'inactivité configurable (Paramètres → Sécurité), repli 15 min
+    try:
+        from models import ParametresSysteme
+        timeout = (ParametresSysteme.get_parametres().session_idle_timeout_min or 15) * 60
+    except Exception:
+        timeout = SESSION_INACTIVITY_TIMEOUT
+    if elapsed > timeout:
         user_id = current_user.id
         username = current_user.username
         logout_user()
         session.clear()
         log_activity(user_id, "AUTO_DECONNEXION",
                      f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
-        flash('Votre session a expiré après 1 heure d\'inactivité. Veuillez vous reconnecter.', 'info')
+        flash(f"Votre session a expiré après {int(timeout // 60)} min d'inactivité. Veuillez vous reconnecter.", 'info')
         return redirect(url_for('login'))
 
     # Mettre à jour le timestamp d'activité à chaque requête

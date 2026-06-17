@@ -350,6 +350,19 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Migration 14: Colonne {col} ajoutée aux paramètres système")
 
+        # Migration 15: Paramètres de sécurité / sessions configurables
+        sys_security_cols = [
+            ('session_idle_timeout_min', 'INTEGER DEFAULT 15'),
+            ('session_lifetime_days',    'INTEGER DEFAULT 7'),
+            ('max_upload_mb',            'INTEGER DEFAULT 100'),
+            ('courrier_edit_window_h',   'INTEGER DEFAULT 24'),
+            ('reminder_interval_h',      'INTEGER DEFAULT 6'),
+        ]
+        for col, defn in sys_security_cols:
+            if add_column_safely(engine, 'parametres_systeme', col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration 15: Colonne {col} ajoutée aux paramètres système")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements

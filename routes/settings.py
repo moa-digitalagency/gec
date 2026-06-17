@@ -395,6 +395,18 @@ def settings():
             
             # Paramètres SMTP et Resend (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
+                # Sécurité & sessions (entiers positifs, avec valeurs par défaut sûres)
+                def _posint(field, default):
+                    try:
+                        v = int(request.form.get(field, default))
+                        return v if v > 0 else default
+                    except (ValueError, TypeError):
+                        return default
+                parametres.session_idle_timeout_min = _posint('session_idle_timeout_min', 15)
+                parametres.session_lifetime_days = _posint('session_lifetime_days', 7)
+                parametres.max_upload_mb = _posint('max_upload_mb', 100)
+                parametres.courrier_edit_window_h = _posint('courrier_edit_window_h', 24)
+                parametres.reminder_interval_h = _posint('reminder_interval_h', 6)
                 # Paramètres SMTP
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None
                 smtp_port = request.form.get('smtp_port', '').strip()
