@@ -11,6 +11,21 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
+
+def _resolve_logo_path(parametres):
+    """Trouve le fichier logo sur disque quel que soit le format stocké
+    ('/static/uploads/x', '/uploads/x' ou 'x'), en cherchant dans static/uploads puis uploads."""
+    for stored in (getattr(parametres, 'logo_pdf', None), getattr(parametres, 'logo_url', None)):
+        if not stored:
+            continue
+        basename = os.path.basename(stored.split('?')[0])
+        for base in ('static/uploads', 'uploads'):
+            candidate = os.path.join(base, basename)
+            if os.path.exists(candidate):
+                return candidate
+    return None
+
+
 def export_courrier_pdf(courrier):
     """Exporter un courrier en PDF avec ses métadonnées"""
     # Créer le dossier exports s'il n'existe pas
@@ -173,6 +188,7 @@ def export_courrier_pdf(courrier):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             # Charger l'image pour obtenir ses dimensions originales
@@ -485,6 +501,7 @@ def export_mail_list_pdf(courriers, filters):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             # Charger l'image pour obtenir ses dimensions originales
@@ -933,6 +950,7 @@ def export_logs_pdf(logs, filters):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             from PIL import Image as PILImage

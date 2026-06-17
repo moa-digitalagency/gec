@@ -707,11 +707,16 @@ def export_analytics(format):
             from reportlab.lib import colors as _colors
             _logo_path = None
             for _src in (_p.logo_pdf, _p.logo_url):
-                if _src and _src.startswith('/uploads/'):
-                    _cand = os.path.join('uploads', _src[9:])
+                if not _src:
+                    continue
+                _bn = os.path.basename(_src.split('?')[0])
+                for _base in ('static/uploads', 'uploads'):
+                    _cand = os.path.join(_base, _bn)
                     if os.path.exists(_cand):
                         _logo_path = _cand
                         break
+                if _logo_path:
+                    break
             if _logo_path:
                 from PIL import Image as _PILImage
                 _w, _h = _PILImage.open(_logo_path).size
