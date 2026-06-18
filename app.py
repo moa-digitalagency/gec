@@ -165,6 +165,7 @@ with app.app_context():
     # Initialize default roles and permissions
     models.Role.init_default_roles()
     models.RolePermission.init_default_permissions()
+    models.Role.ensure_hierarchy()
     
     # Initialize default departments
     models.Departement.init_default_departments()

@@ -164,12 +164,14 @@ class User(UserMixin, db.Model):
         return self.has_permission('manage_users')
 
     def role_level(self):
-        """Niveau hiérarchique du rôle (super_admin>admin>bureau_courrier>user)."""
+        """Niveau hiérarchique du rôle. Les rôles système ont un niveau FIXE (indépendant de
+        la DB, donc la hiérarchie fonctionne toujours) ; les rôles personnalisés utilisent leur colonne niveau."""
+        known = {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}
+        if self.role in known:
+            return known[self.role]
         from models.rbac import Role
         r = Role.query.filter_by(nom=self.role).first()
-        if r and r.niveau is not None:
-            return r.niveau
-        return {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}.get(self.role, 10)
+        return r.niveau if (r and r.niveau is not None) else 10
 
     def can_manage_user(self, target):
         """Peut gérer (modifier/supprimer) un autre utilisateur seulement s'il est d'un niveau
@@ -180,9 +182,13 @@ class User(UserMixin, db.Model):
 
     def can_assign_role(self, role_nom):
         """Ne peut attribuer qu'un rôle de niveau strictement inférieur au sien."""
-        from models.rbac import Role
-        r = Role.query.filter_by(nom=role_nom).first()
-        lvl = r.niveau if (r and r.niveau is not None) else {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}.get(role_nom, 10)
+        known = {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}
+        if role_nom in known:
+            lvl = known[role_nom]
+        else:
+            from models.rbac import Role
+            r = Role.query.filter_by(nom=role_nom).first()
+            lvl = r.niveau if (r and r.niveau is not None) else 10
         return self.role_level() > lvl
 
     def can_access_courrier(self, courrier):
