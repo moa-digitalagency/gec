@@ -65,7 +65,7 @@
 
 {% if current_user.is_authenticated %}
 {% set sys = get_system_params() %}
-{% set cur = request.endpoint %}
+{% set cur = request.endpoint or '' %}
 {% set unread = get_unread_notifications_count() %}
 
 <!-- Mobile overlay -->
