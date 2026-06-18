@@ -624,6 +624,18 @@ def bulk_action():
                      f"Suppression groupée de {len(accessible)} courrier(s)")
         flash(f'{len(accessible)} courrier(s) supprimé(s).', 'success')
 
+    elif action == 'export_pdf':
+        filters = {'search': '', 'date_from': '', 'date_to': '', 'statut': '',
+                   'type_courrier': '', 'sort_by': 'date_enregistrement', 'sort_order': 'desc'}
+        pdf_path = export_mail_list_pdf(accessible, filters)
+        log_activity(current_user.id, "BULK_EXPORT_PDF",
+                     f"Export PDF de {len(accessible)} courrier(s) sélectionné(s)")
+        return send_from_directory(
+            os.path.dirname(pdf_path), os.path.basename(pdf_path),
+            as_attachment=True,
+            download_name=f"selection_courriers_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            mimetype='application/pdf')
+
     else:
         flash('Action inconnue.', 'error')
 
