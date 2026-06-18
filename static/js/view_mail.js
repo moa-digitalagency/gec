@@ -73,20 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Initialize DataTables if available
-    if (typeof $.fn.DataTable !== 'undefined' && $('#courriers-table').length) {
-        $('#courriers-table').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json"
-            },
-            "order": [[ 5, "desc" ]], // Sort by date column by default
-            "pageLength": 25,
-            "responsive": true,
-            "columnDefs": [
-                { "targets": -1, "orderable": false, "className": "actions-column" } // Make actions column non-sortable
-            ]
-        });
-    }
+    // DataTables désactivé volontairement : le filtrage, le tri et la recherche se font
+    // côté serveur (formulaire de filtres + boutons de tri + autocomplete). DataTables
+    // ajoutait des contrôles redondants (« Show entries », « Showing X of Y ») et son
+    // wrapper cassait le défilement horizontal (colonne Actions coupée, scroll de toute
+    // la page). Le défilement est désormais contenu au tableau via .gec-table-wrap.
 
     // Autocomplete pour la recherche
     const searchInput = document.getElementById('search');
