@@ -266,7 +266,13 @@ def edit_role(role_id):
     if not role.modifiable:
         flash('Ce rôle système ne peut pas être modifié.', 'error')
         return redirect(url_for('manage_roles'))
-    
+
+    # Hiérarchie : on ne peut pas modifier un rôle de niveau supérieur ou égal au sien
+    # (empêche d'élargir son propre rôle ou un rôle supérieur pour outrepasser ses droits)
+    if (role.niveau or 0) >= current_user.role_level():
+        flash("Vous ne pouvez pas modifier un rôle de niveau supérieur ou égal au vôtre.", 'error')
+        return redirect(url_for('manage_roles'))
+
     if request.method == 'POST':
         role.nom_affichage = request.form['nom_affichage'].strip()
         role.description = request.form['description'].strip()
@@ -330,7 +336,12 @@ def delete_role(role_id):
     if not role.modifiable:
         flash('Ce rôle système ne peut pas être supprimé.', 'error')
         return redirect(url_for('manage_roles'))
-    
+
+    # Hiérarchie : on ne peut pas supprimer un rôle de niveau supérieur ou égal au sien
+    if (role.niveau or 0) >= current_user.role_level():
+        flash("Vous ne pouvez pas supprimer un rôle de niveau supérieur ou égal au vôtre.", 'error')
+        return redirect(url_for('manage_roles'))
+
     # Vérifier s'il y a des utilisateurs avec ce rôle
     users_count = User.query.filter_by(role=role.nom).count()
     if users_count > 0:

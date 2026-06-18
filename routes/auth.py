@@ -271,9 +271,7 @@ def verify_2fa():
 @app.route('/profile/2fa/setup', methods=['GET', 'POST'])
 @login_required
 def setup_2fa():
-    """Activation de la 2FA — uniquement super_admin"""
-    if current_user.role != 'super_admin':
-        abort(403)
+    """Activation de la 2FA — disponible pour tout utilisateur connecté (sur son propre compte)"""
 
     import pyotp, qrcode, io, base64
 

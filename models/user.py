@@ -163,6 +163,28 @@ class User(UserMixin, db.Model):
     def can_manage_users(self):
         return self.has_permission('manage_users')
 
+    def role_level(self):
+        """Niveau hiérarchique du rôle (super_admin>admin>bureau_courrier>user)."""
+        from models.rbac import Role
+        r = Role.query.filter_by(nom=self.role).first()
+        if r and r.niveau is not None:
+            return r.niveau
+        return {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}.get(self.role, 10)
+
+    def can_manage_user(self, target):
+        """Peut gérer (modifier/supprimer) un autre utilisateur seulement s'il est d'un niveau
+        STRICTEMENT inférieur. Pas d'auto-gestion (anti-escalade de ses propres droits)."""
+        if target is None or target.id == self.id:
+            return False
+        return self.role_level() > target.role_level()
+
+    def can_assign_role(self, role_nom):
+        """Ne peut attribuer qu'un rôle de niveau strictement inférieur au sien."""
+        from models.rbac import Role
+        r = Role.query.filter_by(nom=role_nom).first()
+        lvl = r.niveau if (r and r.niveau is not None) else {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}.get(role_nom, 10)
+        return self.role_level() > lvl
+
     def can_access_courrier(self, courrier):
         if not self.actif:
             return False

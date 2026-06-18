@@ -363,6 +363,11 @@ def run_automatic_migrations(app, db):
                 migrations_applied += 1
                 logging.info(f"✓ Migration 15: Colonne {col} ajoutée aux paramètres système")
 
+        # Migration 16: Hiérarchie des rôles (niveau super_admin>admin>bureau_courrier>user)
+        if add_column_safely(engine, 'role', 'niveau', 'INTEGER NOT NULL DEFAULT 10'):
+            migrations_applied += 1
+            logging.info("✓ Migration 16: Colonne niveau ajoutée à la table role")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements

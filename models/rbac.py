@@ -14,6 +14,7 @@ class Role(db.Model):
     icone = db.Column(db.String(50), nullable=False, default='fas fa-user')
     actif = db.Column(db.Boolean, default=True)
     modifiable = db.Column(db.Boolean, default=True)
+    niveau = db.Column(db.Integer, nullable=False, default=10)  # Hiérarchie : super_admin>admin>bureau_courrier>user
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -43,7 +44,8 @@ class Role(db.Model):
                 'description': 'Accès complet au système avec toutes les permissions',
                 'couleur': 'bg-yellow-100 text-yellow-800',
                 'icone': 'fas fa-crown',
-                'modifiable': False
+                'modifiable': False,
+                'niveau': 100
             },
             {
                 'nom': 'admin',
@@ -51,7 +53,17 @@ class Role(db.Model):
                 'description': 'Gestion des utilisateurs et configuration système limitée',
                 'couleur': 'bg-blue-100 text-blue-800',
                 'icone': 'fas fa-shield-alt',
-                'modifiable': True
+                'modifiable': True,
+                'niveau': 80
+            },
+            {
+                'nom': 'bureau_courrier',
+                'nom_affichage': 'Bureau Courrier / Accueil',
+                'description': 'Réception : enregistre, consulte et recherche ses propres courriers',
+                'couleur': 'bg-green-100 text-green-800',
+                'icone': 'fas fa-clipboard-list',
+                'modifiable': True,
+                'niveau': 40
             },
             {
                 'nom': 'user',
@@ -59,7 +71,8 @@ class Role(db.Model):
                 'description': 'Accès de base pour enregistrer et consulter les courriers',
                 'couleur': 'bg-gray-100 text-gray-800',
                 'icone': 'fas fa-user',
-                'modifiable': True
+                'modifiable': True,
+                'niveau': 20
             }
         ]
         for role_data in roles_defaut:
@@ -70,6 +83,35 @@ class Role(db.Model):
         except Exception as e:
             db.session.rollback()
             print(f"Erreur lors de l'initialisation des rôles: {e}")
+
+    @staticmethod
+    def ensure_hierarchy():
+        """Idempotent : garantit les niveaux de hiérarchie des rôles et l'existence du
+        rôle Bureau Courrier. S'exécute à chaque démarrage (corrige les instances existantes)."""
+        from app import db
+        niveaux = {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}
+        changed = False
+        for nom, niv in niveaux.items():
+            role = Role.query.filter_by(nom=nom).first()
+            if role and (role.niveau or 0) != niv:
+                role.niveau = niv
+                changed = True
+        if not Role.query.filter_by(nom='bureau_courrier').first():
+            role = Role(nom='bureau_courrier', nom_affichage='Bureau Courrier / Accueil',
+                        description='Réception : enregistre, consulte et recherche ses propres courriers',
+                        couleur='bg-green-100 text-green-800', icone='fas fa-clipboard-list',
+                        modifiable=True, niveau=40)
+            db.session.add(role)
+            db.session.flush()
+            for perm in ('register_mail', 'view_mail', 'search_mail', 'read_own_mail'):
+                db.session.add(RolePermission(role_id=role.id, permission_nom=perm))
+            changed = True
+        if changed:
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Erreur ensure_hierarchy: {e}")
 
 
 class RolePermission(db.Model):
@@ -108,6 +150,9 @@ class RolePermission(db.Model):
             'user': [
                 'register_mail', 'view_mail', 'search_mail', 'export_data',
                 'view_own', 'edit_own', 'read_own_mail'
+            ],
+            'bureau_courrier': [
+                'register_mail', 'view_mail', 'search_mail', 'read_own_mail'
             ]
         }
         for role_nom, perms in permissions_defaut.items():
