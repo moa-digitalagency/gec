@@ -29,8 +29,8 @@
   <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
 
   <!-- Design System -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/design-system.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/base.css') }}">
 
   <!-- Dark mode init — before render to avoid flash -->
   <script>(function(){if(localStorage.getItem('gec-dark')==='1')document.documentElement.classList.add('dark');})();</script>
@@ -453,7 +453,7 @@
 <!-- JS -->
 <script src="{{ url_for('static', filename='vendor/jquery/jquery-3.7.1.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/base.js') }}"></script>
+<script src="{{ asset_url('js/base.js') }}"></script>
 
 <!-- CSRF auto-inject -->
 <script>

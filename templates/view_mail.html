@@ -346,7 +346,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/view_mail.js') }}"></script>
+<script src="{{ asset_url('js/view_mail.js') }}"></script>
 <script>
 // Le tableau est rendu côté serveur puis géré par DataTables : aucune injection de
 // skeleton ici (les fausses lignes étaient captées par DataTables et restaient affichées).

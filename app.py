@@ -214,6 +214,22 @@ def inject_seo_flags():
         'seo_noindex': os.environ.get('SEO_NOINDEX', '').strip().lower() in ('1', 'true', 'yes', 'on')
     }
 
+# Cache-busting : les assets statiques sont servis avec Cache-Control immutable (30 j).
+# asset_url() ajoute ?v=<mtime> pour que toute mise à jour d'un CSS/JS soit rechargée
+# automatiquement par le navigateur, sans avoir à vider le cache manuellement.
+@app.context_processor
+def inject_asset_helpers():
+    from flask import url_for as _url_for
+
+    def asset_url(filename):
+        try:
+            mtime = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except Exception:
+            mtime = 1
+        return _url_for('static', filename=filename) + '?v=' + str(mtime)
+
+    return {'asset_url': asset_url}
+
 # Add language functions to template context
 @app.context_processor
 def inject_language_functions():
