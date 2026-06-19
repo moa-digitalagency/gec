@@ -1062,10 +1062,10 @@ def circuit_signature(id):
         abort(403)
 
     if request.method == 'POST':
-        # Initier un circuit de signature = action d'édition de courrier (pilotée par permission)
-        if not (current_user.has_permission('edit_all_mail')
-                or current_user.has_permission('edit_department_mail')
-                or current_user.has_permission('edit_own_mail')):
+        # Initier un circuit de signature = action d'édition de courrier : la permission DOIT être
+        # scopée à CE courrier (edit_department → même département, edit_own → propriétaire),
+        # sinon un user avec edit_own_mail pourrait agir sur un courrier qu'il ne fait que consulter (IDOR).
+        if not current_user.can_edit_courrier(courrier):
             return jsonify({'error': 'Permission refusée'}), 403
 
         data = request.get_json(silent=True) or {}
