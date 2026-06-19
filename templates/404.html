@@ -11,6 +11,10 @@
     <div style="text-align:center;">
       <h1 style="font-size:1.5rem;font-weight:700;color:var(--t-primary);margin-bottom:.5rem;">Oups ! Vous semblez perdu…</h1>
       <p style="color:var(--t-muted);font-size:.9375rem;">La page que vous recherchez n'existe pas ou a été déplacée.</p>
+      <div style="text-align:left;background:var(--body-bg);border-radius:var(--r-md);padding:.6rem .85rem;margin-top:1rem;">
+        <div style="font-size:.7rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;"><i class="fas fa-link" style="margin-right:.35rem;color:var(--primary);"></i>Adresse demandée</div>
+        <div style="font-family:monospace;font-size:.78rem;color:var(--primary);word-break:break-all;">{{ request.url }}</div>
+      </div>
     </div>
 
     <!-- Search card -->
@@ -28,6 +32,9 @@
           </button>
         </form>
         <div style="display:flex;gap:1rem;justify-content:center;margin-top:.875rem;flex-wrap:wrap;">
+          <a href="{{ url_for('login') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
+            <i class="fas fa-right-to-bracket"></i> Retour à la connexion
+          </a>
           <a href="{{ url_for('dashboard') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
             <i class="fas fa-home"></i> Tableau de bord
           </a>

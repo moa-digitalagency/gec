@@ -24,11 +24,36 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 
 SESSION_INACTIVITY_TIMEOUT = 900  # Valeur de repli (15 min) — la vraie valeur vient de Paramètres → Sécurité
 
+
+def _expects_json():
+    """Vrai si la requête vient d'un appel AJAX/fetch (attend du JSON).
+    Sans ça, une session expirée renverrait une page HTML de login que le JS ne sait pas
+    interpréter (fetch → réponse HTML → l'UI casse silencieusement)."""
+    if request.path.startswith('/api/'):
+        return True
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return True
+    accept = request.headers.get('Accept', '')
+    return 'application/json' in accept and 'text/html' not in accept
+
+
+def _session_expired_response(message):
+    """Réponse de session expirée adaptée au type d'appel :
+    - AJAX/fetch  → 401 JSON (le JS redirige proprement vers /login)
+    - navigation  → redirection HTML vers /login en conservant la destination (next)."""
+    if _expects_json():
+        return jsonify({'error': 'session_expired', 'message': message,
+                        'login_url': url_for('login')}), 401
+    flash(message, 'info')
+    next_url = request.url if request.method == 'GET' else None
+    return redirect(url_for('login', next=next_url) if next_url else url_for('login'))
+
+
 @app.before_request
 def enforce_session_expiry():
     """
-    Force la déconnexion automatique après 1h d'inactivité.
-    Le timer se réinitialise à chaque requête — seule une absence d'activité pendant 1h déclenche la déconnexion.
+    Force la déconnexion automatique après une période d'inactivité (configurable, défaut 15 min).
+    Le timer se réinitialise à chaque requête — seule une absence d'activité prolongée déclenche la déconnexion.
     """
     if not current_user.is_authenticated:
         return
@@ -39,8 +64,7 @@ def enforce_session_expiry():
         # Session sans horodatage (ancienne session) → déconnexion
         logout_user()
         session.clear()
-        flash('Votre session a expiré. Veuillez vous reconnecter.', 'info')
-        return redirect(url_for('login'))
+        return _session_expired_response('Votre session a expiré. Veuillez vous reconnecter.')
 
     elapsed = time.time() - last_activity
     # Délai d'inactivité configurable (Paramètres → Sécurité), repli 15 min
@@ -54,10 +78,13 @@ def enforce_session_expiry():
         username = current_user.username
         logout_user()
         session.clear()
-        log_activity(user_id, "AUTO_DECONNEXION",
-                     f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
-        flash(f"Votre session a expiré après {int(timeout // 60)} min d'inactivité. Veuillez vous reconnecter.", 'info')
-        return redirect(url_for('login'))
+        try:
+            log_activity(user_id, "AUTO_DECONNEXION",
+                         f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
+        except Exception:
+            pass
+        return _session_expired_response(
+            f"Votre session a expiré après {int(timeout // 60)} min d'inactivité. Veuillez vous reconnecter.")
 
     # Mettre à jour le timestamp d'activité à chaque requête
     session['last_activity'] = time.time()

@@ -41,11 +41,20 @@
             </div>
           </div>
         </div>
+
+        <!-- Adresse concernée -->
+        <div style="text-align:left;background:var(--body-bg);border-radius:var(--r-md);padding:.75rem .9rem;">
+          <div style="font-size:.7rem;font-weight:600;color:var(--t-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;"><i class="fas fa-link" style="margin-right:.35rem;color:var(--primary);"></i>Adresse concernée</div>
+          <div style="font-family:monospace;font-size:.8rem;color:var(--primary);word-break:break-all;">{{ request.url }}</div>
+        </div>
       </div>
     </div>
 
     <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
-      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-primary">
+      <a href="{{ url_for('login') }}" class="gec-btn gec-btn-primary">
+        <i class="fas fa-right-to-bracket"></i> Retour à la connexion
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-secondary">
         <i class="fas fa-undo"></i> Retour en lieu sûr
       </a>
       <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="gec-btn gec-btn-secondary">
