@@ -51,12 +51,15 @@
     </div>
 
     <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-primary">
+        <i class="fas fa-undo"></i> Retour au tableau de bord
+      </a>
+      {% else %}
       <a href="{{ url_for('login') }}" class="gec-btn gec-btn-primary">
         <i class="fas fa-right-to-bracket"></i> Retour à la connexion
       </a>
-      <a href="{{ url_for('dashboard') }}" class="gec-btn gec-btn-secondary">
-        <i class="fas fa-undo"></i> Retour en lieu sûr
-      </a>
+      {% endif %}
       <a href="https://wa.me/{{ get_system_params().whatsapp_number or '243860493345' }}" target="_blank" class="gec-btn gec-btn-secondary">
         <i class="fas fa-key" style="color:var(--warning);"></i> Demander une élévation
       </a>

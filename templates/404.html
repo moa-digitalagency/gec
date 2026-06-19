@@ -32,12 +32,15 @@
           </button>
         </form>
         <div style="display:flex;gap:1rem;justify-content:center;margin-top:.875rem;flex-wrap:wrap;">
-          <a href="{{ url_for('login') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
-            <i class="fas fa-right-to-bracket"></i> Retour à la connexion
-          </a>
+          {% if current_user.is_authenticated %}
           <a href="{{ url_for('dashboard') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
             <i class="fas fa-home"></i> Tableau de bord
           </a>
+          {% else %}
+          <a href="{{ url_for('login') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
+            <i class="fas fa-right-to-bracket"></i> Retour à la connexion
+          </a>
+          {% endif %}
           <a href="{{ url_for('register_mail') }}" style="font-size:.875rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:.375rem;">
             <i class="fas fa-plus-circle"></i> Nouveau courrier
           </a>

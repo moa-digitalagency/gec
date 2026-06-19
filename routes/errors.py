@@ -23,9 +23,14 @@ from security import rate_limit, sanitize_input, validate_file_upload, log_secur
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
 def _error_page(code, title, message, icon='fa-triangle-exclamation', status=None):
-    """Rend la page d'erreur autonome (affiche l'URL concernée + bouton retour login)."""
+    """Rend la page d'erreur autonome (URL concernée + bouton contextuel :
+    tableau de bord si connecté, sinon retour à la connexion)."""
+    try:
+        authed = bool(current_user.is_authenticated)
+    except Exception:
+        authed = False
     return render_template('error.html', code=code, title=title, message=message,
-                           icon=icon, error_url=request.url), (status or code)
+                           icon=icon, error_url=request.url, authed=authed), (status or code)
 
 
 @app.errorhandler(400)

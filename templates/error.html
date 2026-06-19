@@ -69,8 +69,11 @@
     </div>
 
     <div class="actions">
+      {% if authed %}
+      <a href="{{ url_for('dashboard') }}" class="btn btn-primary"><i class="fas fa-house"></i> Retour au tableau de bord</a>
+      {% else %}
       <a href="{{ url_for('login') }}" class="btn btn-primary"><i class="fas fa-right-to-bracket"></i> Retour à la connexion</a>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost"><i class="fas fa-house"></i> Tableau de bord</a>
+      {% endif %}
       <a href="javascript:history.back()" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Page précédente</a>
     </div>
 

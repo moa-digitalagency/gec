@@ -472,6 +472,20 @@
   if(typeof $!=='undefined') $.ajaxSetup({headers:{'X-CSRFToken':token}});
   var origFetch=window.fetch;
   window.fetch=function(u,o){o=o||{};if(!o.method||o.method.toUpperCase()!=='GET'){o.headers=o.headers||{};o.headers['X-CSRFToken']=token;}return origFetch(u,o);};
+  // Couvre AUSSI les formulaires POST créés dynamiquement puis soumis via form.submit()
+  // (suppression courrier, restaurer/vider corbeille, suppr. langue/template…) : sans ça,
+  // ces formulaires partent sans jeton CSRF → erreur 400.
+  try{
+    var _origSubmit=HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit=function(){
+      try{
+        if((this.method||'get').toLowerCase()==='post' && !this.querySelector('input[name="csrf_token"]')){
+          var ci=document.createElement('input');ci.type='hidden';ci.name='csrf_token';ci.value=token;this.appendChild(ci);
+        }
+      }catch(e){}
+      return _origSubmit.apply(this,arguments);
+    };
+  }catch(e){}
 })();
 </script>
 

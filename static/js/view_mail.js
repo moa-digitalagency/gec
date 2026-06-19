@@ -14,6 +14,16 @@ function confirmDelete(id, numero) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/delete_courrier/${id}`;
+        // Jeton CSRF : le formulaire est créé dynamiquement au clic, donc l'auto-injection
+        // (qui ne traite que les formulaires présents au chargement) ne le couvre pas → 400 sinon.
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) {
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrf_token';
+            csrf.value = meta.getAttribute('content');
+            form.appendChild(csrf);
+        }
         document.body.appendChild(form);
         form.submit();
     }
