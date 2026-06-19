@@ -100,6 +100,7 @@ body {
 
 .gec-content-wrapper {
   flex: 1;
+  min-width: 0; /* autorise le conteneur à rétrécir sous la largeur de son contenu (sinon un tableau large fait scroller toute la page) */
   margin-left: var(--sb-width);
   display: flex;
   flex-direction: column;
@@ -109,6 +110,7 @@ body {
 
 .gec-main {
   flex: 1;
+  min-width: 0; /* idem : le contenu large (tableaux) scrolle dans son propre conteneur, pas la page */
   padding: 1.5rem 2rem;
   background: var(--body-bg);
 }
@@ -1195,12 +1197,15 @@ html.dark thead.bg-gray-50 { background-color: rgba(255,255,255,0.03) !important
 /* ── 32. TWO-COLUMN LAYOUT ───────────────────────────────────── */
 .gec-two-col {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  /* minmax(0, 1fr) au lieu de 1fr : autorise la colonne à rétrécir sous la largeur
+     min-content de son contenu (un tableau large scrolle alors dans son propre wrap,
+     au lieu de faire déborder/scroller toute la page). */
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1.5rem;
   align-items: start;
 }
 @media (max-width: 1023px) {
-  .gec-two-col { grid-template-columns: 1fr; }
+  .gec-two-col { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── 33. ACTIONS ROW ─────────────────────────────────────────── */
