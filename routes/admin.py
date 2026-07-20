@@ -51,6 +51,8 @@ PERMISSIONS_CATALOG = {
     'edit_all_mail':           {'name': 'Modifier tous les courriers',   'description': "Modifier n'importe quel courrier du système",                    'category': 'Édition Courrier'},
     'edit_department_mail':    {'name': 'Modifier courriers du département','description': 'Modifier les courriers de son département uniquement',          'category': 'Édition Courrier'},
     'edit_own_mail':           {'name': 'Modifier ses propres courriers','description': 'Modifier uniquement ses propres courriers',                      'category': 'Édition Courrier'},
+    'add_director_annotation': {'name': 'Annotation du Directeur',        'description': "Poser l'annotation unique du Directeur sur un courrier",         'category': 'Courrier'},
+    'edit_registration_date':  {'name': "Modifier la date d'enregistrement", 'description': "Modifier manuellement la date d'enregistrement d'un courrier", 'category': 'Édition Courrier'},
 }
 
 ROLE_COLORS = [
