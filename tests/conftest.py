@@ -48,8 +48,8 @@ def _seed_db(db, app):
             nom_complet="Admin Test",
             role="super_admin",
             actif=True,
+            password_hash=generate_password_hash("AdminPass123!"),
         )
-        u.set_password("AdminPass123!")
         db.session.add(u)
 
     # regular user
@@ -60,8 +60,8 @@ def _seed_db(db, app):
             nom_complet="User Test",
             role="user",
             actif=True,
+            password_hash=generate_password_hash("UserPass123!"),
         )
-        u2.set_password("UserPass123!")
         db.session.add(u2)
 
     db.session.commit()
