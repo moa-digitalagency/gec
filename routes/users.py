@@ -66,7 +66,12 @@ def add_user():
         matricule = request.form.get('matricule', '').strip()
         fonction = request.form.get('fonction', '').strip()
         departement_id = request.form.get('departement_id') or None
-        
+
+        # Hiérarchie : on ne peut attribuer qu'un rôle de niveau strictement inférieur au sien
+        if not current_user.can_assign_role(role):
+            flash("Vous ne pouvez pas attribuer un rôle de niveau supérieur ou égal au vôtre.", 'error')
+            return redirect(url_for('add_user'))
+
         # Vérifier que l'utilisateur n'existe pas déjà
         if User.query.filter_by(username=username).first():
             flash('Ce nom d\'utilisateur existe déjà.', 'error')
@@ -123,7 +128,8 @@ def add_user():
     
     departements = Departement.get_departements_actifs()
     # Get all active roles from database
-    roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
+    roles = [r for r in Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
+             if current_user.role_level() > (r.niveau or 0)]
     return render_template('add_user.html', 
                          available_languages=get_available_languages(),
                          departements=departements,
@@ -138,12 +144,21 @@ def edit_user(user_id):
         return redirect(url_for('dashboard'))
     
     user = User.query.get_or_404(user_id)
-    
+
+    # Hiérarchie : on ne peut modifier qu'un profil de niveau strictement inférieur au sien
+    if not current_user.can_manage_user(user):
+        flash("Vous n'avez pas l'autorisation de modifier ce profil (niveau supérieur ou égal au vôtre).", 'error')
+        return redirect(url_for('manage_users'))
+
     if request.method == 'POST':
         user.username = request.form['username']
         user.email = request.form['email']
         user.nom_complet = request.form['nom_complet']
-        user.role = request.form['role']
+        _new_role = request.form['role']
+        if not current_user.can_assign_role(_new_role):
+            flash("Vous ne pouvez pas attribuer ce rôle (niveau supérieur ou égal au vôtre).", 'error')
+            return redirect(url_for('edit_user', user_id=user.id))
+        user.role = _new_role
         user.langue = request.form['langue']
         user.matricule = request.form.get('matricule', '').strip() or None
         user.fonction = request.form.get('fonction', '').strip() or None
@@ -193,7 +208,8 @@ def edit_user(user_id):
     
     departements = Departement.get_departements_actifs()
     # Get all active roles from database
-    roles = Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
+    roles = [r for r in Role.query.filter_by(actif=True).order_by(Role.nom_affichage).all()
+             if current_user.role_level() > (r.niveau or 0)]
     return render_template('edit_user.html', user=user, 
                          available_languages=get_available_languages(),
                          departements=departements,
@@ -208,7 +224,12 @@ def delete_user(user_id):
         return redirect(url_for('dashboard'))
     
     user = User.query.get_or_404(user_id)
-    
+
+    # Hiérarchie : on ne peut supprimer qu'un profil de niveau strictement inférieur au sien
+    if not current_user.can_manage_user(user):
+        flash("Vous n'avez pas l'autorisation de supprimer ce profil (niveau supérieur ou égal au vôtre).", 'error')
+        return redirect(url_for('manage_users'))
+
     # Empêcher la suppression de son propre compte
     if user.id == current_user.id:
         flash('Vous ne pouvez pas supprimer votre propre compte.', 'error')

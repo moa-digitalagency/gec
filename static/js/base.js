@@ -142,3 +142,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reconnexion après timeout : intercepteur fetch global.
+// Si une requête AJAX échoue parce que la session a expiré (le serveur renvoie
+// 401 { error: 'session_expired' }), on prévient l'utilisateur et on le redirige
+// proprement vers /login — au lieu de laisser l'UI casser silencieusement
+// (un fetch recevant une page HTML de login au lieu du JSON attendu).
+(function () {
+    if (!window.fetch || window.__gecFetchPatched) return;
+    window.__gecFetchPatched = true;
+    var _fetch = window.fetch;
+    var _redirecting = false;
+    window.fetch = function () {
+        return _fetch.apply(this, arguments).then(function (response) {
+            try {
+                if (response && response.status === 401) {
+                    var ct = response.headers.get('content-type') || '';
+                    if (ct.indexOf('application/json') !== -1) {
+                        response.clone().json().then(function (data) {
+                            if (data && data.error === 'session_expired' && !_redirecting) {
+                                _redirecting = true;
+                                alert(data.message || 'Votre session a expiré. Veuillez vous reconnecter.');
+                                window.location.href = data.login_url || '/login';
+                            }
+                        }).catch(function () {});
+                    }
+                }
+            } catch (e) { /* ne jamais casser la chaîne fetch */ }
+            return response;
+        });
+    };
+})();

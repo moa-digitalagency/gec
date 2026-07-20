@@ -166,7 +166,7 @@ def delete_email_template(template_id):
 @rate_limit(max_requests=5, per_minutes=15)
 def init_default_email_templates():
     """Génère tous les templates email par défaut manquants"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_email_templates'):
         return jsonify({'success': False, 'message': 'Accès non autorisé.'}), 403
     try:
         from models import EmailTemplate
@@ -317,8 +317,8 @@ def test_smtp_config():
 @rate_limit(max_requests=20, per_minutes=15)
 def settings():
     # Vérification des permissions
-    if not current_user.is_super_admin():
-        flash('Accès refusé. Seuls les super administrateurs peuvent accéder aux paramètres.', 'error')
+    if not current_user.has_permission('manage_system_settings'):
+        flash('Accès refusé. Vous n\'avez pas la permission d\'accéder aux paramètres.', 'error')
         return redirect(url_for('dashboard'))
     
     with PerformanceMonitor("settings_page"):
@@ -395,6 +395,18 @@ def settings():
             
             # Paramètres SMTP et Resend (soumis aux permissions)
             if current_user.has_permission('manage_system_settings'):
+                # Sécurité & sessions (entiers positifs, avec valeurs par défaut sûres)
+                def _posint(field, default):
+                    try:
+                        v = int(request.form.get(field, default))
+                        return v if v > 0 else default
+                    except (ValueError, TypeError):
+                        return default
+                parametres.session_idle_timeout_min = _posint('session_idle_timeout_min', 15)
+                parametres.session_lifetime_days = _posint('session_lifetime_days', 7)
+                parametres.max_upload_mb = _posint('max_upload_mb', 100)
+                parametres.courrier_edit_window_h = _posint('courrier_edit_window_h', 24)
+                parametres.reminder_interval_h = _posint('reminder_interval_h', 6)
                 # Paramètres SMTP
                 parametres.smtp_server = sanitize_input(request.form.get('smtp_server', '').strip()) or None
                 smtp_port = request.form.get('smtp_port', '').strip()
@@ -508,7 +520,7 @@ def settings():
 @login_required
 def clear_cache_route():
     """Route pour vider le cache système"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         return jsonify({
             'success': False,
             'message': 'Accès non autorisé'
@@ -612,7 +624,7 @@ def set_language_route(lang_code):
 @login_required
 def manage_languages():
     """Gestion des langues - accessible uniquement aux super admins"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -623,7 +635,7 @@ def manage_languages():
 @login_required
 def toggle_language(lang_code):
     """Activer/désactiver une langue"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -641,7 +653,7 @@ def toggle_language(lang_code):
 @login_required
 def download_language(lang_code):
     """Télécharger un fichier de langue JSON"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -660,7 +672,7 @@ def download_language(lang_code):
 @login_required
 def upload_language():
     """Upload un nouveau fichier de langue JSON"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -700,7 +712,7 @@ def upload_language():
 @login_required
 def delete_language(lang_code):
     """Supprimer un fichier de langue"""
-    if not current_user.is_super_admin():
+    if not current_user.has_permission('manage_system_settings'):
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('dashboard'))
     

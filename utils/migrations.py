@@ -40,10 +40,10 @@ def add_column_safely(engine, table_name, column_name, column_definition):
     """Ajoute une colonne de manière sécurisée si elle n'existe pas"""
     try:
         if not check_column_exists(engine, table_name, column_name):
-            # Normalisation des booléens pour PostgreSQL vs SQLite
-            if "DEFAULT 1" in column_definition or "DEFAULT 0" in column_definition:
-                 if get_database_type() == "postgresql":
-                     column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
+            # Normalisation des booléens pour PostgreSQL — UNIQUEMENT pour les colonnes
+            # BOOLEAN (ne pas corrompre les INTEGER tels que 'DEFAULT 15' ou 'DEFAULT 100').
+            if "BOOLEAN" in column_definition.upper() and get_database_type() == "postgresql":
+                column_definition = column_definition.replace("DEFAULT 1", "DEFAULT TRUE").replace("DEFAULT 0", "DEFAULT FALSE")
 
             quoted = table_name if table_name.startswith('"') else (f'"{table_name}"' if get_database_type() == "postgresql" else table_name)
             sql = f"ALTER TABLE {quoted} ADD COLUMN {column_name} {column_definition}"
@@ -349,6 +349,24 @@ def run_automatic_migrations(app, db):
             if add_column_safely(engine, 'parametres_systeme', col, defn):
                 migrations_applied += 1
                 logging.info(f"✓ Migration 14: Colonne {col} ajoutée aux paramètres système")
+
+        # Migration 15: Paramètres de sécurité / sessions configurables
+        sys_security_cols = [
+            ('session_idle_timeout_min', 'INTEGER DEFAULT 15'),
+            ('session_lifetime_days',    'INTEGER DEFAULT 7'),
+            ('max_upload_mb',            'INTEGER DEFAULT 100'),
+            ('courrier_edit_window_h',   'INTEGER DEFAULT 24'),
+            ('reminder_interval_h',      'INTEGER DEFAULT 6'),
+        ]
+        for col, defn in sys_security_cols:
+            if add_column_safely(engine, 'parametres_systeme', col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration 15: Colonne {col} ajoutée aux paramètres système")
+
+        # Migration 16: Hiérarchie des rôles (niveau super_admin>admin>bureau_courrier>user)
+        if add_column_safely(engine, 'role', 'niveau', 'INTEGER NOT NULL DEFAULT 10'):
+            migrations_applied += 1
+            logging.info("✓ Migration 16: Colonne niveau ajoutée à la table role")
 
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% if seo_noindex %}<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">{% endif %}
   <title>{% block title %}{{ parametres.nom_logiciel if parametres else 'GEC' }}{% endblock %}</title>
 
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
@@ -28,8 +29,8 @@
   <script src="{{ url_for('static', filename='js/tailwind-config.js') }}"></script>
 
   <!-- Design System -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/design-system.css') }}">
+  <link rel="stylesheet" href="{{ asset_url('css/base.css') }}">
 
   <!-- Dark mode init — before render to avoid flash -->
   <script>(function(){if(localStorage.getItem('gec-dark')==='1')document.documentElement.classList.add('dark');})();</script>
@@ -64,7 +65,7 @@
 
 {% if current_user.is_authenticated %}
 {% set sys = get_system_params() %}
-{% set cur = request.endpoint %}
+{% set cur = request.endpoint or '' %}
 {% set unread = get_unread_notifications_count() %}
 
 <!-- Mobile overlay -->
@@ -84,7 +85,7 @@
       {% endif %}
       <div style="min-width:0;">
         <div class="gec-sidebar-logo-text">{{ sys.nom_logiciel if sys.nom_logiciel else 'GEC' }}</div>
-        <div class="gec-sidebar-logo-sub">Gestion Électronique du Courrier</div>
+        <div class="gec-sidebar-logo-sub">{{ sys.sous_titre_pdf if sys and sys.sous_titre_pdf else 'Gestion Électronique du Courrier' }}</div>
       </div>
     </a>
   </div>
@@ -135,11 +136,13 @@
       <span class="gec-nav-label">Recherche Avancée</span>
     </a>
 
+    {% if current_user.has_permission('view_all_logs') %}
     <a href="{{ url_for('analytics') }}"
        class="gec-nav-item {% if cur == 'analytics' %}active{% endif %}">
       <i class="fas fa-chart-bar gec-nav-icon"></i>
       <span class="gec-nav-label">Analytique</span>
     </a>
+    {% endif %}
 
     <a href="{{ url_for('senders_list') }}"
        class="gec-nav-item {% if cur == 'senders_list' %}active{% endif %}">
@@ -177,7 +180,7 @@
     {% endif %}
 
     <!-- ── ADMINISTRATION ── -->
-    {% if current_user.has_permission('manage_users') or current_user.is_super_admin() or current_user.role == 'admin' %}
+    {% if current_user.has_permission('manage_users') or current_user.has_permission('manage_roles') or current_user.has_permission('manage_departments') or current_user.has_permission('manage_statuses') %}
     <span class="gec-nav-section-label">Administration</span>
 
     {% set admin_active = cur in ['manage_users','add_user','edit_user','manage_departments','add_department','edit_department','manage_roles','add_role','edit_role','manage_statuses','manage_outgoing_types','edit_outgoing_type','add_outgoing_type'] %}
@@ -191,7 +194,7 @@
     </a>
     {% endif %}
 
-    {% if current_user.is_super_admin() %}
+    {% if current_user.has_permission('manage_departments') or current_user.has_permission('manage_roles') %}
     <!-- Collapsible: Structure organisationnelle -->
     <div class="gec-nav-group-toggle {% if cur in ['manage_departments','add_department','edit_department','manage_roles','add_role','edit_role'] %}open group-active{% endif %}"
          onclick="toggleNavGroup('org-group', this)" id="org-group-toggle">
@@ -237,15 +240,17 @@
     {% endif %}
 
     <!-- ── SYSTÈME ── -->
-    {% if current_user.has_permission('manage_system_settings') or current_user.is_super_admin() %}
+    {% if current_user.has_permission('manage_system_settings') or current_user.has_permission('manage_email_templates') or current_user.has_permission('view_all_logs') or current_user.has_permission('view_security_logs') or current_user.has_permission('manage_security_settings') or current_user.has_permission('manage_backup') or current_user.has_permission('manage_updates') %}
     <span class="gec-nav-section-label">Système</span>
 
     <!-- Paramètres principaux -->
+    {% if current_user.has_permission('manage_system_settings') %}
     <a href="{{ url_for('settings') }}"
        class="gec-nav-item {% if cur == 'settings' %}active{% endif %}">
       <i class="fas fa-cog gec-nav-icon"></i>
       <span class="gec-nav-label">Configuration</span>
     </a>
+    {% endif %}
 
     <!-- Email & Templates -->
     <div class="gec-nav-group-toggle {% if cur in ['manage_email_templates','add_email_template','edit_email_template'] %}open group-active{% endif %}"
@@ -263,7 +268,7 @@
       </a>
     </div>
 
-    {% if current_user.is_super_admin() %}
+    {% if current_user.has_permission('view_all_logs') or current_user.has_permission('view_security_logs') or current_user.has_permission('manage_security_settings') or current_user.has_permission('manage_backup') or current_user.has_permission('manage_updates') %}
     <!-- Sécurité & Logs -->
     <div class="gec-nav-group-toggle {% if cur in ['security_settings','view_logs','security_logs'] %}open group-active{% endif %}"
          onclick="toggleNavGroup('security-group', this)" id="security-group-toggle">
@@ -448,7 +453,7 @@
 <!-- JS -->
 <script src="{{ url_for('static', filename='vendor/jquery/jquery-3.7.1.min.js') }}"></script>
 <script src="{{ url_for('static', filename='vendor/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/base.js') }}"></script>
+<script src="{{ asset_url('js/base.js') }}"></script>
 
 <!-- CSRF auto-inject -->
 <script>
@@ -467,6 +472,20 @@
   if(typeof $!=='undefined') $.ajaxSetup({headers:{'X-CSRFToken':token}});
   var origFetch=window.fetch;
   window.fetch=function(u,o){o=o||{};if(!o.method||o.method.toUpperCase()!=='GET'){o.headers=o.headers||{};o.headers['X-CSRFToken']=token;}return origFetch(u,o);};
+  // Couvre AUSSI les formulaires POST créés dynamiquement puis soumis via form.submit()
+  // (suppression courrier, restaurer/vider corbeille, suppr. langue/template…) : sans ça,
+  // ces formulaires partent sans jeton CSRF → erreur 400.
+  try{
+    var _origSubmit=HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit=function(){
+      try{
+        if((this.method||'get').toLowerCase()==='post' && !this.querySelector('input[name="csrf_token"]')){
+          var ci=document.createElement('input');ci.type='hidden';ci.name='csrf_token';ci.value=token;this.appendChild(ci);
+        }
+      }catch(e){}
+      return _origSubmit.apply(this,arguments);
+    };
+  }catch(e){}
 })();
 </script>
 

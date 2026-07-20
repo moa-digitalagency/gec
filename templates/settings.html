@@ -37,9 +37,10 @@
           ('pdf',           'fa-file-pdf',       'PDF'),
           ('notifications', 'fa-bell',           'Notifications'),
           ('email',         'fa-envelope',       'Email'),
+          ('securite',      'fa-shield-alt',     'Sécurité'),
         ] %}
         {% for tab_id, tab_icon, tab_label in tabs %}
-        {% if tab_id != 'email' or current_user.has_permission('manage_system_settings') %}
+        {% if tab_id not in ['email', 'securite'] or current_user.has_permission('manage_system_settings') %}
         <button type="button"
                 class="settings-tab-btn {% if loop.first %}active{% endif %}"
                 data-tab="{{ tab_id }}"
@@ -538,6 +539,53 @@
 
         </div>
         <div class="tab-save-bar" id="savebar-email" style="display:none;">
+          <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
+          <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── TAB: Sécurité ──────────────────────────────────── -->
+      {% if current_user.has_permission('manage_system_settings') %}
+      <div class="settings-tab-panel gec-card" id="tab-securite" style="display:none;">
+        <div class="gec-card-header">
+          <span class="gec-card-title"><i class="fas fa-shield-alt"></i> Sécurité &amp; Sessions</span>
+          <span class="gec-badge gec-badge-blue" style="font-size:.6875rem;">Avancé</span>
+        </div>
+        <div class="gec-card-body" style="display:flex;flex-direction:column;gap:1.125rem;">
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="session_idle_timeout_min"><i class="fas fa-user-clock" style="color:var(--primary);"></i> Déconnexion après inactivité (minutes)</label>
+              <input type="number" min="1" id="session_idle_timeout_min" name="session_idle_timeout_min" class="gec-input" value="{{ parametres.session_idle_timeout_min or 15 }}">
+              <p class="gec-form-hint">L'utilisateur est déconnecté après cette durée sans activité. Effet immédiat.</p>
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="session_lifetime_days"><i class="fas fa-calendar-day" style="color:var(--primary);"></i> Durée maximale d'une session (jours)</label>
+              <input type="number" min="1" id="session_lifetime_days" name="session_lifetime_days" class="gec-input" value="{{ parametres.session_lifetime_days or 7 }}">
+              <p class="gec-form-hint">Prend effet au prochain redémarrage de l'application.</p>
+            </div>
+          </div>
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="max_upload_mb"><i class="fas fa-file-upload" style="color:var(--primary);"></i> Taille maximale d'un fichier (Mo)</label>
+              <input type="number" min="1" id="max_upload_mb" name="max_upload_mb" class="gec-input" value="{{ parametres.max_upload_mb or 100 }}">
+              <p class="gec-form-hint">Taille maximale d'une pièce jointe. Prend effet au prochain redémarrage.</p>
+            </div>
+            <div class="gec-form-group">
+              <label class="gec-label" for="courrier_edit_window_h"><i class="fas fa-clock" style="color:var(--primary);"></i> Délai d'édition par le créateur (heures)</label>
+              <input type="number" min="1" id="courrier_edit_window_h" name="courrier_edit_window_h" class="gec-input" value="{{ parametres.courrier_edit_window_h or 24 }}">
+              <p class="gec-form-hint">Sans permission d'édition, le créateur peut modifier son courrier pendant ce délai.</p>
+            </div>
+          </div>
+          <div class="gec-form-row gec-form-row-2">
+            <div class="gec-form-group">
+              <label class="gec-label" for="reminder_interval_h"><i class="fas fa-bell" style="color:var(--primary);"></i> Intervalle des rappels d'échéance (heures)</label>
+              <input type="number" min="1" id="reminder_interval_h" name="reminder_interval_h" class="gec-input" value="{{ parametres.reminder_interval_h or 6 }}">
+              <p class="gec-form-hint">Fréquence d'envoi des rappels de courriers en retard. Prend effet au prochain redémarrage.</p>
+            </div>
+          </div>
+        </div>
+        <div class="tab-save-bar" id="savebar-securite" style="display:none;">
           <span class="tab-dirty-hint" style="font-size:.8125rem;color:var(--warning,#D97706);visibility:hidden;"><i class="fas fa-circle" style="font-size:.375rem;vertical-align:middle;margin-right:.375rem;"></i>Modifications non sauvegardées</span>
           <button type="submit" form="settings-form" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-save"></i> Sauvegarder</button>
         </div>

@@ -54,12 +54,9 @@
           <div class="gec-form-group">
             <label class="gec-label" for="icone"><i class="fas fa-icons" style="color:var(--primary);"></i> Icône</label>
             <select id="icone" name="icone" class="gec-select">
-              <option value="fas fa-user">Utilisateur</option>
-              <option value="fas fa-user-tie">Professionnel</option>
-              <option value="fas fa-user-cog">Gestionnaire</option>
-              <option value="fas fa-briefcase">Manager</option>
-              <option value="fas fa-clipboard-list">Superviseur</option>
-              <option value="fas fa-key">Responsable</option>
+              {% for v, n in role_icons %}
+              <option value="{{ v }}">{{ n }}</option>
+              {% endfor %}
             </select>
           </div>
         </div>

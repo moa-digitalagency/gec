@@ -15,6 +15,7 @@ def init_default_data():
     StatutCourrier.init_default_statuts()
     Role.init_default_roles()
     RolePermission.init_default_permissions()
+    Role.ensure_hierarchy()
     Departement.init_default_departments()
     EmailTemplate.init_default_templates()
 

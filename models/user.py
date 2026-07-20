@@ -161,7 +161,35 @@ class User(UserMixin, db.Model):
         return self.role in ['super_admin', 'admin']
 
     def can_manage_users(self):
-        return self.role == 'super_admin'
+        return self.has_permission('manage_users')
+
+    def role_level(self):
+        """Niveau hiérarchique du rôle. Les rôles système ont un niveau FIXE (indépendant de
+        la DB, donc la hiérarchie fonctionne toujours) ; les rôles personnalisés utilisent leur colonne niveau."""
+        known = {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}
+        if self.role in known:
+            return known[self.role]
+        from models.rbac import Role
+        r = Role.query.filter_by(nom=self.role).first()
+        return r.niveau if (r and r.niveau is not None) else 10
+
+    def can_manage_user(self, target):
+        """Peut gérer (modifier/supprimer) un autre utilisateur seulement s'il est d'un niveau
+        STRICTEMENT inférieur. Pas d'auto-gestion (anti-escalade de ses propres droits)."""
+        if target is None or target.id == self.id:
+            return False
+        return self.role_level() > target.role_level()
+
+    def can_assign_role(self, role_nom):
+        """Ne peut attribuer qu'un rôle de niveau strictement inférieur au sien."""
+        known = {'super_admin': 100, 'admin': 80, 'bureau_courrier': 40, 'user': 20}
+        if role_nom in known:
+            lvl = known[role_nom]
+        else:
+            from models.rbac import Role
+            r = Role.query.filter_by(nom=role_nom).first()
+            lvl = r.niveau if (r and r.niveau is not None) else 10
+        return self.role_level() > lvl
 
     def can_access_courrier(self, courrier):
         if not self.actif:
@@ -169,10 +197,14 @@ class User(UserMixin, db.Model):
         # RÈGLE INVIOLABLE : super_admin exclut
         if self.role == 'super_admin':
             return False
-        if self.role == 'admin':
-            return True
+        # Propriétaire : accès à son propre courrier
         if courrier.utilisateur_id == self.id:
             return True
+        # Destinataire d'une transmission : accès au courrier transmis
+        from models.courrier import CourrierForward
+        if CourrierForward.query.filter_by(courrier_id=courrier.id, forwarded_to_id=self.id).first():
+            return True
+        # Sinon, accès strictement selon les actions read_* assignées au rôle
         if self.has_permission('read_all_mail'):
             return True
         elif self.has_permission('read_department_mail') and self.departement_id:
@@ -192,21 +224,20 @@ class User(UserMixin, db.Model):
         ).first()
         if forwarded_to_user:
             return True
+        # Propriétaire : accès à son propre courrier
+        if courrier.utilisateur_id == self.id:
+            return True
+        # Sinon, lecture strictement selon les actions read_* assignées au rôle
         if self.has_permission('read_all_mail'):
             return True
         elif self.has_permission('read_department_mail'):
             if self.departement_id is None:
-                return courrier.utilisateur_id == self.id
+                return False
             return self.departement_id == courrier.utilisateur_enregistrement.departement_id
         elif self.has_permission('read_own_mail'):
             return courrier.utilisateur_id == self.id
-        else:
-            if self.role == 'admin':
-                if self.departement_id is None:
-                    return courrier.utilisateur_id == self.id
-                return self.departement_id == courrier.utilisateur_enregistrement.departement_id
-            else:
-                return courrier.utilisateur_id == self.id
+        # Aucune action read_* assignée : restreint (propriétaire/transmis déjà gérés ci-dessus)
+        return False
 
     def can_edit_courrier(self, courrier):
         # RÈGLE INVIOLABLE : super_admin ne modifie pas les courriers
@@ -220,13 +251,16 @@ class User(UserMixin, db.Model):
             return False
         elif self.has_permission('edit_own_mail'):
             return courrier.utilisateur_id == self.id
-        if self.role == 'admin':
-            if hasattr(courrier, 'utilisateur_enregistrement') and courrier.utilisateur_enregistrement:
-                return courrier.utilisateur_enregistrement.departement_id == self.departement_id
-            return courrier.utilisateur_id == self.id
+        # Propriétaire sans action d'édition : fenêtre configurable après enregistrement
+        # (Paramètres → Sécurité, défaut 24h)
         if courrier.utilisateur_id == self.id:
             from datetime import datetime, timedelta
-            time_limit = courrier.date_enregistrement + timedelta(hours=24)
+            from models.system import ParametresSysteme
+            try:
+                window_h = ParametresSysteme.get_parametres().courrier_edit_window_h or 24
+            except Exception:
+                window_h = 24
+            time_limit = courrier.date_enregistrement + timedelta(hours=window_h)
             return datetime.now() <= time_limit
         return False
 
@@ -237,9 +271,9 @@ class User(UserMixin, db.Model):
             return True
         if self.has_permission('receive_new_mail_notifications'):
             return True
-        elif self.has_permission('manage_mail') or self.has_permission('read_all_mail'):
+        elif self.has_permission('manage_mail') or self.has_permission('read_all_mail') or self.has_permission('read_department_mail'):
             return True
-        return self.role in ['admin', 'super_admin']
+        return False
 
     def get_profile_photo_url(self):
         if self.photo_profile:
@@ -262,10 +296,10 @@ class User(UserMixin, db.Model):
                     print(f"Utilisateur {first_user.username} promu super admin")
             return
         super_admin = User(
-            username='admin',
-            email='admin@gec.cd',
+            username=os.environ.get('FIRST_ADMIN_USERNAME', 'admin'),
+            email=os.environ.get('FIRST_ADMIN_EMAIL', 'admin@gec.cd'),
             nom_complet='Super Administrateur',
-            password_hash=generate_password_hash('Admin2025!'),
+            password_hash=generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'Admin2025!')),
             role='super_admin',
             langue='fr',
             actif=True

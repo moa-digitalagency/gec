@@ -125,15 +125,19 @@
           </td>
           <td style="text-align:right;">
             <div class="gec-actions-row" style="justify-content:flex-end;">
+              {% if current_user.can_manage_user(user) %}
               <a href="{{ url_for('edit_user', user_id=user.id) }}" class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Modifier">
                 <i class="fas fa-edit"></i>
               </a>
-              {% if user.id != current_user.id and not (user.role == 'super_admin' and users|selectattr('role','equalto','super_admin')|list|length <= 1) %}
+              {% if not (user.role == 'super_admin' and users|selectattr('role','equalto','super_admin')|list|length <= 1) %}
               <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" class="inline delete-user-form">
                 <button type="submit" class="gec-btn gec-btn-icon gec-btn-sm" style="color:var(--danger);background:transparent;border:none;" title="Supprimer">
                   <i class="fas fa-trash"></i>
                 </button>
               </form>
+              {% endif %}
+              {% else %}
+              <span class="gec-btn gec-btn-ghost gec-btn-sm gec-btn-icon" title="Niveau supérieur ou égal — lecture seule" style="opacity:.45;cursor:not-allowed;"><i class="fas fa-lock"></i></span>
               {% endif %}
             </div>
           </td>

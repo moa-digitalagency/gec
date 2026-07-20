@@ -107,20 +107,8 @@ with app.app_context():
 
         # Clean expired security data
         clean_security_storage()
-
-        # Idle session timeout (15 min d'inactivité)
-        if current_user.is_authenticated and not request.path.startswith('/static'):
-            idle_timeout = app.config.get('SESSION_IDLE_TIMEOUT', 900)
-            last_activity = session.get('_last_activity')
-            now = time.time()
-            if last_activity and (now - last_activity) > idle_timeout:
-                from flask_login import logout_user
-                logout_user()
-                session.clear()
-                from flask import flash, redirect, url_for
-                flash('Session expirée pour inactivité. Veuillez vous reconnecter.', 'warning')
-                return redirect(url_for('login'))
-            session['_last_activity'] = now
+        # NB : l'expiration de session par inactivité est gérée de façon UNIFIÉE et
+        # configurable dans routes/auth.py → enforce_session_expiry (Paramètres → Sécurité).
     
     @app.after_request
     def after_request(response):
@@ -129,40 +117,55 @@ with app.app_context():
     
     # Context processors sont maintenant définis dans views.py pour éviter les dépendances circulaires
     
-    # Create default admin user if none exists
+    # Compte super admin initial — configurable par variables d'environnement
+    # (les instances existantes ne sont pas affectées : le bloc ne s'exécute que si absent).
     from werkzeug.security import generate_password_hash
-    admin_user = models.User.query.filter_by(username='sa.gec001').first()
+    _admin_username = os.environ.get('FIRST_ADMIN_USERNAME', 'sa.gec001')
+    _admin_email = os.environ.get('FIRST_ADMIN_EMAIL', 'admin@gec.cd')
+    _admin_password = os.environ.get('ADMIN_PASSWORD', 'TempPassword123!')
+    admin_user = models.User.query.filter_by(username=_admin_username).first()
     if not admin_user:
         # Check if old admin exists
         old_admin = models.User.query.filter_by(username='admin').first()
         if old_admin:
             # Just update the username
-            old_admin.username = 'sa.gec001'
-            old_admin.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
+            old_admin.username = _admin_username
+            old_admin.password_hash = generate_password_hash(_admin_password)
             db.session.commit()
-            logging.info("Admin user updated (username: sa.gec001)")
+            logging.info(f"Admin user updated (username: {_admin_username})")
         else:
             # Create new admin
             admin_user = models.User()
-            admin_user.username = 'sa.gec001'
-            admin_user.email = 'admin@mines.gov.cd'
+            admin_user.username = _admin_username
+            admin_user.email = _admin_email
             admin_user.nom_complet = 'Administrateur Système'
-            admin_user.password_hash = generate_password_hash(os.environ.get('ADMIN_PASSWORD', 'TempPassword123!'))
+            admin_user.password_hash = generate_password_hash(_admin_password)
             admin_user.role = 'super_admin'
             admin_user.langue = 'fr'
             db.session.add(admin_user)
             db.session.commit()
-            logging.info("Default super admin user created (username: sa.gec001)")
+            logging.info(f"Default super admin user created (username: {_admin_username})")
     
     # Initialize system parameters
     parametres = models.ParametresSysteme.get_parametres()
-    
+
+    # Appliquer les paramètres de sécurité configurables (Paramètres → Sécurité).
+    # Modifiables en UI ; durée de session et taille d'upload prennent effet au redémarrage.
+    try:
+        from datetime import timedelta as _td
+        app.config['PERMANENT_SESSION_LIFETIME'] = _td(days=parametres.session_lifetime_days or 7)
+        app.config['MAX_CONTENT_LENGTH'] = (parametres.max_upload_mb or 100) * 1024 * 1024
+        app.config['SESSION_IDLE_TIMEOUT'] = (parametres.session_idle_timeout_min or 15) * 60
+    except Exception as _e:
+        logging.warning(f"Paramètres de sécurité non appliqués: {_e}")
+
     # Initialize default statuses
     models.StatutCourrier.init_default_statuts()
     
     # Initialize default roles and permissions
     models.Role.init_default_roles()
     models.RolePermission.init_default_permissions()
+    models.Role.ensure_hierarchy()
     
     # Initialize default departments
     models.Departement.init_default_departments()
@@ -176,9 +179,11 @@ with app.app_context():
     import threading
 
     def _reminder_job():
-        """Job périodique : rappels d'échéances toutes les 6 heures."""
+        """Job périodique : rappels d'échéances (intervalle configurable, défaut 6h)."""
+        _interval_h = 6
         try:
             with app.app_context():
+                _interval_h = models.ParametresSysteme.get_parametres().reminder_interval_h or 6
                 from routes import _send_overdue_reminders
                 n = _send_overdue_reminders()
                 if n:
@@ -186,8 +191,8 @@ with app.app_context():
         except Exception as e:
             logging.error(f"Scheduler reminder error: {e}")
         finally:
-            # Re-planifier dans 6 heures
-            t = threading.Timer(6 * 3600, _reminder_job)
+            # Re-planifier selon l'intervalle configuré
+            t = threading.Timer(_interval_h * 3600, _reminder_job)
             t.daemon = True
             t.start()
 
@@ -201,6 +206,29 @@ with app.app_context():
 def load_user(user_id):
     from models import User
     return User.query.get(int(user_id))
+
+# SEO : expose le flag noindex aux templates (activé via SEO_NOINDEX dans .env)
+@app.context_processor
+def inject_seo_flags():
+    return {
+        'seo_noindex': os.environ.get('SEO_NOINDEX', '').strip().lower() in ('1', 'true', 'yes', 'on')
+    }
+
+# Cache-busting : les assets statiques sont servis avec Cache-Control immutable (30 j).
+# asset_url() ajoute ?v=<mtime> pour que toute mise à jour d'un CSS/JS soit rechargée
+# automatiquement par le navigateur, sans avoir à vider le cache manuellement.
+@app.context_processor
+def inject_asset_helpers():
+    from flask import url_for as _url_for
+
+    def asset_url(filename):
+        try:
+            mtime = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except Exception:
+            mtime = 1
+        return _url_for('static', filename=filename) + '?v=' + str(mtime)
+
+    return {'asset_url': asset_url}
 
 # Add language functions to template context
 @app.context_processor

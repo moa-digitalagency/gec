@@ -22,13 +22,38 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
-SESSION_INACTIVITY_TIMEOUT = 3600  # 1 heure — déconnexion après 1h d'inactivité
+SESSION_INACTIVITY_TIMEOUT = 900  # Valeur de repli (15 min) — la vraie valeur vient de Paramètres → Sécurité
+
+
+def _expects_json():
+    """Vrai si la requête vient d'un appel AJAX/fetch (attend du JSON).
+    Sans ça, une session expirée renverrait une page HTML de login que le JS ne sait pas
+    interpréter (fetch → réponse HTML → l'UI casse silencieusement)."""
+    if request.path.startswith('/api/'):
+        return True
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return True
+    accept = request.headers.get('Accept', '')
+    return 'application/json' in accept and 'text/html' not in accept
+
+
+def _session_expired_response(message):
+    """Réponse de session expirée adaptée au type d'appel :
+    - AJAX/fetch  → 401 JSON (le JS redirige proprement vers /login)
+    - navigation  → redirection HTML vers /login en conservant la destination (next)."""
+    if _expects_json():
+        return jsonify({'error': 'session_expired', 'message': message,
+                        'login_url': url_for('login')}), 401
+    flash(message, 'info')
+    next_url = request.url if request.method == 'GET' else None
+    return redirect(url_for('login', next=next_url) if next_url else url_for('login'))
+
 
 @app.before_request
 def enforce_session_expiry():
     """
-    Force la déconnexion automatique après 1h d'inactivité.
-    Le timer se réinitialise à chaque requête — seule une absence d'activité pendant 1h déclenche la déconnexion.
+    Force la déconnexion automatique après une période d'inactivité (configurable, défaut 15 min).
+    Le timer se réinitialise à chaque requête — seule une absence d'activité prolongée déclenche la déconnexion.
     """
     if not current_user.is_authenticated:
         return
@@ -39,19 +64,27 @@ def enforce_session_expiry():
         # Session sans horodatage (ancienne session) → déconnexion
         logout_user()
         session.clear()
-        flash('Votre session a expiré. Veuillez vous reconnecter.', 'info')
-        return redirect(url_for('login'))
+        return _session_expired_response('Votre session a expiré. Veuillez vous reconnecter.')
 
     elapsed = time.time() - last_activity
-    if elapsed > SESSION_INACTIVITY_TIMEOUT:
+    # Délai d'inactivité configurable (Paramètres → Sécurité), repli 15 min
+    try:
+        from models import ParametresSysteme
+        timeout = (ParametresSysteme.get_parametres().session_idle_timeout_min or 15) * 60
+    except Exception:
+        timeout = SESSION_INACTIVITY_TIMEOUT
+    if elapsed > timeout:
         user_id = current_user.id
         username = current_user.username
         logout_user()
         session.clear()
-        log_activity(user_id, "AUTO_DECONNEXION",
-                     f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
-        flash('Votre session a expiré après 1 heure d\'inactivité. Veuillez vous reconnecter.', 'info')
-        return redirect(url_for('login'))
+        try:
+            log_activity(user_id, "AUTO_DECONNEXION",
+                         f"Déconnexion automatique de {username} après {int(elapsed // 60)} min d'inactivité")
+        except Exception:
+            pass
+        return _session_expired_response(
+            f"Votre session a expiré après {int(timeout // 60)} min d'inactivité. Veuillez vous reconnecter.")
 
     # Mettre à jour le timestamp d'activité à chaque requête
     session['last_activity'] = time.time()
@@ -135,24 +168,10 @@ def apply_mail_access_filter(query, user):
         own_mail_condition = (Courrier.utilisateur_id == user.id)
         return query.filter(or_(own_mail_condition, forwarded_condition))
     else:
-        # Fallback sur l'ancien système avec transmission
-        # (super_admin déjà bloqué en haut — ne peut pas atteindre ce code)
-        if user.role == 'admin':
-            if user.departement_id:
-                department_condition = exists().where(
-                    and_(
-                        User.id == Courrier.utilisateur_id,
-                        User.departement_id == user.departement_id
-                    )
-                )
-                return query.filter(or_(department_condition, forwarded_condition))
-            else:
-                own_mail_condition = (Courrier.utilisateur_id == user.id)
-                return query.filter(or_(own_mail_condition, forwarded_condition))
-        else:
-            # Utilisateur normal : ses propres courriers OU ceux transmis
-            own_mail_condition = (Courrier.utilisateur_id == user.id)
-            return query.filter(or_(own_mail_condition, forwarded_condition))
+        # Aucune action read_* assignée au rôle : restreint à ses propres courriers
+        # OU ceux qui lui ont été transmis (plus de raccourci codé en dur par rôle).
+        own_mail_condition = (Courrier.utilisateur_id == user.id)
+        return query.filter(or_(own_mail_condition, forwarded_condition))
 
 @app.route('/')
 def index():
@@ -279,9 +298,7 @@ def verify_2fa():
 @app.route('/profile/2fa/setup', methods=['GET', 'POST'])
 @login_required
 def setup_2fa():
-    """Activation de la 2FA — uniquement super_admin"""
-    if current_user.role != 'super_admin':
-        abort(403)
+    """Activation de la 2FA — disponible pour tout utilisateur connecté (sur son propre compte)"""
 
     import pyotp, qrcode, io, base64
 

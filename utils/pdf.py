@@ -3,12 +3,28 @@ import uuid
 import logging
 from datetime import datetime
 from flask import request, session
+from utils.helpers import format_date
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
+
+
+def _resolve_logo_path(parametres):
+    """Trouve le fichier logo sur disque quel que soit le format stocké
+    ('/static/uploads/x', '/uploads/x' ou 'x'), en cherchant dans static/uploads puis uploads."""
+    for stored in (getattr(parametres, 'logo_pdf', None), getattr(parametres, 'logo_url', None)):
+        if not stored:
+            continue
+        basename = os.path.basename(stored.split('?')[0])
+        for base in ('static/uploads', 'uploads'):
+            candidate = os.path.join(base, basename)
+            if os.path.exists(candidate):
+                return candidate
+    return None
+
 
 def export_courrier_pdf(courrier):
     """Exporter un courrier en PDF avec ses métadonnées"""
@@ -172,6 +188,7 @@ def export_courrier_pdf(courrier):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             # Charger l'image pour obtenir ses dimensions originales
@@ -200,7 +217,7 @@ def export_courrier_pdf(courrier):
             print(f"Erreur chargement logo: {e}")  # Pour debug
     
     # Titre configuré du document
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     # En-tête pays - PREMIER ÉLÉMENT
@@ -484,6 +501,7 @@ def export_mail_list_pdf(courriers, filters):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             # Charger l'image pour obtenir ses dimensions originales
@@ -522,7 +540,7 @@ def export_mail_list_pdf(courriers, filters):
     )
     
     # En-tête
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     # En-tête pays - PREMIER ÉLÉMENT
@@ -932,6 +950,7 @@ def export_logs_pdf(logs, filters):
             if os.path.exists(logo_abs_path):
                 logo_path = logo_abs_path
     
+    logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
             from PIL import Image as PILImage
@@ -981,7 +1000,7 @@ def export_logs_pdf(logs, filters):
     story.append(Paragraph(pays_text, pays_style))
     
     # Titre et sous-titre
-    titre_pdf = parametres.titre_pdf or "Ministère des Mines"
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
     sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
     
     title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)

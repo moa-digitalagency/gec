@@ -624,6 +624,18 @@ def bulk_action():
                      f"Suppression groupée de {len(accessible)} courrier(s)")
         flash(f'{len(accessible)} courrier(s) supprimé(s).', 'success')
 
+    elif action == 'export_pdf':
+        filters = {'search': '', 'date_from': '', 'date_to': '', 'statut': '',
+                   'type_courrier': '', 'sort_by': 'date_enregistrement', 'sort_order': 'desc'}
+        pdf_path = export_mail_list_pdf(accessible, filters)
+        log_activity(current_user.id, "BULK_EXPORT_PDF",
+                     f"Export PDF de {len(accessible)} courrier(s) sélectionné(s)")
+        return send_from_directory(
+            os.path.dirname(pdf_path), os.path.basename(pdf_path),
+            as_attachment=True,
+            download_name=f"selection_courriers_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            mimetype='application/pdf')
+
     else:
         flash('Action inconnue.', 'error')
 
@@ -1050,8 +1062,10 @@ def circuit_signature(id):
         abort(403)
 
     if request.method == 'POST':
-        # Seuls admin/super_admin peuvent initier un circuit
-        if current_user.role not in ('admin', 'super_admin'):
+        # Initier un circuit de signature = action d'édition de courrier : la permission DOIT être
+        # scopée à CE courrier (edit_department → même département, edit_own → propriétaire),
+        # sinon un user avec edit_own_mail pourrait agir sur un courrier qu'il ne fait que consulter (IDOR).
+        if not current_user.can_edit_courrier(courrier):
             return jsonify({'error': 'Permission refusée'}), 403
 
         data = request.get_json(silent=True) or {}

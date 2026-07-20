@@ -113,7 +113,7 @@ def courrier_timeline(id):
         })
 
     # Transmissions
-    forwards = CourrierForward.query.filter_by(courrier_id=id).order_by(CourrierForward.date_envoi.asc()).all()
+    forwards = CourrierForward.query.filter_by(courrier_id=id).order_by(CourrierForward.date_transmission.asc()).all()
     for f in forwards:
         dest_name = f.forwarded_to.nom_complet if f.forwarded_to else '?'
         src_name = f.forwarded_by.nom_complet if f.forwarded_by else '?'

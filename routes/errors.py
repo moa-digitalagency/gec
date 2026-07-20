@@ -22,16 +22,30 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
+def _error_page(code, title, message, icon='fa-triangle-exclamation', status=None):
+    """Rend la page d'erreur autonome (URL concernée + bouton contextuel :
+    tableau de bord si connecté, sinon retour à la connexion)."""
+    try:
+        authed = bool(current_user.is_authenticated)
+    except Exception:
+        authed = False
+    return render_template('error.html', code=code, title=title, message=message,
+                           icon=icon, error_url=request.url, authed=authed), (status or code)
+
+
 @app.errorhandler(400)
 def bad_request_error(error):
-    return render_template('400.html'), 400
+    return _error_page(400, 'Requête invalide',
+                       "La requête n'a pas pu être traitée. Elle est peut-être malformée, "
+                       "ou votre session a expiré. Reconnectez-vous puis réessayez.",
+                       icon='fa-circle-exclamation')
 
 @app.errorhandler(403)
 def forbidden_error(error):
     from security import audit_log
     try:
         audit_log("ACCESS_DENIED", f"403 error for URL: {request.url}")
-    except:
+    except Exception:
         pass
     return render_template('403.html'), 403
 
@@ -44,16 +58,40 @@ def rate_limit_error(error):
     from security import audit_log
     try:
         audit_log("RATE_LIMIT_EXCEEDED", f"Rate limit exceeded from IP: {request.remote_addr}")
-    except:
+    except Exception:
         pass
-    return render_template('429.html'), 429
+    return _error_page(429, 'Trop de requêtes',
+                       "Vous avez effectué trop de requêtes en peu de temps. "
+                       "Patientez un instant avant de réessayer.",
+                       icon='fa-gauge-high')
 
 @app.errorhandler(451)
 def unavailable_for_legal_reasons_error(error):
-    return render_template('451.html'), 451
+    return _error_page(451, 'Indisponible pour raisons légales',
+                       "Cette ressource est indisponible pour des raisons légales.",
+                       icon='fa-scale-balanced')
 
 @app.errorhandler(500)
 def internal_error(error):
-    db.session.rollback()
-    return render_template('new_base.html'), 500
+    try:
+        db.session.rollback()
+    except Exception:
+        pass
+    return _error_page(500, 'Erreur interne',
+                       "Une erreur inattendue est survenue de notre côté. Réessayez dans un instant — "
+                       "si le problème persiste, contactez le support.",
+                       icon='fa-bug')
+
+# Jeton CSRF expiré/invalide (formulaire resté ouvert trop longtemps → timeout de sécurité)
+try:
+    from flask_wtf.csrf import CSRFError
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        return _error_page(400, 'Session de sécurité expirée',
+                           "Votre jeton de sécurité a expiré ou est invalide (page restée ouverte "
+                           "trop longtemps). Reconnectez-vous puis renvoyez le formulaire.",
+                           icon='fa-shield-halved')
+except Exception:
+    pass
 

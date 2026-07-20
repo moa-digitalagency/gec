@@ -216,8 +216,7 @@
   </div>
 </div>
 
-<!-- 2FA Section (super_admin only) -->
-{% if current_user.is_super_admin() %}
+<!-- 2FA Section (disponible pour tous les utilisateurs) -->
 <div class="gec-card">
   <div class="gec-card-header">
     <span class="gec-card-title"><i class="fas fa-shield-alt"></i> Authentification à deux facteurs (2FA)</span>
@@ -238,16 +237,15 @@
     {% else %}
     <div class="gec-alert gec-alert-warning" style="margin-bottom:1rem;">
       <i class="fas fa-exclamation-triangle"></i>
-      <div><strong>2FA non activée</strong><br><span style="font-size:.8125rem;">En tant que super administrateur, il est fortement recommandé d'activer la 2FA.</span></div>
+      <div><strong>2FA non activée</strong><br><span style="font-size:.8125rem;">Il est fortement recommandé d'activer la 2FA pour sécuriser votre compte.</span></div>
     </div>
     <a href="{{ url_for('setup_2fa') }}" class="gec-btn gec-btn-primary"><i class="fas fa-lock"></i> Configurer la 2FA</a>
     {% endif %}
   </div>
 </div>
-{% endif %}
 
 <!-- ═══ Modal désactivation 2FA ═══════════════════════════════════════ -->
-{% if current_user.is_super_admin() and user.totp_secret %}
+{% if user.totp_secret %}
 <div id="modal-disable-2fa"
      style="display:none;position:fixed;inset:0;z-index:1050;align-items:center;justify-content:center;
             background:rgba(15,23,42,.55);backdrop-filter:blur(4px);"
