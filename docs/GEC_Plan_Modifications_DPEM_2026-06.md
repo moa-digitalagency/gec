@@ -31,6 +31,7 @@ Chaque tâche hérite implicitement de ces règles (copiées du `CLAUDE.md` proj
 - **Migrations** : ajouter les colonnes dans `run_automatic_migrations()` (idempotent via `add_column_safely`). Ne pas casser la compat SQLite (dev) / PostgreSQL (prod).
 - **i18n** : toute chaîne UI nouvelle → `lang/fr.json` **et** `lang/en.json`.
 - **Après chaque modification UI** : `/validate-and-push` (captures Playwright desktop + mobile) puis STOP validation utilisateur avant PR.
+- **Environnement de test (macOS)** : le `venv/` versionné est un venv Windows inutilisable ; utiliser l'interpréteur **`./.venv/bin/python`** (Python 3.13, dépendances installées). Lancer les tests via `./.venv/bin/python -m pytest ...` (ignorer les `source venv/bin/activate` des étapes). Le projet utilise une syntaxe f-string Python 3.12+ (backslashes) — ne pas rétrograder en 3.11. Baseline avant chantier : **15 passed / 6 failed pré-existants / 4 skipped** — ne pas régresser les 15 qui passent ; les 6 échecs pré-existants (chemins obsolètes, `admin_client`=super_admin bloqué) sont hors périmètre.
 
 ---
 
@@ -111,9 +112,10 @@ def _role_with_perms(app, db, nom, perms, niveau=30, username=None):
         if username:
             u = User.query.filter_by(username=username).first()
             if not u:
+                from werkzeug.security import generate_password_hash
                 u = User(username=username, email=f"{username}@test.com",
-                         nom_complet=username.title(), role=nom, actif=True)
-                u.set_password("Pass123!")
+                         nom_complet=username.title(), role=nom, actif=True,
+                         password_hash=generate_password_hash("Pass123!"))
                 db.session.add(u)
             else:
                 u.role = nom

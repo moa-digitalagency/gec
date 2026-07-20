@@ -59,15 +59,22 @@ if not database_url:
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
-# Optimized connection pool settings
-# Note: pool_size and max_overflow are ignored by SQLite (which uses SingletonThreadPool/NullPool)
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_size": 10,           # Keep 10 connections open
-    "pool_recycle": 1800,      # Recycle connections every 30 minutes
-    "pool_pre_ping": True,     # Check connection health before usage
-    "max_overflow": 5,         # Allow 5 extra connections during bursts
-    "echo": False,
-}
+# Optimized connection pool settings.
+# pool_size / max_overflow n'ont de sens que pour un pool à connexions multiples
+# (PostgreSQL en prod). Sous SQLite (StaticPool), SQLAlchemy 2.x lève TypeError
+# si on les passe — on restreint donc ces options au moteur non-SQLite.
+if database_url.startswith("sqlite"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "echo": False,
+    }
+else:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_size": 10,           # Keep 10 connections open
+        "pool_recycle": 1800,      # Recycle connections every 30 minutes
+        "pool_pre_ping": True,     # Check connection health before usage
+        "max_overflow": 5,         # Allow 5 extra connections during bursts
+        "echo": False,
+    }
 # Configure upload settings
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
