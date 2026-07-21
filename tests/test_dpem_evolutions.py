@@ -1,6 +1,7 @@
 """Tests des 6 évolutions DPEM (Réf. MOA/CD/KIN/06003/2026)."""
 import io
 import re
+import time
 import pytest
 
 
@@ -51,10 +52,42 @@ def _role_with_perms(app, db, nom, perms, niveau=30, username=None):
         return uid
 
 
+@pytest.fixture(autouse=True)
+def _reset_shared_login_cache(app):
+    """Voir `_login()` ci-dessous : le fixture `app` (conftest.py) garde un seul
+    app_context ouvert pour toute la session pytest, donc un seul `g` partagé
+    par toutes les requêtes HTTP simulées de la suite. Sans ce nettoyage,
+    l'identité authentifiée par un test de ce module resterait mise en cache
+    dans ce `g` partagé et fuiterait vers les tests suivants (autres fichiers)
+    qui s'attendent à un visiteur anonyme.
+    """
+    yield
+    from flask import g
+    if hasattr(g, "_login_user"):
+        del g._login_user
+
+
 def _login(app, client, user_id):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
         sess["_fresh"] = True
+        # `enforce_session_expiry` (routes/auth.py) traite une session sans
+        # `last_activity` comme expirée dès la 1re requête ; le vrai login()
+        # pose ce timestamp — on le reproduit ici pour simuler un login réel.
+        sess["last_activity"] = time.time()
+    # Le fixture `app` (conftest.py) garde un seul app_context ouvert pour
+    # toute la session pytest. Flask ne pousse un app_context frais que s'il
+    # n'y en a aucun d'actif (flask/ctx.py RequestContext.push) : comme celui
+    # du fixture reste actif en permanence, TOUTES les requêtes HTTP simulées
+    # de la suite partagent le même `g`. Si un test précédent a déjà évalué
+    # `current_user` (ex. rendu d'un template avant login), flask-login met en
+    # cache l'utilisateur (souvent anonyme) dans ce `g` partagé — et cette
+    # valeur reste figée pour le reste de la suite. On purge ce cache après
+    # avoir posé la session ci-dessus pour forcer flask-login à relire la
+    # session fraîchement authentifiée à la prochaine requête.
+    from flask import g
+    if hasattr(g, "_login_user"):
+        del g._login_user
 
 
 class TestFoundations:
@@ -105,3 +138,26 @@ class TestFoundations:
         from routes.admin import PERMISSIONS_CATALOG
         assert "add_director_annotation" in PERMISSIONS_CATALOG
         assert "edit_registration_date" in PERMISSIONS_CATALOG
+
+
+class TestStatutFige:
+    def test_statut_force_recu_meme_si_autre_soumis(self, app, client):
+        from models import Courrier
+        uid = _role_with_perms(app, db=_db(), nom="agent_saisie",
+                               perms=["register_mail", "read_own_mail"],
+                               username="agent1")
+        _login(app, client, uid)
+        data = {
+            "objet": "Courrier statut force",
+            "type_courrier": "ENTRANT",
+            "expediteur": "Exp Test",
+            "secretaire_general_copie": "Non",
+            "statut": "TRAITE",  # tentative de forcer un autre statut
+            "fichier": (io.BytesIO(_pdf_bytes()), "s.pdf"),
+        }
+        client.post("/register_mail", data=data,
+                    content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            c = Courrier.query.filter_by(objet="Courrier statut force").first()
+            assert c is not None
+            assert c.statut == "RECU"  # ignoré → RECU imposé

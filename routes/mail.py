@@ -23,6 +23,8 @@ from routes.auth import apply_mail_access_filter
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
+STATUT_INITIAL = 'RECU'  # Évolution DPEM #1 : statut imposé à l'enregistrement
+
 @app.route('/register_mail', methods=['GET', 'POST'])
 @login_required
 @rate_limit(max_requests=50, per_minutes=15)  # Prevent spam registration
@@ -44,7 +46,8 @@ def register_mail():
         objet = request.form['objet'].strip()
         type_courrier = request.form.get('type_courrier', 'ENTRANT')
         type_courrier_sortant_id = request.form.get('type_courrier_sortant_id', '')
-        statut = request.form.get('statut', 'RECU')
+        # Évolution DPEM #1 : le statut n'est plus choisi à l'enregistrement.
+        statut = STATUT_INITIAL
         date_redaction_str = request.form.get('date_redaction', '')
         
         # Traitement de la date de rédaction

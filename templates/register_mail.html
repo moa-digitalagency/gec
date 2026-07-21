@@ -116,25 +116,13 @@
             <p class="gec-form-hint">Indiquez si le {{ get_titre_responsable() }} est mentionné en copie sur ce courrier</p>
           </div>
 
-          <!-- Statut -->
+          <!-- Statut (figé — Évolution DPEM #1) -->
           <div class="gec-form-group" style="margin:0;">
-            <label class="gec-label" for="statut"><i class="fas fa-flag" style="color:var(--primary);font-size:.75rem;"></i> Statut Initial <span style="color:var(--danger);">*</span></label>
-            <select id="statut" name="statut" required class="gec-select">
-              {% if statuts_disponibles %}
-              {% for statut_obj in statuts_disponibles %}
-              <option value="{{ statut_obj.nom }}" {% if statut_obj.nom == 'RECU' %}selected{% endif %}>
-                {{ statut_obj.nom.replace('_', ' ').title() }}{% if statut_obj.description %} — {{ statut_obj.description }}{% endif %}
-              </option>
-              {% endfor %}
-              {% else %}
-              <option value="RECU" selected>Reçu</option>
-              <option value="EN_COURS">En cours</option>
-              <option value="TRAITE">Traité</option>
-              <option value="URGENT">Urgent</option>
-              <option value="ARCHIVE">Archivé</option>
-              {% endif %}
-            </select>
-            <p class="gec-form-hint">Choisissez le statut initial pour ce courrier</p>
+            <label class="gec-label"><i class="fas fa-flag" style="color:var(--primary);font-size:.75rem;"></i> Statut initial</label>
+            <div class="gec-input" style="display:flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.03);">
+              <span class="gec-badge gec-badge-blue">RECU</span>
+              <span class="gec-form-hint" style="margin:0;">Assigné automatiquement — les statuts suivants sont attribués lors du traitement.</span>
+            </div>
           </div>
 
         </div>
