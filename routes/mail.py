@@ -17,11 +17,13 @@ import logging
 
 from app import app, db
 from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward, CourrierSignature
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action, generate_numero_suivi, qr_data_uri
 from services.email import send_new_mail_notification, send_mail_forwarded_notification, send_comment_notification
 from routes.auth import apply_mail_access_filter
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
+
+STATUT_INITIAL = 'RECU'  # Évolution DPEM #1 : statut imposé à l'enregistrement
 
 @app.route('/register_mail', methods=['GET', 'POST'])
 @login_required
@@ -44,7 +46,8 @@ def register_mail():
         objet = request.form['objet'].strip()
         type_courrier = request.form.get('type_courrier', 'ENTRANT')
         type_courrier_sortant_id = request.form.get('type_courrier_sortant_id', '')
-        statut = request.form.get('statut', 'RECU')
+        # Évolution DPEM #1 : le statut n'est plus choisi à l'enregistrement.
+        statut = STATUT_INITIAL
         date_redaction_str = request.form.get('date_redaction', '')
         
         # Traitement de la date de rédaction
@@ -193,9 +196,20 @@ def register_mail():
             fichier_encrypted=fichier_is_encrypted,
             utilisateur_id=current_user.id,
             secretaire_general_copie=secretaire_general_copie,
-            autres_informations=autres_informations if type_courrier == 'SORTANT' else None
+            autres_informations=autres_informations if type_courrier == 'SORTANT' else None,
+            numero_suivi=generate_numero_suivi(),
         )
-        
+
+        # Évolution DPEM #4 : courrier sortant adossé (lié) à un courrier entrant parent.
+        # Garde anti-IDOR : on ne lie le courrier qu'au parent que l'utilisateur a le droit de voir.
+        # Garde métier : le parent doit être un courrier ENTRANT (empêche un POST forgé
+        # de lier des paires incohérentes, ex. SORTANT->SORTANT).
+        parent_id = request.form.get('parent_id', '').strip()
+        if parent_id and parent_id.isdigit():
+            parent = Courrier.query.get(int(parent_id))
+            if parent and current_user.can_view_courrier(parent) and parent.type_courrier == 'ENTRANT':
+                courrier.courrier_parent_id = parent.id
+
         try:
             db.session.add(courrier)
             db.session.commit()
@@ -205,6 +219,14 @@ def register_mail():
                 'type': type_courrier,
                 'objet': objet,
             })
+
+            # Signature de l'action côté parent : trace la génération du courrier sortant lié
+            if courrier.courrier_parent_id:
+                sign_courrier_action(courrier.courrier_parent_id, current_user, 'GEN_SORTANT', {
+                    'courrier_lie_id': courrier.id,
+                    'numero': numero_accuse,
+                })
+                db.session.commit()
 
             # Log de l'activité
             log_activity(current_user.id, "ENREGISTREMENT_COURRIER",
@@ -348,9 +370,25 @@ def register_mail():
     types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
     # Récupérer les paramètres système pour le mode de numéro d'accusé
     parametres = ParametresSysteme.get_parametres()
-    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+
+    # Évolution DPEM #4 : pré-remplissage du formulaire depuis un courrier entrant parent
+    # (bouton « Générer un courrier sortant lié »). Garde anti-IDOR identique au POST.
+    prefill = {}
+    parent_id = request.args.get('parent_id', '')
+    if parent_id.isdigit():
+        parent = Courrier.query.get(int(parent_id))
+        if parent and current_user.can_view_courrier(parent):
+            prefill = {
+                'parent_id': parent.id,
+                'type_courrier': 'SORTANT',
+                'destinataire': parent.get_decrypted_expediteur() or parent.expediteur,
+                'numero_reference': f"Réf. {parent.numero_accuse_reception}",
+                'objet': f"Réponse à : {parent.objet}",
+            }
+
+    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
                          departements=departements, parametres=parametres,
-                         types_courrier_sortant=types_courrier_sortant)
+                         types_courrier_sortant=types_courrier_sortant, prefill=prefill)
 
 @app.route('/view_mail')
 @login_required
@@ -704,6 +742,28 @@ def mail_detail(id):
                           users=users,
                           action_signatures=action_signatures)
 
+@app.route('/courrier/<int:id>/etiquette')
+@login_required
+def etiquette_courrier(id):
+    """Étiquette imprimable (numéro de suivi + QR code) à apposer sur le document."""
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    if not courrier.numero_suivi:
+        # Filet de sécurité : si le backfill (migration) n'a pas posé le numéro,
+        # on l'attribue ici — action signée pour préserver la chaîne de non-répudiation.
+        courrier.numero_suivi = generate_numero_suivi()
+        sign_courrier_action(courrier.id, current_user, 'MODIF_CHAMP', {
+            'champ': 'numero_suivi',
+            'motif': 'attribution du numéro de suivi (génération étiquette)',
+        })
+        db.session.commit()
+    qr = qr_data_uri(courrier.numero_suivi)  # QR = numéro de suivi en clair
+    log_activity(current_user.id, "GENERATION_ETIQUETTE",
+                 f"Étiquette générée pour {courrier.numero_accuse_reception}", courrier.id)
+    parametres = ParametresSysteme.get_parametres()
+    return render_template('etiquette_courrier.html', courrier=courrier, qr=qr, parametres=parametres)
+
 @app.route('/edit_courrier/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_courrier(id):
@@ -735,7 +795,9 @@ def edit_courrier(id):
         new_type_courrier = request.form.get('type_courrier')
         new_expediteur = request.form.get('expediteur', '').strip() or None
         new_destinataire = request.form.get('destinataire', '').strip() or None
-        new_statut = request.form.get('statut')
+        # 'statut' est NOT NULL en base : un formulaire qui ne le soumet pas
+        # (champ non requis dans ce contexte) ne doit pas l'écraser à NULL.
+        new_statut = request.form.get('statut') or old_values['statut']
         
         # Date de rédaction
         new_date_redaction = None
@@ -799,12 +861,31 @@ def edit_courrier(id):
                 changes.append('date de rédaction')
             
             if new_statut != old_values['statut']:
-                log_courrier_modification(courrier.id, current_user.id, 'statut', 
+                log_courrier_modification(courrier.id, current_user.id, 'statut',
                                         old_values['statut'], new_statut)
                 courrier.statut = new_statut
                 courrier.date_modification_statut = datetime.utcnow()
                 changes.append('statut')
-            
+
+            # Évolution DPEM #5 : modification manuelle de la date d'enregistrement (RBAC)
+            if current_user.has_permission('edit_registration_date'):
+                raw_date = request.form.get('date_enregistrement', '').strip()
+                if raw_date:
+                    parsed = None
+                    for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+                        try:
+                            parsed = datetime.strptime(raw_date, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    if parsed and parsed != courrier.date_enregistrement:
+                        log_courrier_modification(courrier.id, current_user.id, 'date_enregistrement',
+                                                  str(courrier.date_enregistrement), str(parsed))
+                        courrier.date_enregistrement = parsed
+                        sign_courrier_action(courrier.id, current_user, 'MODIF_DATE_ENREG',
+                                             {'nouvelle_date': str(parsed)})
+                        changes.append("date d'enregistrement")
+
             # Mettre à jour le modifieur et la date
             courrier.modifie_par_id = current_user.id
 
@@ -1610,11 +1691,31 @@ def add_comment(courrier_id):
     
     commentaire = request.form.get('commentaire', '').strip()
     type_comment = request.form.get('type_comment', 'comment')
-    
+
     if not commentaire:
         flash('Le commentaire ne peut pas être vide.', 'error')
         return redirect(url_for('mail_detail', id=courrier_id))
-    
+
+    # Évolution DPEM #2 : Annotation du Directeur — permission dédiée + unicité
+    if type_comment == 'annotation_directeur':
+        if not current_user.has_permission('add_director_annotation'):
+            flash("Vous n'êtes pas autorisé à poser l'annotation du Directeur.", 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        existante = CourrierComment.query.filter_by(
+            courrier_id=courrier_id, type_comment='annotation_directeur', actif=True
+        ).first()
+        if existante:
+            existante.commentaire = commentaire
+            existante.date_modification = datetime.utcnow()
+            existante.modifie_par_id = current_user.id
+            sign_courrier_action(courrier_id, current_user, 'ANNOTATION_DIRECTEUR',
+                                 {'maj': True, 'extrait': commentaire[:200]})
+            db.session.commit()
+            log_activity(current_user.id, "ANNOTATION_DIRECTEUR",
+                         f"Mise à jour de l'annotation du Directeur — {courrier.numero_accuse_reception}", courrier_id)
+            flash("Annotation du Directeur mise à jour.", 'success')
+            return redirect(url_for('mail_detail', id=courrier_id))
+
     # Créer le commentaire
     comment = CourrierComment(
         courrier_id=courrier_id,
@@ -1622,11 +1723,50 @@ def add_comment(courrier_id):
         commentaire=commentaire,
         type_comment=type_comment
     )
-    
+
+    # Évolution DPEM #3 : pièce jointe (PDF/image) sur commentaire/annotation
+    pj = request.files.get('piece_jointe')
+    if pj and pj.filename:
+        ext = pj.filename.rsplit('.', 1)[-1].lower() if '.' in pj.filename else ''
+        if ext not in {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}:
+            flash('Pièce jointe refusée : seuls les fichiers PDF ou image sont acceptés.', 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        is_valid_pj, msg_pj = validate_file_upload(pj)
+        if not is_valid_pj:
+            flash(f'Pièce jointe refusée : {msg_pj}', 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        pj_name = secure_filename(pj.filename)
+        pj_ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        pj_stored = f"{pj_ts}_{pj_name}"
+        pj_path = os.path.join('uploads', pj_stored)
+        os.makedirs('uploads', exist_ok=True)
+        pj.seek(0)
+        pj.save(pj_path)
+        plaintext_source = pj_path
+        pj_encrypted = False
+        try:
+            enc = encrypt_uploaded_file(pj_path)
+            if enc:
+                pj_path = enc
+                pj_encrypted = True
+                try:
+                    if os.path.exists(plaintext_source):
+                        os.remove(plaintext_source)   # ne pas laisser le clair au repos
+                except OSError as e_rm:
+                    logging.warning(f"Suppression du clair PJ commentaire échouée: {e_rm}")
+        except Exception as e_pj:
+            logging.warning(f"Chiffrement PJ commentaire ignoré : {e_pj}")
+        comment.fichier_nom = pj.filename
+        comment.fichier_chemin = pj_path
+        comment.fichier_type = pj_stored.rsplit('.', 1)[-1].lower()
+        comment.fichier_taille = os.path.getsize(pj_path)
+        comment.fichier_encrypted = pj_encrypted
+
     action_type_map = {
         'comment': 'COMMENTAIRE',
         'annotation': 'ANNOTATION',
         'instruction': 'INSTRUCTION',
+        'annotation_directeur': 'ANNOTATION_DIRECTEUR',
     }
 
     try:
@@ -1715,6 +1855,35 @@ def add_comment(courrier_id):
         db.session.rollback()
         logging.error(f"Erreur lors de l'ajout du commentaire: {e}")
         flash('Erreur lors de l\'ajout du commentaire.', 'error')
-    
+
     return redirect(url_for('mail_detail', id=courrier_id))
+
+@app.route('/download_comment_attachment/<int:comment_id>')
+@login_required
+def download_comment_attachment(comment_id):
+    """Télécharger la pièce jointe d'un commentaire/annotation (déchiffrée à la volée)."""
+    comment = CourrierComment.query.get_or_404(comment_id)
+    courrier = Courrier.query.get_or_404(comment.courrier_id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    if not comment.fichier_chemin:
+        flash('Aucune pièce jointe pour ce commentaire.', 'error')
+        return redirect(url_for('mail_detail', id=comment.courrier_id))
+    log_activity(current_user.id, "DOWNLOAD_PJ_COMMENTAIRE",
+                 f"Téléchargement PJ commentaire {comment_id}", comment.courrier_id)
+    if comment.fichier_encrypted:
+        try:
+            temp_path = decrypt_file_for_download(comment.fichier_chemin)
+        except Exception as e_dec:
+            logging.warning(f"Déchiffrement PJ commentaire échoué : {e_dec}")
+            flash('Erreur lors du déchiffrement de la pièce jointe.', 'error')
+            return redirect(url_for('mail_detail', id=comment.courrier_id))
+        try:
+            return send_file(temp_path, as_attachment=True, download_name=comment.fichier_nom)
+        finally:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+    return send_file(comment.fichier_chemin, as_attachment=True, download_name=comment.fichier_nom)
 

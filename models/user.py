@@ -16,6 +16,8 @@ _SUPER_ADMIN_MAIL_BLOCKED_PERMISSIONS = frozenset({
     'edit_all_mail', 'edit_department_mail', 'edit_own_mail',
     'create_mail', 'delete_mail', 'restore_mail', 'manage_mail',
     'view_all_mail', 'bulk_mail', 'view_trash', 'permanent_delete',
+    'add_director_annotation',
+    'edit_registration_date',
 })
 
 

@@ -47,6 +47,16 @@ class Courrier(db.Model):
     modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='courriers_modifies')
     deleted_by = db.relationship('User', foreign_keys=[deleted_by_id], backref='courriers_deleted')
 
+    # Évolutions DPEM (juin 2026)
+    courrier_parent_id = db.Column(db.Integer, db.ForeignKey('courrier.id'), nullable=True, index=True)
+    numero_suivi = db.Column(db.String(50), unique=True, nullable=True, index=True)
+
+    reponses = db.relationship(
+        'Courrier',
+        backref=db.backref('parent', remote_side=[id]),
+        foreign_keys=[courrier_parent_id],
+    )
+
     def __repr__(self):
         return f'<Courrier {self.numero_accuse_reception}>'
 
@@ -250,6 +260,13 @@ class CourrierComment(db.Model):
     modifie_par_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     actif = db.Column(db.Boolean, default=True, index=True)
 
+    # Pièce jointe (PDF/image) — évolution DPEM #3
+    fichier_nom = db.Column(db.String(255), nullable=True)
+    fichier_chemin = db.Column(db.String(500), nullable=True)
+    fichier_type = db.Column(db.String(50), nullable=True)
+    fichier_taille = db.Column(db.Integer, nullable=True)
+    fichier_encrypted = db.Column(db.Boolean, default=False, nullable=False)
+
     courrier = db.relationship('Courrier', backref='comments')
     user = db.relationship('User', foreign_keys=[user_id], backref='comments_created')
     modifie_par = db.relationship('User', foreign_keys=[modifie_par_id], backref='comments_modified')
@@ -335,6 +352,9 @@ class CourrierActionSignature(db.Model):
         'SUPPRESSION':    ('fas fa-trash', 'text-red-600', 'Suppression'),
         'RESTAURATION':   ('fas fa-undo', 'text-green-500', 'Restauration'),
         'CIRCUIT_INIT':   ('fas fa-project-diagram', 'text-blue-500', 'Circuit initié'),
+        'ANNOTATION_DIRECTEUR': ('fas fa-user-tie', 'text-amber-700', 'Annotation du Directeur'),
+        'MODIF_DATE_ENREG':     ('fas fa-calendar-day', 'text-blue-600', "Modification date d'enregistrement"),
+        'GEN_SORTANT':          ('fas fa-reply', 'text-purple-600', 'Courrier sortant lié généré'),
     }
 
     @property
@@ -360,6 +380,7 @@ class CourrierActionSignature(db.Model):
         'INSTRUCTION': 'red', 'TELECHARGEMENT': 'gray', 'VISUALISATION': 'gray',
         'SIGNATURE': 'green', 'REJET': 'red', 'SUPPRESSION': 'red',
         'RESTAURATION': 'green', 'CIRCUIT_INIT': 'blue',
+        'ANNOTATION_DIRECTEUR': 'yellow', 'MODIF_DATE_ENREG': 'blue', 'GEN_SORTANT': 'blue',
     }
 
     def get_action_meta(self):

@@ -2,6 +2,7 @@
 {% block title %}{{ t('register_mail') or 'Enregistrer Courrier' }} — GEC{% endblock %}
 
 {% block content %}
+{% set prefill = prefill or {} %}
 <div class="gec-page-header">
   <div>
     <div class="gec-breadcrumb">
@@ -21,6 +22,7 @@
   <!-- Main form -->
   <div style="display:flex;flex-direction:column;gap:1.25rem;">
     <form method="POST" enctype="multipart/form-data" id="registerForm" style="display:flex;flex-direction:column;gap:1.25rem;">
+      <input type="hidden" name="parent_id" value="{{ prefill.get('parent_id', '') }}">
 
       <div class="gec-card">
         <div class="gec-card-header"><span class="gec-card-title"><i class="fas fa-edit"></i> {{ t('mail_information') or 'Informations du Courrier' }}</span></div>
@@ -30,13 +32,13 @@
           <div class="gec-form-group" style="margin:0;">
             <label class="gec-label"><i class="fas fa-exchange-alt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('mail_type') or 'Type de Courrier' }} <span style="color:var(--danger);">*</span></label>
             <div class="gec-form-row gec-form-row-2" style="gap:.75rem;">
-              <label id="label-entrant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid var(--primary);border-radius:var(--r-md);cursor:pointer;background:var(--primary)10;transition:all .15s;">
-                <input type="radio" name="type_courrier" value="ENTRANT" checked class="sr-only">
+              <label id="label-entrant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid {{ 'var(--border)' if prefill.get('type_courrier') == 'SORTANT' else 'var(--primary)' }};border-radius:var(--r-md);cursor:pointer;background:{{ '' if prefill.get('type_courrier') == 'SORTANT' else 'var(--primary)10' }};transition:all .15s;">
+                <input type="radio" name="type_courrier" value="ENTRANT" {{ '' if prefill.get('type_courrier') == 'SORTANT' else 'checked' }} class="sr-only">
                 <i class="fas fa-inbox" style="color:var(--primary);"></i>
                 <span style="font-weight:500;font-size:.875rem;color:var(--t-primary);">{{ t('incoming') or 'Entrant' }}</span>
               </label>
-              <label id="label-sortant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all .15s;">
-                <input type="radio" name="type_courrier" value="SORTANT" class="sr-only">
+              <label id="label-sortant" style="display:flex;align-items:center;gap:.625rem;padding:.75rem 1rem;border:2px solid {{ 'var(--primary)' if prefill.get('type_courrier') == 'SORTANT' else 'var(--border)' }};border-radius:var(--r-md);cursor:pointer;transition:all .15s;">
+                <input type="radio" name="type_courrier" value="SORTANT" {{ 'checked' if prefill.get('type_courrier') == 'SORTANT' else '' }} class="sr-only">
                 <i class="fas fa-paper-plane" style="color:var(--success);"></i>
                 <span style="font-weight:500;font-size:.875rem;color:var(--t-primary);">{{ t('outgoing') or 'Sortant' }}</span>
               </label>
@@ -68,12 +70,12 @@
           <div class="gec-form-row gec-form-row-2">
             <div class="gec-form-group" style="margin:0;">
               <label class="gec-label" for="numero_reference"><i class="fas fa-hashtag" style="color:var(--primary);font-size:.75rem;"></i> {{ t('reference_number') or 'N° de Référence' }}</label>
-              <input type="text" id="numero_reference" name="numero_reference" class="gec-input" placeholder="{{ t('optional_if_empty_unreferenced') or 'Optionnel' }}">
+              <input type="text" id="numero_reference" name="numero_reference" value="{{ prefill.get('numero_reference', '') }}" class="gec-input" placeholder="{{ t('optional_if_empty_unreferenced') or 'Optionnel' }}">
               <p class="gec-form-hint">{{ t('leave_empty_if_no_reference') or 'Laissez vide si aucun numéro de référence' }}</p>
             </div>
             <div class="gec-form-group" id="contact-field" style="margin:0;">
               <label class="gec-label" for="contact"><i class="fas fa-user" style="color:var(--primary);font-size:.75rem;"></i> <span id="contact-label">{{ t('sender') or 'Expéditeur' }}</span> <span style="color:var(--danger);">*</span></label>
-              <input type="text" id="contact" name="expediteur" required class="gec-input" placeholder="Nom de l'expéditeur">
+              <input type="text" id="contact" name="{{ 'destinataire' if prefill.get('type_courrier') == 'SORTANT' else 'expediteur' }}" value="{{ prefill.get('destinataire', '') }}" required class="gec-input" placeholder="Nom de l'expéditeur">
               <input type="hidden" id="destinataire" name="destinataire" value="">
             </div>
           </div>
@@ -81,7 +83,7 @@
           <!-- Objet -->
           <div class="gec-form-group" style="margin:0;">
             <label class="gec-label" for="objet"><i class="fas fa-file-alt" style="color:var(--primary);font-size:.75rem;"></i> {{ t('subject_letter') or 'Objet de la Lettre' }} <span style="color:var(--danger);">*</span></label>
-            <textarea id="objet" name="objet" rows="4" required class="gec-textarea" placeholder="Décrivez l'objet de la lettre"></textarea>
+            <textarea id="objet" name="objet" rows="4" required class="gec-textarea" placeholder="Décrivez l'objet de la lettre">{{ prefill.get('objet', '') }}</textarea>
           </div>
 
           <!-- Date rédaction/émission -->
@@ -116,25 +118,13 @@
             <p class="gec-form-hint">Indiquez si le {{ get_titre_responsable() }} est mentionné en copie sur ce courrier</p>
           </div>
 
-          <!-- Statut -->
+          <!-- Statut (figé — Évolution DPEM #1) -->
           <div class="gec-form-group" style="margin:0;">
-            <label class="gec-label" for="statut"><i class="fas fa-flag" style="color:var(--primary);font-size:.75rem;"></i> Statut Initial <span style="color:var(--danger);">*</span></label>
-            <select id="statut" name="statut" required class="gec-select">
-              {% if statuts_disponibles %}
-              {% for statut_obj in statuts_disponibles %}
-              <option value="{{ statut_obj.nom }}" {% if statut_obj.nom == 'RECU' %}selected{% endif %}>
-                {{ statut_obj.nom.replace('_', ' ').title() }}{% if statut_obj.description %} — {{ statut_obj.description }}{% endif %}
-              </option>
-              {% endfor %}
-              {% else %}
-              <option value="RECU" selected>Reçu</option>
-              <option value="EN_COURS">En cours</option>
-              <option value="TRAITE">Traité</option>
-              <option value="URGENT">Urgent</option>
-              <option value="ARCHIVE">Archivé</option>
-              {% endif %}
-            </select>
-            <p class="gec-form-hint">Choisissez le statut initial pour ce courrier</p>
+            <label class="gec-label"><i class="fas fa-flag" style="color:var(--primary);font-size:.75rem;"></i> {{ t('statut_initial') }}</label>
+            <div class="gec-input" style="display:flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.03);">
+              <span class="gec-badge gec-badge-blue">RECU</span>
+              <span class="gec-form-hint" style="margin:0;">{{ t('statut_assigne_auto_hint') }}</span>
+            </div>
           </div>
 
         </div>

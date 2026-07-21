@@ -16,8 +16,12 @@
   </div>
   <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
     <a href="{{ url_for('export_pdf', id=courrier.id) }}" class="gec-btn gec-btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a href="{{ url_for('etiquette_courrier', id=courrier.id) }}" target="_blank" class="gec-btn gec-btn-secondary"><i class="fas fa-qrcode"></i> {{ t('etiquette') }}</a>
     {% if current_user.can_edit_courrier(courrier) %}
     <a href="{{ url_for('edit_courrier', id=courrier.id) }}" class="gec-btn gec-btn-secondary"><i class="fas fa-edit"></i> Modifier</a>
+    {% endif %}
+    {% if courrier.type_courrier == 'ENTRANT' %}
+    <a href="{{ url_for('register_mail', parent_id=courrier.id) }}" class="gec-btn gec-btn-primary"><i class="fas fa-reply"></i> {{ t('generer_courrier_sortant_lie') }}</a>
     {% endif %}
     <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
   </div>
@@ -125,6 +129,27 @@
             <i class="fas fa-info-circle" style="margin-right:.375rem;color:#a855f7;"></i>Autres Informations
           </p>
           <p style="font-size:.875rem;color:var(--t-secondary);line-height:1.6;">{{ courrier.autres_informations }}</p>
+        </div>
+        {% endif %}
+
+        {% if courrier.parent and current_user.can_view_courrier(courrier.parent) %}
+        <div class="gec-form-hint" style="margin-top:.75rem;">
+          <i class="fas fa-link"></i> {{ t('en_reponse_a') }}
+          <a href="{{ url_for('mail_detail', id=courrier.parent.id) }}">{{ courrier.parent.numero_accuse_reception }}</a>
+        </div>
+        {% endif %}
+        {% set visible_reponses = [] %}
+        {% for r in courrier.reponses %}
+          {% if current_user.can_view_courrier(r) %}
+            {% set _ = visible_reponses.append(r) %}
+          {% endif %}
+        {% endfor %}
+        {% if visible_reponses %}
+        <div class="gec-form-hint" style="margin-top:.75rem;">
+          <i class="fas fa-link"></i> {{ t('courriers_sortants_lies') }}
+          {% for r in visible_reponses %}
+          <a href="{{ url_for('mail_detail', id=r.id) }}">{{ r.numero_accuse_reception }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
         </div>
         {% endif %}
 
@@ -443,7 +468,7 @@
 
       {% if current_user.can_access_courrier(courrier) %}
       <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--body-bg);">
-        <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}">
+        <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}" enctype="multipart/form-data">
           <div class="gec-form-row gec-form-row-2" style="margin-bottom:.75rem;">
             <div class="gec-form-group" style="margin:0;">
               <label class="gec-label" for="commentaire"><i class="fas fa-comment" style="color:var(--primary);margin-right:.25rem;"></i> Votre commentaire <span style="color:var(--danger);">*</span></label>
@@ -456,17 +481,41 @@
                 <option value="comment">Commentaire</option>
                 <option value="annotation">Annotation</option>
                 <option value="instruction">Instruction</option>
+                {% if current_user.has_permission('add_director_annotation') %}
+                <option value="annotation_directeur">{{ t('annotation_directeur') }}</option>
+                {% endif %}
               </select>
             </div>
+          </div>
+          <div class="gec-form-group">
+            <label class="gec-label" for="piece_jointe"><i class="fas fa-paperclip"></i> {{ t('piece_jointe_pdf_image') }}</label>
+            <input type="file" id="piece_jointe" name="piece_jointe" accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif" class="gec-input">
           </div>
           <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-plus"></i> Ajouter le Commentaire</button>
         </form>
       </div>
       {% endif %}
 
+      {% set annot_dir = comments | selectattr('type_comment', 'equalto', 'annotation_directeur') | list | first %}
+      {% if annot_dir %}
+      <div class="gec-card" style="border-left:4px solid #b45309;background:rgba(180,83,9,.06);margin:1rem 1.25rem;padding:1rem 1.25rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+          <i class="fas fa-user-tie" style="color:#b45309;"></i>
+          <strong>{{ t('annotation_directeur') }}</strong>
+          <span class="gec-form-hint" style="margin:0;">— {{ annot_dir.user.nom_complet }}</span>
+        </div>
+        <div style="white-space:pre-wrap;font-size:.875rem;color:var(--t-secondary);">{{ annot_dir.commentaire }}</div>
+        {% if annot_dir.fichier_nom %}
+        <a href="{{ url_for('download_comment_attachment', comment_id=annot_dir.id) }}" class="gec-link" style="font-size:.72rem;">
+          <i class="fas fa-paperclip"></i> {{ annot_dir.fichier_nom }}
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+
       {% if comments %}
       <div style="display:flex;flex-direction:column;divide-y:var(--border);">
-        {% for comment in comments %}
+        {% for comment in comments if comment.type_comment != 'annotation_directeur' %}
         <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
           <div style="display:flex;align-items:flex-start;gap:.875rem;">
             <div style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;">
@@ -490,6 +539,11 @@
                 </span>
               </div>
               <p style="font-size:.875rem;color:var(--t-secondary);line-height:1.6;">{{ comment.commentaire }}</p>
+              {% if comment.fichier_nom %}
+              <a href="{{ url_for('download_comment_attachment', comment_id=comment.id) }}" class="gec-link" style="font-size:.72rem;">
+                <i class="fas fa-paperclip"></i> {{ comment.fichier_nom }}
+              </a>
+              {% endif %}
             </div>
           </div>
         </div>

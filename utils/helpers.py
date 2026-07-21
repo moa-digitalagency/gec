@@ -321,6 +321,35 @@ def generate_accuse_reception():
     
     return numero
 
+def generate_numero_suivi():
+    """Numéro de suivi court et unique d'un dossier (étiquette). Format: SUIVI-{year}-{counter:05d}."""
+    from models import Courrier
+    now = datetime.now()
+    try:
+        counter = Courrier.query.filter(
+            Courrier.date_enregistrement >= datetime(now.year, 1, 1)
+        ).count() + 1
+    except Exception:
+        counter = 1
+    # Garantir l'unicité (backfill / concurrence) ; le garde-fou final reste l'index
+    # unique DB `uq_courrier_numero_suivi` (IntegrityError au commit en cas de course).
+    while True:
+        candidate = f"SUIVI-{now.year}-{counter:05d}"
+        if not Courrier.query.filter_by(numero_suivi=candidate).first():
+            return candidate
+        counter += 1
+
+
+def qr_data_uri(text):
+    """Retourne un QR code (PNG, data URI base64) encodant `text` en clair."""
+    import io, base64
+    import qrcode
+    img = qrcode.make(text)
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    return 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+
+
 def generate_format_preview(format_string):
     """Générer un aperçu du format de numéro d'accusé"""
     import re

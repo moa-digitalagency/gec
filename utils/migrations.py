@@ -368,6 +368,49 @@ def run_automatic_migrations(app, db):
             migrations_applied += 1
             logging.info("✓ Migration 16: Colonne niveau ajoutée à la table role")
 
+        # Migration 17 : Évolutions DPEM (Réf. MOA/CD/KIN/06003/2026)
+        dpem_columns = [
+            ('courrier_comment', 'fichier_nom', 'VARCHAR(255)'),
+            ('courrier_comment', 'fichier_chemin', 'VARCHAR(500)'),
+            ('courrier_comment', 'fichier_type', 'VARCHAR(50)'),
+            ('courrier_comment', 'fichier_taille', 'INTEGER'),
+            ('courrier_comment', 'fichier_encrypted', 'BOOLEAN DEFAULT FALSE NOT NULL'),
+            ('courrier', 'courrier_parent_id', 'INTEGER'),
+            ('courrier', 'numero_suivi', 'VARCHAR(50)'),
+        ]
+        for table, col, defn in dpem_columns:
+            if add_column_safely(engine, table, col, defn):
+                migrations_applied += 1
+                logging.info(f"✓ Migration 17 (DPEM): Colonne {col} ajoutée à {table}")
+
+        # Backfill numero_suivi pour les courriers existants (idempotent)
+        try:
+            from models import Courrier
+            from utils.helpers import generate_numero_suivi
+            sans_suivi = Courrier.query.filter(
+                (Courrier.numero_suivi.is_(None)) | (Courrier.numero_suivi == '')
+            ).all()
+            for c in sans_suivi:
+                c.numero_suivi = generate_numero_suivi()
+            if sans_suivi:
+                db.session.commit()
+                logging.info(f"✓ Migration 17 (DPEM): {len(sans_suivi)} numéro(s) de suivi backfillé(s)")
+        except Exception as e:
+            db.session.rollback()
+            logging.warning(f"Backfill numero_suivi ignoré : {e}")
+
+        # Migration 17 (DPEM) : index unique sur numero_suivi (l'ALTER ADD COLUMN
+        # ci-dessus ne pose pas la contrainte UNIQUE sur une base déjà existante)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_courrier_numero_suivi "
+                    "ON courrier (numero_suivi)"
+                ))
+                conn.commit()
+        except Exception as e:
+            logging.warning(f"Index unique numero_suivi non créé : {e}")
+
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
             # Commit les changements

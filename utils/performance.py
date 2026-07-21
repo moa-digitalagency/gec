@@ -236,6 +236,7 @@ def optimize_search_query(search_term, query_class):
             conditions.extend([c for c in [
                 query_class.numero_accuse_reception.ilike(pat),
                 query_class.numero_reference.ilike(pat),
+                query_class.numero_suivi.ilike(pat) if hasattr(query_class, 'numero_suivi') else None,
                 query_class.objet.ilike(pat),
                 query_class.expediteur.ilike(pat),
                 query_class.destinataire.ilike(pat),
@@ -263,6 +264,7 @@ def _pg_fts_condition(search_term: str, query_class):
         func.coalesce(query_class.destinataire, ''),
         func.coalesce(query_class.numero_accuse_reception, ''),
         func.coalesce(func.cast(query_class.numero_reference, db.String), ''),
+        func.coalesce(query_class.numero_suivi, '') if hasattr(query_class, 'numero_suivi') else '',
     )
     vector = func.to_tsvector('french', concat_expr)
     query_expr = func.plainto_tsquery('french', search_term)
@@ -270,8 +272,11 @@ def _pg_fts_condition(search_term: str, query_class):
 
     # Aussi chercher avec ILIKE sur le numéro pour robustesse (codes courts)
     ilike_cond = query_class.numero_accuse_reception.ilike(f'%{search_term}%')
+    conds = [fts_cond, ilike_cond]
+    if hasattr(query_class, 'numero_suivi'):
+        conds.append(query_class.numero_suivi.ilike(f'%{search_term}%'))
 
-    return or_(fts_cond, ilike_cond)
+    return or_(*conds)
 
 def batch_process_items(items, batch_size=100, processor_func=None):
     """Process items in batches for better performance"""
