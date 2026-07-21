@@ -67,6 +67,14 @@ def _reset_shared_login_cache(app):
         del g._login_user
 
 
+def _db_app_client():
+    """Nouveau test_client() indépendant, pour authentifier un 2e utilisateur
+    (propriétaire d'un courrier distinct) sans piétiner la session du `client`
+    fixture déjà utilisé dans le même test."""
+    from app import app as flask_app
+    return flask_app.test_client()
+
+
 def _login(app, client, user_id):
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
@@ -249,3 +257,44 @@ class TestStatutFige:
             c = Courrier.query.filter_by(objet="Courrier statut force").first()
             assert c is not None
             assert c.statut == "RECU"  # ignoré → RECU imposé
+
+
+class TestAnnotationDirecteur:
+    def _courrier_owned_by(self, app, role, perms, username):
+        from models import Courrier
+        client = _db_app_client()
+        uid = _role_with_perms(app, _db(), role, perms, username=username)
+        _login(app, client, uid)
+        client.post("/register_mail", data={
+            "objet": f"Courrier {username}", "type_courrier": "ENTRANT",
+            "expediteur": "Exp", "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "b.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            cid = Courrier.query.filter_by(objet=f"Courrier {username}").first().id
+        return client, cid
+
+    def test_sans_permission_refuse(self, app):
+        client, cid = self._courrier_owned_by(
+            app, "agent_simple", ["register_mail", "read_own_mail"], "simple_u")
+        from models import CourrierComment
+        client.post(f"/add_comment/{cid}", data={
+            "commentaire": "Décision", "type_comment": "annotation_directeur",
+        }, follow_redirects=True)
+        with app.app_context():
+            assert CourrierComment.query.filter_by(
+                courrier_id=cid, type_comment="annotation_directeur").count() == 0
+
+    def test_avec_permission_unique(self, app):
+        client, cid = self._courrier_owned_by(
+            app, "directeur", ["register_mail", "read_all_mail", "add_director_annotation"], "dir_u")
+        from models import CourrierComment
+        for txt in ("Première décision", "Décision corrigée"):
+            client.post(f"/add_comment/{cid}", data={
+                "commentaire": txt, "type_comment": "annotation_directeur",
+            }, follow_redirects=True)
+        with app.app_context():
+            q = CourrierComment.query.filter_by(
+                courrier_id=cid, type_comment="annotation_directeur", actif=True)
+            assert q.count() == 1                     # unique
+            assert q.first().commentaire == "Décision corrigée"  # mise à jour

@@ -457,6 +457,9 @@
                 <option value="comment">Commentaire</option>
                 <option value="annotation">Annotation</option>
                 <option value="instruction">Instruction</option>
+                {% if current_user.has_permission('add_director_annotation') %}
+                <option value="annotation_directeur">Annotation du Directeur</option>
+                {% endif %}
               </select>
             </div>
           </div>
@@ -469,9 +472,26 @@
       </div>
       {% endif %}
 
+      {% set annot_dir = comments | selectattr('type_comment', 'equalto', 'annotation_directeur') | list | first %}
+      {% if annot_dir %}
+      <div class="gec-card" style="border-left:4px solid #b45309;background:rgba(180,83,9,.06);margin:1rem 1.25rem;padding:1rem 1.25rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+          <i class="fas fa-user-tie" style="color:#b45309;"></i>
+          <strong>Annotation du Directeur</strong>
+          <span class="gec-form-hint" style="margin:0;">— {{ annot_dir.user.nom_complet }}</span>
+        </div>
+        <div style="white-space:pre-wrap;font-size:.875rem;color:var(--t-secondary);">{{ annot_dir.commentaire }}</div>
+        {% if annot_dir.fichier_nom %}
+        <a href="{{ url_for('download_comment_attachment', comment_id=annot_dir.id) }}" class="gec-link" style="font-size:.72rem;">
+          <i class="fas fa-paperclip"></i> {{ annot_dir.fichier_nom }}
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+
       {% if comments %}
       <div style="display:flex;flex-direction:column;divide-y:var(--border);">
-        {% for comment in comments %}
+        {% for comment in comments if comment.type_comment != 'annotation_directeur' %}
         <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
           <div style="display:flex;align-items:flex-start;gap:.875rem;">
             <div style="flex-shrink:0;width:2.5rem;height:2.5rem;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;">

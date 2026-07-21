@@ -1636,11 +1636,31 @@ def add_comment(courrier_id):
     
     commentaire = request.form.get('commentaire', '').strip()
     type_comment = request.form.get('type_comment', 'comment')
-    
+
     if not commentaire:
         flash('Le commentaire ne peut pas être vide.', 'error')
         return redirect(url_for('mail_detail', id=courrier_id))
-    
+
+    # Évolution DPEM #2 : Annotation du Directeur — permission dédiée + unicité
+    if type_comment == 'annotation_directeur':
+        if not current_user.has_permission('add_director_annotation'):
+            flash("Vous n'êtes pas autorisé à poser l'annotation du Directeur.", 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        existante = CourrierComment.query.filter_by(
+            courrier_id=courrier_id, type_comment='annotation_directeur', actif=True
+        ).first()
+        if existante:
+            existante.commentaire = commentaire
+            existante.date_modification = datetime.utcnow()
+            existante.modifie_par_id = current_user.id
+            sign_courrier_action(courrier_id, current_user, 'ANNOTATION_DIRECTEUR',
+                                 {'maj': True, 'extrait': commentaire[:200]})
+            db.session.commit()
+            log_activity(current_user.id, "ANNOTATION_DIRECTEUR",
+                         f"Mise à jour de l'annotation du Directeur — {courrier.numero_accuse_reception}", courrier_id)
+            flash("Annotation du Directeur mise à jour.", 'success')
+            return redirect(url_for('mail_detail', id=courrier_id))
+
     # Créer le commentaire
     comment = CourrierComment(
         courrier_id=courrier_id,
@@ -1691,6 +1711,7 @@ def add_comment(courrier_id):
         'comment': 'COMMENTAIRE',
         'annotation': 'ANNOTATION',
         'instruction': 'INSTRUCTION',
+        'annotation_directeur': 'ANNOTATION_DIRECTEUR',
     }
 
     try:
