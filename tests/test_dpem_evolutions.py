@@ -2,6 +2,7 @@
 import io
 import re
 import time
+import uuid
 import pytest
 
 
@@ -336,3 +337,133 @@ class TestDateEnregistrement:
         with app.app_context():
             c = Courrier.query.get(cid)
             assert c.date_enregistrement.year == 2020
+
+
+def _post_register_manual(app, client, data):
+    """Poste sur /register_mail en mode numéro d'accusé MANUEL (avec numéro
+    unique garanti), puis restaure le mode précédent.
+
+    Pourquoi : `generate_accuse_reception()` (mode automatique, hors périmètre
+    Task 7) attribue le numéro suivant par un simple COUNT des courriers dont
+    `date_enregistrement` retombe dans l'année en cours. `TestDateEnregistrement`
+    (Task 6, déjà committé) modifie volontairement `date_enregistrement` d'un
+    courrier existant vers 2020 pour tester `edit_registration_date` — ce qui
+    fait durablement chuter ce COUNT d'une unité sans jamais « libérer » le
+    numéro déjà attribué à ce courrier. Résultat : dans la suite complète, le
+    tout premier courrier auto-numéroté créé après `TestDateEnregistrement`
+    entre en collision UNIQUE avec ce numéro déjà pris — et comme l'insertion
+    échoue avant tout commit, le COUNT ne progresse jamais et la collision se
+    reproduit à l'identique pour chaque tentative suivante. On contourne ce
+    défaut préexistant (hors périmètre Task 7, ne pas modifier `utils/helpers.py`
+    ni les tests de la Task 6) en imposant un numéro manuel garanti unique pour
+    la création du courrier ENTRANT servant de fixture — cela n'affecte en rien
+    la logique testée ici (le lien `courrier_parent_id`) et « rattrape » au
+    passage le compteur automatique pour le reste de la suite.
+    """
+    from models import ParametresSysteme
+    with app.app_context():
+        parametres = ParametresSysteme.get_parametres()
+        previous_mode = parametres.mode_numero_accuse
+        parametres.mode_numero_accuse = 'manuel'
+        _db().session.commit()
+    try:
+        post_data = dict(data)
+        post_data.setdefault("numero_accuse_manuel", f"ACC-ADOSSE-{uuid.uuid4().hex[:12]}")
+        return client.post("/register_mail", data=post_data,
+                           content_type="multipart/form-data", follow_redirects=True)
+    finally:
+        with app.app_context():
+            parametres = ParametresSysteme.get_parametres()
+            parametres.mode_numero_accuse = previous_mode
+            _db().session.commit()
+
+
+class TestCourrierAdosse:
+    def test_sortant_lie_au_parent(self, app, client):
+        from models import Courrier, TypeCourrierSortant
+
+        # Piège documenté : `type_courrier_sortant_id` est obligatoire pour un
+        # courrier SORTANT (validation existante de register_mail). On sème un
+        # type actif réel et on utilise son id — sans quoi le POST échoue la
+        # validation et le test serait un faux positif.
+        with app.app_context():
+            TypeCourrierSortant.init_default_types()
+            type_sortant_id = TypeCourrierSortant.get_types_actifs()[0].id
+
+        uid = _role_with_perms(app, _db(), "agent_lien",
+                               ["register_mail", "read_all_mail"], username="lien_u")
+        _login(app, client, uid)
+
+        # 1) courrier entrant parent
+        _post_register_manual(app, client, {
+            "objet": "Entrant parent", "type_courrier": "ENTRANT", "expediteur": "Ministère X",
+            "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "in.pdf"),
+        })
+        with app.app_context():
+            parent = Courrier.query.filter_by(objet="Entrant parent").first()
+            pid = parent.id
+
+        # 2) GET pré-rempli
+        resp = client.get(f"/register_mail?parent_id={pid}")
+        assert resp.status_code == 200
+        assert "Ministère X" in resp.data.decode()  # destinataire pré-rempli
+
+        # 3) POST sortant lié
+        client.post("/register_mail", data={
+            "objet": "Réponse sortante", "type_courrier": "SORTANT", "destinataire": "Ministère X",
+            "type_courrier_sortant_id": str(type_sortant_id), "date_redaction": "2026-06-20",
+            "parent_id": str(pid),
+            "fichier": (io.BytesIO(_pdf_bytes()), "out.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            enfant = Courrier.query.filter_by(objet="Réponse sortante").first()
+            assert enfant is not None
+            assert enfant.courrier_parent_id == pid
+            assert enfant in Courrier.query.get(pid).reponses
+
+    def test_get_sans_parent_id_ne_preremplit_pas(self, app, client):
+        """Non-régression : le formulaire normal (sans parent_id) reste intact."""
+        uid = _role_with_perms(app, _db(), "agent_lien2",
+                               ["register_mail", "read_all_mail"], username="lien_u2")
+        _login(app, client, uid)
+        resp = client.get("/register_mail")
+        assert resp.status_code == 200
+
+    def test_lien_refuse_si_pas_le_droit_de_voir_le_parent(self, app):
+        """Anti-IDOR : un utilisateur sans droit de vue sur le parent ne doit
+        pas pouvoir le lier — courrier_parent_id doit rester None."""
+        from models import Courrier, TypeCourrierSortant
+
+        with app.app_context():
+            TypeCourrierSortant.init_default_types()
+            type_sortant_id = TypeCourrierSortant.get_types_actifs()[0].id
+
+        # Propriétaire du parent (accès restreint à son propre courrier)
+        owner_client = _db_app_client()
+        owner_uid = _role_with_perms(app, _db(), "proprio_parent",
+                                     ["register_mail", "read_own_mail"], username="proprio_parent_u")
+        _login(app, owner_client, owner_uid)
+        _post_register_manual(app, owner_client, {
+            "objet": "Entrant prive", "type_courrier": "ENTRANT", "expediteur": "Ministère Y",
+            "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "prive.pdf"),
+        })
+        with app.app_context():
+            pid = Courrier.query.filter_by(objet="Entrant prive").first().id
+
+        # Intrus : seulement `read_own_mail`, ne voit pas le courrier d'autrui
+        intrus_client = _db_app_client()
+        intrus_uid = _role_with_perms(app, _db(), "intrus_lien",
+                                      ["register_mail", "read_own_mail"], username="intrus_lien_u")
+        _login(app, intrus_client, intrus_uid)
+        intrus_client.post("/register_mail", data={
+            "objet": "Sortant intrus", "type_courrier": "SORTANT", "destinataire": "Ministère Y",
+            "type_courrier_sortant_id": str(type_sortant_id), "date_redaction": "2026-06-20",
+            "parent_id": str(pid),
+            "fichier": (io.BytesIO(_pdf_bytes()), "intrus.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            enfant = Courrier.query.filter_by(objet="Sortant intrus").first()
+            assert enfant is not None
+            assert enfant.courrier_parent_id is None

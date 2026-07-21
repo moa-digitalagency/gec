@@ -199,7 +199,15 @@ def register_mail():
             autres_informations=autres_informations if type_courrier == 'SORTANT' else None,
             numero_suivi=generate_numero_suivi(),
         )
-        
+
+        # Évolution DPEM #4 : courrier sortant adossé (lié) à un courrier entrant parent.
+        # Garde anti-IDOR : on ne lie le courrier qu'au parent que l'utilisateur a le droit de voir.
+        parent_id = request.form.get('parent_id', '').strip()
+        if parent_id and parent_id.isdigit():
+            parent = Courrier.query.get(int(parent_id))
+            if parent and current_user.can_view_courrier(parent):
+                courrier.courrier_parent_id = parent.id
+
         try:
             db.session.add(courrier)
             db.session.commit()
@@ -209,6 +217,14 @@ def register_mail():
                 'type': type_courrier,
                 'objet': objet,
             })
+
+            # Signature de l'action côté parent : trace la génération du courrier sortant lié
+            if courrier.courrier_parent_id:
+                sign_courrier_action(courrier.courrier_parent_id, current_user, 'GEN_SORTANT', {
+                    'courrier_lie_id': courrier.id,
+                    'numero': numero_accuse,
+                })
+                db.session.commit()
 
             # Log de l'activité
             log_activity(current_user.id, "ENREGISTREMENT_COURRIER",
@@ -352,9 +368,25 @@ def register_mail():
     types_courrier_sortant = TypeCourrierSortant.get_types_actifs()
     # Récupérer les paramètres système pour le mode de numéro d'accusé
     parametres = ParametresSysteme.get_parametres()
-    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles, 
+
+    # Évolution DPEM #4 : pré-remplissage du formulaire depuis un courrier entrant parent
+    # (bouton « Générer un courrier sortant lié »). Garde anti-IDOR identique au POST.
+    prefill = {}
+    parent_id = request.args.get('parent_id', '')
+    if parent_id.isdigit():
+        parent = Courrier.query.get(int(parent_id))
+        if parent and current_user.can_view_courrier(parent):
+            prefill = {
+                'parent_id': parent.id,
+                'type_courrier': 'SORTANT',
+                'destinataire': parent.get_decrypted_expediteur() or parent.expediteur,
+                'numero_reference': f"Réf. {parent.numero_accuse_reception}",
+                'objet': f"Réponse à : {parent.objet}",
+            }
+
+    return render_template('register_mail.html', statuts_disponibles=statuts_disponibles,
                          departements=departements, parametres=parametres,
-                         types_courrier_sortant=types_courrier_sortant)
+                         types_courrier_sortant=types_courrier_sortant, prefill=prefill)
 
 @app.route('/view_mail')
 @login_required
