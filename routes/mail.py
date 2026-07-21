@@ -761,7 +761,9 @@ def edit_courrier(id):
         new_type_courrier = request.form.get('type_courrier')
         new_expediteur = request.form.get('expediteur', '').strip() or None
         new_destinataire = request.form.get('destinataire', '').strip() or None
-        new_statut = request.form.get('statut')
+        # 'statut' est NOT NULL en base : un formulaire qui ne le soumet pas
+        # (champ non requis dans ce contexte) ne doit pas l'écraser à NULL.
+        new_statut = request.form.get('statut') or old_values['statut']
         
         # Date de rédaction
         new_date_redaction = None
@@ -825,12 +827,31 @@ def edit_courrier(id):
                 changes.append('date de rédaction')
             
             if new_statut != old_values['statut']:
-                log_courrier_modification(courrier.id, current_user.id, 'statut', 
+                log_courrier_modification(courrier.id, current_user.id, 'statut',
                                         old_values['statut'], new_statut)
                 courrier.statut = new_statut
                 courrier.date_modification_statut = datetime.utcnow()
                 changes.append('statut')
-            
+
+            # Évolution DPEM #5 : modification manuelle de la date d'enregistrement (RBAC)
+            if current_user.has_permission('edit_registration_date'):
+                raw_date = request.form.get('date_enregistrement', '').strip()
+                if raw_date:
+                    parsed = None
+                    for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%d'):
+                        try:
+                            parsed = datetime.strptime(raw_date, fmt)
+                            break
+                        except ValueError:
+                            continue
+                    if parsed and parsed != courrier.date_enregistrement:
+                        log_courrier_modification(courrier.id, current_user.id, 'date_enregistrement',
+                                                  str(courrier.date_enregistrement), str(parsed))
+                        courrier.date_enregistrement = parsed
+                        sign_courrier_action(courrier.id, current_user, 'MODIF_DATE_ENREG',
+                                             {'nouvelle_date': str(parsed)})
+                        changes.append("date d'enregistrement")
+
             # Mettre à jour le modifieur et la date
             courrier.modifie_par_id = current_user.id
 

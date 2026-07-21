@@ -298,3 +298,41 @@ class TestAnnotationDirecteur:
                 courrier_id=cid, type_comment="annotation_directeur", actif=True)
             assert q.count() == 1                     # unique
             assert q.first().commentaire == "Décision corrigée"  # mise à jour
+
+
+class TestDateEnregistrement:
+    def _courrier(self, app, client, perms):
+        from models import Courrier
+        uid = _role_with_perms(app, _db(), "editeur_date",
+                               ["register_mail", "read_own_mail", "edit_own_mail"] + perms,
+                               username="ed_date_u")
+        _login(app, client, uid)
+        client.post("/register_mail", data={
+            "objet": "Courrier date", "type_courrier": "ENTRANT", "expediteur": "Exp",
+            "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "d.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            return Courrier.query.filter_by(objet="Courrier date").first().id
+
+    def test_sans_permission_date_inchangee(self, app, client):
+        from models import Courrier
+        cid = self._courrier(app, client, perms=[])
+        client.post(f"/edit_courrier/{cid}", data={
+            "objet": "Courrier date", "type_courrier": "ENTRANT", "expediteur": "Exp",
+            "date_enregistrement": "2020-01-01T08:00",
+        }, follow_redirects=True)
+        with app.app_context():
+            c = Courrier.query.get(cid)
+            assert c.date_enregistrement.year != 2020
+
+    def test_avec_permission_date_modifiee(self, app, client):
+        from models import Courrier
+        cid = self._courrier(app, client, perms=["edit_registration_date"])
+        client.post(f"/edit_courrier/{cid}", data={
+            "objet": "Courrier date", "type_courrier": "ENTRANT", "expediteur": "Exp",
+            "date_enregistrement": "2020-01-01T08:00",
+        }, follow_redirects=True)
+        with app.app_context():
+            c = Courrier.query.get(cid)
+            assert c.date_enregistrement.year == 2020

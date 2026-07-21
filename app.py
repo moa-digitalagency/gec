@@ -90,6 +90,27 @@ login_manager.login_message = 'Veuillez vous connecter pour accéder à cette pa
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+
+def ensure_dpem_permissions():
+    """Attribue par défaut edit_registration_date au rôle admin (idempotent, révocable via l'UI).
+
+    N'attribue PAS add_director_annotation (assignation manuelle réservée au Directeur
+    via l'éditeur de rôles). Ne doit jamais faire échouer le boot de l'application.
+    """
+    try:
+        from models import Role, RolePermission
+        role = Role.query.filter_by(nom='admin').first()
+        if role and not RolePermission.query.filter_by(role_id=role.id,
+                                                        permission_nom='edit_registration_date').first():
+            db.session.add(RolePermission(role_id=role.id, permission_nom='edit_registration_date'))
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+    except Exception as _e:
+        logging.warning(f"ensure_dpem_permissions ignoré: {_e}")
+
+
 with app.app_context():
     # Import models
     import models
@@ -173,7 +194,8 @@ with app.app_context():
     models.Role.init_default_roles()
     models.RolePermission.init_default_permissions()
     models.Role.ensure_hierarchy()
-    
+    ensure_dpem_permissions()
+
     # Initialize default departments
     models.Departement.init_default_departments()
     
