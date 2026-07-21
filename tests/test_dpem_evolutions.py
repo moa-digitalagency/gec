@@ -140,6 +140,33 @@ class TestFoundations:
         assert "edit_registration_date" in PERMISSIONS_CATALOG
 
 
+class TestNumeroSuivi:
+    def _create(self, app, client):
+        from models import Courrier
+        uid = _role_with_perms(app, _db(), "agent_suivi",
+                               ["register_mail", "read_own_mail"], username="agent_suivi_u")
+        _login(app, client, uid)
+        client.post("/register_mail", data={
+            "objet": "Courrier avec suivi", "type_courrier": "ENTRANT",
+            "expediteur": "Exp", "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "x.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            return Courrier.query.filter_by(objet="Courrier avec suivi").first()
+
+    def test_numero_suivi_assigned_on_create(self, app, client):
+        c = self._create(app, client)
+        assert c.numero_suivi and c.numero_suivi.startswith("SUIVI-")
+
+    def test_etiquette_page_renders_qr(self, app, client):
+        c = self._create(app, client)
+        resp = client.get(f"/courrier/{c.id}/etiquette")
+        assert resp.status_code == 200
+        body = resp.data.decode()
+        assert c.numero_suivi in body
+        assert "data:image/png;base64," in body  # QR inline
+
+
 class TestStatutFige:
     def test_statut_force_recu_meme_si_autre_soumis(self, app, client):
         from models import Courrier

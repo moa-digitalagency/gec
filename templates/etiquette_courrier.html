@@ -1,0 +1,35 @@
+{% extends "new_base.html" %}
+{% block title %}Étiquette — {{ courrier.numero_accuse_reception }} — GEC{% endblock %}
+{% block content %}
+<div class="etq-wrap">
+  <div class="etq-card">
+    <div class="etq-head">
+      <span class="etq-org">{{ parametres.nom_logiciel if parametres else 'GEC' }}</span>
+      <span class="etq-title">Étiquette de suivi</span>
+    </div>
+    <div class="etq-body">
+      <img class="etq-qr" src="{{ qr }}" alt="QR {{ courrier.numero_suivi }}">
+      <div class="etq-meta">
+        <div class="etq-suivi">{{ courrier.numero_suivi }}</div>
+        <div class="etq-line"><b>Accusé :</b> {{ courrier.numero_accuse_reception }}</div>
+        <div class="etq-line"><b>Objet :</b> {{ courrier.objet[:60] }}</div>
+        <div class="etq-line"><b>Date :</b> {{ courrier.date_enregistrement.strftime('%d/%m/%Y') if courrier.date_enregistrement }}</div>
+      </div>
+    </div>
+    <button class="gec-btn gec-btn-primary etq-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
+  </div>
+</div>
+<style>
+  .etq-wrap{display:flex;justify-content:center;padding:2rem;}
+  .etq-card{border:1px solid #d1d5db;border-radius:12px;padding:1rem 1.25rem;width:340px;background:#fff;color:#111;}
+  .etq-head{display:flex;flex-direction:column;border-bottom:1px dashed #cbd5e1;padding-bottom:.5rem;margin-bottom:.75rem;}
+  .etq-org{font-weight:700;font-size:.8rem;color:#2563eb;}
+  .etq-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;}
+  .etq-body{display:flex;gap:.9rem;align-items:center;}
+  .etq-qr{width:120px;height:120px;}
+  .etq-suivi{font-size:1.05rem;font-weight:800;letter-spacing:.02em;margin-bottom:.4rem;}
+  .etq-line{font-size:.72rem;color:#374151;margin:.1rem 0;}
+  .etq-print{margin-top:.9rem;width:100%;}
+  @media print{.etq-print,.gec-sidebar,.gec-topbar{display:none!important;} .etq-wrap{padding:0;}}
+</style>
+{% endblock %}

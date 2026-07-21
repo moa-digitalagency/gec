@@ -75,6 +75,12 @@ def search_suggestions():
         for r in results:
             if r.numero_reference:
                 suggestions.add(r.numero_reference)
+
+        # Rechercher dans les numéros de suivi (Évolution DPEM #6)
+        results = query.filter(Courrier.numero_suivi.ilike(f'%{q}%')).limit(5).all()
+        for r in results:
+            if r.numero_suivi:
+                suggestions.add(r.numero_suivi)
         
         # Rechercher dans les objets
         results = query.filter(Courrier.objet.ilike(f'%{q}%')).limit(5).all()

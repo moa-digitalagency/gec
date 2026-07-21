@@ -17,7 +17,7 @@ import logging
 
 from app import app, db
 from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActivite, ParametresSysteme, StatutCourrier, Role, RolePermission, Departement, TypeCourrierSortant, Notification, CourrierComment, CourrierForward, CourrierSignature
-from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action
+from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action, generate_numero_suivi, qr_data_uri
 from services.email import send_new_mail_notification, send_mail_forwarded_notification, send_comment_notification
 from routes.auth import apply_mail_access_filter
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
@@ -196,7 +196,8 @@ def register_mail():
             fichier_encrypted=fichier_is_encrypted,
             utilisateur_id=current_user.id,
             secretaire_general_copie=secretaire_general_copie,
-            autres_informations=autres_informations if type_courrier == 'SORTANT' else None
+            autres_informations=autres_informations if type_courrier == 'SORTANT' else None,
+            numero_suivi=generate_numero_suivi(),
         )
         
         try:
@@ -706,6 +707,22 @@ def mail_detail(id):
                           forwards=forwards,
                           users=users,
                           action_signatures=action_signatures)
+
+@app.route('/courrier/<int:id>/etiquette')
+@login_required
+def etiquette_courrier(id):
+    """Étiquette imprimable (numéro de suivi + QR code) à apposer sur le document."""
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    if not courrier.numero_suivi:
+        courrier.numero_suivi = generate_numero_suivi()
+        db.session.commit()
+    qr = qr_data_uri(courrier.numero_suivi)  # QR = numéro de suivi en clair
+    log_activity(current_user.id, "GENERATION_ETIQUETTE",
+                 f"Étiquette générée pour {courrier.numero_accuse_reception}", courrier.id)
+    parametres = ParametresSysteme.get_parametres()
+    return render_template('etiquette_courrier.html', courrier=courrier, qr=qr, parametres=parametres)
 
 @app.route('/edit_courrier/<int:id>', methods=['GET', 'POST'])
 @login_required
