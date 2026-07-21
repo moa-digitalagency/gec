@@ -374,7 +374,7 @@ def run_automatic_migrations(app, db):
             ('courrier_comment', 'fichier_chemin', 'VARCHAR(500)'),
             ('courrier_comment', 'fichier_type', 'VARCHAR(50)'),
             ('courrier_comment', 'fichier_taille', 'INTEGER'),
-            ('courrier_comment', 'fichier_encrypted', 'BOOLEAN DEFAULT FALSE'),
+            ('courrier_comment', 'fichier_encrypted', 'BOOLEAN DEFAULT FALSE NOT NULL'),
             ('courrier', 'courrier_parent_id', 'INTEGER'),
             ('courrier', 'numero_suivi', 'VARCHAR(50)'),
         ]
@@ -398,6 +398,18 @@ def run_automatic_migrations(app, db):
         except Exception as e:
             db.session.rollback()
             logging.warning(f"Backfill numero_suivi ignoré : {e}")
+
+        # Migration 17 (DPEM) : index unique sur numero_suivi (l'ALTER ADD COLUMN
+        # ci-dessus ne pose pas la contrainte UNIQUE sur une base déjà existante)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_courrier_numero_suivi "
+                    "ON courrier (numero_suivi)"
+                ))
+                conn.commit()
+        except Exception as e:
+            logging.warning(f"Index unique numero_suivi non créé : {e}")
 
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")

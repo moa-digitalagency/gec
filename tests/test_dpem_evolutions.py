@@ -71,9 +71,35 @@ class TestFoundations:
 
     def test_generate_numero_suivi_format_and_unique(self, app):
         from utils.helpers import generate_numero_suivi
+        from models import Courrier, User
+        db = _db()
         with app.app_context():
             n1 = generate_numero_suivi()
             assert re.match(r"^SUIVI-\d{4}-\d{5}$", n1)
+
+            user = User.query.filter_by(username="admin_test").first()
+            c1 = Courrier(
+                numero_accuse_reception="ACC-TEST-UNIQ-1",
+                objet="Test unicité numero_suivi 1",
+                type_courrier="ENTRANT",
+                numero_suivi=n1,
+                utilisateur_id=user.id,
+            )
+            db.session.add(c1)
+            db.session.commit()
+
+            n2 = generate_numero_suivi()
+            c2 = Courrier(
+                numero_accuse_reception="ACC-TEST-UNIQ-2",
+                objet="Test unicité numero_suivi 2",
+                type_courrier="ENTRANT",
+                numero_suivi=n2,
+                utilisateur_id=user.id,
+            )
+            db.session.add(c2)
+            db.session.commit()
+
+            assert n1 != n2
 
     def test_new_permissions_in_catalog(self, app):
         from routes.admin import PERMISSIONS_CATALOG

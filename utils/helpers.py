@@ -331,7 +331,8 @@ def generate_numero_suivi():
         ).count() + 1
     except Exception:
         counter = 1
-    # Garantir l'unicité (backfill / concurrence)
+    # Garantir l'unicité (backfill / concurrence) ; le garde-fou final reste l'index
+    # unique DB `uq_courrier_numero_suivi` (IntegrityError au commit en cas de course).
     while True:
         candidate = f"SUIVI-{now.year}-{counter:05d}"
         if not Courrier.query.filter_by(numero_suivi=candidate).first():
