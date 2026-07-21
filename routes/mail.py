@@ -1648,7 +1648,39 @@ def add_comment(courrier_id):
         commentaire=commentaire,
         type_comment=type_comment
     )
-    
+
+    # Évolution DPEM #3 : pièce jointe (PDF/image) sur commentaire/annotation
+    pj = request.files.get('piece_jointe')
+    if pj and pj.filename:
+        ext = pj.filename.rsplit('.', 1)[-1].lower() if '.' in pj.filename else ''
+        if ext not in {'pdf', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}:
+            flash('Pièce jointe refusée : seuls les fichiers PDF ou image sont acceptés.', 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        is_valid_pj, msg_pj = validate_file_upload(pj)
+        if not is_valid_pj:
+            flash(f'Pièce jointe refusée : {msg_pj}', 'error')
+            return redirect(url_for('mail_detail', id=courrier_id))
+        pj_name = secure_filename(pj.filename)
+        pj_ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        pj_stored = f"{pj_ts}_{pj_name}"
+        pj_path = os.path.join('uploads', pj_stored)
+        os.makedirs('uploads', exist_ok=True)
+        pj.seek(0)
+        pj.save(pj_path)
+        pj_encrypted = False
+        try:
+            enc = encrypt_uploaded_file(pj_path)
+            if enc:
+                pj_path = enc
+                pj_encrypted = True
+        except Exception as e_pj:
+            logging.warning(f"Chiffrement PJ commentaire ignoré : {e_pj}")
+        comment.fichier_nom = pj.filename
+        comment.fichier_chemin = pj_path
+        comment.fichier_type = pj_stored.rsplit('.', 1)[-1].lower()
+        comment.fichier_taille = os.path.getsize(pj_path)
+        comment.fichier_encrypted = pj_encrypted
+
     action_type_map = {
         'comment': 'COMMENTAIRE',
         'annotation': 'ANNOTATION',
@@ -1741,6 +1773,30 @@ def add_comment(courrier_id):
         db.session.rollback()
         logging.error(f"Erreur lors de l'ajout du commentaire: {e}")
         flash('Erreur lors de l\'ajout du commentaire.', 'error')
-    
+
     return redirect(url_for('mail_detail', id=courrier_id))
+
+@app.route('/download_comment_attachment/<int:comment_id>')
+@login_required
+def download_comment_attachment(comment_id):
+    """Télécharger la pièce jointe d'un commentaire/annotation (déchiffrée à la volée)."""
+    comment = CourrierComment.query.get_or_404(comment_id)
+    courrier = Courrier.query.get_or_404(comment.courrier_id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    if not comment.fichier_chemin:
+        flash('Aucune pièce jointe pour ce commentaire.', 'error')
+        return redirect(url_for('mail_detail', id=comment.courrier_id))
+    log_activity(current_user.id, "DOWNLOAD_PJ_COMMENTAIRE",
+                 f"Téléchargement PJ commentaire {comment_id}", comment.courrier_id)
+    if comment.fichier_encrypted:
+        temp_path = decrypt_file_for_download(comment.fichier_chemin)
+        try:
+            return send_file(temp_path, as_attachment=True, download_name=comment.fichier_nom)
+        finally:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+    return send_file(comment.fichier_chemin, as_attachment=True, download_name=comment.fichier_nom)
 

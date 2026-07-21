@@ -167,6 +167,50 @@ class TestNumeroSuivi:
         assert "data:image/png;base64," in body  # QR inline
 
 
+class TestCommentAttachment:
+    def _make_courrier_and_login(self, app, client):
+        from models import Courrier
+        uid = _role_with_perms(app, _db(), "agent_pj",
+                               ["register_mail", "read_own_mail"], username="agent_pj_u")
+        _login(app, client, uid)
+        client.post("/register_mail", data={
+            "objet": "Courrier PJ commentaire", "type_courrier": "ENTRANT",
+            "expediteur": "Exp", "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "base.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            return Courrier.query.filter_by(objet="Courrier PJ commentaire").first().id
+
+    def test_comment_with_attachment_saved(self, app, client):
+        from models import CourrierComment
+        cid = self._make_courrier_and_login(app, client)
+        client.post(f"/add_comment/{cid}", data={
+            "commentaire": "Voir pièce jointe", "type_comment": "annotation",
+            "piece_jointe": (io.BytesIO(_png_bytes()), "preuve.png"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            com = CourrierComment.query.filter_by(courrier_id=cid).first()
+            assert com is not None
+            assert com.fichier_nom == "preuve.png"
+            assert com.fichier_chemin
+
+    def test_download_comment_attachment_requires_view(self, app, client):
+        # Un utilisateur tiers sans accès au courrier => 403
+        from models import CourrierComment
+        cid = self._make_courrier_and_login(app, client)
+        client.post(f"/add_comment/{cid}", data={
+            "commentaire": "PJ", "type_comment": "comment",
+            "piece_jointe": (io.BytesIO(_png_bytes()), "p.png"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            com_id = CourrierComment.query.filter_by(courrier_id=cid).first().id
+        other = app.test_client()
+        intrus = _role_with_perms(app, _db(), "intrus", ["read_own_mail"], username="intrus_u")
+        _login(app, other, intrus)
+        resp = other.get(f"/download_comment_attachment/{com_id}", follow_redirects=False)
+        assert resp.status_code in (403, 302)
+
+
 class TestStatutFige:
     def test_statut_force_recu_meme_si_autre_soumis(self, app, client):
         from models import Courrier

@@ -444,7 +444,7 @@
 
       {% if current_user.can_access_courrier(courrier) %}
       <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--body-bg);">
-        <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}">
+        <form method="POST" action="{{ url_for('add_comment', courrier_id=courrier.id) }}" enctype="multipart/form-data">
           <div class="gec-form-row gec-form-row-2" style="margin-bottom:.75rem;">
             <div class="gec-form-group" style="margin:0;">
               <label class="gec-label" for="commentaire"><i class="fas fa-comment" style="color:var(--primary);margin-right:.25rem;"></i> Votre commentaire <span style="color:var(--danger);">*</span></label>
@@ -459,6 +459,10 @@
                 <option value="instruction">Instruction</option>
               </select>
             </div>
+          </div>
+          <div class="gec-form-group">
+            <label class="gec-label" for="piece_jointe"><i class="fas fa-paperclip"></i> Pièce jointe (PDF ou image, optionnel)</label>
+            <input type="file" id="piece_jointe" name="piece_jointe" accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif" class="gec-input">
           </div>
           <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-plus"></i> Ajouter le Commentaire</button>
         </form>
@@ -491,6 +495,11 @@
                 </span>
               </div>
               <p style="font-size:.875rem;color:var(--t-secondary);line-height:1.6;">{{ comment.commentaire }}</p>
+              {% if comment.fichier_nom %}
+              <a href="{{ url_for('download_comment_attachment', comment_id=comment.id) }}" class="gec-link" style="font-size:.72rem;">
+                <i class="fas fa-paperclip"></i> {{ comment.fichier_nom }}
+              </a>
+              {% endif %}
             </div>
           </div>
         </div>
