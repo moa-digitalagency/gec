@@ -85,3 +85,6 @@ node_modules/
 
 # Subagent-driven dev scratch
 .superpowers/
+
+# Uploads créés par le chemin relatif de register_mail (le vrai UPLOAD_FOLDER est static/uploads)
+/uploads/

@@ -716,7 +716,13 @@ def etiquette_courrier(id):
     if not current_user.can_view_courrier(courrier):
         abort(403)
     if not courrier.numero_suivi:
+        # Filet de sécurité : si le backfill (migration) n'a pas posé le numéro,
+        # on l'attribue ici — action signée pour préserver la chaîne de non-répudiation.
         courrier.numero_suivi = generate_numero_suivi()
+        sign_courrier_action(courrier.id, current_user, 'MODIF_CHAMP', {
+            'champ': 'numero_suivi',
+            'motif': 'attribution du numéro de suivi (génération étiquette)',
+        })
         db.session.commit()
     qr = qr_data_uri(courrier.numero_suivi)  # QR = numéro de suivi en clair
     log_activity(current_user.id, "GENERATION_ETIQUETTE",
