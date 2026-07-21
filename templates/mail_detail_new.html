@@ -16,12 +16,12 @@
   </div>
   <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
     <a href="{{ url_for('export_pdf', id=courrier.id) }}" class="gec-btn gec-btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
-    <a href="{{ url_for('etiquette_courrier', id=courrier.id) }}" target="_blank" class="gec-btn gec-btn-secondary"><i class="fas fa-qrcode"></i> Étiquette</a>
+    <a href="{{ url_for('etiquette_courrier', id=courrier.id) }}" target="_blank" class="gec-btn gec-btn-secondary"><i class="fas fa-qrcode"></i> {{ t('etiquette') }}</a>
     {% if current_user.can_edit_courrier(courrier) %}
     <a href="{{ url_for('edit_courrier', id=courrier.id) }}" class="gec-btn gec-btn-secondary"><i class="fas fa-edit"></i> Modifier</a>
     {% endif %}
     {% if courrier.type_courrier == 'ENTRANT' %}
-    <a href="{{ url_for('register_mail', parent_id=courrier.id) }}" class="gec-btn gec-btn-primary"><i class="fas fa-reply"></i> Générer un courrier sortant lié</a>
+    <a href="{{ url_for('register_mail', parent_id=courrier.id) }}" class="gec-btn gec-btn-primary"><i class="fas fa-reply"></i> {{ t('generer_courrier_sortant_lie') }}</a>
     {% endif %}
     <a href="{{ url_for('view_mail') }}" class="gec-btn gec-btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
   </div>
@@ -134,7 +134,7 @@
 
         {% if courrier.parent and current_user.can_view_courrier(courrier.parent) %}
         <div class="gec-form-hint" style="margin-top:.75rem;">
-          <i class="fas fa-link"></i> En réponse à :
+          <i class="fas fa-link"></i> {{ t('en_reponse_a') }}
           <a href="{{ url_for('mail_detail', id=courrier.parent.id) }}">{{ courrier.parent.numero_accuse_reception }}</a>
         </div>
         {% endif %}
@@ -146,7 +146,7 @@
         {% endfor %}
         {% if visible_reponses %}
         <div class="gec-form-hint" style="margin-top:.75rem;">
-          <i class="fas fa-link"></i> Courrier(s) sortant(s) lié(s) :
+          <i class="fas fa-link"></i> {{ t('courriers_sortants_lies') }}
           {% for r in visible_reponses %}
           <a href="{{ url_for('mail_detail', id=r.id) }}">{{ r.numero_accuse_reception }}</a>{% if not loop.last %}, {% endif %}
           {% endfor %}
@@ -482,13 +482,13 @@
                 <option value="annotation">Annotation</option>
                 <option value="instruction">Instruction</option>
                 {% if current_user.has_permission('add_director_annotation') %}
-                <option value="annotation_directeur">Annotation du Directeur</option>
+                <option value="annotation_directeur">{{ t('annotation_directeur') }}</option>
                 {% endif %}
               </select>
             </div>
           </div>
           <div class="gec-form-group">
-            <label class="gec-label" for="piece_jointe"><i class="fas fa-paperclip"></i> Pièce jointe (PDF ou image, optionnel)</label>
+            <label class="gec-label" for="piece_jointe"><i class="fas fa-paperclip"></i> {{ t('piece_jointe_pdf_image') }}</label>
             <input type="file" id="piece_jointe" name="piece_jointe" accept=".pdf,.png,.jpg,.jpeg,.tiff,.tif" class="gec-input">
           </div>
           <button type="submit" class="gec-btn gec-btn-primary gec-btn-sm"><i class="fas fa-plus"></i> Ajouter le Commentaire</button>
@@ -501,7 +501,7 @@
       <div class="gec-card" style="border-left:4px solid #b45309;background:rgba(180,83,9,.06);margin:1rem 1.25rem;padding:1rem 1.25rem;">
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
           <i class="fas fa-user-tie" style="color:#b45309;"></i>
-          <strong>Annotation du Directeur</strong>
+          <strong>{{ t('annotation_directeur') }}</strong>
           <span class="gec-form-hint" style="margin:0;">— {{ annot_dir.user.nom_complet }}</span>
         </div>
         <div style="white-space:pre-wrap;font-size:.875rem;color:var(--t-secondary);">{{ annot_dir.commentaire }}</div>

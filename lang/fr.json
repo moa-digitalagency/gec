@@ -780,5 +780,19 @@
   "copy_to_clipboard": "Copier dans le presse-papier",
   "copied": "Copié !",
   "back_to_backups": "Retour aux sauvegardes",
-  "download_file": "Télécharger le fichier"
+  "download_file": "Télécharger le fichier",
+  "statut_initial": "Statut initial",
+  "statut_assigne_auto_hint": "Assigné automatiquement — les statuts suivants sont attribués lors du traitement.",
+  "etiquette": "Étiquette",
+  "annotation_directeur": "Annotation du Directeur",
+  "piece_jointe_pdf_image": "Pièce jointe (PDF ou image, optionnel)",
+  "generer_courrier_sortant_lie": "Générer un courrier sortant lié",
+  "en_reponse_a": "En réponse à :",
+  "courriers_sortants_lies": "Courrier(s) sortant(s) lié(s) :",
+  "date_enregistrement": "Date d'Enregistrement",
+  "reserve_utilisateurs_autorises": "Réservé aux utilisateurs autorisés — journalisé.",
+  "etiquette_suivi": "Étiquette de suivi",
+  "etiquette_accuse": "Accusé :",
+  "etiquette_objet": "Objet :",
+  "etiquette_date": "Date :"
 }

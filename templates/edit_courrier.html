@@ -105,14 +105,14 @@
           </div>
           {% if current_user.has_permission('edit_registration_date') %}
           <div class="gec-form-group" style="margin:0;">
-            <label class="gec-label" for="date_enregistrement"><i class="fas fa-calendar-day"></i> Date d'Enregistrement</label>
+            <label class="gec-label" for="date_enregistrement"><i class="fas fa-calendar-day"></i> {{ t('date_enregistrement') }}</label>
             <input type="datetime-local" id="date_enregistrement" name="date_enregistrement" class="gec-input"
                    value="{{ courrier.date_enregistrement.strftime('%Y-%m-%dT%H:%M') if courrier.date_enregistrement }}">
-            <p class="gec-form-hint">Réservé aux utilisateurs autorisés — journalisé.</p>
+            <p class="gec-form-hint">{{ t('reserve_utilisateurs_autorises') }}</p>
           </div>
           {% else %}
           <div class="gec-form-group" style="margin:0;">
-            <label class="gec-label">Date d'Enregistrement</label>
+            <label class="gec-label">{{ t('date_enregistrement') }}</label>
             <input type="text" value="{{ courrier.date_enregistrement.strftime('%d/%m/%Y à %H:%M') }}" class="gec-input" readonly style="background:var(--body-bg);color:var(--t-muted);">
             <p class="gec-form-hint">Non modifiable</p>
           </div>

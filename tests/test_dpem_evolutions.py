@@ -532,3 +532,29 @@ class TestCourrierAdosse:
         assert resp.status_code == 200
         html = resp.data.decode()
         assert parent_numero not in html
+
+
+class TestMailDetailRendersForOwner:
+    """Smoke test (Task 8 — intégration) : `GET /mail/<id>` doit rendre sans
+    erreur pour le propriétaire du courrier. Couvre le rendu de
+    `mail_detail_new.html` tel que modifié par les Tasks 2-7 (bouton
+    Étiquette, bouton « Générer un courrier sortant lié », formulaire de
+    commentaire avec pièce jointe, bloc Annotation du Directeur, cross-lien) —
+    aucun test existant ne rendait ce template en tant que propriétaire
+    (seul un scénario de « viewer » transmis existe dans `TestCourrierAdosse`)."""
+
+    def test_mail_detail_page_renders_for_owner(self, app, client):
+        from models import Courrier
+        uid = _role_with_perms(app, _db(), "proprio_detail",
+                               ["register_mail", "read_own_mail"],
+                               username="proprio_detail_u")
+        _login(app, client, uid)
+        _post_register_manual(app, client, {
+            "objet": "Courrier detail smoke", "type_courrier": "ENTRANT",
+            "expediteur": "Exp Smoke", "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "smoke.pdf"),
+        })
+        with app.app_context():
+            cid = Courrier.query.filter_by(objet="Courrier detail smoke").first().id
+        resp = client.get(f"/mail/{cid}")
+        assert resp.status_code == 200
