@@ -202,10 +202,12 @@ def register_mail():
 
         # Évolution DPEM #4 : courrier sortant adossé (lié) à un courrier entrant parent.
         # Garde anti-IDOR : on ne lie le courrier qu'au parent que l'utilisateur a le droit de voir.
+        # Garde métier : le parent doit être un courrier ENTRANT (empêche un POST forgé
+        # de lier des paires incohérentes, ex. SORTANT->SORTANT).
         parent_id = request.form.get('parent_id', '').strip()
         if parent_id and parent_id.isdigit():
             parent = Courrier.query.get(int(parent_id))
-            if parent and current_user.can_view_courrier(parent):
+            if parent and current_user.can_view_courrier(parent) and parent.type_courrier == 'ENTRANT':
                 courrier.courrier_parent_id = parent.id
 
         try:

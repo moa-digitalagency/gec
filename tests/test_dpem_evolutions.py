@@ -429,6 +429,11 @@ class TestCourrierAdosse:
         _login(app, client, uid)
         resp = client.get("/register_mail")
         assert resp.status_code == 200
+        html = resp.data.decode()
+        # Preuve d'absence de pré-remplissage : le champ caché parent_id ne doit
+        # pas exister, ou sinon exister avec une valeur vide (jamais un id réel).
+        match = re.search(r'name="parent_id"\s+value="([^"]*)"', html)
+        assert match is None or match.group(1) == ""
 
     def test_lien_refuse_si_pas_le_droit_de_voir_le_parent(self, app):
         """Anti-IDOR : un utilisateur sans droit de vue sur le parent ne doit
@@ -467,3 +472,63 @@ class TestCourrierAdosse:
             enfant = Courrier.query.filter_by(objet="Sortant intrus").first()
             assert enfant is not None
             assert enfant.courrier_parent_id is None
+
+    def test_cross_lien_ne_fuite_pas_le_parent_non_autorise(self, app):
+        """Correctif revue (finding 1) : un utilisateur qui accède au courrier
+        enfant via une transmission directe (`CourrierForward`), mais qui n'a
+        pas le droit de voir le courrier parent lié, ne doit pas voir le
+        numéro d'accusé du parent dans le cross-lien de la fiche détail."""
+        from models import Courrier, TypeCourrierSortant, CourrierForward
+
+        with app.app_context():
+            TypeCourrierSortant.init_default_types()
+            type_sortant_id = TypeCourrierSortant.get_types_actifs()[0].id
+
+        # Éditeur : crée le parent ENTRANT et l'enfant SORTANT lié (chemin
+        # légitime, déjà couvert par test_sortant_lie_au_parent).
+        editeur_client = _db_app_client()
+        editeur_uid = _role_with_perms(app, _db(), "editeur_croiselien",
+                                       ["register_mail", "read_all_mail"], username="editeur_croiselien_u")
+        _login(app, editeur_client, editeur_uid)
+
+        _post_register_manual(app, editeur_client, {
+            "objet": "Entrant fuite test", "type_courrier": "ENTRANT", "expediteur": "Ministère Z",
+            "secretaire_general_copie": "Non",
+            "fichier": (io.BytesIO(_pdf_bytes()), "in_fuite.pdf"),
+        })
+        with app.app_context():
+            parent = Courrier.query.filter_by(objet="Entrant fuite test").first()
+            pid = parent.id
+            parent_numero = parent.numero_accuse_reception
+
+        editeur_client.post("/register_mail", data={
+            "objet": "Sortant fuite test", "type_courrier": "SORTANT", "destinataire": "Ministère Z",
+            "type_courrier_sortant_id": str(type_sortant_id), "date_redaction": "2026-06-20",
+            "parent_id": str(pid),
+            "fichier": (io.BytesIO(_pdf_bytes()), "out_fuite.pdf"),
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            enfant = Courrier.query.filter_by(objet="Sortant fuite test").first()
+            assert enfant is not None
+            cid = enfant.id
+            assert enfant.courrier_parent_id == pid  # pré-requis du scénario
+
+        # Viewer : uniquement `read_own_mail` (aucun accès au parent, ni comme
+        # propriétaire, ni comme transmis), mais reçoit l'ENFANT directement
+        # par transmission — insertion ORM directe pour isoler le scénario
+        # des effets de bord de la route /forward_mail (email, notifications).
+        viewer_uid = _role_with_perms(app, _db(), "viewer_croiselien",
+                                      ["read_own_mail"], username="viewer_croiselien_u")
+        with app.app_context():
+            db = _db()
+            db.session.add(CourrierForward(
+                courrier_id=cid, forwarded_by_id=editeur_uid, forwarded_to_id=viewer_uid,
+            ))
+            db.session.commit()
+
+        viewer_client = _db_app_client()
+        _login(app, viewer_client, viewer_uid)
+        resp = viewer_client.get(f"/mail/{cid}")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert parent_numero not in html

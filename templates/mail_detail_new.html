@@ -132,16 +132,22 @@
         </div>
         {% endif %}
 
-        {% if courrier.parent %}
+        {% if courrier.parent and current_user.can_view_courrier(courrier.parent) %}
         <div class="gec-form-hint" style="margin-top:.75rem;">
           <i class="fas fa-link"></i> En réponse à :
           <a href="{{ url_for('mail_detail', id=courrier.parent.id) }}">{{ courrier.parent.numero_accuse_reception }}</a>
         </div>
         {% endif %}
-        {% if courrier.reponses and courrier.reponses|length %}
+        {% set visible_reponses = [] %}
+        {% for r in courrier.reponses %}
+          {% if current_user.can_view_courrier(r) %}
+            {% set _ = visible_reponses.append(r) %}
+          {% endif %}
+        {% endfor %}
+        {% if visible_reponses %}
         <div class="gec-form-hint" style="margin-top:.75rem;">
           <i class="fas fa-link"></i> Courrier(s) sortant(s) lié(s) :
-          {% for r in courrier.reponses %}
+          {% for r in visible_reponses %}
           <a href="{{ url_for('mail_detail', id=r.id) }}">{{ r.numero_accuse_reception }}</a>{% if not loop.last %}, {% endif %}
           {% endfor %}
         </div>
