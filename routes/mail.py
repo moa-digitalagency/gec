@@ -1667,12 +1667,18 @@ def add_comment(courrier_id):
         os.makedirs('uploads', exist_ok=True)
         pj.seek(0)
         pj.save(pj_path)
+        plaintext_source = pj_path
         pj_encrypted = False
         try:
             enc = encrypt_uploaded_file(pj_path)
             if enc:
                 pj_path = enc
                 pj_encrypted = True
+                try:
+                    if os.path.exists(plaintext_source):
+                        os.remove(plaintext_source)   # ne pas laisser le clair au repos
+                except OSError as e_rm:
+                    logging.warning(f"Suppression du clair PJ commentaire échouée: {e_rm}")
         except Exception as e_pj:
             logging.warning(f"Chiffrement PJ commentaire ignoré : {e_pj}")
         comment.fichier_nom = pj.filename
@@ -1790,7 +1796,12 @@ def download_comment_attachment(comment_id):
     log_activity(current_user.id, "DOWNLOAD_PJ_COMMENTAIRE",
                  f"Téléchargement PJ commentaire {comment_id}", comment.courrier_id)
     if comment.fichier_encrypted:
-        temp_path = decrypt_file_for_download(comment.fichier_chemin)
+        try:
+            temp_path = decrypt_file_for_download(comment.fichier_chemin)
+        except Exception as e_dec:
+            logging.warning(f"Déchiffrement PJ commentaire échoué : {e_dec}")
+            flash('Erreur lors du déchiffrement de la pièce jointe.', 'error')
+            return redirect(url_for('mail_detail', id=comment.courrier_id))
         try:
             return send_file(temp_path, as_attachment=True, download_name=comment.fichier_nom)
         finally:

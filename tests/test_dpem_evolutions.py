@@ -179,7 +179,11 @@ class TestCommentAttachment:
             "fichier": (io.BytesIO(_pdf_bytes()), "base.pdf"),
         }, content_type="multipart/form-data", follow_redirects=True)
         with app.app_context():
-            return Courrier.query.filter_by(objet="Courrier PJ commentaire").first().id
+            # `.order_by(id.desc())` : le DB de test est partagé (session-scope) entre
+            # tous les appels de ce helper, donc plusieurs courriers portant le même
+            # `objet` s'accumulent au fil des tests ; on veut celui tout juste créé.
+            return Courrier.query.filter_by(objet="Courrier PJ commentaire")\
+                                  .order_by(Courrier.id.desc()).first().id
 
     def test_comment_with_attachment_saved(self, app, client):
         from models import CourrierComment
@@ -193,6 +197,19 @@ class TestCommentAttachment:
             assert com is not None
             assert com.fichier_nom == "preuve.png"
             assert com.fichier_chemin
+
+    def test_comment_without_attachment_saved(self, app, client):
+        """Non-régression : le flux commentaire classique (sans PJ) reste fonctionnel."""
+        from models import CourrierComment
+        cid = self._make_courrier_and_login(app, client)
+        client.post(f"/add_comment/{cid}", data={
+            "commentaire": "Commentaire sans pièce jointe", "type_comment": "comment",
+        }, content_type="multipart/form-data", follow_redirects=True)
+        with app.app_context():
+            com = CourrierComment.query.filter_by(courrier_id=cid).first()
+            assert com is not None
+            assert com.commentaire == "Commentaire sans pièce jointe"
+            assert com.fichier_nom is None
 
     def test_download_comment_attachment_requires_view(self, app, client):
         # Un utilisateur tiers sans accès au courrier => 403
