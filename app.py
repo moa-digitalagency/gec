@@ -91,6 +91,18 @@ login_manager.login_message = 'Veuillez vous connecter pour accéder à cette pa
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 
+# --- Pagination helper ------------------------------------------------------
+# Retire une ou plusieurs clés d'un dict (typiquement request.args) afin d'éviter
+# les collisions de kwargs dans url_for. Sans ça, les liens de pagination du type
+#   url_for('view_mail', page=n, **request.args)
+# plantaient dès que l'URL contenait déjà ?page=… : la clé 'page' était passée
+# deux fois → TypeError "got multiple values for keyword argument 'page'"
+# → HTTP 500 sur la 2e page et suivantes.
+@app.template_filter('omit')
+def _omit_args(mapping, *keys):
+    return {k: v for k, v in mapping.items() if k not in keys}
+
+
 def ensure_dpem_permissions():
     """Attribue par défaut edit_registration_date au rôle admin (idempotent, révocable via l'UI).
 
