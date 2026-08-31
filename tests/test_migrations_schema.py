@@ -5,6 +5,7 @@ version antérieure du code, à laquelle une colonne a ensuite été ajoutée au
 modèle sans entrée correspondante dans les migrations automatiques.
 `db.create_all()` ne rattrape jamais ce cas (il ne crée que les tables absentes).
 """
+
 import pytest
 from sqlalchemy import inspect, text
 
@@ -26,7 +27,9 @@ def test_aucune_colonne_de_modele_absente_du_schema(app):
                 manquantes.append((nom, "TABLE ENTIÈRE"))
                 continue
             reelles = {c["name"] for c in insp.get_columns(nom)}
-            manquantes += [(nom, c.name) for c in table.columns if c.name not in reelles]
+            manquantes += [
+                (nom, c.name) for c in table.columns if c.name not in reelles
+            ]
 
         assert manquantes == [], f"Colonnes de modèle absentes du schéma : {manquantes}"
 
@@ -43,7 +46,9 @@ def test_migration_restaure_fichier_encrypted_sur_table_legacy(app):
 
     with app.app_context():
         db.session.remove()
-        db.session.execute(text("ALTER TABLE courrier_attachment DROP COLUMN fichier_encrypted"))
+        db.session.execute(
+            text("ALTER TABLE courrier_attachment DROP COLUMN fichier_encrypted")
+        )
         db.session.commit()
         assert "fichier_encrypted" not in _columns(db, "courrier_attachment")
 
