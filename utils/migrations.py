@@ -220,6 +220,7 @@ def run_automatic_migrations(app, db):
                 fichier_chemin VARCHAR(500) NOT NULL,
                 fichier_type VARCHAR(50),
                 fichier_taille INTEGER,
+                fichier_encrypted BOOLEAN DEFAULT FALSE NOT NULL,
                 uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 uploaded_by_id INTEGER NOT NULL REFERENCES "user"(id)
             )
@@ -231,6 +232,7 @@ def run_automatic_migrations(app, db):
                 fichier_chemin VARCHAR(500) NOT NULL,
                 fichier_type VARCHAR(50),
                 fichier_taille INTEGER,
+                fichier_encrypted BOOLEAN DEFAULT FALSE NOT NULL,
                 uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                 uploaded_by_id INTEGER NOT NULL REFERENCES user(id)
             )
@@ -410,6 +412,15 @@ def run_automatic_migrations(app, db):
                 conn.commit()
         except Exception as e:
             logging.warning(f"Index unique numero_suivi non créé : {e}")
+
+        # Migration 18 : chiffrement des pièces jointes supplémentaires.
+        # La colonne existe dans le modèle CourrierAttachment mais la table créée
+        # par les versions antérieures ne la porte pas (db.create_all() n'ajoute
+        # jamais de colonne à une table existante) → 500 sur /mail/<id>.
+        if add_column_safely(engine, 'courrier_attachment', 'fichier_encrypted',
+                             'BOOLEAN DEFAULT FALSE NOT NULL'):
+            migrations_applied += 1
+            logging.info("✓ Migration 18: Colonne fichier_encrypted ajoutée à courrier_attachment")
 
         if migrations_applied > 0:
             logging.info(f"🔄 {migrations_applied} migration(s) automatique(s) appliquée(s) avec succès")
