@@ -136,8 +136,8 @@ def courrier_timeline(id):
             'icon': 'fa-comment',
             'color': 'yellow',
             'title': 'Commentaire ajouté',
-            'detail': c.contenu[:80] + '…' if c.contenu and len(c.contenu) > 80 else (c.contenu or ''),
-            'user': c.auteur.nom_complet if c.auteur else '?',
+            'detail': c.commentaire[:80] + '…' if c.commentaire and len(c.commentaire) > 80 else (c.commentaire or ''),
+            'user': c.user.nom_complet if c.user else '?',
             'date': c.date_creation.strftime('%d/%m/%Y %H:%M') if c.date_creation else '',
             'ts': c.date_creation.timestamp() if c.date_creation else 0,
         })

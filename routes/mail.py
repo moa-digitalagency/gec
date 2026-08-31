@@ -1507,9 +1507,18 @@ def empty_trash():
 
 @app.route('/static/uploads/profiles/<filename>')
 def profile_photo(filename):
-    """Servir les photos de profil"""
-    profile_folder = os.path.join('uploads', 'profiles')
-    return send_file(os.path.join(profile_folder, filename))
+    """Servir les photos de profil.
+
+    Cette règle est plus spécifique que la route statique de Flask : elle la
+    masque donc pour cette URL. Elle doit lire le dossier où les photos sont
+    réellement écrites (static/uploads/profiles, cf. routes/users.py et
+    edit_profile), et répondre 404 — non 500 — si le fichier a disparu.
+    """
+    profile_folder = os.path.join('static', 'uploads', 'profiles')
+    chemin = os.path.join(profile_folder, secure_filename(filename))
+    if not os.path.isfile(chemin):
+        abort(404)
+    return send_file(chemin)
 
 @app.route('/uploads/<filename>')
 @login_required
