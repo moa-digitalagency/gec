@@ -8,7 +8,9 @@ Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
 Werkzeug==3.1.3
-gunicorn==23.0.0
+gunicorn==23.0.0 ; sys_platform != "win32"
+# Windows : gunicorn importe fcntl (absent sur Windows) — Waitress le remplace
+waitress>=3.0,<4 ; sys_platform == "win32"
 
 # Base de Données
 SQLAlchemy==2.0.41
