@@ -578,7 +578,7 @@ def create_system_backup():
         os.makedirs(backup_dir)
     
     backup_path = os.path.join(backup_dir, backup_filename)
-    temp_dir = f"/tmp/backup_temp_{timestamp}"
+    temp_dir = os.path.join(tempfile.gettempdir(), f"backup_temp_{timestamp}")
     
     try:
         # Créer dossier temporaire
