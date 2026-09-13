@@ -126,7 +126,12 @@ def ensure_dpem_permissions():
 with app.app_context():
     # Import models
     import models
-    
+
+    # Tous les workers gunicorn exécutent ce bloc en même temps : on les fait passer
+    # un par un jusqu'à la fin de l'amorçage (voir utils/migrations.py).
+    from utils.migrations import acquerir_verrou_initialisation, liberer_verrou_initialisation
+    _verrou_initialisation = acquerir_verrou_initialisation(db.engine)
+
     # Create all tables
     db.create_all()
     
@@ -215,6 +220,7 @@ with app.app_context():
     models.TypeCourrierSortant.init_default_types()
     
     logging.info("System parameters and statuses initialized")
+    liberer_verrou_initialisation(_verrou_initialisation)
 
     # Planificateur de rappels (s'exécute une fois toutes les 6h dans ce processus)
     import threading

@@ -27,11 +27,17 @@ cd gec
 
 ### Créer l'environnement virtuel
 
+À exécuter **avec l'utilisateur qui fera tourner l'application, jamais avec `sudo`** :
+
 ```bash
 python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+venv/bin/python -m pip install --upgrade pip
+venv/bin/python -m pip install -r requirements.txt
 ```
+
+Python 3.11 à 3.14 sont supportés. Un venv créé avec `sudo` appartient à root :
+toute installation ultérieure échoue alors avec `Permission denied` (voir
+[Dépannage de l'installation](#7-dépannage-de-linstallation)).
 
 ### Fichier `.env`
 
@@ -41,15 +47,30 @@ Créer `/var/websites/gec/.env` (ne jamais committer) :
 FLASK_ENV=production
 DATABASE_URL=postgresql://gec_user:motdepasse@localhost:5432/gec_db
 SESSION_SECRET=<générer avec : python3 -c "import secrets; print(secrets.token_hex(32))">
-GEC_MASTER_KEY=<générer avec : python3 -c "import secrets; print(secrets.token_hex(32))">
+GEC_MASTER_KEY=<clé de 32 octets en base64, voir ci-dessous>
+GEC_PASSWORD_SALT=<16 octets en base64, voir ci-dessous>
+ADMIN_PASSWORD=<mot de passe du compte super admin initial>
 TRUSTED_PROXIES=127.0.0.1,::1
 ```
+
+Générer les secrets **une seule fois** et les conserver précieusement :
+
+```bash
+python3 -c "import secrets; print('SESSION_SECRET=' + secrets.token_hex(32))"
+python3 -c "import base64, secrets; print('GEC_MASTER_KEY=' + base64.b64encode(secrets.token_bytes(32)).decode())"
+python3 -c "import base64, secrets; print('GEC_PASSWORD_SALT=' + base64.b64encode(secrets.token_bytes(16)).decode())"
+```
+
+`GEC_MASTER_KEY` doit décoder en **exactement 32 octets** : une valeur hexadécimale
+(`secrets.token_hex(32)`) décode en 48 octets et l'application refuse de démarrer.
+Une fois des données chiffrées en base, cette clé ne doit plus jamais changer.
 
 Variables optionnelles :
 
 ```env
 RESEND_API_KEY=re_xxxxxxxxxxxx
-DEFAULT_ADMIN_PASSWORD=MotDePasseAdmin123!
+FIRST_ADMIN_USERNAME=sa.gec001
+FIRST_ADMIN_EMAIL=admin@gec.cd
 ```
 
 ### Créer la base de données PostgreSQL
@@ -177,10 +198,12 @@ pm2 logs gec --lines 20           # vérifier démarrage
 | `FLASK_ENV` | Oui | `production` en prod, `development` en local |
 | `DATABASE_URL` | Oui (prod) | URL PostgreSQL complète |
 | `SESSION_SECRET` | Oui (prod) | Clé secrète Flask — minimum 32 chars hex |
-| `GEC_MASTER_KEY` | Recommandé | Clé maître AES pour chiffrement des champs sensibles |
+| `GEC_MASTER_KEY` | Oui (prod) | Clé maître AES, 32 octets en base64. Absente : clé temporaire perdue au redémarrage, données chiffrées illisibles |
+| `GEC_PASSWORD_SALT` | Recommandé | 16 octets en base64. Absente : message CRITICAL à chaque démarrage |
+| `ADMIN_PASSWORD` | Oui (1er démarrage) | Mot de passe du super admin créé au premier démarrage (défaut : `TempPassword123!`) |
+| `FIRST_ADMIN_USERNAME` | Non | Identifiant du super admin initial (défaut : `sa.gec001`) |
 | `TRUSTED_PROXIES` | Recommandé | IPs proxy de confiance (défaut: `127.0.0.1,::1`) |
 | `RESEND_API_KEY` | Non | Clé API Resend pour envoi d'emails |
-| `DEFAULT_ADMIN_PASSWORD` | Non | Mot de passe super admin initial (défaut généré) |
 
 ---
 
@@ -203,13 +226,16 @@ Migrations actuelles couvertes :
 
 ## 5. Compte super admin par défaut
 
-Créé automatiquement par `init_db.py` si absent :
+Créé automatiquement au premier démarrage de l'application (et par `init_db.py`) s'il n'existe pas :
 
-| Champ | Valeur par défaut |
-|-------|------------------|
-| Username | `admin` |
-| Mot de passe | Valeur de `DEFAULT_ADMIN_PASSWORD` ou généré aléatoirement |
+| Champ | Valeur |
+|-------|--------|
+| Identifiant | `FIRST_ADMIN_USERNAME`, par défaut `sa.gec001` |
+| Mot de passe | `ADMIN_PASSWORD`, par défaut `TempPassword123!` |
 | Rôle | `super_admin` |
+
+Définir `ADMIN_PASSWORD` **avant le premier démarrage** : il n'est lu qu'à la création
+du compte, le modifier ensuite dans `.env` ne change plus rien.
 
 **Changer le mot de passe immédiatement après la première connexion.**
 
@@ -234,3 +260,46 @@ Voir `requirements.txt`. Dépendances clés :
 | pyotp + qrcode | 2FA TOTP |
 | PyYAML | Fichiers de configuration YAML |
 | pyzipper | Archives ZIP chiffrées (sauvegardes) |
+
+---
+
+## 7. Dépannage de l'installation
+
+### `Permission denied: '.../venv/lib/python3.x/site-packages/...'`
+
+Le venv (ou une partie) a été créé ou modifié avec `sudo` et appartient à root.
+Ne pas contourner avec `sudo pip` : cela aggrave le problème. Rendre le dossier à
+l'utilisateur, puis réinstaller :
+
+```bash
+deactivate 2>/dev/null
+sudo chown -R "$USER":"$USER" ~/gec
+venv/bin/python -m pip install -r requirements.txt
+```
+
+Si le venv reste incohérent, le recréer (aucune donnée n'y est stockée) :
+`rm -rf venv && python3 -m venv venv`, puis reprendre l'installation.
+
+### `sudo: python: command not found`
+
+Sous `sudo`, le venv n'est plus actif et Ubuntu ne fournit que `python3`. Il n'y a
+de toute façon aucune raison d'utiliser `sudo` pour installer les dépendances :
+appeler directement l'interpréteur du venv, `venv/bin/python -m pip ...`.
+
+### `No matching distribution found for psycopg2-binary` (ou pandas, PyYAML)
+
+Version de Python plus récente que les dépendances épinglées. Les versions actuelles
+de `requirements.txt` fournissent des binaires pour Python 3.11 à 3.14 ; mettre le
+dépôt à jour (`git pull`) avant d'installer.
+
+### `Worker failed to boot` au premier démarrage
+
+Corrigé : plusieurs workers gunicorn initialisaient la base vide en même temps
+(`UniqueViolation` sur `pg_class`). L'initialisation est désormais sérialisée par un
+verrou PostgreSQL. Mettre le dépôt à jour si l'erreur apparaît sur une version ancienne.
+
+### `GEC_MASTER_KEY invalide : ... doit être 32 bytes`
+
+La clé n'est pas du base64 de 32 octets. La régénérer avec la commande de la section
+« Fichier `.env` » **tant qu'aucune donnée n'est chiffrée en base**.
+

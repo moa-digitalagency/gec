@@ -7,6 +7,48 @@ import os
 from sqlalchemy import text, inspect
 from flask import current_app
 
+# Clé du verrou consultatif PostgreSQL qui sérialise l'initialisation au démarrage.
+# Valeur arbitraire mais fixe (« GEC » en ASCII), partagée par tous les processus.
+CLE_VERROU_INITIALISATION = 0x474543
+
+
+def acquerir_verrou_initialisation(engine):
+    """Fait passer un seul processus à la fois dans l'initialisation de la base.
+
+    gunicorn lance plusieurs workers qui importent tous app.py au même instant.
+    Sur une base vide, chacun exécute db.create_all() puis les amorçages
+    « vérifier puis insérer » (super admin, paramètres, rôles…) : deux CREATE TABLE
+    simultanés font échouer le démarrage (UniqueViolation sur pg_class, « Worker
+    failed to boot »), et parametres_systeme, sans contrainte d'unicité, peut
+    recevoir des doublons silencieux.
+
+    Retourne la connexion qui détient le verrou, ou None hors PostgreSQL.
+    """
+    if engine.dialect.name != "postgresql":
+        return None
+    connexion = engine.connect()
+    connexion.execute(text("SELECT pg_advisory_lock(:cle)"), {"cle": CLE_VERROU_INITIALISATION})
+    # Verrou de session : il survit à la fin de la transaction, qu'on referme
+    # pour ne pas laisser la connexion « idle in transaction » pendant l'amorçage.
+    connexion.commit()
+    return connexion
+
+
+def liberer_verrou_initialisation(connexion):
+    """Libère le verrou pris par acquerir_verrou_initialisation().
+
+    Si l'initialisation lève une exception avant cet appel, le worker meurt :
+    PostgreSQL libère alors le verrou à la fermeture de la session.
+    """
+    if connexion is None:
+        return
+    try:
+        connexion.execute(text("SELECT pg_advisory_unlock(:cle)"), {"cle": CLE_VERROU_INITIALISATION})
+        connexion.commit()
+    finally:
+        connexion.close()
+
+
 def get_database_type():
     """Détermine le type de base de données (SQLite ou PostgreSQL)"""
     database_url = os.environ.get("DATABASE_URL", "sqlite:///gec_mines.db")
@@ -247,7 +289,7 @@ def run_automatic_migrations(app, db):
                 id {pk_type},
                 nom VARCHAR(50) NOT NULL UNIQUE,
                 couleur VARCHAR(7) NOT NULL DEFAULT '#6B7280',
-                created_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                created_by_id INTEGER REFERENCES {user_table_name}(id),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             )
         '''
@@ -260,7 +302,7 @@ def run_automatic_migrations(app, db):
                 courrier_id INTEGER NOT NULL REFERENCES courrier(id),
                 tag_id INTEGER NOT NULL REFERENCES tag(id),
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                added_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                added_by_id INTEGER REFERENCES {user_table_name}(id),
                 PRIMARY KEY (courrier_id, tag_id)
             )
         '''
@@ -284,12 +326,12 @@ def run_automatic_migrations(app, db):
             CREATE TABLE courrier_signature (
                 id {pk_serial},
                 courrier_id INTEGER NOT NULL REFERENCES courrier(id),
-                signataire_id INTEGER NOT NULL REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                signataire_id INTEGER NOT NULL REFERENCES {user_table_name}(id),
                 ordre INTEGER NOT NULL,
                 statut VARCHAR(20) NOT NULL DEFAULT 'PENDING',
                 commentaire TEXT,
                 signed_at TIMESTAMP,
-                initiated_by_id INTEGER REFERENCES {"\"user\"" if db_type == "postgresql" else "user"}(id),
+                initiated_by_id INTEGER REFERENCES {user_table_name}(id),
                 initiated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             )
         '''
