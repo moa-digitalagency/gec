@@ -12,7 +12,7 @@ gunicorn==23.0.0
 
 # Base de Données
 SQLAlchemy==2.0.41
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 
 # Sécurité & Chiffrement
 cryptography==45.0.6
@@ -26,7 +26,7 @@ reportlab==4.4.2
 Pillow==11.3.0
 
 # Export de Données
-pandas==2.3.1
+pandas==2.3.3
 xlsxwriter==3.2.5
 
 # Email (API Resend — https://resend.com/docs)
@@ -38,7 +38,7 @@ qrcode[pil]==8.0
 
 # Outils
 requests==2.32.4
-PyYAML==6.0.2
+PyYAML==6.0.3
 
 # Cache (optionnel — fallback in-memory si absent)
 # redis==5.2.1
