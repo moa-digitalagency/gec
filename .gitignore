@@ -88,3 +88,7 @@ node_modules/
 
 # Uploads créés par le chemin relatif de register_mail (le vrai UPLOAD_FOLDER est static/uploads)
 /uploads/
+
+# Installation rapide Windows
+/telechargements/
+/IDENTIFIANTS-GEC.txt

@@ -7,7 +7,40 @@ Le déploiement Linux (nginx, gunicorn, PM2) est décrit dans `GEC_Installation_
 
 ---
 
-## Installation en 3 étapes
+## Installation rapide automatique (recommandée)
+
+Serveur avec accès Internet. **Aucun logiciel à installer au préalable, aucune question.**
+
+1. Copier le dossier GEC sur le serveur, par exemple dans `C:\GEC`. Pour une
+   archive ZIP téléchargée depuis GitHub : clic droit sur le ZIP › *Propriétés* ›
+   cocher **Débloquer**, *avant* d'extraire.
+2. **Double-cliquer sur `INSTALLER-GEC.cmd`**, à la racine du dossier.
+3. Accepter la demande de droits administrateur, puis patienter. Hors téléchargements,
+   l'installation prend environ 2 minutes (mesuré : Python 20 s, PostgreSQL 1 min,
+   dépendances 30 s). Le téléchargement de PostgreSQL (350 Mo) dépend de la connexion :
+   environ 5 minutes à 10 Mbit/s.
+
+Le script installe au besoin **Python 3.13** et **PostgreSQL 16**, génère tous les
+mots de passe, installe GEC comme tâche planifiée et ouvre le pare-feu. À la fin :
+
+- **`C:\GEC\IDENTIFIANTS-GEC.txt`** contient les adresses d'accès, le mot de passe du
+  compte `sa.gec001` et ceux de la base. Il n'est lisible que par les administrateurs.
+- **Recopier ce fichier et `C:\GEC\.env` hors du serveur**, puis supprimer
+  `IDENTIFIANTS-GEC.txt` du serveur et changer le mot de passe de `sa.gec001` dans GEC.
+
+| Point | Détail |
+|---|---|
+| Déjà installés ? | Un Python 3.11 à 3.14 existant est réutilisé. Un PostgreSQL existant aussi : c'est alors le seul cas où le mot de passe `postgres` est demandé |
+| Intégrité | Installateur Python contrôlé par son empreinte SHA-256 publiée par python.org et sa signature numérique ; installateur PostgreSQL par la signature numérique d'EnterpriseDB |
+| Relance | Sans risque : rien n'est retéléchargé (dossier `telechargements`), ni les mots de passe ni `.env` ne sont régénérés |
+| Journal | `C:\GEC\logs\installation-rapide-AAAAMMJJ-HHMMSS.log`, à envoyer au support en cas d'échec |
+| Options | `INSTALLER-GEC.cmd -Port 8080` ou `INSTALLER-GEC.cmd -Mode IIS`, depuis une invite de commandes |
+
+> Sans accès Internet, suivre l'installation manuelle ci-dessous.
+
+---
+
+## Installation manuelle en 3 étapes
 
 ### 1. Installer les deux prérequis
 
@@ -152,6 +185,8 @@ utilisateurs pour le journal d'audit, et relève la taille maximale des envois �
 | `connexion à PostgreSQL impossible avec le compte « postgres »` | Mot de passe `postgres` erroné, ou service arrêté | Vérifier le service *postgresql-x64-…* dans `services.msc` |
 | `le port 80 est déjà utilisé par System` | IIS occupe déjà le port 80 | `-Port 8080`, ou `-Mode IIS` |
 | GEC s'ouvre sur le serveur mais pas depuis un autre poste | Pare-feu ou pare-feu réseau intermédiaire | Vérifier la règle « GEC (HTTP 80) » dans le Pare-feu Windows |
+| `signature numérique … invalide ou inattendue` | Certificats racines absents sur un serveur jamais mis à jour | Lancer Windows Update, puis relancer `INSTALLER-GEC.cmd` |
+| `téléchargement impossible` | Pas d'accès Internet, ou proxy d'entreprise | Vérifier l'accès à python.org et get.enterprisedb.com, ou installer manuellement |
 | « Session de sécurité expirée » à chaque connexion | GEC installé en mode IIS mais ouvert en HTTP | Ouvrir l'adresse HTTPS publiée par IIS, ou réinstaller en mode Intranet |
 | `GEC ne répond pas … après 3 minutes` | Erreur au démarrage | Lire `C:\GEC\logs\gec.log` |
 | `.env existant incomplet ou invalide` | `.env` modifié à la main | Le corriger à la main ; il n'est jamais régénéré, pour protéger la clé |

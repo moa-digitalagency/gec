@@ -1,0 +1,4 @@
+# Fichiers Windows : octets conservés tels quels (fins de ligne CRLF des .cmd,
+# BOM UTF-8 des .ps1 exigé par PowerShell 5.1).
+*.cmd -text
+*.ps1 -text
