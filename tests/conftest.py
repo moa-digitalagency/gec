@@ -28,6 +28,11 @@ def app():
         _seed_db(db, flask_app)
         yield flask_app
         db.session.remove()
+        # departement et user se référencent mutuellement : avec les clés étrangères
+        # SQLite activées au démarrage, DROP TABLE échoue. La base est en mémoire,
+        # on les désactive le temps du nettoyage.
+        with db.engine.connect() as connexion:
+            connexion.exec_driver_sql("PRAGMA foreign_keys=OFF")
         db.drop_all()
 
 

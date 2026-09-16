@@ -22,7 +22,9 @@ from cryptography.hazmat.backends import default_backend
 def load_env_from_file(env_file='.env'):
     """Charge les variables d'environnement depuis un fichier .env."""
     if os.path.exists(env_file):
-        with open(env_file, 'r') as f:
+        # utf-8-sig : le Bloc-notes de Windows enregistre en UTF-8 avec BOM, qui
+        # resterait sinon collé au nom de la première variable (ignorée sans erreur).
+        with open(env_file, 'r', encoding='utf-8-sig') as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
@@ -282,9 +284,12 @@ def encrypt_uploaded_file(file_path):
     return encryption_manager.encrypt_file(file_path)
 
 
+DOSSIER_DECHIFFRES = os.path.join(os.path.dirname(__file__), 'temp')
+
+
 def decrypt_file_for_download(encrypted_file_path, temp_dir=None):
     if temp_dir is None:
-        temp_dir = os.path.join(os.path.dirname(__file__), 'temp')
+        temp_dir = DOSSIER_DECHIFFRES
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir, exist_ok=True)
 
@@ -293,3 +298,86 @@ def decrypt_file_for_download(encrypted_file_path, temp_dir=None):
     temp_path = os.path.join(temp_dir, temp_filename)
 
     return encryption_manager.decrypt_file(encrypted_file_path, temp_path)
+
+
+# ── Pièces jointes déchiffrées : ne jamais les laisser en clair sur le disque ──
+
+def supprimer_fichier_dechiffre(chemin):
+    """Supprime un fichier déchiffré ; un échec est journalisé, jamais avalé en silence."""
+    if not chemin:
+        return
+    try:
+        os.remove(chemin)
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        logging.warning(f"Fichier déchiffré non supprimé ({chemin}) : {e} — "
+                        f"il sera purgé au prochain démarrage")
+
+
+class _FluxPuisSuppression:
+    """Itérable WSGI qui supprime le fichier déchiffré après sa fermeture.
+
+    Le serveur WSGI appelle toujours close() sur l'itérable renvoyé (PEP 3333),
+    que l'envoi soit complet ou interrompu : on ferme d'abord le fichier, puis
+    on le supprime. L'ordre compte sous Windows, qui refuse d'effacer un
+    fichier encore ouvert.
+    """
+
+    def __init__(self, flux, chemin):
+        self._flux = flux
+        self._chemin = chemin
+
+    def __iter__(self):
+        return iter(self._flux)
+
+    def close(self):
+        try:
+            if hasattr(self._flux, 'close'):
+                self._flux.close()
+        finally:
+            supprimer_fichier_dechiffre(self._chemin)
+
+
+def servir_puis_supprimer(chemin_dechiffre, fabriquer_reponse):
+    """Sert un fichier déchiffré, puis le supprime une fois l'envoi terminé.
+
+    Supprimer le fichier juste après send_file() fonctionne sous Linux, où l'on
+    peut effacer un fichier ouvert, mais échoue sous Windows (WinError 32) : la
+    pièce jointe restait alors en clair sur le disque.
+
+    response.call_on_close() ne convient pas : send_file() produit une réponse en
+    direct_passthrough que Werkzeug remet telle quelle au serveur, sans jamais
+    appeler ces rappels. On enveloppe donc le flux lui-même.
+    """
+    if not chemin_dechiffre:
+        return fabriquer_reponse()
+    try:
+        reponse = fabriquer_reponse()
+    except BaseException:
+        supprimer_fichier_dechiffre(chemin_dechiffre)
+        raise
+    reponse.response = _FluxPuisSuppression(reponse.response, chemin_dechiffre)
+    return reponse
+
+
+def purger_fichiers_dechiffres_orphelins(age_minimum_minutes=10, dossier=None):
+    """Efface les fichiers déchiffrés laissés par un arrêt brutal.
+
+    Seuls les fichiers plus anciens que age_minimum_minutes sont supprimés : un
+    fichier récent peut être en cours d'envoi par un autre processus.
+    """
+    dossier = dossier or DOSSIER_DECHIFFRES
+    if not os.path.isdir(dossier):
+        return 0
+    limite = datetime.now().timestamp() - age_minimum_minutes * 60
+    purges = 0
+    for nom in os.listdir(dossier):
+        chemin = os.path.join(dossier, nom)
+        if nom.startswith('tmp_') and os.path.isfile(chemin) and os.path.getmtime(chemin) < limite:
+            supprimer_fichier_dechiffre(chemin)
+            if not os.path.exists(chemin):
+                purges += 1
+    if purges:
+        logging.warning(f"{purges} fichier(s) déchiffré(s) orphelin(s) purgé(s) de {dossier}")
+    return purges

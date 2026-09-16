@@ -498,7 +498,7 @@ def create_pre_update_backup():
                         '--if-exists'
                     ]
                     
-                    with open(temp_sql.name, 'w') as f:
+                    with open(temp_sql.name, 'wb') as f:
                         result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, env=env)
                         
                     if result.returncode == 0:
@@ -688,7 +688,7 @@ def create_system_backup():
                         '--if-exists'
                     ]
                     
-                    with open(temp_sql.name, 'w') as f:
+                    with open(temp_sql.name, 'wb') as f:
                         result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, env=env)
                         
                     if result.returncode == 0:
@@ -961,7 +961,7 @@ def restore_system_from_backup(backup_file):
         if os.path.exists(manifest_path):
             try:
                 import json as json_module
-                with open(manifest_path, 'r') as f:
+                with open(manifest_path, 'r', encoding='utf-8') as f:
                     manifest = json_module.load(f)
                 logging.info(f"Restauration depuis sauvegarde version {manifest.get('version', 'inconnue')}")
                 logging.info(f"Type de base de données: {manifest.get('database_type', 'inconnue')}")

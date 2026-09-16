@@ -29,4 +29,5 @@ from security.auth import (
 from security.encryption import (
     encrypt_sensitive_data, decrypt_sensitive_data,
     encrypt_uploaded_file, decrypt_file_for_download,
+    servir_puis_supprimer, purger_fichiers_dechiffres_orphelins,
 )

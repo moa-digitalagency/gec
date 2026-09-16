@@ -1,0 +1,144 @@
+name: Windows Server
+
+# GEC est déployé chez des clients sous Windows Server. Ce workflow reproduit ce
+# qui ne se voit pas sous Linux : encodage régional cp1252, impossibilité de
+# supprimer un fichier ouvert, PowerShell 5.1, tâche planifiée, pare-feu.
+# Aucune donnée externe (titre de PR, message de commit...) n'est interpolée.
+on:
+  push:
+    branches: ["main", "feat/windows-server-2016"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests-windows:
+    name: Tests sous Windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+
+      - name: Encodage régional (doit être cp1252, comme sur Windows Server)
+        run: python -c "import locale, sys; print(locale.getpreferredencoding(False), 'utf8_mode =', sys.flags.utf8_mode)"
+
+      - name: Tests propres à Windows
+        run: python -m pytest -p no:cacheprovider -v tests/test_fichiers_dechiffres.py tests/test_encodage_texte.py tests/test_mode_exposition.py
+
+  installation-windows:
+    name: Installation de bout en bout (PowerShell 5.1)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: powershell
+    env:
+      GEC_CI_PORT: "8080"
+      GEC_CI_ADMIN_MDP: "Admin-Gec-2026-ci!"
+      GEC_CI_DB_MDP: "Base'Gec;2026-ci@#"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Version de PowerShell (doit être 5.1)
+        run: |
+          $PSVersionTable.PSVersion
+          if ($PSVersionTable.PSVersion.Major -ne 5) { throw 'PowerShell 5.1 attendu' }
+
+      - name: Démarrer PostgreSQL
+        run: |
+          $service = Get-Service -Name 'postgresql*' | Select-Object -First 1
+          Set-Service -Name $service.Name -StartupType Manual
+          Start-Service -Name $service.Name
+          (Get-Service -Name $service.Name).Status
+
+      - name: Installer GEC (mode Intranet)
+        run: |
+          $python = (Get-Command python).Source
+          powershell -NoProfile -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1 `
+            -Mode Intranet -Port $env:GEC_CI_PORT -Python $python `
+            -DbMotDePasse $env:GEC_CI_DB_MDP -PostgresMotDePasse $env:PGPASSWORD `
+            -AdminMotDePasse $env:GEC_CI_ADMIN_MDP
+          if ($LASTEXITCODE -ne 0) { throw "installation en échec (code $LASTEXITCODE)" }
+
+      - name: Connexion réelle en HTTP par l'adresse réseau
+        run: |
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 |
+            Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
+            Select-Object -First 1).IPAddress
+          $base = "http://${ip}:$env:GEC_CI_PORT"
+          Write-Host "Adresse testée : $base"
+          $page = Invoke-WebRequest "$base/login" -UseBasicParsing -SessionVariable session
+          if ($page.Content -notmatch 'name="csrf-token" content="([^"]+)"') { throw 'jeton CSRF absent' }
+          $corps = @{ csrf_token = $Matches[1]; username = 'sa.gec001'; password = $env:GEC_CI_ADMIN_MDP }
+          $r = Invoke-WebRequest "$base/login" -Method Post -Body $corps -WebSession $session -UseBasicParsing
+          $arrivee = $r.BaseResponse.ResponseUri.AbsolutePath
+          Write-Host "Page après connexion : $arrivee"
+          if ($arrivee -ne '/dashboard') { throw "connexion refusée en HTTP (arrivé sur $arrivee)" }
+
+      - name: Relance automatique après un arrêt brutal de GEC
+        run: |
+          . .\deploy\windows\commun-gec.ps1
+          $avant = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+            Where-Object { $_.CommandLine -like '*run_waitress.py*' }
+          if (-not $avant) { throw 'processus Waitress introuvable' }
+          Write-Host "Arrêt brutal du processus $($avant.ProcessId)"
+          Stop-Process -Id $avant.ProcessId -Force
+          Start-Sleep -Seconds 3
+          if (-not (Wait-GEC -Port ([int]$env:GEC_CI_PORT) -DelaiSecondes 120)) {
+            Show-JournalGEC -Racine (Get-Location).Path
+            throw 'GEC ne s''est pas relancé'
+          }
+          $apres = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+            Where-Object { $_.CommandLine -like '*run_waitress.py*' }
+          if ($apres.ProcessId -eq $avant.ProcessId) { throw 'même processus : aucune relance' }
+          Write-Host "Relancé : nouveau processus $($apres.ProcessId)"
+
+      - name: Arrêter la tâche libère le port
+        run: |
+          . .\deploy\windows\commun-gec.ps1
+          Stop-ScheduledTask -TaskName GEC
+          if (-not (Wait-PortLibre -Port ([int]$env:GEC_CI_PORT) -DelaiSecondes 30)) {
+            throw 'port toujours occupé : Waitress a survécu à l''arrêt de la tâche'
+          }
+          $restants = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+            Where-Object { $_.CommandLine -like '*run_waitress.py*' }
+          if ($restants) { throw 'processus Waitress orphelin après l''arrêt' }
+          Write-Host 'Port libéré, aucun processus orphelin'
+
+      - name: Relancer l'installation (idempotence, .env conservé)
+        run: |
+          $empreinte = (Get-FileHash .env).Hash
+          $python = (Get-Command python).Source
+          powershell -NoProfile -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1 `
+            -Mode Intranet -Port $env:GEC_CI_PORT -Python $python
+          if ($LASTEXITCODE -ne 0) { throw "2e installation en échec (code $LASTEXITCODE)" }
+          $cle1 = (Select-String -Path .env -Pattern '^GEC_MASTER_KEY=').Line
+          if (-not $cle1) { throw 'GEC_MASTER_KEY absente' }
+          Write-Host "Empreinte .env avant : $empreinte / après : $((Get-FileHash .env).Hash)"
+
+      - name: Mise à jour depuis une archive ZIP (sans git)
+        run: |
+          $cle = (Select-String -Path .env -Pattern '^GEC_MASTER_KEY=').Line
+          $zip = Join-Path $env:RUNNER_TEMP 'gec-main.zip'
+          git archive --format=zip --prefix=gec-main/ -o $zip HEAD
+          powershell -NoProfile -ExecutionPolicy Bypass -File deploy\windows\mettre-a-jour-gec.ps1 -Archive $zip
+          if ($LASTEXITCODE -ne 0) { throw "mise à jour en échec (code $LASTEXITCODE)" }
+          if ((Select-String -Path .env -Pattern '^GEC_MASTER_KEY=').Line -ne $cle) { throw '.env modifié par la mise à jour' }
+          Write-Host 'Mise à jour OK, clé maîtresse intacte'
+
+      - name: Journal de GEC en cas d'échec
+        if: failure()
+        run: |
+          Get-ChildItem logs -ErrorAction SilentlyContinue
+          Get-Content logs\gec.log -Tail 120 -ErrorAction SilentlyContinue
+          Get-ScheduledTask -TaskName GEC -ErrorAction SilentlyContinue | Get-ScheduledTaskInfo
