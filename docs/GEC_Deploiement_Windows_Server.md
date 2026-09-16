@@ -15,8 +15,10 @@ Serveur avec accès Internet. **Aucun logiciel à installer au préalable, aucun
    archive ZIP téléchargée depuis GitHub : clic droit sur le ZIP › *Propriétés* ›
    cocher **Débloquer**, *avant* d'extraire.
 2. **Double-cliquer sur `INSTALLER-GEC.cmd`**, à la racine du dossier.
-3. Accepter la demande de droits administrateur, puis patienter (10 à 15 minutes
-   selon la connexion : PostgreSQL pèse 350 Mo).
+3. Accepter la demande de droits administrateur, puis patienter. Hors téléchargements,
+   l'installation prend environ 2 minutes (mesuré : Python 20 s, PostgreSQL 1 min,
+   dépendances 30 s). Le téléchargement de PostgreSQL (350 Mo) dépend de la connexion :
+   environ 5 minutes à 10 Mbit/s.
 
 Le script installe au besoin **Python 3.13** et **PostgreSQL 16**, génère tous les
 mots de passe, installe GEC comme tâche planifiée et ouvre le pare-feu. À la fin :
