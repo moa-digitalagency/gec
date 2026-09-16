@@ -28,11 +28,20 @@ function Invoke-Natif {
     param([string]$Programme, [string[]]$Arguments, [string]$Echec, [switch]$Silencieux)
     $precedent = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    # Sortie redirigée, Python écrit en cp1252 ; la console de Windows Server la
+    # décode en OEM (cp850) : les accents arrivent brouillés. On impose l'UTF-8
+    # des deux côtés le temps de l'appel.
+    $encodagePython = $env:PYTHONIOENCODING
+    $env:PYTHONIOENCODING = 'utf-8'
+    $encodageConsole = $null
+    try { $encodageConsole = [Console]::OutputEncoding; [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
     try {
         $sortie = & $Programme @Arguments 2>&1 | ForEach-Object { "$_" }
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $precedent
+        $env:PYTHONIOENCODING = $encodagePython
+        if ($encodageConsole) { try { [Console]::OutputEncoding = $encodageConsole } catch { } }
     }
     if (-not $Silencieux -or $code -ne 0) {
         $sortie | ForEach-Object { Write-Info $_ }

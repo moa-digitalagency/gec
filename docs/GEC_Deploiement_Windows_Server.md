@@ -1,211 +1,178 @@
-# GEC — Déploiement en production sur Windows Server
+# GEC — Déploiement sur Windows Server 2016
 
-*Mise à jour : Septembre 2026*
+*Mise à jour : septembre 2026. Valable aussi pour Windows Server 2019 et 2022.*
 
-Cette procédure couvre Windows Server 2016, 2019 et 2022. Elle complète
-`GEC_Installation_Deploiement.md`, qui décrit le déploiement Linux (nginx + gunicorn + PM2).
-
----
-
-## Ce qui change par rapport au déploiement Linux
-
-| Rôle | Linux (VPS) | Windows Server |
-|------|-------------|----------------|
-| Serveur WSGI | gunicorn | **Waitress** — gunicorn importe `fcntl`, absent de Windows |
-| Gestionnaire de service | PM2 | **NSSM** (service Windows natif) |
-| Proxy inverse | nginx | **IIS** + ARR + URL Rewrite |
-| Certificat TLS | Let's Encrypt (certbot) | win-acme, ou certificat interne de l'organisation |
-| Activation du venv | `source .venv/bin/activate` | `.\.venv\Scripts\Activate.ps1` |
+L'installation se fait avec un script PowerShell qui réalise toute la configuration.
+Le déploiement Linux (nginx, gunicorn, PM2) est décrit dans `GEC_Installation_Deploiement.md`.
 
 ---
 
-## Prérequis à installer sur le serveur
+## Installation en 3 étapes
 
-| Logiciel | Version | Remarque |
-|----------|---------|----------|
-| Python | 3.11 ou 3.12 | Cocher **« Add python.exe to PATH »** à l'installation |
-| PostgreSQL | 14+ | Installer aussi les *Command Line Tools* (`pg_dump`, `psql`) |
-| Git pour Windows | à jour | Requis par la fonction de mise à jour intégrée |
-| NSSM | 2.24+ | https://nssm.cc — pour exécuter GEC comme service |
-| IIS | rôle Windows | + modules **ARR 3.0** et **URL Rewrite 2.1** |
+### 1. Installer les deux prérequis
+
+| Logiciel | Où le trouver | À noter pendant l'installation |
+|---|---|---|
+| **Python 3.12** | python.org › Downloads › Windows installer (64-bit) | Cocher **« Add python.exe to PATH »** |
+| **PostgreSQL** (14 ou plus récent) | postgresql.org › Download › Windows (installateur EnterpriseDB) | **Noter le mot de passe** du compte `postgres` |
+
+Python 3.11, 3.13 et 3.14 fonctionnent aussi. Rien d'autre n'est à installer :
+ni Git, ni IIS, ni outil de service.
+
+### 2. Copier GEC sur le serveur
+
+Au choix :
+
+- **Sans Git** : sur github.com (connecté au compte qui a accès au dépôt), ouvrir
+  `moa-digitalagency/gec` › **Code** › **Download ZIP**, puis extraire l'archive dans
+  `C:\GEC` (le dossier doit contenir directement `run_waitress.py`).
+- **Avec Git** : `git clone https://github.com/moa-digitalagency/gec.git C:\GEC`
+
+### 3. Lancer l'installateur
+
+Ouvrir **PowerShell en tant qu'administrateur** (clic droit › *Exécuter en tant
+qu'administrateur*), puis :
+
+```powershell
+cd C:\GEC
+powershell -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1
+```
+
+Le script demande trois mots de passe :
+
+1. celui à donner à l'utilisateur `gec_user` de la base (au moins 12 caractères) ;
+2. celui du compte `postgres`, choisi à l'installation de PostgreSQL ;
+3. celui du compte super admin de GEC, **`sa.gec001`** (au moins 12 caractères).
+
+À la fin, il affiche les adresses où ouvrir GEC, par exemple `http://SRV-GEC/`.
+
+> **Sauvegardez `C:\GEC\.env` hors du serveur** (clé USB, coffre-fort de mots de
+> passe). Il contient `GEC_MASTER_KEY`, la clé qui chiffre les courriers et les
+> pièces jointes : si elle est perdue, ces données sont **définitivement illisibles**.
 
 ---
 
-## 1. Récupérer le code
+## Ce que fait l'installateur
 
-```powershell
-# Emplacement conseillé : hors des profils utilisateur
-New-Item -ItemType Directory -Force -Path C:\inetpub\gec
-cd C:\inetpub\gec
-git clone https://github.com/moa-digitalagency/gec.git .
-```
+Le script peut être relancé sans risque : il conserve la base et le fichier `.env`
+existants.
 
-## 2. Environnement virtuel et dépendances
+| Étape | Détail |
+|---|---|
+| 1. Python | Cherche Python 3.11 à 3.14 (`py -3.12`, puis les autres versions, puis `python`) |
+| 2. Dépendances | Crée `C:\GEC\.venv` et y installe les dépendances |
+| 3. Base | Crée l'utilisateur `gec_user` et la base `gec_db` en UTF-8 s'ils n'existent pas |
+| 4. `.env` | Génère des secrets neufs ; un `.env` existant n'est **jamais** régénéré. Lecture réservée aux Administrateurs et à SYSTEM |
+| 5. Démarrage | Tâche planifiée **GEC** : démarre avec le serveur, sous le compte SYSTEM, et relance GEC s'il s'arrête |
+| 6. Réseau | Ouvre le port dans le pare-feu et affiche les adresses d'accès |
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-> **L'erreur `.venv/bin/activate n'est pas reconnu`** vient du chemin : `bin/` est
-> la convention Linux/macOS. Sur Windows, les exécutables du venv sont dans
-> `Scripts\`. Si PowerShell refuse d'exécuter le script :
-> ```powershell
-> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-> ```
-
-`requirements.txt` sélectionne automatiquement le bon serveur WSGI :
-gunicorn sur Linux, Waitress sur Windows (marqueurs `sys_platform`).
-
-## 3. Base de données
-
-```powershell
-# Depuis un shell psql (adapter le mot de passe)
-psql -U postgres -c "CREATE DATABASE gec_db;"
-psql -U postgres -c "CREATE USER gec_user WITH PASSWORD 'MotDePasseFort';"
-psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE gec_db TO gec_user;"
-```
-
-Les tables et les colonnes sont créées automatiquement au premier démarrage
-(`db.create_all()` puis `utils/migrations.py`). Aucune migration manuelle n'est requise.
-
-## 4. Fichier `.env`
-
-À créer à la racine `C:\inetpub\gec\.env`. Générer les deux secrets **sur le serveur**,
-puis les conserver hors du dépôt :
-
-```powershell
-# Clé maîtresse de chiffrement (32 octets en base64) et sel de mots de passe
-python -c "import base64,os;print('GEC_MASTER_KEY=' + base64.b64encode(os.urandom(32)).decode())"
-python -c "import base64,os;print('GEC_PASSWORD_SALT=' + base64.b64encode(os.urandom(16)).decode())"
-python -c "import secrets;print('SESSION_SECRET=' + secrets.token_hex(32))"
-```
-
-Contenu attendu :
-
-```
-FLASK_ENV=production
-DATABASE_URL=postgresql://gec_user:MotDePasseFort@localhost:5432/gec_db
-SESSION_SECRET=<valeur générée>
-GEC_MASTER_KEY=<valeur générée>
-GEC_PASSWORD_SALT=<valeur générée>
-ADMIN_PASSWORD=<mot de passe du compte initial>
-```
-
-> `GEC_MASTER_KEY` et `GEC_PASSWORD_SALT` doivent être du **base64 valide**, sinon
-> l'application refuse de démarrer (fail-fast volontaire). Une fois des données
-> chiffrées en base, ces valeurs ne doivent plus jamais changer : les sauvegarder
-> avec le même soin que la base elle-même.
-
-## 5. Premier démarrage en avant-plan
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-python run_waitress.py
-```
-
-Attendu : `GEC — Waitress sur http://127.0.0.1:5004 (8 threads)`.
-Vérifier depuis le serveur :
-
-```powershell
-curl.exe -s -o NUL -w "%{http_code}`n" http://127.0.0.1:5004/login   # doit afficher 200
-```
-
-Puis arrêter avec Ctrl+C avant de passer en service.
-
-## 6. Exécuter GEC comme service Windows (NSSM)
-
-```powershell
-nssm install GEC "C:\inetpub\gec\.venv\Scripts\python.exe" "C:\inetpub\gec\run_waitress.py"
-nssm set GEC AppDirectory C:\inetpub\gec
-nssm set GEC DisplayName "GEC - Gestion Electronique du Courrier"
-nssm set GEC Start SERVICE_AUTO_START
-nssm set GEC AppStdout C:\inetpub\gec\logs\service-out.log
-nssm set GEC AppStderr C:\inetpub\gec\logs\service-err.log
-nssm set GEC AppRotateFiles 1
-nssm start GEC
-```
-
-`AppDirectory` n'est pas optionnel : l'application construit des chemins relatifs
-(`static\uploads\`, `security\temp`, `backups`). Sans lui, les fichiers atterrissent
-dans `C:\Windows\System32`.
-
-Le compte du service doit avoir le **droit d'écriture** sur `static\uploads`,
-`security\temp`, `backups` et `logs`, et `pg_dump.exe` doit être dans son `PATH`
-(sinon la sauvegarde intégrée échoue silencieusement).
-
-## 7. IIS en proxy inverse
-
-Créer un site IIS pointant sur un dossier vide (IIS ne sert aucun fichier ici, il
-relaie tout vers Waitress), puis :
-
-1. **IIS Manager → serveur → Application Request Routing Cache → Server Proxy Settings** →
-   cocher *Enable proxy*.
-2. Déposer le `web.config` fourni à la racine du site.
-
-Le `web.config` livré (`deploy/windows/web.config`) relaie tout vers `127.0.0.1:5004`
-et transmet les en-têtes `X-Forwarded-For` / `X-Forwarded-Proto`, nécessaires pour
-que la journalisation d'audit enregistre la vraie adresse IP des utilisateurs et non
-`127.0.0.1`.
-
-### HTTPS
-
-- **Serveur exposé sur Internet** : win-acme (`wacs.exe`) génère et renouvelle un
-  certificat Let's Encrypt directement dans IIS.
-- **Serveur en intranet** : utiliser le certificat de l'autorité interne de
-  l'organisation ; Let's Encrypt ne peut pas valider un nom non public.
-
-Dans les deux cas, ajouter une règle de redirection HTTP → HTTPS et n'ouvrir le
-port 5004 sur aucune interface externe : Waitress n'écoute que sur `127.0.0.1`.
-
-## 8. Mises à jour
-
-```powershell
-cd C:\inetpub\gec
-git pull origin main
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-nssm restart GEC
-```
-
-Les migrations de schéma s'appliquent au redémarrage.
+Les tables sont créées au premier démarrage de GEC ; aucune commande de migration
+n'est à lancer.
 
 ---
 
-## Points de vigilance propres à Windows
+## Deux modes d'installation
 
-### Pièces jointes déchiffrées — à traiter avant une mise en production
-
-GEC déchiffre une pièce jointe dans `security\temp\` pour la servir, puis supprime
-le fichier temporaire. Sous Windows, un fichier encore ouvert **ne peut pas être
-supprimé** (`WinError 32`) : la suppression échoue, et l'exception est absorbée
-silencieusement par le code. Les pièces jointes déchiffrées s'accumulent donc **en
-clair** dans `security\temp\`, ce qui annule la protection du chiffrement au repos.
-
-Sous Linux le problème n'existe pas : POSIX autorise la suppression d'un fichier ouvert.
-
-Tant que le correctif n'est pas appliqué, prévoir une tâche planifiée de purge :
+| | **Intranet** (par défaut) | **IIS** |
+|---|---|---|
+| Accès | `http://nom-du-serveur/` | `https://gec.exemple.cd/` |
+| Chiffrement réseau | Non (HTTP simple) | Oui (certificat installé dans IIS) |
+| GEC écoute sur | toutes les interfaces, port 80 | `127.0.0.1:5004` uniquement |
+| À installer en plus | rien | IIS, URL Rewrite, Application Request Routing |
+| Usage adapté | réseau interne d'une administration | accès depuis Internet, ou exigence de HTTPS |
 
 ```powershell
-$purge = {
-  Get-ChildItem C:\inetpub\gec\security\temp -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-15) } |
-    Remove-Item -Force -ErrorAction SilentlyContinue
-}
+# Intranet sur un autre port (si le port 80 est déjà pris)
+powershell -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1 -Port 8080
+
+# Derrière IIS
+powershell -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1 -Mode IIS
 ```
-à planifier toutes les 15 minutes. **C'est un palliatif, pas une solution** :
-les fichiers restent en clair sur le disque entre deux purges.
 
-### Antivirus
+### Paramètres
 
-Exclure `static\uploads\` et `security\temp\` de l'analyse en temps réel : un
-antivirus qui verrouille un fichier pendant son écriture provoque des échecs
-d'upload intermittents, difficiles à diagnostiquer.
+| Paramètre | Défaut | Rôle |
+|---|---|---|
+| `-Mode` | `Intranet` | `Intranet` ou `IIS` |
+| `-Port` | 80 (Intranet), 5004 (IIS) | Port d'écoute de GEC |
+| `-Python` | détection automatique | Chemin d'un `python.exe` précis |
+| `-DbHote`, `-DbPort` | `localhost`, `5432` | Serveur PostgreSQL |
+| `-DbNom`, `-DbUtilisateur` | `gec_db`, `gec_user` | Base et utilisateur à créer |
+| `-PostgresUtilisateur` | `postgres` | Compte administrateur de PostgreSQL |
+| `-SansService` | — | Installe et teste le démarrage, sans tâche planifiée |
 
-### Fuseau horaire et encodage
+Les mots de passe peuvent aussi être passés en paramètres (`-DbMotDePasse`,
+`-PostgresMotDePasse`, `-AdminMotDePasse`) pour une installation sans questions ;
+ils apparaissent alors dans l'historique de PowerShell.
 
-- Les horodatages d'audit sont en UTC ; régler le fuseau du serveur ne les modifie pas.
-- PowerShell 5.1 écrit en UTF-16 par défaut : créer le `.env` avec un éditeur en
-  **UTF-8 sans BOM**, sinon la première variable est lue avec un préfixe invisible.
+---
+
+## Au quotidien
+
+Dans PowerShell en administrateur :
+
+| Action | Commande |
+|---|---|
+| Arrêter GEC | `Stop-ScheduledTask -TaskName GEC` |
+| Démarrer GEC | `Start-ScheduledTask -TaskName GEC` |
+| Lire le journal | `Get-Content C:\GEC\logs\gec.log -Tail 50` |
+| Mettre à jour (Git) | `powershell -ExecutionPolicy Bypass -File deploy\windows\mettre-a-jour-gec.ps1` |
+| Mettre à jour (ZIP) | `powershell -ExecutionPolicy Bypass -File deploy\windows\mettre-a-jour-gec.ps1 -Archive C:\Temp\gec-main.zip` |
+
+La mise à jour par archive n'écrase jamais `.env`, `.venv`, `logs`, `uploads`,
+`static\uploads`, `backups`, `exports` ni `security\temp`.
+
+Le journal tourne automatiquement au-delà de 20 Mo (5 fichiers conservés).
+
+---
+
+## Mode IIS (HTTPS)
+
+1. **Gestionnaire de serveur** › Ajouter des rôles › **Serveur Web (IIS)**.
+2. Installer **URL Rewrite 2.1** et **Application Request Routing 3.0**
+   (téléchargements Microsoft).
+3. Gestionnaire IIS › nœud du serveur › **Application Request Routing Cache** ›
+   *Server Proxy Settings* › cocher **Enable proxy**.
+4. Lancer `installer-gec.ps1 -Mode IIS` : il autorise les variables serveur dont
+   `web.config` a besoin.
+5. Créer un site IIS pointant sur un dossier vide, y copier
+   `deploy\windows\web.config`, puis lier le certificat HTTPS au site.
+
+Le `web.config` relaie tout vers `127.0.0.1:5004`, transmet l'adresse réelle des
+utilisateurs pour le journal d'audit, et relève la taille maximale des envois à
+100 Mo (IIS refuse au-delà de 30 Mo par défaut).
+
+---
+
+## Dépannage
+
+| Message ou symptôme | Cause | Solution |
+|---|---|---|
+| `aucun Python 3.11 à 3.14 trouvé` | Python absent, ou pas dans le PATH | Réinstaller Python 3.12 en cochant « Add python.exe to PATH », rouvrir PowerShell |
+| `connexion à PostgreSQL impossible avec le compte « postgres »` | Mot de passe `postgres` erroné, ou service arrêté | Vérifier le service *postgresql-x64-…* dans `services.msc` |
+| `le port 80 est déjà utilisé par System` | IIS occupe déjà le port 80 | `-Port 8080`, ou `-Mode IIS` |
+| GEC s'ouvre sur le serveur mais pas depuis un autre poste | Pare-feu ou pare-feu réseau intermédiaire | Vérifier la règle « GEC (HTTP 80) » dans le Pare-feu Windows |
+| « Session de sécurité expirée » à chaque connexion | GEC installé en mode IIS mais ouvert en HTTP | Ouvrir l'adresse HTTPS publiée par IIS, ou réinstaller en mode Intranet |
+| `GEC ne répond pas … après 3 minutes` | Erreur au démarrage | Lire `C:\GEC\logs\gec.log` |
+| `.env existant incomplet ou invalide` | `.env` modifié à la main | Le corriger à la main ; il n'est jamais régénéré, pour protéger la clé |
+
+---
+
+## Particularités de Windows prises en compte
+
+Ces points, invisibles sous Linux, sont corrigés dans le code et vérifiés
+automatiquement sous Windows à chaque modification (job CI « Windows Server ») :
+
+- **Pièces jointes déchiffrées** : Windows refuse d'effacer un fichier ouvert. Le
+  fichier déchiffré pour un téléchargement est supprimé après la fin de l'envoi, et
+  les fichiers laissés par un arrêt brutal sont effacés au démarrage.
+- **Encodage** : Python écrit en cp1252 par défaut sous Windows. Tous les fichiers
+  texte de GEC sont lus et écrits en UTF-8, et GEC tourne en mode UTF-8.
+- **`.env` du Bloc-notes** : enregistré en UTF-8 avec BOM, il est lu correctement.
+- **HTTP simple** : en mode Intranet, le cookie de session n'exige pas HTTPS
+  (`GEC_HTTPS=0`), sans quoi aucune connexion ne serait possible.
+- **Adresse des utilisateurs** : sans proxy (`GEC_DERRIERE_PROXY=0`), les en-têtes
+  `X-Real-IP` et `X-Forwarded-For` envoyés par le navigateur sont ignorés, pour qu'un
+  client ne puisse pas contourner la limitation des tentatives de connexion.
+- **Démarrage du serveur** : si GEC démarre avant PostgreSQL, il est relancé
+  automatiquement jusqu'à ce que la base réponde.

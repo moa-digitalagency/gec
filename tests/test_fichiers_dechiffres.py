@@ -42,61 +42,96 @@ def _dossier_temporaire():
 
 
 @pytest.fixture
-def commentaire_chiffre(app, tmp_path):
-    """Un commentaire portant une pièce jointe réellement chiffrée."""
+def courrier_chiffre(app):
+    """Un courrier dont le fichier principal, une pièce jointe et un commentaire
+    portent chacun un fichier réellement chiffré, rangé dans uploads/ comme en
+    production (les routes refusent tout chemin hors de ce dossier)."""
+    import shutil
+
     from app import db
-    from models import Courrier, CourrierComment, User
+    from models import Courrier, CourrierAttachment, CourrierComment, User
     from security import encrypt_uploaded_file
 
-    clair = tmp_path / "note.pdf"
-    clair.write_bytes(CONTENU)
-    chemin_chiffre = encrypt_uploaded_file(str(clair))
-    clair.unlink()
+    dossier = os.path.join("uploads", f"test_dechiffres_{uuid.uuid4().hex[:8]}")
+    os.makedirs(dossier)
+
+    def fichier_chiffre(nom):
+        clair = os.path.join(dossier, nom)
+        with open(clair, "wb") as f:
+            f.write(CONTENU)
+        chemin = encrypt_uploaded_file(clair)
+        os.remove(clair)
+        return chemin
 
     with app.app_context():
         auteur = User.query.filter_by(username="user_test").first()
         courrier = Courrier(
             numero_accuse_reception=f"GEC-PJ-{uuid.uuid4().hex[:8]}",
-            objet="Courrier avec pièce jointe chiffrée",
+            objet="Courrier avec pièces jointes chiffrées",
             type_courrier="ENTRANT",
             expediteur="Expéditeur test",
             date_redaction=date.today(),
             statut="RECU",
             utilisateur_id=auteur.id,
+            fichier_nom="principal.pdf",
+            fichier_chemin=fichier_chiffre("principal.pdf"),
+            fichier_type="application/pdf",
+            fichier_encrypted=True,
         )
         db.session.add(courrier)
         db.session.commit()
+        piece = CourrierAttachment(
+            courrier_id=courrier.id,
+            fichier_nom="annexe.pdf",
+            fichier_chemin=fichier_chiffre("annexe.pdf"),
+            fichier_type="application/pdf",
+            fichier_taille=len(CONTENU),
+            fichier_encrypted=True,
+            uploaded_by_id=auteur.id,
+        )
         commentaire = CourrierComment(
             courrier_id=courrier.id,
             user_id=auteur.id,
             commentaire="Pièce jointe chiffrée",
             fichier_nom="note.pdf",
-            fichier_chemin=chemin_chiffre,
+            fichier_chemin=fichier_chiffre("note.pdf"),
             fichier_type="application/pdf",
             fichier_encrypted=True,
         )
-        db.session.add(commentaire)
+        db.session.add_all([piece, commentaire])
         db.session.commit()
-        return commentaire.id, auteur.id
+        ids = {"courrier": courrier.id, "piece": piece.id,
+               "commentaire": commentaire.id, "auteur": auteur.id}
+
+    yield ids
+    shutil.rmtree(dossier, ignore_errors=True)
 
 
-def test_telechargement_ne_laisse_aucun_fichier_dechiffre(app, commentaire_chiffre):
-    commentaire_id, auteur_id = commentaire_chiffre
+ROUTES = {
+    "fichier principal": "/download_file/{courrier}",
+    "visualisation": "/view_file/{courrier}",
+    "pièce jointe": "/download_attachment/{piece}",
+    "pièce jointe de commentaire": "/download_comment_attachment/{commentaire}",
+}
+
+
+@pytest.mark.parametrize("route", list(ROUTES), ids=list(ROUTES))
+def test_telechargement_ne_laisse_aucun_fichier_dechiffre(app, courrier_chiffre, route):
     dossier = _dossier_temporaire()
     avant = set(os.listdir(dossier))
 
     client = app.test_client()
-    _login(client, auteur_id)
+    _login(client, courrier_chiffre["auteur"])
     try:
-        reponse = client.get(f"/download_comment_attachment/{commentaire_id}")
-        assert reponse.status_code == 200
+        reponse = client.get(ROUTES[route].format(**courrier_chiffre))
+        assert reponse.status_code == 200, f"{route} : HTTP {reponse.status_code}"
         # Lire le corps comme le fait un serveur WSGI, puis fermer la réponse.
-        assert reponse.get_data() == CONTENU
+        assert reponse.get_data() == CONTENU, f"{route} : contenu déchiffré incorrect"
         reponse.close()
 
         restants = set(os.listdir(dossier)) - avant
         assert restants == set(), (
-            f"pièce(s) jointe(s) déchiffrée(s) restée(s) en clair : {sorted(restants)}"
+            f"{route} : pièce(s) jointe(s) déchiffrée(s) restée(s) en clair : {sorted(restants)}"
         )
     finally:
         _purge_cache_login()
