@@ -29,25 +29,37 @@ Toute la documentation technique et fonctionnelle se trouve dans le dossier `doc
 |----------|-------------|
 | [**📖 La Bible des Fonctionnalités**](docs/GEC_Features_List.md) | Liste exhaustive de toutes les fonctionnalités. |
 | [**🏗 Architecture Technique**](docs/GEC_Architecture_Technique.md) | Stack, flux de données et sécurité. |
+| [**🪟 Déploiement Windows Server**](docs/GEC_Deploiement_Windows_Server.md) | Installation en une commande sur Windows Server 2016, 2019 et 2022. |
+| [**🐧 Déploiement Linux**](docs/GEC_Installation_Deploiement.md) | VPS avec nginx, gunicorn et PM2. |
 | [**⚖️ Licence**](LICENSE) | Termes d'utilisation et propriété. |
 
-## 🚀 Installation Rapide
+## 🚀 Installation
+
+### Windows Server (2016, 2019, 2022)
+
+Prérequis : Python 3.12 et PostgreSQL installés. Dans PowerShell **en administrateur**,
+depuis le dossier de GEC :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1
+```
+
+Procédure complète, modes Intranet / IIS et dépannage :
+**[docs/GEC_Deploiement_Windows_Server.md](docs/GEC_Deploiement_Windows_Server.md)**.
+
+### Linux (VPS)
+
+Procédure complète : **[docs/GEC_Installation_Deploiement.md](docs/GEC_Installation_Deploiement.md)**.
+
+### Poste de développement (Linux / macOS)
 
 ```bash
-# 1. Cloner (Accès restreint)
 git clone https://github.com/moa-digitalagency/gec.git
-
-# 2. Environnement
-# Créer un environnement virtuel (venv)
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. Configuration
-cp .env.example .env
-# Configurer GEC_MASTER_KEY et DB_URL
-
-# 4. Lancer
-python main.py
+cd gec
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+cp .env.example .env        # renseigner GEC_MASTER_KEY et DATABASE_URL
+.venv/bin/python main.py
 ```
 
 ## 📞 Contact

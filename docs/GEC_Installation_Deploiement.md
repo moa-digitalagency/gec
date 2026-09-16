@@ -1,6 +1,11 @@
-# GEC — Installation et Déploiement
+# GEC — Installation et Déploiement (Linux)
 
-*Mise à jour : Avril 2026*
+*Mise à jour : septembre 2026*
+
+> **Serveur Windows ?** Cette procédure concerne Linux (nginx, gunicorn, PM2).
+> Pour Windows Server 2016, 2019 ou 2022, suivre
+> **[GEC_Deploiement_Windows_Server.md](GEC_Deploiement_Windows_Server.md)** :
+> installation en une commande PowerShell.
 
 ---
 
