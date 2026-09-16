@@ -116,10 +116,28 @@ function Test-SignatureEditeur([string]$Fichier, [string]$Editeur) {
     }
 }
 
+function Get-PythonDuRegistre([string]$Version) {
+    <#
+    Emplacement déclaré par Python lui-même dans le registre (PEP 514), celui que lit
+    le lanceur py. Une version déjà installée ailleurs est mise à jour sur place par
+    l'installateur, qui ignore alors le dossier par défaut Program Files\PythonXY.
+    #>
+    foreach ($base in 'HKLM:\SOFTWARE\Python\PythonCore', 'HKCU:\SOFTWARE\Python\PythonCore') {
+        $cle = Join-Path $base "$Version\InstallPath"
+        if (-not (Test-Path $cle)) { continue }
+        $valeurs = Get-ItemProperty -Path $cle
+        if ($valeurs.ExecutablePath -and (Test-Path $valeurs.ExecutablePath)) { return $valeurs.ExecutablePath }
+        $dossier = $valeurs.'(default)'
+        if ($dossier -and (Test-Path (Join-Path $dossier 'python.exe'))) { return (Join-Path $dossier 'python.exe') }
+    }
+    return $null
+}
+
 function Find-PythonCompatible {
     $candidats = @()
-    foreach ($v in '313', '312', '314', '311') {
-        $candidats += , @((Join-Path $env:ProgramFiles "Python$v\python.exe"))
+    foreach ($v in '3.13', '3.12', '3.14', '3.11') {
+        $exe = Get-PythonDuRegistre $v
+        if ($exe) { $candidats += , @($exe) }
     }
     foreach ($v in '3.13', '3.12', '3.14', '3.11') { $candidats += , @('py', "-$v") }
     $candidats += , @('python')
@@ -197,9 +215,17 @@ try {
         if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
             Stop-Installation "installation de Python en échec (code $($p.ExitCode)) — voir logs\python-installation-$horodatage.log"
         }
-        $python = Join-Path $env:ProgramFiles 'Python313\python.exe'
-        if (-not (Test-Path $python)) { Stop-Installation "Python introuvable après installation : $python" }
-        Write-Ok "Python $PythonVersion installé : $python"
+        $python = Get-PythonDuRegistre '3.13'
+        if (-not $python) {
+            Stop-Installation "Python 3.13 introuvable dans le registre après installation — voir logs\python-installation-$horodatage.log"
+        }
+        $precedent = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        $versionInstallee = (& $python -c "import platform; print(platform.python_version())" 2>$null)
+        $ErrorActionPreference = $precedent
+        if ($versionInstallee -ne $PythonVersion) {
+            Stop-Installation "Python $PythonVersion attendu, $versionInstallee trouvé ($python)."
+        }
+        Write-Ok "Python $versionInstallee installé : $python"
     }
 
     # ─── 3. PostgreSQL ────────────────────────────────────────────────────────

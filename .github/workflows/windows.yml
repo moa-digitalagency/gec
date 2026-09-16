@@ -161,7 +161,10 @@ jobs:
 
       - name: Python et PostgreSQL réellement installés
         run: |
-          & "$env:ProgramFiles\Python313\python.exe" --version
+          $python = (Get-ItemProperty 'HKLM:\SOFTWARE\Python\PythonCore\3.13\InstallPath').ExecutablePath
+          $version = & $python -c "import platform; print(platform.python_version())"
+          Write-Host "Python enregistre : $python ($version)"
+          if ($version -ne '3.13.15') { throw "Python 3.13.15 attendu, $version trouve" }
           & "$env:ProgramFiles\PostgreSQL\16\bin\psql.exe" --version
           $service = Get-Service -Name postgresql-x64-16
           Write-Host "Service $($service.Name) : $($service.Status), $($service.StartType)"
@@ -213,3 +216,7 @@ jobs:
           Get-ChildItem logs\installation-rapide-*.log -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_ -Tail 150 }
           Get-Content logs\gec.log -Tail 80 -ErrorAction SilentlyContinue
           Get-Content "$env:TEMP\install-postgresql.log" -Tail 80 -ErrorAction SilentlyContinue
+          Get-ChildItem 'HKLM:\SOFTWARE\Python\PythonCore' -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.PSChildName -eq 'InstallPath' } | ForEach-Object { Get-ItemProperty $_.PSPath } |
+            Select-Object ExecutablePath | Format-Table -AutoSize
+          Get-ChildItem logs\python-installation-*.log -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_ -Tail 40 }
