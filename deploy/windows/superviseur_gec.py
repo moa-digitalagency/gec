@@ -5,8 +5,8 @@ installer-gec.ps1). Il démarre Waitress et le relance s'il s'arrête :
 
 - au redémarrage du serveur, GEC peut démarrer avant PostgreSQL, échouer à se
   connecter et s'arrêter — sans relance, il resterait arrêté ;
-- le Planificateur de tâches ne relance pas un programme qui se termine en
-  erreur : il ne relance que les tâches qui n'ont pas pu démarrer.
+- la relance est faite ici, avec un délai croissant en cas d'échecs répétés,
+  plutôt que confiée aux réglages de relance du Planificateur de tâches.
 
 Sous Windows, arrêter un processus n'arrête pas ses enfants. Waitress est donc
 placé dans un « objet job » fermé avec le superviseur : arrêter la tâche
