@@ -104,6 +104,18 @@ def courrier_chiffre(app):
                "commentaire": commentaire.id, "auteur": auteur.id}
 
     yield ids
+
+    # La base de test est partagée par toute la session : on retire ce qu'on a créé,
+    # y compris ce que les routes ont journalisé (activité, signatures…), en suivant
+    # toutes les clés étrangères qui pointent vers ce courrier.
+    with app.app_context():
+        db.session.rollback()
+        for table in reversed(db.metadata.sorted_tables):
+            for colonne in table.columns:
+                if any(fk.column.table.name == "courrier" for fk in colonne.foreign_keys):
+                    db.session.execute(table.delete().where(colonne == ids["courrier"]))
+        db.session.execute(Courrier.__table__.delete().where(Courrier.id == ids["courrier"]))
+        db.session.commit()
     shutil.rmtree(dossier, ignore_errors=True)
 
 
