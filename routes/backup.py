@@ -326,7 +326,7 @@ def update_system():
     version_file = 'version.txt'
     current_version = 'Unknown'
     if os.path.exists(version_file):
-        with open(version_file, 'r') as f:
+        with open(version_file, 'r', encoding='utf-8') as f:
             current_version = f.read().strip()
     
     return render_template('update_system.html', current_version=current_version)
@@ -368,7 +368,7 @@ def update_online():
         
         if result.returncode == 0:
             # Mettre à jour la version
-            with open('version.txt', 'w') as f:
+            with open('version.txt', 'w', encoding='utf-8') as f:
                 f.write(f'Updated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
             
             log_activity(current_user.id, 'UPDATE', f'Mise à jour online réussie')
@@ -546,7 +546,7 @@ def update_offline():
         shutil.rmtree(temp_dir)
         
         # Mettre à jour la version avec les statistiques
-        with open('version.txt', 'w') as f:
+        with open('version.txt', 'w', encoding='utf-8') as f:
             f.write(f'Updated (offline): {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
             f.write(f'Files updated: {files_updated}, added: {files_added}, skipped: {files_skipped}, cleaned: {files_cleaned}')
         
@@ -662,7 +662,7 @@ def create_system_backup():
                     }
                     
                     config_path = os.path.join(temp_dir, "system_config.json")
-                    with open(config_path, 'w') as f:
+                    with open(config_path, 'w', encoding='utf-8') as f:
                         json.dump(params_data, f, indent=2, ensure_ascii=False)
                     backup_zip.write(config_path, "system_config.json")
                     logging.info("✅ Configuration système sauvegardée")
@@ -683,7 +683,7 @@ def create_system_backup():
                     })
                 
                 roles_path = os.path.join(temp_dir, "roles_permissions.json")
-                with open(roles_path, 'w') as f:
+                with open(roles_path, 'w', encoding='utf-8') as f:
                     json.dump(roles_data, f, indent=2, ensure_ascii=False)
                 backup_zip.write(roles_path, "roles_permissions.json")
                 logging.info(f"✅ {len(roles_data)} rôles sauvegardés")
@@ -715,7 +715,7 @@ def create_system_backup():
             }
             
             metadata_path = os.path.join(temp_dir, "backup_metadata.json")
-            with open(metadata_path, 'w') as f:
+            with open(metadata_path, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, indent=2, ensure_ascii=False)
             backup_zip.write(metadata_path, "backup_metadata.json")
             
@@ -810,7 +810,7 @@ def backup_database():
             # Sauvegarde générique via SQLAlchemy
             backup_file = f"db_backup_{timestamp}.sql"
             
-            with open(backup_file, 'w') as f:
+            with open(backup_file, 'w', encoding='utf-8') as f:
                 # Export des données principales
                 f.write("-- GEC Database Backup\n")
                 f.write(f"-- Created: {datetime.now()}\n\n")
@@ -850,7 +850,7 @@ def restore_system_from_backup(backup_file):
             metadata_path = os.path.join(temp_dir, "backup_metadata.json")
             if os.path.exists(metadata_path):
                 import json
-                with open(metadata_path, 'r') as f:
+                with open(metadata_path, 'r', encoding='utf-8') as f:
                     metadata = json.load(f)
                 logging.info(f"Métadonnées: {metadata.get('backup_type', 'unknown')}")
             
@@ -934,7 +934,7 @@ def restore_system_from_backup(backup_file):
             config_path = os.path.join(temp_dir, "system_config.json")
             if os.path.exists(config_path):
                 try:
-                    with open(config_path, 'r') as f:
+                    with open(config_path, 'r', encoding='utf-8') as f:
                         config_data = json.load(f)
                     
                     from models import ParametreSysteme
@@ -965,7 +965,7 @@ def restore_system_from_backup(backup_file):
             roles_path = os.path.join(temp_dir, "roles_permissions.json")
             if os.path.exists(roles_path):
                 try:
-                    with open(roles_path, 'r') as f:
+                    with open(roles_path, 'r', encoding='utf-8') as f:
                         roles_data = json.load(f)
                     logging.info(f"✅ {len(roles_data)} rôles disponibles dans la sauvegarde")
                 except Exception as e:

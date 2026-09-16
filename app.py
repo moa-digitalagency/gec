@@ -33,13 +33,29 @@ app.config['SESSION_IDLE_TIMEOUT'] = 900               # 15 min d'inactivité
 
 # Sécurité cookies de session
 _is_production = os.environ.get("FLASK_ENV") == "production"
-app.config['SESSION_COOKIE_SECURE']   = _is_production   # HTTPS only en prod
+
+
+def cookie_session_securise(environ=os.environ):
+    """Cookie de session réservé à HTTPS en production, sauf intranet en HTTP simple.
+
+    GEC_HTTPS=0 déclare un site servi en HTTP simple (intranet sans certificat). Sans
+    ce réglage, le cookie est marqué Secure : un navigateur ne le renvoie jamais en
+    HTTP et personne ne peut se connecter (« Session de sécurité expirée »).
+    """
+    return (environ.get("FLASK_ENV") == "production"
+            and environ.get("GEC_HTTPS", "1") != "0")
+
+
+app.config['SESSION_COOKIE_SECURE']   = cookie_session_securise()
 app.config['SESSION_COOKIE_HTTPONLY'] = True             # Inaccessible au JS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'           # Protège contre CSRF cross-site
 
 # ProxyFix : x_for=1 résout REMOTE_ADDR depuis X-Forwarded-For (Nginx → Flask)
-# Sans ça, REMOTE_ADDR reste 127.0.0.1 et les logs affichent toujours l'IP du proxy
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Sans ça, REMOTE_ADDR reste 127.0.0.1 et les logs affichent toujours l'IP du proxy.
+# GEC_DERRIERE_PROXY=0 (GEC exposé directement, sans nginx ni IIS) : ces en-têtes
+# viennent alors du client lui-même et ne doivent pas être crus.
+if os.environ.get("GEC_DERRIERE_PROXY", "1") != "0":
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # Configure the database
 # Strict enforcement of DATABASE_URL and PostgreSQL for production
@@ -221,6 +237,11 @@ with app.app_context():
     
     logging.info("System parameters and statuses initialized")
     liberer_verrou_initialisation(_verrou_initialisation)
+
+    # Pièces jointes déchiffrées laissées par un arrêt brutal (ou, avant correctif,
+    # par Windows qui refusait leur suppression) : ne jamais les garder en clair.
+    from security import purger_fichiers_dechiffres_orphelins
+    purger_fichiers_dechiffres_orphelins()
 
     # Planificateur de rappels (s'exécute une fois toutes les 6h dans ce processus)
     import threading

@@ -20,7 +20,7 @@ from models import User, Courrier, CourrierAttachment, Tag, CourrierTag, LogActi
 from utils import allowed_file, generate_accuse_reception, log_activity, export_courrier_pdf, export_mail_list_pdf, get_current_language, set_language, t, get_available_languages, get_all_languages, toggle_language_status, download_language_file, upload_language_file, delete_language_file, validate_backup_integrity, create_pre_update_backup, get_backup_files, sign_courrier_action, generate_numero_suivi, qr_data_uri
 from services.email import send_new_mail_notification, send_mail_forwarded_notification, send_comment_notification
 from routes.auth import apply_mail_access_filter
-from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download
+from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log, encrypt_uploaded_file, decrypt_file_for_download, servir_puis_supprimer
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
 STATUT_INITIAL = 'RECU'  # Évolution DPEM #1 : statut imposé à l'enregistrement
@@ -1009,17 +1009,11 @@ def download_file(id):
                 elif ext == 'png':
                     mimetype = 'image/png'
 
-            try:
-                return send_from_directory(directory, filename,
-                                         as_attachment=True,
-                                         download_name=courrier.fichier_nom,
-                                         mimetype=mimetype)
-            finally:
-                if temp_decrypted and os.path.exists(temp_decrypted):
-                    try:
-                        os.remove(temp_decrypted)
-                    except Exception:
-                        pass
+            return servir_puis_supprimer(temp_decrypted, lambda: send_from_directory(
+                directory, filename,
+                as_attachment=True,
+                download_name=courrier.fichier_nom,
+                mimetype=mimetype))
         else:
             logging.error(f"Fichier non trouvé au chemin: {file_path}")
             # Essayer de lister le contenu du dossier uploads
@@ -1074,20 +1068,12 @@ def download_attachment(attachment_id):
     mimetype_map = {'pdf': 'application/pdf', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png'}
     mimetype = mimetype_map.get(ext, 'application/octet-stream')
 
-    try:
-        return send_from_directory(
-            os.path.dirname(send_path),
-            os.path.basename(send_path),
-            as_attachment=True,
-            download_name=attachment.fichier_nom,
-            mimetype=mimetype
-        )
-    finally:
-        if temp_dec and os.path.exists(temp_dec):
-            try:
-                os.remove(temp_dec)
-            except Exception:
-                pass
+    return servir_puis_supprimer(temp_dec, lambda: send_from_directory(
+        os.path.dirname(send_path),
+        os.path.basename(send_path),
+        as_attachment=True,
+        download_name=attachment.fichier_nom,
+        mimetype=mimetype))
 
 
 @app.route('/change_status/<int:id>', methods=['POST'])
@@ -1382,16 +1368,10 @@ def view_file(id):
                 elif ext == 'png':
                     mimetype = 'image/png'
 
-            try:
-                return send_from_directory(directory, filename,
-                                         as_attachment=False,
-                                         mimetype=mimetype)
-            finally:
-                if temp_dec_view and os.path.exists(temp_dec_view):
-                    try:
-                        os.remove(temp_dec_view)
-                    except Exception:
-                        pass
+            return servir_puis_supprimer(temp_dec_view, lambda: send_from_directory(
+                directory, filename,
+                as_attachment=False,
+                mimetype=mimetype))
         else:
             logging.error(f"Fichier non trouvé au chemin: {file_path}")
     else:
@@ -1887,12 +1867,7 @@ def download_comment_attachment(comment_id):
             logging.warning(f"Déchiffrement PJ commentaire échoué : {e_dec}")
             flash('Erreur lors du déchiffrement de la pièce jointe.', 'error')
             return redirect(url_for('mail_detail', id=comment.courrier_id))
-        try:
-            return send_file(temp_path, as_attachment=True, download_name=comment.fichier_nom)
-        finally:
-            try:
-                os.unlink(temp_path)
-            except OSError:
-                pass
+        return servir_puis_supprimer(temp_path, lambda: send_file(
+            temp_path, as_attachment=True, download_name=comment.fichier_nom))
     return send_file(comment.fichier_chemin, as_attachment=True, download_name=comment.fichier_nom)
 

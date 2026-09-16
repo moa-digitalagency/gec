@@ -110,6 +110,12 @@ def get_client_ip():
     """
     remote_addr = request.environ.get('REMOTE_ADDR', 'unknown')
 
+    # GEC exposé directement (GEC_DERRIERE_PROXY=0) : aucun proxy ne réécrit ces
+    # en-têtes, le client les fournit lui-même. Les croire permettrait de changer
+    # d'adresse à chaque essai et de contourner la limitation des connexions.
+    if os.environ.get('GEC_DERRIERE_PROXY', '1') == '0':
+        return remote_addr
+
     # 1. X-Real-IP — Nginx le positionne directement, toujours fiable
     x_real_ip = request.environ.get('HTTP_X_REAL_IP', '').strip()
     if x_real_ip:
