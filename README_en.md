@@ -37,8 +37,12 @@ All technical and functional documentation can be found in the `docs/` folder.
 
 ### Windows Server (2016, 2019, 2022)
 
-Prerequisites: Python 3.12 and PostgreSQL. In PowerShell **run as administrator**,
-from the GEC folder:
+**Quick install**: copy the GEC folder to the server, then **double-click
+`INSTALLER-GEC.cmd`**. Python, PostgreSQL and all passwords are installed and generated
+automatically; credentials are written to `IDENTIFIANTS-GEC.txt`.
+
+Manual install (Python 3.12 and PostgreSQL already installed), in PowerShell
+**run as administrator**, from the GEC folder:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy\windows\installer-gec.ps1

@@ -6,7 +6,7 @@ name: Windows Server
 # Aucune donnée externe (titre de PR, message de commit...) n'est interpolée.
 on:
   push:
-    branches: ["main", "feat/windows-server-2016"]
+    branches: ["main", "feat/**"]
   pull_request:
   workflow_dispatch:
 
@@ -142,3 +142,74 @@ jobs:
           Get-ChildItem logs -ErrorAction SilentlyContinue
           Get-Content logs\gec.log -Tail 120 -ErrorAction SilentlyContinue
           Get-ScheduledTask -TaskName GEC -ErrorAction SilentlyContinue | Get-ScheduledTaskInfo
+
+  installation-rapide-windows:
+    name: Installation rapide automatique (Python et PostgreSQL téléchargés)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: powershell
+    # Les chaînes comparées restent sans accent : GitHub écrit ces scripts sans BOM,
+    # que PowerShell 5.1 lit en ANSI.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Double-clic sur INSTALLER-GEC.cmd (télécharge et installe Python 3.13 et PostgreSQL 16)
+        run: |
+          cmd /c "INSTALLER-GEC.cmd -ToujoursInstallerPython -ToujoursInstallerPostgreSQL -Port 8080 -SansPause"
+          if ($LASTEXITCODE -ne 0) { throw "installation rapide en echec (code $LASTEXITCODE)" }
+
+      - name: Python et PostgreSQL réellement installés
+        run: |
+          & "$env:ProgramFiles\Python313\python.exe" --version
+          & "$env:ProgramFiles\PostgreSQL\16\bin\psql.exe" --version
+          $service = Get-Service -Name postgresql-x64-16
+          Write-Host "Service $($service.Name) : $($service.Status), $($service.StartType)"
+          if ($service.Status -ne 'Running') { throw 'PostgreSQL 16 ne tourne pas' }
+          $chemin = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+          if ($chemin -notlike '*PostgreSQL\16\bin*') { throw 'outils PostgreSQL absents du PATH systeme' }
+
+      - name: Identifiants protégés et connexion avec le mot de passe généré
+        run: |
+          $fichier = (Resolve-Path 'IDENTIFIANTS-GEC.txt').Path
+          $acces = (Get-Acl $fichier).Access | ForEach-Object {
+            $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value }
+          Write-Host "Comptes autorises : $(($acces | Sort-Object -Unique) -join ', ')"
+          if ($acces | Where-Object { $_ -notin @('S-1-5-32-544', 'S-1-5-18') }) { throw 'identifiants lisibles par un autre compte' }
+          $texte = [IO.File]::ReadAllText($fichier, [Text.Encoding]::UTF8)
+          if ($texte -notmatch 'Identifiant  : sa\.gec001\s+Mot de passe : (\S+)') { throw 'mot de passe admin introuvable' }
+          $motDePasse = $Matches[1]
+          $ip = (Get-NetIPAddress -AddressFamily IPv4 |
+            Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
+            Select-Object -First 1).IPAddress
+          $base = "http://${ip}:8080"
+          $page = Invoke-WebRequest "$base/login" -UseBasicParsing -SessionVariable session
+          if ($page.Content -notmatch 'name="csrf-token" content="([^"]+)"') { throw 'jeton CSRF absent' }
+          $corps = @{ csrf_token = $Matches[1]; username = 'sa.gec001'; password = $motDePasse }
+          $r = Invoke-WebRequest "$base/login" -Method Post -Body $corps -WebSession $session -UseBasicParsing
+          $arrivee = $r.BaseResponse.ResponseUri.AbsolutePath
+          Write-Host "Connexion avec le mot de passe genere : $arrivee"
+          if ($arrivee -ne '/dashboard') { throw "connexion refusee (arrive sur $arrivee)" }
+
+      - name: Relancer l'installation rapide (rien retéléchargé, rien régénéré)
+        run: |
+          $env0 = (Get-FileHash .env).Hash
+          $id0 = (Get-FileHash IDENTIFIANTS-GEC.txt).Hash
+          $dl0 = Get-ChildItem telechargements | ForEach-Object { "$($_.Name)=$($_.LastWriteTimeUtc.Ticks)" }
+          cmd /c "INSTALLER-GEC.cmd -Port 8080 -SansPause"
+          if ($LASTEXITCODE -ne 0) { throw "2e installation rapide en echec (code $LASTEXITCODE)" }
+          if ((Get-FileHash .env).Hash -ne $env0) { throw '.env modifie' }
+          if ((Get-FileHash IDENTIFIANTS-GEC.txt).Hash -ne $id0) { throw 'identifiants modifies' }
+          $dl1 = Get-ChildItem telechargements | ForEach-Object { "$($_.Name)=$($_.LastWriteTimeUtc.Ticks)" }
+          if (Compare-Object $dl0 $dl1) { throw 'fichiers retelecharges' }
+          . .\deploy\windows\commun-gec.ps1
+          if (-not (Wait-GEC -Port 8080 -DelaiSecondes 60)) { throw 'GEC ne repond plus' }
+          Write-Host '2e passage : .env, identifiants et telechargements inchanges, GEC repond'
+
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: |
+          Get-ChildItem logs -ErrorAction SilentlyContinue
+          Get-ChildItem logs\installation-rapide-*.log -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_ -Tail 150 }
+          Get-Content logs\gec.log -Tail 80 -ErrorAction SilentlyContinue
+          Get-Content "$env:TEMP\install-postgresql.log" -Tail 80 -ErrorAction SilentlyContinue
