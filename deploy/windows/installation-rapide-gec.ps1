@@ -155,9 +155,28 @@ function Find-PythonCompatible {
     return $null
 }
 
+function Get-VersionService($Nom) {
+    # « postgresql-x64-16 » → 16 ; comparaison numérique (en texte, « 9.6 » passerait devant « 16 »).
+    if ($Nom -match '(\d+)(?:\.\d+)?$') { return [int]$Matches[1] }
+    return 0
+}
+
+function Get-ServicePostgres {
+    <#
+    Un serveur peut garder plusieurs PostgreSQL (ancienne version arrêtée, par exemple) :
+    on retient celui qui tourne, sinon la version la plus récente.
+    #>
+    $services = @(Get-Service -Name 'postgresql*' -ErrorAction SilentlyContinue)
+    $actif = $services | Where-Object { $_.Status -eq 'Running' } |
+        Sort-Object { Get-VersionService $_.Name } -Descending | Select-Object -First 1
+    if ($actif) { return $actif }
+    return $services | Sort-Object { Get-VersionService $_.Name } -Descending | Select-Object -First 1
+}
+
 function Get-DossierBinPostgres {
-    $service = Get-CimInstance Win32_Service -Filter "Name LIKE 'postgresql%'" -ErrorAction SilentlyContinue |
-        Sort-Object Name -Descending | Select-Object -First 1
+    $choisi = Get-ServicePostgres
+    if (-not $choisi) { return $null }
+    $service = Get-CimInstance Win32_Service -Filter "Name = '$($choisi.Name)'" -ErrorAction SilentlyContinue
     if ($service -and $service.PathName -match '^"?([^"]+\\bin)\\pg_ctl\.exe') { return $Matches[1] }
     return $null
 }
@@ -230,7 +249,7 @@ try {
 
     # ─── 3. PostgreSQL ────────────────────────────────────────────────────────
     Write-Etape 'C' 'PostgreSQL'
-    $serviceExistant = Get-Service -Name 'postgresql*' -ErrorAction SilentlyContinue | Select-Object -First 1
+    $serviceExistant = Get-ServicePostgres
     $postgresInstalleParGEC = $false
     $motsDePasse = $null
 
