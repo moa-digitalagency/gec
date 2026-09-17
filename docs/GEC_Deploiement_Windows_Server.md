@@ -196,7 +196,7 @@ utilisateurs pour le journal d'audit, et relève la taille maximale des envois �
 ## Particularités de Windows prises en compte
 
 Ces points, invisibles sous Linux, sont corrigés dans le code et vérifiés
-automatiquement sous Windows à chaque modification (job CI « Windows Server ») :
+sur une machine Windows Server (PowerShell 5.1) lors de leur mise au point :
 
 - **Pièces jointes déchiffrées** : Windows refuse d'effacer un fichier ouvert. Le
   fichier déchiffré pour un téléchargement est supprimé après la fin de l'envoi, et
