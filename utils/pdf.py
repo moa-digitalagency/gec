@@ -449,6 +449,17 @@ def export_courrier_pdf(courrier):
         story.append(forward_table)
         story.append(Spacer(1, 20))
     
+    # Étiquette à découper et coller sur le document papier : elle voyage avec
+    # l'accusé de réception, sans impression séparée.
+    try:
+        from utils.etiquette import bloc_etiquette_accuse
+        story.append(Spacer(1, 8))
+        story.extend(bloc_etiquette_accuse(courrier, parametres, text_style))
+    except Exception as e:
+        # L'accusé de réception reste le document important : son édition ne doit
+        # jamais échouer à cause de l'étiquette.
+        logging.warning(f"Étiquette non ajoutée à l'accusé de réception : {e}")
+
     # Si commentaires ou transmissions étaient sur la page 2, ajouter un saut de page avant le footer
     if comments or forwards:
         story.append(PageBreak())
