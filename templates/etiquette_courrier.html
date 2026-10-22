@@ -4,32 +4,48 @@
 <div class="etq-wrap">
   <div class="etq-card">
     <div class="etq-head">
-      <span class="etq-org">{{ parametres.nom_logiciel if parametres else 'GEC' }}</span>
-      <span class="etq-title">{{ t('etiquette_suivi') }}</span>
+      <span class="etq-title">{{ t('etiquette_accuse_titre') }}</span>
     </div>
     <div class="etq-body">
-      <img class="etq-qr" src="{{ qr }}" alt="QR {{ courrier.numero_suivi }}">
       <div class="etq-meta">
-        <div class="etq-suivi">{{ courrier.numero_suivi }}</div>
-        <div class="etq-line"><b>{{ t('etiquette_accuse') }}</b> {{ courrier.numero_accuse_reception }}</div>
-        <div class="etq-line"><b>{{ t('etiquette_objet') }}</b> {{ courrier.objet[:60] }}</div>
-        <div class="etq-line"><b>{{ t('etiquette_date') }}</b> {{ courrier.date_enregistrement.strftime('%d/%m/%Y') if courrier.date_enregistrement }}</div>
+        <div class="etq-numero">{{ courrier.numero_accuse_reception }}</div>
+        {% if courrier.date_enregistrement %}
+        <div class="etq-line">{{ t('etiquette_enregistre_le') }} {{ courrier.date_enregistrement.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+        {% if courrier.date_redaction %}
+        <div class="etq-line">{{ t('etiquette_redige_le') }} {{ courrier.date_redaction.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+        {% if courrier.get_contact_principal() %}
+        <div class="etq-line">{{ courrier.get_label_contact() }} : {{ courrier.get_contact_principal() }}</div>
+        {% endif %}
       </div>
+      <img class="etq-qr" src="{{ qr }}" alt="QR {{ courrier.numero_accuse_reception }}">
     </div>
-    <button class="gec-btn gec-btn-primary etq-print" onclick="window.print()"><i class="fas fa-print"></i> {{ t('print') }}</button>
+    {% if parametres and (parametres.titre_pdf or parametres.nom_logiciel) %}
+    <div class="etq-org">{{ parametres.titre_pdf or parametres.nom_logiciel }}</div>
+    {% endif %}
+    <div class="etq-actions">
+      <button class="gec-btn gec-btn-primary" onclick="window.print()"><i class="fas fa-print"></i> {{ t('print') }}</button>
+      <a class="gec-btn gec-btn-secondary" href="{{ url_for('etiquette_courrier_pdf', id=courrier.id) }}"><i class="fas fa-file-pdf"></i> {{ t('etiquette_telecharger_pdf') }}</a>
+      <a class="gec-btn gec-btn-secondary" href="{{ url_for('etiquette_courrier_image', id=courrier.id) }}"><i class="fas fa-image"></i> {{ t('etiquette_telecharger_image') }}</a>
+    </div>
+    <p class="etq-note">{{ t('etiquette_apercu_note') }}</p>
   </div>
 </div>
 <style>
   .etq-wrap{display:flex;justify-content:center;padding:2rem;}
   .etq-card{border:1px solid #d1d5db;border-radius:12px;padding:1rem 1.25rem;width:340px;background:#fff;color:#111;}
-  .etq-head{display:flex;flex-direction:column;border-bottom:1px dashed #cbd5e1;padding-bottom:.5rem;margin-bottom:.75rem;}
-  .etq-org{font-weight:700;font-size:.8rem;color:#2563eb;}
-  .etq-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;}
-  .etq-body{display:flex;gap:.9rem;align-items:center;}
-  .etq-qr{width:120px;height:120px;}
-  .etq-suivi{font-size:1.05rem;font-weight:800;letter-spacing:.02em;margin-bottom:.4rem;}
-  .etq-line{font-size:.72rem;color:#374151;margin:.1rem 0;}
-  .etq-print{margin-top:.9rem;width:100%;}
-  @media print{.etq-print,.gec-sidebar,.gec-topbar{display:none!important;} .etq-wrap{padding:0;}}
+  .etq-head{text-align:center;margin-bottom:.75rem;}
+  .etq-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#111;}
+  .etq-body{display:flex;gap:.9rem;align-items:flex-start;justify-content:space-between;}
+  .etq-meta{flex:1;min-width:0;}
+  .etq-qr{width:110px;height:110px;flex-shrink:0;}
+  .etq-numero{font-size:1.15rem;font-weight:800;letter-spacing:.02em;margin-bottom:.35rem;color:#000;}
+  .etq-line{font-size:.78rem;color:#000;margin:.12rem 0;overflow-wrap:anywhere;}
+  .etq-org{text-align:center;font-weight:700;font-size:.78rem;color:#000;margin-top:.75rem;}
+  .etq-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.9rem;}
+  .etq-actions>*{flex:1 1 auto;justify-content:center;}
+  .etq-note{font-size:.7rem;color:#6b7280;margin:.6rem 0 0;text-align:center;}
+  @media print{.etq-actions,.etq-note,.gec-sidebar,.gec-topbar{display:none!important;} .etq-wrap{padding:0;}}
 </style>
 {% endblock %}

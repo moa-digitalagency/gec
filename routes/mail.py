@@ -758,11 +758,54 @@ def etiquette_courrier(id):
             'motif': 'attribution du numéro de suivi (génération étiquette)',
         })
         db.session.commit()
-    qr = qr_data_uri(courrier.numero_suivi)  # QR = numéro de suivi en clair
+    # Le QR encode le numéro d'accusé de réception : c'est le numéro que l'on
+    # recherche dans GEC, et il se lit avec n'importe quelle application.
+    qr = qr_data_uri(courrier.numero_accuse_reception)
     log_activity(current_user.id, "GENERATION_ETIQUETTE",
                  f"Étiquette générée pour {courrier.numero_accuse_reception}", courrier.id)
     parametres = ParametresSysteme.get_parametres()
     return render_template('etiquette_courrier.html', courrier=courrier, qr=qr, parametres=parametres)
+
+
+def _etiquette_ou_404(id):
+    """Courrier accessible et doté d'un numéro de suivi, pour les téléchargements."""
+    courrier = Courrier.query.get_or_404(id)
+    if not current_user.can_view_courrier(courrier):
+        abort(403)
+    return courrier
+
+
+@app.route('/courrier/<int:id>/etiquette.pdf')
+@login_required
+def etiquette_courrier_pdf(id):
+    """Étiquette prête à imprimer (70 mm de large), à coller sur le document."""
+    courrier = _etiquette_ou_404(id)
+    from utils.etiquette import construire_pdf
+    fichier = construire_pdf(courrier, ParametresSysteme.get_parametres(), t)
+    log_activity(current_user.id, "GENERATION_ETIQUETTE",
+                 f"Étiquette PDF générée pour {courrier.numero_accuse_reception}", courrier.id)
+    return send_file(fichier, mimetype='application/pdf', as_attachment=True,
+                     download_name=f"etiquette_{courrier.numero_accuse_reception}.pdf")
+
+
+@app.route('/courrier/<int:id>/etiquette.png')
+@login_required
+def etiquette_courrier_image(id):
+    """Même étiquette en image, à coller dans un autre document."""
+    courrier = _etiquette_ou_404(id)
+    from utils.etiquette import construire_image, PoliceIntrouvable
+    try:
+        fichier = construire_image(courrier, ParametresSysteme.get_parametres(), t)
+    except PoliceIntrouvable as e:
+        # Sans police vectorielle, l'image sortirait illisible : mieux vaut le dire
+        # et renvoyer vers la version PDF, qui n'en a pas besoin.
+        logging.error(f"Étiquette image indisponible : {e}")
+        flash(t('etiquette_image_indisponible'), 'error')
+        return redirect(url_for('etiquette_courrier', id=courrier.id))
+    log_activity(current_user.id, "GENERATION_ETIQUETTE",
+                 f"Étiquette image générée pour {courrier.numero_accuse_reception}", courrier.id)
+    return send_file(fichier, mimetype='image/png', as_attachment=True,
+                     download_name=f"etiquette_{courrier.numero_accuse_reception}.png")
 
 @app.route('/edit_courrier/<int:id>', methods=['GET', 'POST'])
 @login_required
