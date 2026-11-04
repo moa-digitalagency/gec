@@ -268,8 +268,8 @@ def security_settings():
     # Statistiques de sécurité
     from datetime import datetime, timedelta
     now = datetime.now()
-    failed_attempts_24h = sum(1 for data in _failed_login_attempts.values() 
-                             if isinstance(data, dict) and 
+    failed_attempts_24h = sum(1 for data in list(_failed_login_attempts.values())
+                             if isinstance(data, dict) and
                              now - data.get('timestamp', now) < timedelta(hours=24))
     
     # Récupérer les listes d'IPs bloquées et en whitelist

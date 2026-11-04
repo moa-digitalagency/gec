@@ -62,20 +62,23 @@ def clean_security_storage():
     now = datetime.now()
     
     # Clean rate limit storage
+    # NB : on itère sur une copie (list(...)) car ces dictionnaires sont
+    # partagés entre les threads Waitress ; sans copie, une modification
+    # concurrente lève « dictionary changed size during iteration ».
     expired_keys = [
-        key for key, (count, timestamp) in _rate_limit_storage.items()
+        key for key, (count, timestamp) in list(_rate_limit_storage.items())
         if now - timestamp > timedelta(minutes=15)
     ]
     for key in expired_keys:
-        del _rate_limit_storage[key]
-    
+        _rate_limit_storage.pop(key, None)
+
     # Clean failed login attempts
     expired_attempts = [
-        ip for ip, data in _failed_login_attempts.items()
+        ip for ip, data in list(_failed_login_attempts.items())
         if isinstance(data, dict) and now - data.get('timestamp', now) > timedelta(minutes=LOGIN_LOCKOUT_DURATION)
     ]
     for ip in expired_attempts:
-        del _failed_login_attempts[ip]
+        _failed_login_attempts.pop(ip, None)
     
     # Clean suspicious activities
     for ip in list(_suspicious_activities.keys()):
@@ -530,11 +533,11 @@ def clean_expired_session_tokens():
     """Clean expired session tokens"""
     now = datetime.now()
     expired_tokens = [
-        token for token, data in _session_tokens.items()
+        token for token, data in list(_session_tokens.items())
         if now - data['created'] > timedelta(hours=24)
     ]
     for token in expired_tokens:
-        del _session_tokens[token]
+        _session_tokens.pop(token, None)
 
 def secure_file_handling(filename):
     """Secure file name handling"""

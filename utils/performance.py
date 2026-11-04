@@ -140,7 +140,7 @@ def clear_cache():
 def clean_expired_cache():
     """Remove expired in-memory cache entries (Redis handles TTL natively)."""
     current_time = time.time()
-    expired_keys = [k for k, exp in _cache_ttl.items() if current_time >= exp]
+    expired_keys = [k for k, exp in list(_cache_ttl.items()) if current_time >= exp]
     for key in expired_keys:
         _cache.pop(key, None)
         _cache_ttl.pop(key, None)
