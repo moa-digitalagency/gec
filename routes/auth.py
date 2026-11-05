@@ -259,33 +259,37 @@ def logout():
 
 @app.route('/rafraichir-session')
 def rafraichir_session():
-    """Outil « Rafraîchir » : nettoie le cookie et la session côté serveur, puis
-    renvoie vers une page de connexion NEUVE (jeton de sécurité tout frais).
+    """Outil « Rafraîchir » : repart d'une page NEUVE avec un jeton de sécurité frais.
 
-    À utiliser quand un formulaire reste bloqué sur « Session de sécurité expirée »
-    (page ouverte trop longtemps, retour en arrière, déconnexion dans un autre onglet,
-    cookie resté d'une ancienne version). Aucune donnée n'est perdue : on ne touche
-    qu'au cookie de session du navigateur."""
+    Sert au cas d'un formulaire bloqué sur « Session de sécurité expirée » (page
+    ouverte trop longtemps, retour en arrière, cookie resté d'une ancienne version).
+
+    SÉCURITÉ — pourquoi ce n'est PAS une déconnexion par GET : on ne vide la session
+    que lorsque personne n'est connecté (aucune donnée sensible : session anonyme).
+    Pour un utilisateur connecté, la session est valable (seul un jeton de formulaire
+    a pu périmer) : on ne touche à rien et on le renvoie vers une page neuve. Sinon un
+    simple <img src=".../rafraichir-session"> suffirait à le déconnecter (CSRF de
+    déconnexion). La vraie déconnexion reste /logout."""
     # Destination interne sûre (on refuse les redirections externes).
     next_param = request.args.get('next')
-    cible = url_for('login')
+    cible_interne = None
     if next_param:
         try:
             from security import secure_redirect
             sr = secure_redirect(next_param)
-            # secure_redirect renvoie le tableau de bord pour les cibles douteuses :
-            # on ne garde next que si c'est bien un chemin interne.
             if sr and sr.startswith('/') and not sr.startswith('//') and sr != url_for('logout'):
-                cible = url_for('login', next=sr)
+                cible_interne = sr
         except Exception:
             pass
 
-    try:
-        logout_user()
-    except Exception:
-        pass
-    session.clear()
+    # Utilisateur connecté : session valide → ne RIEN vider, juste recharger une page
+    # fraîche (jeton neuf). Jamais de déconnexion déclenchée par un GET tiers.
+    if current_user.is_authenticated:
+        return redirect(cible_interne or url_for('dashboard'))
 
+    # Non connecté : on nettoie la session anonyme + le cookie et on repart du login.
+    session.clear()
+    cible = url_for('login', next=cible_interne) if cible_interne else url_for('login')
     flash("Session rafraîchie. Vous pouvez vous reconnecter.", 'info')
     reponse = redirect(cible)
     # Suppression explicite du cookie de session côté navigateur (ceinture + bretelles).
