@@ -576,28 +576,41 @@ def check_file_integrity(file_path, expected_checksum=None):
         return False, None
 
 def secure_redirect(url, allowed_hosts=None):
-    """Secure redirect to prevent open redirect vulnerabilities"""
+    """Redirection sûre : par défaut, chemins INTERNES uniquement.
+
+    Corrige une redirection ouverte : l'ancienne version renvoyait l'URL telle quelle
+    dès que `allowed_hosts` était None, même avec un hôte externe (`https://evil/`).
+    Désormais, sans `allowed_hosts`, on rejette tout schéma, tout hôte, tout antislash
+    (un navigateur lit « /\\evil » comme « //evil ») et tout caractère de contrôle ;
+    on reconstruit chemin + requête depuis l'analyse d'URL. Avec `allowed_hosts`, un
+    hôte explicitement autorisé reste accepté."""
     if not url:
         return url_for('dashboard')
-    
-    # Parse URL
     try:
-        from urllib.parse import urlparse, urljoin
+        from urllib.parse import urlparse
+        if any(c in url for c in '\\\t\r\n\x00') or any(ord(c) < 0x20 for c in url):
+            logging.warning("Redirection refusée (antislash ou caractère de contrôle).")
+            return url_for('dashboard')
         parsed = urlparse(url)
-        
-        # Only allow relative URLs or URLs to allowed hosts
-        if parsed.netloc:
-            if allowed_hosts and parsed.netloc not in allowed_hosts:
-                logging.warning(f"Attempted redirect to unauthorized host: {parsed.netloc}")
-                return url_for('dashboard')
-        
-        # Prevent javascript: and data: URLs
-        if parsed.scheme in ('javascript', 'data', 'vbscript'):
+
+        # Schémas dangereux, toujours refusés
+        if parsed.scheme in ('javascript', 'data', 'vbscript', 'file'):
             logging.warning(f"Attempted redirect to dangerous scheme: {parsed.scheme}")
             return url_for('dashboard')
-        
-        return url
-        
+
+        # Hôte présent : autorisé seulement s'il figure dans allowed_hosts
+        if parsed.netloc:
+            if allowed_hosts and parsed.netloc in allowed_hosts:
+                return url
+            logging.warning(f"Attempted redirect to unauthorized host: {parsed.netloc}")
+            return url_for('dashboard')
+
+        # Pas d'hôte : exiger un chemin interne propre (un seul '/' en tête)
+        chemin = parsed.path or ''
+        if not chemin.startswith('/') or chemin.startswith('//'):
+            return url_for('dashboard')
+        return chemin + ('?' + parsed.query if parsed.query else '')
+
     except Exception as e:
         logging.error(f"Error parsing redirect URL: {e}")
         return url_for('dashboard')

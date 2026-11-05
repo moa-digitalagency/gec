@@ -25,6 +25,33 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 SESSION_INACTIVITY_TIMEOUT = 900  # Valeur de repli (15 min) — la vraie valeur vient de Paramètres → Sécurité
 
 
+def chemin_interne_sur(brut):
+    """Retourne un chemin INTERNE sûr (`/...`) à partir d'un paramètre `next`, ou None.
+
+    Barrière anti-redirection ouverte : on rejette tout schéma/hôte, tout antislash
+    (un navigateur lit « /\\evil.com » comme « //evil.com » → redirection externe) et
+    tout caractère de contrôle ou espace, puis on reconstruit chemin + requête à partir
+    de l'analyse d'URL (jamais la chaîne brute). On exclut aussi les boucles évidentes
+    (déconnexion, rafraîchissement)."""
+    if not brut:
+        return None
+    from urllib.parse import urlparse
+    if any(c in brut for c in '\\\t\r\n\x00 ') or any(ord(c) < 0x20 for c in brut):
+        return None
+    try:
+        p = urlparse(brut)
+    except Exception:
+        return None
+    if p.scheme or p.netloc:
+        return None
+    chemin = p.path or ''
+    if not chemin.startswith('/') or chemin.startswith('//'):
+        return None
+    if chemin in ('/logout', '/rafraichir-session'):
+        return None
+    return chemin + ('?' + p.query if p.query else '')
+
+
 def _expects_json():
     """Vrai si la requête vient d'un appel AJAX/fetch (attend du JSON).
     Sans ça, une session expirée renverrait une page HTML de login que le JS ne sait pas
@@ -270,17 +297,8 @@ def rafraichir_session():
     a pu périmer) : on ne touche à rien et on le renvoie vers une page neuve. Sinon un
     simple <img src=".../rafraichir-session"> suffirait à le déconnecter (CSRF de
     déconnexion). La vraie déconnexion reste /logout."""
-    # Destination interne sûre (on refuse les redirections externes).
-    next_param = request.args.get('next')
-    cible_interne = None
-    if next_param:
-        try:
-            from security import secure_redirect
-            sr = secure_redirect(next_param)
-            if sr and sr.startswith('/') and not sr.startswith('//') and sr != url_for('logout'):
-                cible_interne = sr
-        except Exception:
-            pass
+    # Destination interne sûre (on refuse les redirections externes / antislash).
+    cible_interne = chemin_interne_sur(request.args.get('next'))
 
     # Utilisateur connecté : session valide → ne RIEN vider, juste recharger une page
     # fraîche (jeton neuf). Jamais de déconnexion déclenchée par un GET tiers.
