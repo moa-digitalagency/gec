@@ -150,6 +150,13 @@
           <i class="fas fa-shield-alt" style="color:#10B981;"></i>
           Accès sécurisé — Données chiffrées AES-256
         </p>
+        <p style="font-size:0.75rem;margin-top:0.5rem;">
+          <a href="{{ url_for('rafraichir_session') }}"
+             style="color:var(--t-muted,#94A3B8);text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;">
+            <i class="fas fa-rotate" style="font-size:0.75rem;"></i>
+            Problème de connexion&nbsp;? Rafraîchir la session
+          </a>
+        </p>
       </div>
     </div>
   </div>
@@ -173,5 +180,10 @@ function togglePwd(){
     e.className='fas fa-eye';
   }
 }
+// Retour arrière / restauration bfcache : la page revient avec un jeton de sécurité
+// potentiellement périmé. On recharge depuis le serveur pour repartir d'un jeton frais.
+window.addEventListener('pageshow', function(e){
+  if(e.persisted){ window.location.reload(); }
+});
 </script>
 {% endblock %}

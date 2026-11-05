@@ -69,12 +69,18 @@
     </div>
 
     <div class="actions">
-      {% if authed %}
+      {% if refresh_url %}
+      <a href="{{ refresh_url }}" class="btn btn-primary"><i class="fas fa-rotate"></i> Rafraîchir et réessayer</a>
+      {% elif authed %}
       <a href="{{ url_for('dashboard') }}" class="btn btn-primary"><i class="fas fa-house"></i> Retour au tableau de bord</a>
       {% else %}
       <a href="{{ url_for('login') }}" class="btn btn-primary"><i class="fas fa-right-to-bracket"></i> Retour à la connexion</a>
       {% endif %}
+      {% if refresh_url and authed %}
+      <a href="{{ url_for('dashboard') }}" class="btn btn-ghost"><i class="fas fa-house"></i> Tableau de bord</a>
+      {% else %}
       <a href="javascript:history.back()" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Page précédente</a>
+      {% endif %}
     </div>
 
     <div class="foot">GEC — Gestion Électronique du Courrier</div>

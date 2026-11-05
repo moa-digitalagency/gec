@@ -208,7 +208,7 @@ pm2 logs gec --lines 20           # vérifier démarrage
 | `ADMIN_PASSWORD` | Oui (1er démarrage) | Mot de passe du super admin créé au premier démarrage (défaut : `TempPassword123!`) |
 | `FIRST_ADMIN_USERNAME` | Non | Identifiant du super admin initial (défaut : `sa.gec001`) |
 | `TRUSTED_PROXIES` | Recommandé | IPs proxy de confiance (défaut: `127.0.0.1,::1`) |
-| `GEC_HTTPS` | Non | `0` si le site est servi en HTTP simple (intranet sans certificat) : sans cela, le cookie de session est réservé à HTTPS et aucune connexion n'est possible. Défaut : `1` |
+| `GEC_HTTPS` | Non | Réglage conservé par compatibilité. Depuis la version actuelle, le cookie de session suit **automatiquement le schéma réel** de la requête (Secure en HTTPS, non-Secure en HTTP) : un intranet servi en HTTP simple fonctionne sans aucun réglage. `GEC_HTTPS=0` force le cookie en non-Secure en toutes circonstances. Défaut : `1` |
 | `GEC_DERRIERE_PROXY` | Non | `0` si GEC est exposé directement, sans nginx ni IIS : les en-têtes `X-Real-IP` / `X-Forwarded-For` sont alors ignorés, car fournis par le client lui-même. Défaut : `1` |
 | `RESEND_API_KEY` | Non | Clé API Resend pour envoi d'emails |
 

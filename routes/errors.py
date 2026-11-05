@@ -22,15 +22,20 @@ from services.email import send_new_mail_notification, send_mail_forwarded_notif
 from security import rate_limit, sanitize_input, validate_file_upload, log_security_event, record_failed_login, is_login_locked, reset_failed_login_attempts, get_client_ip, validate_password_strength, audit_log
 from utils.performance import cache_result, get_dashboard_statistics, optimize_search_query, PerformanceMonitor, clear_cache
 
-def _error_page(code, title, message, icon='fa-triangle-exclamation', status=None):
+def _error_page(code, title, message, icon='fa-triangle-exclamation', status=None,
+                refresh_url=None):
     """Rend la page d'erreur autonome (URL concernée + bouton contextuel :
-    tableau de bord si connecté, sinon retour à la connexion)."""
+    tableau de bord si connecté, sinon retour à la connexion).
+
+    refresh_url : si fourni, ajoute un bouton « Rafraîchir et réessayer » qui vide
+    la session et le cookie puis renvoie une page neuve (jeton de sécurité frais)."""
     try:
         authed = bool(current_user.is_authenticated)
     except Exception:
         authed = False
     return render_template('error.html', code=code, title=title, message=message,
-                           icon=icon, error_url=request.url, authed=authed), (status or code)
+                           icon=icon, error_url=request.url, authed=authed,
+                           refresh_url=refresh_url), (status or code)
 
 
 @app.errorhandler(400)
@@ -83,15 +88,43 @@ def internal_error(error):
                        icon='fa-bug')
 
 # Jeton CSRF expiré/invalide (formulaire resté ouvert trop longtemps → timeout de sécurité)
+#
+# Chemins de FORMULAIRE D'AUTHENTIFICATION : au lieu d'une impasse, on réaffiche le
+# formulaire d'origine. Le simple fait de le rendre ouvre une session neuve et un
+# jeton valide : le 2ᵉ envoi aboutit, sans que l'utilisateur ait à comprendre quoi
+# que ce soit. Partout ailleurs : page d'erreur claire + bouton « Rafraîchir et
+# réessayer » qui nettoie cookie et session.
+_CHEMINS_FORMULAIRE_AUTH = {
+    '/login': 'login.html',
+    '/verify_2fa': 'verify_2fa.html',
+}
+
 try:
     from flask_wtf.csrf import CSRFError
 
     @app.errorhandler(CSRFError)
     def handle_csrf_error(error):
+        from flask import session, flash
+        gabarit = _CHEMINS_FORMULAIRE_AUTH.get(request.path)
+        if gabarit:
+            # Repartir d'une session propre pour émettre un jeton tout neuf.
+            try:
+                session.pop('_flashes', None)
+            except Exception:
+                pass
+            flash("Votre session de sécurité avait expiré. Veuillez renvoyer le formulaire.", 'info')
+            kwargs = {'error': None} if gabarit == 'verify_2fa.html' else {}
+            return render_template(gabarit, **kwargs), 400
+        # Autres formulaires : on propose explicitement de rafraîchir la session.
+        try:
+            refresh = url_for('rafraichir_session', next=request.full_path)
+        except Exception:
+            refresh = None
         return _error_page(400, 'Session de sécurité expirée',
                            "Votre jeton de sécurité a expiré ou est invalide (page restée ouverte "
-                           "trop longtemps). Reconnectez-vous puis renvoyez le formulaire.",
-                           icon='fa-shield-halved')
+                           "trop longtemps, ou retour en arrière). Cliquez sur « Rafraîchir et "
+                           "réessayer », puis renvoyez le formulaire.",
+                           icon='fa-shield-halved', refresh_url=refresh)
 except Exception:
     pass
 

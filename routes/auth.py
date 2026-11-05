@@ -256,6 +256,46 @@ def logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
 
+
+@app.route('/rafraichir-session')
+def rafraichir_session():
+    """Outil « Rafraîchir » : nettoie le cookie et la session côté serveur, puis
+    renvoie vers une page de connexion NEUVE (jeton de sécurité tout frais).
+
+    À utiliser quand un formulaire reste bloqué sur « Session de sécurité expirée »
+    (page ouverte trop longtemps, retour en arrière, déconnexion dans un autre onglet,
+    cookie resté d'une ancienne version). Aucune donnée n'est perdue : on ne touche
+    qu'au cookie de session du navigateur."""
+    # Destination interne sûre (on refuse les redirections externes).
+    next_param = request.args.get('next')
+    cible = url_for('login')
+    if next_param:
+        try:
+            from security import secure_redirect
+            sr = secure_redirect(next_param)
+            # secure_redirect renvoie le tableau de bord pour les cibles douteuses :
+            # on ne garde next que si c'est bien un chemin interne.
+            if sr and sr.startswith('/') and not sr.startswith('//') and sr != url_for('logout'):
+                cible = url_for('login', next=sr)
+        except Exception:
+            pass
+
+    try:
+        logout_user()
+    except Exception:
+        pass
+    session.clear()
+
+    flash("Session rafraîchie. Vous pouvez vous reconnecter.", 'info')
+    reponse = redirect(cible)
+    # Suppression explicite du cookie de session côté navigateur (ceinture + bretelles).
+    try:
+        reponse.delete_cookie(app.config.get('SESSION_COOKIE_NAME', 'session'),
+                              path=app.config.get('SESSION_COOKIE_PATH', '/') or '/')
+    except Exception:
+        pass
+    return reponse
+
 # ============================================================ #
 #  C3 — 2FA TOTP (super_admin uniquement)
 # ============================================================ #
