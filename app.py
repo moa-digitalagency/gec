@@ -28,7 +28,13 @@ if not _session_secret:
     _session_secret = secrets.token_hex(32)
 app.secret_key = _session_secret
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7   # 7 jours (réduit de 30 → 7)
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600               # Token CSRF valide 1h
+# Jeton CSRF lié à la DURÉE DE SESSION, pas à un minuteur de 1 h.
+# Avant (3600 s), une page de connexion ou un formulaire laissé ouvert plus d'une
+# heure produisait systématiquement « Session de sécurité expirée » (400), même
+# avec une session encore valide. None rattache le jeton au cookie de session :
+# il reste valable tant que la session l'est, et l'expiration par inactivité
+# (15 min, Paramètres → Sécurité) reste la vraie barrière de sécurité.
+app.config['WTF_CSRF_TIME_LIMIT'] = None
 app.config['SESSION_IDLE_TIMEOUT'] = 900               # 15 min d'inactivité
 
 # Sécurité cookies de session
@@ -49,6 +55,35 @@ def cookie_session_securise(environ=os.environ):
 app.config['SESSION_COOKIE_SECURE']   = cookie_session_securise()
 app.config['SESSION_COOKIE_HTTPONLY'] = True             # Inaccessible au JS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'           # Protège contre CSRF cross-site
+
+
+# --- Cookie de session : Secure qui suit le SCHÉMA RÉEL de la requête -----------
+# Un cookie marqué « Secure » n'est jamais renvoyé par le navigateur en HTTP. Sur
+# un intranet servi en HTTP simple (IIS/nginx sans certificat), cela rendait TOUTE
+# connexion impossible : le cookie de session — qui porte le jeton CSRF — n'était
+# jamais stocké, et chaque envoi du formulaire échouait sur « Session de sécurité
+# expirée » (400), quel que soit le mot de passe.
+#
+# Plutôt que de dépendre d'un réglage GEC_HTTPS correct sur chaque instance, on fait
+# suivre le drapeau Secure au schéma réellement vu par Flask (via ProxyFix /
+# X-Forwarded-Proto) :
+#   - requête HTTPS  → cookie Secure (protection intégrale sur les sites à certificat) ;
+#   - requête HTTP   → cookie non-Secure (l'intranet fonctionne sans configuration).
+# On n'élève jamais au-dessus du réglage statique : si l'administrateur a
+# explicitement déclaré GEC_HTTPS=0, le cookie reste non-Secure en toutes circonstances.
+from flask.sessions import SecureCookieSessionInterface
+
+
+class _SessionCookieSchemeAware(SecureCookieSessionInterface):
+    def get_cookie_secure(self, app):
+        from flask import request, has_request_context
+        statique = super().get_cookie_secure(app)
+        if has_request_context():
+            return bool(statique) and bool(request.is_secure)
+        return statique
+
+
+app.session_interface = _SessionCookieSchemeAware()
 
 # ProxyFix : x_for=1 résout REMOTE_ADDR depuis X-Forwarded-For (Nginx → Flask)
 # Sans ça, REMOTE_ADDR reste 127.0.0.1 et les logs affichent toujours l'IP du proxy.

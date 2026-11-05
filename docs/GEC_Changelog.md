@@ -2,6 +2,26 @@
 
 ---
 
+## [v2.2.1] - Novembre 2026 — Robustesse de la connexion (« Session de sécurité expirée »)
+
+Correction de fond du message **« 400 — Session de sécurité expirée »** qui revenait à la connexion, en particulier depuis les postes du réseau accédant au serveur en HTTP simple.
+
+### Corrections
+- **Cookie de session selon le schéma réel** : le drapeau `Secure` du cookie de session suit désormais automatiquement le protocole de la requête (Secure en HTTPS, non-Secure en HTTP), au lieu de dépendre d'un réglage statique. Un intranet servi en HTTP (IIS sans certificat) fonctionne sans configuration. *Cause corrigée :* un cookie marqué Secure n'est jamais renvoyé par le navigateur en HTTP, donc le jeton CSRF de session était absent et **toute** connexion depuis un autre poste échouait, bien que la page de connexion s'affiche.
+- **Jeton CSRF lié à la session** (`WTF_CSRF_TIME_LIMIT = None`) au lieu d'un minuteur d'1 h : une page de connexion ou un formulaire laissé ouvert ne se périme plus tout seul.
+- **Auto-guérison sur les formulaires d'authentification** : un jeton manquant/expiré sur `/login` ou `/verify_2fa` réaffiche le formulaire avec une session et un jeton neufs (le second envoi aboutit) au lieu d'une page sans issue.
+- **Outil « Rafraîchir la session »** : nouvelle route `/rafraichir-session` qui nettoie cookie et session côté serveur puis renvoie une page de connexion neuve. Accessible via le lien « Problème de connexion ? Rafraîchir la session » sous le formulaire, et via le bouton « Rafraîchir et réessayer » des pages d'erreur de sécurité.
+- **Protection contre le retour arrière (bfcache)** : les pages de connexion et de vérification 2FA se rechargent si le navigateur les restaure depuis son cache, pour repartir d'un jeton frais.
+
+### Documentation
+- Guide utilisateur : nouvelle section « Messages d'erreur et dépannage » (400, 403, 404, 429, 500, blocage de compte).
+- Guides de déploiement : note sur la détection automatique HTTP/HTTPS du cookie de session.
+
+### Tests
+- `tests/test_session_resilience.py` : cookie Secure selon le schéma, jeton lié à la session, réaffichage du formulaire sur jeton manquant, route de rafraîchissement (cible interne conservée, cible externe rejetée).
+
+---
+
 ## [v2.2.0] - Juillet 2026 — Évolutions DPEM (Réf. MOA/CD/KIN/06003/2026)
 
 Intégration des 6 évolutions demandées par la Direction de Protection de l'Environnement Minier (DPEM) dans sa lettre du 18/06/2026, sans régression sur l'existant (chiffrement AES-256-GCM, RBAC, signature de non-répudiation).

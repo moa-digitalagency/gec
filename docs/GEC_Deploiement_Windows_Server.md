@@ -204,8 +204,13 @@ sur une machine Windows Server (PowerShell 5.1) lors de leur mise au point :
 - **Encodage** : Python écrit en cp1252 par défaut sous Windows. Tous les fichiers
   texte de GEC sont lus et écrits en UTF-8, et GEC tourne en mode UTF-8.
 - **`.env` du Bloc-notes** : enregistré en UTF-8 avec BOM, il est lu correctement.
-- **HTTP simple** : en mode Intranet, le cookie de session n'exige pas HTTPS
-  (`GEC_HTTPS=0`), sans quoi aucune connexion ne serait possible.
+- **HTTP simple (accès depuis les autres postes)** : le cookie de session suit
+  désormais **automatiquement** le schéma de la requête — Secure en HTTPS, non-Secure
+  en HTTP. Un intranet servi en HTTP (IIS sans certificat) fonctionne donc sans réglage
+  particulier. *Symptôme corrigé :* la page de connexion s'affichait depuis un autre
+  poste (`http://<ip-serveur>/`) mais tout envoi retombait sur « 400 — Session de
+  sécurité expirée », car le cookie marqué Secure n'était jamais renvoyé en HTTP.
+  `GEC_HTTPS=0` reste disponible pour forcer explicitement le mode HTTP.
 - **Adresse des utilisateurs** : sans proxy (`GEC_DERRIERE_PROXY=0`), les en-têtes
   `X-Real-IP` et `X-Forwarded-For` envoyés par le navigateur sont ignorés, pour qu'un
   client ne puisse pas contourner la limitation des tentatives de connexion.

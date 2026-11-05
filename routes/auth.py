@@ -25,6 +25,33 @@ from utils.performance import cache_result, get_dashboard_statistics, optimize_s
 SESSION_INACTIVITY_TIMEOUT = 900  # Valeur de repli (15 min) — la vraie valeur vient de Paramètres → Sécurité
 
 
+def chemin_interne_sur(brut):
+    """Retourne un chemin INTERNE sûr (`/...`) à partir d'un paramètre `next`, ou None.
+
+    Barrière anti-redirection ouverte : on rejette tout schéma/hôte, tout antislash
+    (un navigateur lit « /\\evil.com » comme « //evil.com » → redirection externe) et
+    tout caractère de contrôle ou espace, puis on reconstruit chemin + requête à partir
+    de l'analyse d'URL (jamais la chaîne brute). On exclut aussi les boucles évidentes
+    (déconnexion, rafraîchissement)."""
+    if not brut:
+        return None
+    from urllib.parse import urlparse
+    if any(c in brut for c in '\\\t\r\n\x00 ') or any(ord(c) < 0x20 for c in brut):
+        return None
+    try:
+        p = urlparse(brut)
+    except Exception:
+        return None
+    if p.scheme or p.netloc:
+        return None
+    chemin = p.path or ''
+    if not chemin.startswith('/') or chemin.startswith('//'):
+        return None
+    if chemin in ('/logout', '/rafraichir-session'):
+        return None
+    return chemin + ('?' + p.query if p.query else '')
+
+
 def _expects_json():
     """Vrai si la requête vient d'un appel AJAX/fetch (attend du JSON).
     Sans ça, une session expirée renverrait une page HTML de login que le JS ne sait pas
@@ -255,6 +282,41 @@ def logout():
     logout_user()
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
+
+
+@app.route('/rafraichir-session')
+def rafraichir_session():
+    """Outil « Rafraîchir » : repart d'une page NEUVE avec un jeton de sécurité frais.
+
+    Sert au cas d'un formulaire bloqué sur « Session de sécurité expirée » (page
+    ouverte trop longtemps, retour en arrière, cookie resté d'une ancienne version).
+
+    SÉCURITÉ — pourquoi ce n'est PAS une déconnexion par GET : on ne vide la session
+    que lorsque personne n'est connecté (aucune donnée sensible : session anonyme).
+    Pour un utilisateur connecté, la session est valable (seul un jeton de formulaire
+    a pu périmer) : on ne touche à rien et on le renvoie vers une page neuve. Sinon un
+    simple <img src=".../rafraichir-session"> suffirait à le déconnecter (CSRF de
+    déconnexion). La vraie déconnexion reste /logout."""
+    # Destination interne sûre (on refuse les redirections externes / antislash).
+    cible_interne = chemin_interne_sur(request.args.get('next'))
+
+    # Utilisateur connecté : session valide → ne RIEN vider, juste recharger une page
+    # fraîche (jeton neuf). Jamais de déconnexion déclenchée par un GET tiers.
+    if current_user.is_authenticated:
+        return redirect(cible_interne or url_for('dashboard'))
+
+    # Non connecté : on nettoie la session anonyme + le cookie et on repart du login.
+    session.clear()
+    cible = url_for('login', next=cible_interne) if cible_interne else url_for('login')
+    flash("Session rafraîchie. Vous pouvez vous reconnecter.", 'info')
+    reponse = redirect(cible)
+    # Suppression explicite du cookie de session côté navigateur (ceinture + bretelles).
+    try:
+        reponse.delete_cookie(app.config.get('SESSION_COOKIE_NAME', 'session'),
+                              path=app.config.get('SESSION_COOKIE_PATH', '/') or '/')
+    except Exception:
+        pass
+    return reponse
 
 # ============================================================ #
 #  C3 — 2FA TOTP (super_admin uniquement)

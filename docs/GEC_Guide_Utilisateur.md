@@ -94,3 +94,20 @@ Si vous avez les droits de suppression, les courriers effacés vont dans la **Co
 *   **Dates :** Le format standard est `JJ/MM/AAAA`.
 *   **Sécurité :** N'oubliez pas de vous déconnecter (Logout) si vous utilisez un ordinateur partagé.
 *   **Support :** En cas de problème technique, notez le message d'erreur et contactez votre administrateur.
+
+---
+
+## 6. Messages d'erreur et dépannage
+
+Chaque écran d'erreur affiche un **code**, l'**adresse concernée** et un **bouton** pour repartir. Avant d'appeler le support, notez le code et l'adresse : cela suffit souvent à régler le problème en une minute.
+
+| Message | Ce que ça veut dire | Quoi faire |
+|---|---|---|
+| **400 — Session de sécurité expirée** | La page est restée ouverte trop longtemps, vous êtes revenu en arrière, ou vous vous êtes déconnecté dans un autre onglet. Le jeton de sécurité du formulaire n'est plus valable. | Cliquez sur **« Rafraîchir et réessayer »**, puis renvoyez le formulaire. Sur la page de connexion, utilisez le lien **« Problème de connexion ? Rafraîchir la session »** sous le formulaire. |
+| **Trop de tentatives de connexion** | Après plusieurs mots de passe manqués, le compte se met en pause un quart d'heure (protection anti-intrusion). | Patientez 15 minutes : le blocage se lève tout seul. Vérifiez entre-temps votre identifiant et la touche Verr. Maj. |
+| **429 — Trop de requêtes** | Trop de clics très rapprochés. | Attendez quelques secondes puis reprenez. |
+| **404 — Page introuvable** | Le lien n'existe plus ou a été mal copié. | Revenez au tableau de bord par le bouton proposé. |
+| **403 — Accès refusé** | Votre rôle ne vous autorise pas cette page ou cette action. | C'est normal : demandez à un administrateur si vous pensez devoir y accéder. |
+| **500 — Erreur interne** | Un incident côté serveur. | Réessayez une fois. Si cela recommence, prévenez l'administrateur en indiquant l'heure et l'adresse affichée. |
+
+> **Le bouton « Rafraîchir la session »** (sous le formulaire de connexion, et sur les pages d'erreur de sécurité) nettoie le cookie et repart d'une page neuve avec un jeton valide. Aucune donnée n'est perdue : il ne touche qu'à votre session de navigateur. Utilisez-le dès qu'un formulaire reste bloqué.
