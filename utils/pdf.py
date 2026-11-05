@@ -6,10 +6,31 @@ from flask import request, session
 from utils.helpers import format_date
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable, KeepInFrame
+from reportlab.lib.units import inch, mm
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
+
+# --- Charte visuelle de l'accusé de réception (document officiel, sobre) ---------
+GEC_NAVY   = colors.HexColor('#0F2A47')   # bleu nuit institutionnel (titres, bandeaux)
+GEC_ACCENT = colors.HexColor('#B8912F')   # filet doré discret (liseré officiel)
+GEC_LIGHT  = colors.HexColor('#F3F6FA')   # fond de ligne très clair (lisibilité)
+GEC_BORDER = colors.HexColor('#D6DEE8')   # traits fins
+GEC_MUTED  = colors.HexColor('#5B6675')   # texte secondaire
+
+
+def _qr_flowable(texte, taille_mm=30.0):
+    """QR code (encode le numéro d'accusé) en flowable ReportLab, net à l'impression."""
+    import io
+    import qrcode
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1)
+    qr.add_data(texte or '')
+    qr.make(fit=True)
+    image = qr.make_image(fill_color='black', back_color='white')
+    tampon = io.BytesIO()
+    image.save(tampon, format='PNG')
+    tampon.seek(0)
+    return Image(tampon, width=taille_mm * mm, height=taille_mm * mm)
 
 
 def _resolve_logo_path(parametres):
@@ -135,14 +156,14 @@ def export_courrier_pdf(courrier):
     styles = getSampleStyleSheet()
     story = []
     
-    # Style personnalisé pour le titre
+    # Style personnalisé pour le titre (sections de la page 2)
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=16,
-        spaceAfter=30,
-        alignment=1,  # Centré
-        textColor=colors.darkblue
+        fontSize=13,
+        spaceAfter=10,
+        alignment=0,  # Aligné à gauche (titre de section)
+        textColor=GEC_NAVY
     )
     
     # Style pour le texte avec wrap automatique
@@ -161,87 +182,113 @@ def export_courrier_pdf(courrier):
     label_style = ParagraphStyle(
         'LabelStyle',
         parent=styles['Normal'],
-        fontSize=10,
-        spaceAfter=6,
-        textColor=colors.darkblue,
-        fontName='Helvetica-Bold'
+        fontSize=9.5,
+        spaceAfter=0,
+        textColor=GEC_NAVY,
+        fontName='Helvetica-Bold',
+        leading=12
     )
     
     # Récupérer les paramètres système pour le PDF
     from models import ParametresSysteme
     parametres = ParametresSysteme.get_parametres()
     
-    # Ajouter le logo s'il existe
-    logo_path = None
-    if parametres.logo_pdf:
-        # Convertir l'URL relative en chemin de fichier absolu
-        if parametres.logo_pdf.startswith('/uploads/'):
-            logo_file_path = parametres.logo_pdf[9:]  # Enlever '/uploads/'
-            logo_abs_path = os.path.join('uploads', logo_file_path)
-            if os.path.exists(logo_abs_path):
-                logo_path = logo_abs_path
-    elif parametres.logo_url:
-        # Convertir l'URL relative en chemin de fichier absolu
-        if parametres.logo_url.startswith('/uploads/'):
-            logo_file_path = parametres.logo_url[9:]  # Enlever '/uploads/'
-            logo_abs_path = os.path.join('uploads', logo_file_path)
-            if os.path.exists(logo_abs_path):
-                logo_path = logo_abs_path
-    
+    # ====================================================================
+    #  EN-TÊTE (letterhead) : identité à gauche, panneau QR à droite.
+    #  Le QR encode le numéro d'accusé (vérification directe du document) ;
+    #  il remplace l'ancienne étiquette qui vivait en page 2.
+    # ====================================================================
+    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
+    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
+    pays_text = parametres.pays_pdf or "République Démocratique du Congo"
+
+    st_pays = ParagraphStyle('AR_Pays', parent=styles['Normal'], fontSize=12.5,
+                             fontName='Helvetica-Bold', textColor=GEC_NAVY,
+                             leading=15, spaceAfter=2)
+    st_org = ParagraphStyle('AR_Org', parent=styles['Normal'], fontSize=10.5,
+                            fontName='Helvetica-Bold', textColor=GEC_NAVY, leading=13)
+    st_org_sub = ParagraphStyle('AR_OrgSub', parent=styles['Normal'], fontSize=9,
+                                textColor=GEC_MUTED, leading=12)
+    st_qr_lbl = ParagraphStyle('AR_QrLbl', parent=styles['Normal'], fontSize=6.5,
+                               alignment=1, textColor=GEC_MUTED, leading=8,
+                               spaceBefore=3, fontName='Helvetica-Bold')
+    st_qr_num = ParagraphStyle('AR_QrNum', parent=styles['Normal'], fontSize=9,
+                               alignment=1, textColor=GEC_NAVY, leading=11,
+                               fontName='Helvetica-Bold')
+
+    # Colonne identité (logo optionnel + pays + organisation)
+    col_identite = []
     logo_path = _resolve_logo_path(parametres)
     if logo_path:
         try:
-            # Charger l'image pour obtenir ses dimensions originales
             from PIL import Image as PILImage
-            pil_img = PILImage.open(logo_path)
-            original_width, original_height = pil_img.size
-            
-            # Calculer les dimensions en préservant le ratio
-            max_width = 1.5*inch
-            max_height = 1*inch
-            
-            # Calculer le ratio de redimensionnement
-            width_ratio = max_width / original_width
-            height_ratio = max_height / original_height
-            ratio = min(width_ratio, height_ratio)
-            
-            # Nouvelles dimensions préservant le ratio
-            new_width = original_width * ratio
-            new_height = original_height * ratio
-            
-            logo = Image(logo_path, width=new_width, height=new_height)
-            logo.hAlign = 'CENTER'
-            story.append(logo)
-            story.append(Spacer(1, 10))
+            with PILImage.open(logo_path) as pil_img:
+                ow, oh = pil_img.size
+            ratio = min((1.35 * inch) / ow, (0.78 * inch) / oh)
+            logo = Image(logo_path, width=ow * ratio, height=oh * ratio)
+            logo.hAlign = 'LEFT'
+            col_identite.append(logo)
+            col_identite.append(Spacer(1, 6))
         except Exception as e:
-            print(f"Erreur chargement logo: {e}")  # Pour debug
-    
-    # Titre configuré du document
-    titre_pdf = parametres.titre_pdf or parametres.nom_logiciel or ""
-    sous_titre_pdf = parametres.sous_titre_pdf or "Secrétariat Général"
-    
-    # En-tête pays - PREMIER ÉLÉMENT
-    pays_style = ParagraphStyle(
-        'PaysStyle',
-        parent=styles['Normal'],
-        fontSize=16,
-        fontName='Helvetica-Bold',
-        alignment=1,  # Center
-        spaceAfter=10,
-        textColor=colors.darkblue
-    )
-    pays_text = parametres.pays_pdf or "République Démocratique du Congo"
-    story.append(Paragraph(pays_text, pays_style))
-    
-    title = Paragraph(f"{titre_pdf}<br/>{sous_titre_pdf}", title_style)
-    story.append(title)
-    story.append(Spacer(1, 20))
-    
-    # Sous-titre selon le type
+            logging.warning(f"Logo non chargé pour l'accusé : {e}")
+    col_identite.append(Paragraph(pays_text, st_pays))
+    if titre_pdf:
+        col_identite.append(Paragraph(titre_pdf, st_org))
+    if sous_titre_pdf:
+        col_identite.append(Paragraph(sous_titre_pdf, st_org_sub))
+
+    # Panneau QR (image + libellé + numéro), encadré discret
+    col_qr = [Paragraph("Non spécifié", st_qr_num)]
+    try:
+        col_qr = [
+            _qr_flowable(courrier.numero_accuse_reception, taille_mm=27.0),
+            Paragraph("N° D'ACCUSÉ DE RÉCEPTION", st_qr_lbl),
+            Paragraph(courrier.numero_accuse_reception or '-', st_qr_num),
+        ]
+    except Exception as e:
+        logging.warning(f"QR non généré pour l'accusé : {e}")
+
+    entete = Table([[col_identite, col_qr]], colWidths=[4.35 * inch, 2.25 * inch])
+    entete.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+        ('VALIGN', (1, 0), (1, 0), 'TOP'),
+        ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ('BOX', (1, 0), (1, 0), 0.8, GEC_BORDER),
+        ('TOPPADDING', (1, 0), (1, 0), 6),
+        ('BOTTOMPADDING', (1, 0), (1, 0), 6),
+        ('LEFTPADDING', (1, 0), (1, 0), 6),
+        ('RIGHTPADDING', (1, 0), (1, 0), 6),
+    ]))
+    story.append(entete)
+    story.append(Spacer(1, 8))
+    # Double filet officiel : trait navy épais + liseré doré fin
+    story.append(HRFlowable(width='100%', thickness=1.4, color=GEC_NAVY, spaceAfter=1.5))
+    story.append(HRFlowable(width='100%', thickness=0.8, color=GEC_ACCENT, spaceAfter=14))
+
+    # Bandeau titre du document
     type_display = "COURRIER ENTRANT" if courrier.type_courrier == 'ENTRANT' else "COURRIER SORTANT"
-    subtitle = Paragraph(f"ACCUSÉ DE RÉCEPTION - {type_display}", styles['Heading2'])
-    story.append(subtitle)
-    story.append(Spacer(1, 20))
+    st_doc_title = ParagraphStyle('AR_DocTitle', parent=styles['Normal'], fontSize=15,
+                                  fontName='Helvetica-Bold', textColor=colors.white,
+                                  alignment=1, leading=19)
+    st_doc_sub = ParagraphStyle('AR_DocSub', parent=styles['Normal'], fontSize=8.5,
+                                textColor=colors.white, alignment=1, leading=11,
+                                spaceBefore=1)
+    bandeau = Table([[Paragraph("ACCUSÉ DE RÉCEPTION", st_doc_title)],
+                     [Paragraph(type_display, st_doc_sub)]], colWidths=[6.6 * inch])
+    bandeau.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), GEC_NAVY),
+        ('TOPPADDING', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 1),
+        ('TOPPADDING', (0, 1), (-1, 1), 0),
+        ('BOTTOMPADDING', (0, 1), (-1, 1), 9),
+        ('LINEBELOW', (0, 1), (-1, 1), 2.5, GEC_ACCENT),
+    ]))
+    story.append(bandeau)
+    story.append(Spacer(1, 16))
     
     # Tableau des métadonnées avec text wrapping pour les champs longs
     data = [
@@ -270,200 +317,48 @@ def export_courrier_pdf(courrier):
         [Paragraph('Fichier Joint:', label_style), Paragraph(courrier.fichier_nom if courrier.fichier_nom else 'Aucun', text_style)],
     ])
     
-    table = Table(data, colWidths=[2.5*inch, 4*inch], repeatRows=1)
+    st_section = ParagraphStyle('AR_Section', parent=styles['Normal'], fontSize=8,
+                                fontName='Helvetica-Bold', textColor=GEC_MUTED,
+                                leading=11)
+    story.append(Paragraph("INFORMATIONS DU COURRIER", st_section))
+    story.append(Spacer(1, 5))
+
+    table = Table(data, colWidths=[2.25*inch, 4.35*inch], repeatRows=0)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('TEXTCOLOR', (1, 0), (1, -1), colors.HexColor('#1A2430')),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Alignement vertical en haut
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('BACKGROUND', (1, 0), (1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('WORDWRAP', (1, 0), (1, -1), 'CJK')  # Permettre le wrap des mots dans la colonne de droite
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 9),
+        ('TOPPADDING', (0, 0), (-1, -1), 9),
+        ('LEFTPADDING', (0, 0), (0, -1), 10),
+        ('LEFTPADDING', (1, 0), (1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        # Colonne libellés teintée, colonne valeurs blanche, lignes alternées
+        ('BACKGROUND', (0, 0), (0, -1), GEC_LIGHT),
+        ('ROWBACKGROUNDS', (1, 0), (1, -1), [colors.white, colors.HexColor('#FBFCFD')]),
+        # Traits fins horizontaux + cadre léger, aucun grillage noir
+        ('LINEBELOW', (0, 0), (-1, -2), 0.4, GEC_BORDER),
+        ('LINEAFTER', (0, 0), (0, -1), 0.4, GEC_BORDER),
+        ('BOX', (0, 0), (-1, -1), 0.8, GEC_BORDER),
+        ('WORDWRAP', (1, 0), (1, -1), 'CJK'),
     ]))
     
     story.append(table)
-    story.append(Spacer(1, 30))
-    
-    # Ajouter une note qui indique que les commentaires et transmissions sont en page 2
-    from models import CourrierComment, CourrierForward
-    comments = CourrierComment.query.filter_by(courrier_id=courrier.id, actif=True)\
-                                   .order_by(CourrierComment.date_creation.desc()).all()
-    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
-                                   .order_by(CourrierForward.date_transmission.desc()).all()
-    
-    # Note d'information si il y a des commentaires ou transmissions
-    if comments or forwards:
-        info_note_style = ParagraphStyle(
-            'InfoNote',
-            parent=styles['Normal'],
-            fontSize=11,
-            spaceAfter=12,
-            textColor=colors.darkblue,
-            fontName='Helvetica-Oblique',
-            alignment=1  # Centré
-        )
-        
-        elements_page2 = []
-        if comments:
-            elements_page2.append("commentaires")
-        if forwards:
-            elements_page2.append("historique des transmissions")
-        
-        note_text = f"Voir page suivante pour : {' et '.join(elements_page2)}"
-        info_note = Paragraph(note_text, info_note_style)
-        story.append(info_note)
-        story.append(Spacer(1, 20))
-    
-    # Saut de page vers page 2 pour les commentaires et transmissions
-    from reportlab.platypus import PageBreak
-    if comments or forwards:
-        story.append(PageBreak())
-    
-    # PAGE 2 : Commentaires et transmissions
-    if comments:
-        # Titre section commentaires
-        comment_title = Paragraph('Commentaires et Annotations', title_style)
-        story.append(comment_title)
-        story.append(Spacer(1, 12))
-        
-        # Tableau des commentaires
-        comment_data = [['Utilisateur', 'Type', 'Commentaire', 'Date']]
-        
-        for comment in comments:
-            type_display = {
-                'comment': 'Commentaire',
-                'annotation': 'Annotation', 
-                'instruction': 'Instruction'
-            }.get(comment.type_comment, comment.type_comment)
-            
-            date_str = comment.date_creation.strftime('%d/%m/%Y %H:%M')
-            if comment.date_modification:
-                date_str += f" (modifié le {comment.date_modification.strftime('%d/%m/%Y %H:%M')})"
-            
-            # Style spécial pour les commentaires avec meilleur contrôle des retours à la ligne
-            comment_text_style = ParagraphStyle(
-                'CommentText',
-                parent=text_style,
-                wordWrap='CJK',
-                splitLongWords=False,  # Éviter de couper les mots courts
-                allowWidows=1,
-                allowOrphans=1,
-                breakLongWords=False,  # Ne pas casser les mots courts comme "commentaire"
-                fontSize=9,
-                leading=11
-            )
-            
-            comment_data.append([
-                Paragraph(comment.user.nom_complet, text_style),
-                Paragraph(type_display, text_style),
-                Paragraph(comment.commentaire, comment_text_style),
-                Paragraph(date_str, text_style)
-            ])
-        
-        comment_table = Table(comment_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
-        comment_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkblue),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
-        ]))
-        
-        story.append(comment_table)
-        story.append(Spacer(1, 20))
-    
-    # Ajouter l'historique des transmissions si présent
-    forwards = CourrierForward.query.filter_by(courrier_id=courrier.id)\
-                                   .order_by(CourrierForward.date_transmission.desc()).all()
-    
-    if forwards:
-        # Titre section transmissions
-        forward_title = Paragraph('Historique des Transmissions', title_style)
-        story.append(forward_title)
-        story.append(Spacer(1, 12))
-        
-        # Tableau des transmissions avec mêmes colonnes que commentaires
-        forward_data = [['Transmis par', 'Transmis à', 'Message', 'Date']]
-        
-        for forward in forwards:
-            date_str = forward.date_transmission.strftime('%d/%m/%Y %H:%M')
-            
-            status_parts = []
-            if forward.lu:
-                status_parts.append(f"Lu le {forward.date_lecture.strftime('%d/%m/%Y %H:%M')}")
-            else:
-                status_parts.append("Non lu")
-            
-            if forward.email_sent:
-                status_parts.append("Email envoyé")
-            
-            status_str = " | ".join(status_parts)
-            message_str = forward.message if forward.message else "-"
-            
-            # Ajouter l'information de pièce jointe si présente
-            if forward.attached_file and forward.attached_file_original_name:
-                attachment_info = f"📎 Pièce jointe: {forward.attached_file_original_name}"
-                if forward.attached_file_size:
-                    size_mb = forward.attached_file_size / 1024 / 1024
-                    attachment_info += f" ({size_mb:.1f} MB)"
-                    
-                if message_str == "-":
-                    message_str = attachment_info
-                else:
-                    message_str += f"\n{attachment_info}"
-            
-            # Combiner message et statut pour garder 4 colonnes comme les commentaires
-            message_status = f"{message_str}"
-            if status_str != "Non lu":
-                message_status += f" ({status_str})"
-            
-            forward_data.append([
-                Paragraph(forward.forwarded_by.nom_complet, text_style),
-                Paragraph(forward.forwarded_to.nom_complet, text_style),
-                Paragraph(message_status, text_style),
-                Paragraph(date_str, text_style)
-            ])
-        
-        forward_table = Table(forward_data, colWidths=[1.5*inch, 1.2*inch, 3.5*inch, 1.3*inch])
-        forward_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.darkgreen),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')
-        ]))
-        
-        story.append(forward_table)
-        story.append(Spacer(1, 20))
-    
-    # Étiquette à découper et coller sur le document papier : elle voyage avec
-    # l'accusé de réception, sans impression séparée.
-    try:
-        from utils.etiquette import bloc_etiquette_accuse
-        story.append(Spacer(1, 8))
-        story.extend(bloc_etiquette_accuse(courrier, parametres, text_style))
-    except Exception as e:
-        # L'accusé de réception reste le document important : son édition ne doit
-        # jamais échouer à cause de l'étiquette.
-        logging.warning(f"Étiquette non ajoutée à l'accusé de réception : {e}")
+    story.append(Spacer(1, 10))
 
-    # Si commentaires ou transmissions étaient sur la page 2, ajouter un saut de page avant le footer
-    if comments or forwards:
-        story.append(PageBreak())
+    # Mention de vérification (reliée au QR de l'en-tête)
+    st_verif = ParagraphStyle('AR_Verif', parent=styles['Normal'], fontSize=8,
+                              textColor=GEC_MUTED, leading=11, alignment=0)
+    story.append(Paragraph(
+        "Ce document peut être vérifié en scannant le QR code de l'en-tête. "
+        "Le numéro d'accusé de réception en est la référence unique.", st_verif))
+    story.append(Spacer(1, 18))
+
     
+    # L'étiquette séparée (ancienne page 2) est supprimée : le QR code figure
+    # désormais dans l'en-tête de la page 1, directement sur l'accusé.
+
     # Le footer est maintenant géré automatiquement par la classe NumberedCanvas
     # sur chaque page, donc on n'ajoute plus rien ici
     
